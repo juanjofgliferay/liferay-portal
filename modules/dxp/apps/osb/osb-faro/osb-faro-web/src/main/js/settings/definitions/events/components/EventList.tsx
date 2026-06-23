@@ -30,28 +30,25 @@ import {get} from 'lodash';
 import {OrderedMap} from 'immutable';
 import {Sizes} from 'shared/util/constants';
 import {sub} from 'shared/util/lang';
-import {useMutation, useQuery} from '@apollo/react-hooks';
-import {useQueryPagination} from 'shared/hooks';
-import {User} from 'shared/util/records';
+import {useCurrentUser} from 'shared/hooks/useCurrentUser';
+import {useMutation, useQuery} from '@apollo/client';
+import {useQueryPagination} from 'shared/hooks/useQueryPagination';
 import {
 	useSelectionContext,
 	withSelectionProvider
 } from 'shared/context/selection';
-import {withCurrentUser} from 'shared/hoc';
 
 const connector = connect(null, {addAlert, close, open});
 
 type PropsFromRedux = ConnectedProps<typeof connector>;
 
 interface IEventListProps extends PropsFromRedux {
-	currentUser: User;
 	groupId: string;
 }
 
 const EventList: React.FC<IEventListProps> = ({
 	addAlert,
 	close,
-	currentUser,
 	groupId,
 	open
 }) => {
@@ -71,7 +68,9 @@ const EventList: React.FC<IEventListProps> = ({
 			keyword: query,
 			page: page - 1,
 			size: delta,
-			sort: getSortFromOrderIOMap(orderIOMap)
+			sort: getSortFromOrderIOMap(
+				orderIOMap
+			) as EventDefinitionsVariables['sort']
 		}
 	});
 
@@ -85,7 +84,7 @@ const EventList: React.FC<IEventListProps> = ({
 			hideEventDefinitions: Event[];
 		}) => {
 			if (!selectedItems.isEmpty()) {
-				selectionDispatch({
+				selectionDispatch?.({
 					payload: {
 						items: hideEventDefinitions
 					},
@@ -105,7 +104,7 @@ const EventList: React.FC<IEventListProps> = ({
 			unhideEventDefinitions: Event[];
 		}) => {
 			if (!selectedItems.isEmpty()) {
-				selectionDispatch({
+				selectionDispatch?.({
 					payload: {
 						items: unhideEventDefinitions
 					},
@@ -114,6 +113,8 @@ const EventList: React.FC<IEventListProps> = ({
 			}
 		}
 	});
+
+	const currentUser = useCurrentUser();
 
 	const handleHideEvents = (events: Event[] = []) => {
 		const visibleEvents = events.filter(({hidden}) => !hidden);
@@ -227,7 +228,7 @@ const EventList: React.FC<IEventListProps> = ({
 				<RowActions
 					quickActions={[
 						{
-							iconSymbol: hidden ? 'view' : 'ac-hidden',
+							iconSymbol: hidden ? 'view' : 'ac_hidden',
 							label: hidden
 								? Liferay.Language.get('set-to-show')
 								: Liferay.Language.get('set-to-hide'),
@@ -246,7 +247,7 @@ const EventList: React.FC<IEventListProps> = ({
 	};
 
 	const hasUnhiddenEvent = (events: OrderedMap<string, Event>) =>
-		events.some(({hidden}) => !hidden);
+		events.some(event => !event?.hidden);
 
 	return (
 		<CrossPageSelect
@@ -266,7 +267,7 @@ const EventList: React.FC<IEventListProps> = ({
 					icon={{
 						border: false,
 						size: Sizes.XXXLarge,
-						symbol: 'ac-satellite'
+						symbol: 'ac_satellite'
 					}}
 				/>
 			}
@@ -284,11 +285,10 @@ const EventList: React.FC<IEventListProps> = ({
 										className='button-root nav-btn'
 										displayType='secondary'
 										onClick={() => {
-											const hideEventFn = hasUnhiddenEvent(
-												selectedItems
-											)
-												? handleHideEvents
-												: handleUnhideEvents;
+											const hideEventFn =
+												hasUnhiddenEvent(selectedItems)
+													? handleHideEvents
+													: handleUnhideEvents;
 
 											hideEventFn(
 												selectedItems.toArray()
@@ -299,7 +299,7 @@ const EventList: React.FC<IEventListProps> = ({
 											className='mr-2'
 											symbol={
 												hasUnhiddenEvent(selectedItems)
-													? 'ac-hidden'
+													? 'ac_hidden'
 													: 'view'
 											}
 										/>
@@ -322,8 +322,4 @@ const EventList: React.FC<IEventListProps> = ({
 	);
 };
 
-export default compose<any>(
-	withSelectionProvider,
-	withCurrentUser,
-	connector
-)(EventList);
+export default compose<any>(withSelectionProvider, connector)(EventList);

@@ -8,8 +8,7 @@ import ClayLabel from '@clayui/label';
 import ClayLoadingIndicator from '@clayui/loading-indicator';
 import ClaySticker from '@clayui/sticker';
 import {useIsMounted} from '@liferay/frontend-js-react-web';
-import AddToCart from 'commerce-frontend-js/components/add_to_cart/AddToCart';
-import {isProductPurchasable} from 'commerce-frontend-js/utilities/index';
+import {AddToCartComponent, isProductPurchasable} from 'commerce-frontend-js';
 import {sub} from 'frontend-js-web';
 import React, {useEffect, useState} from 'react';
 
@@ -36,6 +35,7 @@ function SkuContent({
 	const isMounted = useIsMounted();
 	const productURL = getProductURL(productBaseURL, product.urls);
 	const productName = getProductName(product);
+	const skuUnitOfMeasure = product.skuUnitOfMeasures?.[0];
 	const [inCart, setInCart] = useState(false);
 	const [loading, setLoading] = useState(true);
 
@@ -53,7 +53,14 @@ function SkuContent({
 		getCartItems(cartId, product.skuId)
 			.then((jsonResponse) => {
 				if (isMounted()) {
-					setInCart(Boolean(jsonResponse.items?.length));
+					const items = jsonResponse.items || [];
+
+					setInCart(
+						items.some(
+							({skuUnitOfMeasure: itemUnitOfMeasure}) =>
+								skuUnitOfMeasure?.key === itemUnitOfMeasure?.key
+						)
+					);
 
 					setLoading(false);
 				}
@@ -63,7 +70,7 @@ function SkuContent({
 					setLoading(false);
 				}
 			});
-	}, [cartId, isMounted, product.skuId]);
+	}, [cartId, isMounted, product.skuId, skuUnitOfMeasure?.key]);
 
 	const productPurchasable = isProductPurchasable(
 		product.availability,
@@ -111,9 +118,9 @@ function SkuContent({
 					</ClayLabel>
 				</div>
 
-				<h4 className="component-title mb-1">
+				<div className="component-title mb-1">
 					<a href={productURL}>{product.sku}</a>
-				</h4>
+				</div>
 
 				<p className="component-subtitle mb-1">
 					<a href={productURL}>{productName}</a>
@@ -131,7 +138,7 @@ function SkuContent({
 					<>
 						<Price className="mb-1" {...product.price} />
 
-						<AddToCart
+						<AddToCartComponent
 							accountId={accountId}
 							cartId={cartId}
 							cartUUID={orderUUID}
@@ -148,6 +155,7 @@ function SkuContent({
 									product.skuOptions,
 									product.productOptions
 								),
+								skuUnitOfMeasure,
 							}}
 							disabled={!productPurchasable}
 							settings={{
@@ -184,9 +192,9 @@ function DiagramContent({product, productBaseURL}) {
 			)}
 
 			<div className="col">
-				<h4 className="component-title">
+				<div className="component-title">
 					<a href={productURL}>{productName}</a>
-				</h4>
+				</div>
 			</div>
 
 			<div className="col-auto">
@@ -201,7 +209,7 @@ function DiagramContent({product, productBaseURL}) {
 function ExternalContent({product}) {
 	return (
 		<>
-			<h4 className="mb-1">{product.sku || product.name}</h4>
+			<div className="h4 mb-1">{product.sku || product.name}</div>
 
 			{!!product.quantity && (
 				<p className="mb-0">

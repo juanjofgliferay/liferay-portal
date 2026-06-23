@@ -21,7 +21,7 @@
 	TermsOfUseContentProvider termsOfUseContentProvider = (TermsOfUseContentProvider)request.getAttribute(TermsOfUseContentProvider.class.getName());
 	%>
 
-	<div class="mt-4 sheet sheet-lg">
+	<div class="mt-4 sheet sheet-lg" id="main-content" role="main" tabindex="-1">
 		<div class="sheet-header">
 			<div class="autofit-padded-no-gutters-x autofit-row">
 				<div class="autofit-col autofit-col-expand">
@@ -41,7 +41,7 @@
 						updateLanguageFormAction = HttpComponentsUtil.addParameter(updateLanguageFormAction, "redirect", updateLanguageRedirect);
 						%>
 
-						<liferay-ui:language
+						<liferay-site-navigation:language
 							formAction="<%= updateLanguageFormAction %>"
 							languageId="<%= themeDisplay.getLanguageId() %>"
 							languageIds="<%= LocaleUtil.toLanguageIds(LanguageUtil.getAvailableLocales(themeDisplay.getCompanyGroupId())) %>"
@@ -91,7 +91,7 @@
 					<clay:button
 						displayType="secondary"
 						label="i-disagree"
-						propsTransformer="js/DisagreeButtonPropsTransformer"
+						propsTransformer="{DisagreeButtonPropsTransformer} from layout-utility-page-terms-of-use"
 						type="button"
 					/>
 				</div>

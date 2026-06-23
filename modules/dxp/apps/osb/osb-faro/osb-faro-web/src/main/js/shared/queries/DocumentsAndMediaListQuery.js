@@ -1,4 +1,4 @@
-import {gql} from 'apollo-boost';
+import {gql} from '@apollo/client';
 
 export default gql`
 	query DocumentsAndMediaList(
@@ -31,7 +31,7 @@ export default gql`
 					downloadsMetric {
 						value
 					}
-					previewsMetric {
+					impressionMadeMetric {
 						value
 					}
 					ratingsMetric {

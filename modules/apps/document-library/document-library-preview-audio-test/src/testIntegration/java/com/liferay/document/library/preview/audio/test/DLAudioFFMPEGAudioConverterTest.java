@@ -30,6 +30,7 @@ import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
 import java.util.Dictionary;
+import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -77,7 +78,7 @@ public class DLAudioFFMPEGAudioConverterTest {
 
 		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
 				"com.liferay.document.library.preview.audio.internal." +
-					"processor.AudioDLProcessorImpl",
+					"processor.AudioPreviewableDLProcessor",
 				LoggerTestUtil.ERROR)) {
 
 			_withDLAudioFFMPEGAudioConverterConfiguration(
@@ -91,7 +92,11 @@ public class DLAudioFFMPEGAudioConverterTest {
 							fileEntry.getFileVersion()));
 				});
 
-			for (LogEntry logEntry : logCapture.getLogEntries()) {
+			List<LogEntry> logEntries = logCapture.getLogEntries();
+
+			Assert.assertFalse(logEntries.isEmpty());
+
+			for (LogEntry logEntry : logEntries) {
 				String logEntryMessage = logEntry.getMessage();
 
 				Assert.assertTrue(
@@ -134,7 +139,7 @@ public class DLAudioFFMPEGAudioConverterTest {
 			StringUtil.randomString(), StringUtil.randomString(),
 			StringUtil.randomString(),
 			FileUtil.getBytes(getClass(), "dependencies/" + fileName), null,
-			null, _serviceContext);
+			null, null, _serviceContext);
 	}
 
 	private void _withDLAudioFFMPEGAudioConverterConfiguration(

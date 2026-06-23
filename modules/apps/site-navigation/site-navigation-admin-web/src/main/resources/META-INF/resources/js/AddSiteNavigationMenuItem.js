@@ -3,60 +3,65 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {createPortletURL, fetch, getOpener, openToast} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
+import {createPortletURL, fetch, getOpener} from 'frontend-js-web';
 
 export default function ({namespace, order, parentSiteNavigationMenuItemId}) {
 	const addButton = document.getElementById(`${namespace}addButton`);
+	const cancelButton = document.getElementById(`${namespace}cancelButton`);
 
-	if (addButton) {
-		const onClick = () => {
-			const formValidator = Liferay.Form.get(`${namespace}fm`)
-				.formValidator;
+	const onAddButtonClick = () => {
+		const formValidator = Liferay.Form.get(`${namespace}fm`).formValidator;
 
-			formValidator.validate();
+		formValidator.validate();
 
-			if (formValidator.hasErrors()) {
-				return;
-			}
+		if (formValidator.hasErrors()) {
+			return;
+		}
 
-			const form = document.getElementById(`${namespace}fm`);
-			const formData = new FormData(form);
+		const form = document.getElementById(`${namespace}fm`);
+		const formData = new FormData(form);
 
-			const url = createPortletURL(form.action, {
-				order,
-				parentSiteNavigationMenuItemId,
+		const url = createPortletURL(form.action, {
+			order,
+			parentSiteNavigationMenuItemId,
+		});
+
+		fetch(url, {
+			body: formData,
+			method: 'POST',
+		})
+			.then((response) => response.json())
+			.then((response) => {
+				if (response.siteNavigationMenuItemId) {
+					getOpener().Liferay.fire('reloadSiteNavigationMenuEditor');
+
+					getOpener().Liferay.fire('closeModal', {
+						id: `${namespace}addMenuItem`,
+					});
+				}
+				else {
+					openToast({
+						message: response.errorMessage,
+						type: 'danger',
+					});
+				}
 			});
+	};
 
-			fetch(url, {
-				body: formData,
-				method: 'POST',
-			})
-				.then((response) => response.json())
-				.then((response) => {
-					if (response.siteNavigationMenuItemId) {
-						getOpener().Liferay.fire(
-							'reloadSiteNavigationMenuEditor'
-						);
+	const onCancelButtonClick = () => {
+		getOpener().Liferay.fire('closeModal', {
+			id: `${namespace}addMenuItem`,
+		});
+	};
 
-						getOpener().Liferay.fire('closeModal', {
-							id: `${namespace}addMenuItem`,
-						});
-					}
-					else {
-						openToast({
-							message: response.errorMessage,
-							type: 'danger',
-						});
-					}
-				});
-		};
+	addButton?.addEventListener('click', onAddButtonClick);
+	cancelButton?.addEventListener('click', onCancelButtonClick);
 
-		addButton.addEventListener('click', onClick);
-
-		return {
-			dispose() {
-				addButton.removeEventListener('click', onClick);
-			},
-		};
-	}
+	return {
+		dispose() {
+			addButton?.removeEventListener('click', onAddButtonClick);
+			cancelButton?.removeEventListener('click', onCancelButtonClick);
+		},
+	};
 }

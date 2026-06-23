@@ -314,7 +314,7 @@ public class MBThreadTrashHandlerTest
 		throws Exception {
 
 		return MBCategoryLocalServiceUtil.addCategory(
-			TestPropsValues.getUserId(), parentBaseModelId,
+			null, TestPropsValues.getUserId(), parentBaseModelId,
 			RandomTestUtil.randomString(), StringPool.BLANK, serviceContext);
 	}
 
@@ -324,7 +324,7 @@ public class MBThreadTrashHandlerTest
 		throws Exception {
 
 		return MBCategoryLocalServiceUtil.addCategory(
-			TestPropsValues.getUserId(),
+			null, TestPropsValues.getUserId(),
 			MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID,
 			RandomTestUtil.randomString(), StringPool.BLANK, serviceContext);
 	}
@@ -381,12 +381,12 @@ public class MBThreadTrashHandlerTest
 	@Inject(
 		filter = "model.class.name=com.liferay.message.boards.model.MBCategory"
 	)
-	private static TrashHandler _mbCategoryTrashHandler;
+	private TrashHandler _mbCategoryTrashHandler;
 
 	@Inject(
 		filter = "model.class.name=com.liferay.message.boards.model.MBThread"
 	)
-	private static TrashHandler _mbThreadTrashHandler;
+	private TrashHandler _mbThreadTrashHandler;
 
 	@Inject
 	private TrashHelper _trashHelper;

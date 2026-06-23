@@ -98,15 +98,18 @@ public interface ObjectFieldLocalService
 			List<ObjectFieldSetting> objectFieldSettings)
 		throws PortalException;
 
+	public void addOrUpdateObjectFieldPLOEntries(ObjectField objectField)
+		throws PortalException;
+
 	@Indexable(type = IndexableType.REINDEX)
 	public ObjectField addOrUpdateSystemObjectField(
 			String externalReferenceCode, long userId,
 			long listTypeDefinitionId, long objectDefinitionId,
 			String businessType, String dbColumnName, String dbTableName,
 			String dbType, boolean indexed, boolean indexedAsKeyword,
-			String indexedLanguageId, Map<Locale, String> labelMap, String name,
-			String readOnly, String readOnlyConditionExpression,
-			boolean required, boolean state,
+			String indexedLanguageId, Map<Locale, String> labelMap,
+			boolean localized, String name, String readOnly,
+			String readOnlyConditionExpression, boolean required, boolean state,
 			List<ObjectFieldSetting> objectFieldSettings)
 		throws PortalException;
 
@@ -116,9 +119,9 @@ public interface ObjectFieldLocalService
 			long listTypeDefinitionId, long objectDefinitionId,
 			String businessType, String dbColumnName, String dbTableName,
 			String dbType, boolean indexed, boolean indexedAsKeyword,
-			String indexedLanguageId, Map<Locale, String> labelMap, String name,
-			String readOnly, String readOnlyConditionExpression,
-			boolean required, boolean state,
+			String indexedLanguageId, Map<Locale, String> labelMap,
+			boolean localized, String name, String readOnly,
+			String readOnlyConditionExpression, boolean required, boolean state,
 			List<ObjectFieldSetting> objectFieldSettings)
 		throws PortalException;
 
@@ -264,6 +267,11 @@ public interface ObjectFieldLocalService
 	public ObjectField fetchObjectField(
 		String externalReferenceCode, long objectDefinitionId);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public ObjectField fetchObjectFieldByBusinessType(
+		long objectDefinitionId, String businessType,
+		OrderByComparator<ObjectField> orderByComparator);
+
 	/**
 	 * Returns the object field with the matching UUID and company.
 	 *
@@ -302,6 +310,10 @@ public interface ObjectFieldLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<ObjectField> getLocalizedObjectFields(long objectDefinitionId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<ObjectField> getLocalizedObjectFields(
+		long objectDefinitionId, boolean system);
 
 	/**
 	 * Returns the object field with the primary key.
@@ -366,6 +378,10 @@ public interface ObjectFieldLocalService
 	public List<ObjectField> getObjectFields(
 		long objectDefinitionId, String dbTableName);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<ObjectField> getObjectFieldsByBusinessType(
+		long objectDefinitionId, String businessType);
+
 	/**
 	 * Returns the number of object fields.
 	 *
@@ -383,6 +399,13 @@ public interface ObjectFieldLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getObjectFieldsCountByListTypeDefinitionId(
 		long listTypeDefinitionId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public Map<Long, List<ObjectField>> getObjectFieldsMap(long companyId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public Map<Long, List<ObjectField>> getObjectFieldsMap(
+		long companyId, String businessType);
 
 	/**
 	 * Returns the OSGi service identifier.
@@ -431,6 +454,9 @@ public interface ObjectFieldLocalService
 	public ObjectField updateRequired(long objectFieldId, boolean required)
 		throws PortalException;
 
+	public void updateUserId(long companyId, long oldUserId, long newUserId)
+		throws PortalException;
+
 	public void validateExternalReferenceCode(
 			String externalReferenceCode, long objectFieldId, long companyId,
 			long objectDefinitionId)
@@ -438,11 +464,13 @@ public interface ObjectFieldLocalService
 
 	public void validateReadOnlyAndReadOnlyConditionExpression(
 			String businessType, String readOnly,
-			String readOnlyConditionExpression)
+			String readOnlyConditionExpression, boolean required)
 		throws PortalException;
 
 	public void validateRequired(
-			long objectFieldId, String businessType, boolean required)
+			String businessType, boolean objectDefinitionApproved,
+			ObjectField oldObjectField, boolean required)
 		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1663696635

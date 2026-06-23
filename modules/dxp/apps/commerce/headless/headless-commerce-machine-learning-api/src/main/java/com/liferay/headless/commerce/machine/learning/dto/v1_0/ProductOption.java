@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,19 +28,20 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Riccardo Ferrari
  * @generated
  */
 @Generated("")
-@GraphQLName("ProductOption")
+@GraphQLName(
+	description = "Wire shape for a product option attached to a product, uploaded to the analytics pipeline alongside its parent product.",
+	value = "ProductOption"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "Wire shape for a product option attached to a product, uploaded to the analytics pipeline alongside its parent product."
+)
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "ProductOption")
 public class ProductOption implements Serializable {
@@ -49,88 +54,140 @@ public class ProductOption implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(ProductOption.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Key of the underlying option definition.",
+		example = "size"
+	)
 	public String getKey() {
+		if (_keySupplier != null) {
+			key = _keySupplier.get();
+
+			_keySupplier = null;
+		}
+
 		return key;
 	}
 
 	public void setKey(String key) {
 		this.key = key;
+
+		_keySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setKey(UnsafeSupplier<String, Exception> keyUnsafeSupplier) {
-		try {
-			key = keyUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_keySupplier = () -> {
+			try {
+				return keyUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(description = "Key of the underlying option definition.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String key;
 
-	@Schema(example = "option-key")
+	@JsonIgnore
+	private Supplier<String> _keySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Stable key of the product-specific option binding. Distinct from `key` when the same global option is bound to a product under a custom alias.",
+		example = "option-key"
+	)
 	public String getOptionKey() {
+		if (_optionKeySupplier != null) {
+			optionKey = _optionKeySupplier.get();
+
+			_optionKeySupplier = null;
+		}
+
 		return optionKey;
 	}
 
 	public void setOptionKey(String optionKey) {
 		this.optionKey = optionKey;
+
+		_optionKeySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setOptionKey(
 		UnsafeSupplier<String, Exception> optionKeyUnsafeSupplier) {
 
-		try {
-			optionKey = optionKeyUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_optionKeySupplier = () -> {
+			try {
+				return optionKeyUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Stable key of the product-specific option binding. Distinct from `key` when the same global option is bound to a product under a custom alias."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String optionKey;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _optionKeySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Selectable values of the option. Each entry is a map keyed by locale code whose values are the localised value labels.",
+		example = "[{en_US=Small, hr_HR=Maleno}, {en_US=Large, hr_HR=Veliko}]"
+	)
 	@Valid
 	public Map[] getValues() {
+		if (_valuesSupplier != null) {
+			values = _valuesSupplier.get();
+
+			_valuesSupplier = null;
+		}
+
 		return values;
 	}
 
 	public void setValues(Map[] values) {
 		this.values = values;
+
+		_valuesSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setValues(
 		UnsafeSupplier<Map[], Exception> valuesUnsafeSupplier) {
 
-		try {
-			values = valuesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_valuesSupplier = () -> {
+			try {
+				return valuesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Selectable values of the option. Each entry is a map keyed by locale code whose values are the localised value labels."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map[] values;
+
+	@JsonIgnore
+	private Supplier<Map[]> _valuesSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -159,6 +216,8 @@ public class ProductOption implements Serializable {
 
 		sb.append("{");
 
+		String key = getKey();
+
 		if (key != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -173,6 +232,8 @@ public class ProductOption implements Serializable {
 			sb.append("\"");
 		}
 
+		String optionKey = getOptionKey();
+
 		if (optionKey != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -186,6 +247,8 @@ public class ProductOption implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Map[] values = getValues();
 
 		if (values != null) {
 			if (sb.length() > 1) {
@@ -212,8 +275,8 @@ public class ProductOption implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.machine.learning.dto.v1_0.ProductOption",
 		name = "x-class-name"
 	)
@@ -259,7 +322,10 @@ public class ProductOption implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -305,3 +371,4 @@ public class ProductOption implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:149373377

@@ -5,8 +5,8 @@
 
 package com.liferay.journal.content.web.internal.portlet.toolbar.contributor;
 
+import com.liferay.dynamic.data.mapping.item.selector.DDMStructureItemSelectorCriterion;
 import com.liferay.dynamic.data.mapping.item.selector.DDMStructureItemSelectorReturnType;
-import com.liferay.dynamic.data.mapping.item.selector.criterion.DDMStructureItemSelectorCriterion;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.service.DDMStructureService;
 import com.liferay.dynamic.data.mapping.util.comparator.StructureCreateDateComparator;
@@ -41,19 +41,21 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.HttpComponentsUtil;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
+
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -63,7 +65,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + JournalContentPortletKeys.JOURNAL_CONTENT,
+		"jakarta.portlet.name=" + JournalContentPortletKeys.JOURNAL_CONTENT,
 		"mvc.path=-", "mvc.path=/view.jsp"
 	},
 	service = PortletToolbarContributor.class
@@ -81,7 +83,7 @@ public class JournalContentPortletToolbarContributor
 		Layout layout = themeDisplay.getLayout();
 
 		if (!_hasAddArticlePermission(themeDisplay) ||
-			layout.isLayoutPrototypeLinkActive()) {
+			layout.isPortletLayoutPageTemplateEntryLinkActive()) {
 
 			return Collections.emptyList();
 		}
@@ -116,8 +118,8 @@ public class JournalContentPortletToolbarContributor
 			_portal.getControlPanelPortletURL(
 				portletRequest, JournalPortletKeys.JOURNAL,
 				PortletRequest.RENDER_PHASE)
-		).setMVCPath(
-			"/edit_article.jsp"
+		).setMVCRenderCommandName(
+			"/journal/edit_article"
 		).setRedirect(
 			_portal.getLayoutFullURL(themeDisplay)
 		).setPortletResource(
@@ -137,30 +139,26 @@ public class JournalContentPortletToolbarContributor
 		if (journalContentPortletInstanceConfiguration.
 				sortStructuresByByName()) {
 
-			ddmStructures = _ddmStructureService.getStructures(
-				themeDisplay.getCompanyId(), currentAndAncestorSiteGroupIds,
-				_portal.getClassNameId(JournalArticle.class), QueryUtil.ALL_POS,
-				QueryUtil.ALL_POS, new StructureCreateDateComparator());
-
 			Locale locale = themeDisplay.getLocale();
 
-			ddmStructures.sort(
-				(ddmStructure1, ddmStructure2) -> {
-					String name1 = ddmStructure1.getName(locale);
-					String name2 = ddmStructure2.getName(locale);
-
-					return name1.compareTo(name2);
-				});
+			ddmStructures = ListUtil.sort(
+				_ddmStructureService.getStructures(
+					themeDisplay.getCompanyId(), currentAndAncestorSiteGroupIds,
+					_portal.getClassNameId(JournalArticle.class),
+					QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+					StructureCreateDateComparator.getInstance(false)),
+				Comparator.comparing(
+					ddmStructure -> ddmStructure.getName(locale)));
 
 			ddmStructures = ddmStructures.subList(
-				0, _DEFAULT_MAX_DISPLAY_ITEMS);
+				0, Math.min(ddmStructures.size(), _DEFAULT_MAX_DISPLAY_ITEMS));
 		}
 		else {
 			ddmStructures = _ddmStructureService.getStructures(
 				themeDisplay.getCompanyId(), currentAndAncestorSiteGroupIds,
 				_portal.getClassNameId(JournalArticle.class), 0,
 				_DEFAULT_MAX_DISPLAY_ITEMS,
-				new StructureCreateDateComparator());
+				StructureCreateDateComparator.getInstance(false));
 		}
 
 		for (DDMStructure ddmStructure : ddmStructures) {
@@ -242,8 +240,8 @@ public class JournalContentPortletToolbarContributor
 			_portal.getControlPanelPortletURL(
 				portletRequest, JournalPortletKeys.JOURNAL,
 				PortletRequest.RENDER_PHASE)
-		).setMVCPath(
-			"/edit_article.jsp"
+		).setMVCRenderCommandName(
+			"/journal/edit_article"
 		).setRedirect(
 			_portal.getLayoutFullURL(themeDisplay)
 		).setPortletResource(

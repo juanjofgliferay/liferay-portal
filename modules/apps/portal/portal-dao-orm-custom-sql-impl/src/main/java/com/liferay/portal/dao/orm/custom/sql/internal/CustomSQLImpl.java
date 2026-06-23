@@ -5,6 +5,8 @@
 
 package com.liferay.portal.dao.orm.custom.sql.internal;
 
+import com.liferay.petra.io.unsync.UnsyncBufferedReader;
+import com.liferay.petra.io.unsync.UnsyncStringReader;
 import com.liferay.petra.sql.dsl.expression.Expression;
 import com.liferay.petra.sql.dsl.expression.Predicate;
 import com.liferay.petra.string.CharPool;
@@ -14,8 +16,6 @@ import com.liferay.portal.dao.orm.custom.sql.CustomSQL;
 import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.portal.kernel.dao.orm.QueryDefinition;
 import com.liferay.portal.kernel.dao.orm.WildcardMode;
-import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
-import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
@@ -82,12 +82,6 @@ public class CustomSQLImpl implements CustomSQL {
 		"IFNULL(?, '1') = '0'";
 
 	public static final String MYSQL_FUNCTION_IS_NULL = "IFNULL(?, '1') = '1'";
-
-	public static final String SYBASE_FUNCTION_IS_NOT_NULL =
-		"CONVERT(VARCHAR,?) IS NOT NULL";
-
-	public static final String SYBASE_FUNCTION_IS_NULL =
-		"CONVERT(VARCHAR,?) IS NULL";
 
 	@Override
 	public String appendCriteria(String sql, String criteria) {
@@ -208,7 +202,7 @@ public class CustomSQLImpl implements CustomSQL {
 		BiFunction<Expression<String>, String, Predicate> operatorBiFunction,
 		String[] values) {
 
-		if ((values == null) || (values.length == 0)) {
+		if (ArrayUtil.isEmpty(values)) {
 			return null;
 		}
 
@@ -303,16 +297,6 @@ public class CustomSQLImpl implements CustomSQL {
 	 */
 	public boolean isVendorPostgreSQL() {
 		return _vendorPostgreSQL;
-	}
-
-	/**
-	 * Returns <code>true</code> if Hibernate is connecting to a Sybase
-	 * database.
-	 *
-	 * @return <code>true</code> if Hibernate is connecting to a Sybase database
-	 */
-	public boolean isVendorSybase() {
-		return _vendorSybase;
 	}
 
 	@Override
@@ -694,8 +678,6 @@ public class CustomSQLImpl implements CustomSQL {
 	protected void activate(BundleContext bundleContext) throws SQLException {
 		_bundleContext = bundleContext;
 
-		_portal.initCustomSQL();
-
 		String functionIsNull = _portal.getCustomSQLFunctionIsNull();
 		String functionIsNotNull = _portal.getCustomSQLFunctionIsNotNull();
 
@@ -758,16 +740,6 @@ public class CustomSQLImpl implements CustomSQL {
 					if (_log.isInfoEnabled()) {
 						_log.info(
 							"Detected MySQL with database name " + dbName);
-					}
-				}
-				else if (dbName.startsWith("Sybase") || dbName.equals("ASE")) {
-					_vendorSybase = true;
-					_functionIsNull = SYBASE_FUNCTION_IS_NULL;
-					_functionIsNotNull = SYBASE_FUNCTION_IS_NOT_NULL;
-
-					if (_log.isInfoEnabled()) {
-						_log.info(
-							"Detected Sybase with database name " + dbName);
 					}
 				}
 				else if (dbName.startsWith("Oracle")) {
@@ -983,7 +955,6 @@ public class CustomSQLImpl implements CustomSQL {
 	private boolean _vendorMySQL;
 	private boolean _vendorOracle;
 	private boolean _vendorPostgreSQL;
-	private boolean _vendorSybase;
 
 	private class CustomSQLContainer {
 

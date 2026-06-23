@@ -7,11 +7,11 @@ package com.liferay.headless.delivery.internal.dto.v1_0.converter;
 
 import com.liferay.headless.admin.user.dto.v1_0.Segment;
 import com.liferay.headless.delivery.dto.v1_0.Experience;
+import com.liferay.portal.kernel.util.ScopeUtil;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
-import com.liferay.segments.constants.SegmentsEntryConstants;
 import com.liferay.segments.model.SegmentsEntry;
 import com.liferay.segments.model.SegmentsExperience;
 import com.liferay.segments.service.SegmentsEntryService;
@@ -41,18 +41,17 @@ public class ExperienceDTOConverter
 
 		return new Experience() {
 			{
-				key = segmentsExperience.getSegmentsExperienceKey();
-				name = segmentsExperience.getName(
-					dtoConverterContext.getLocale());
-				name_i18n = LocalizedMapUtil.getI18nMap(
-					dtoConverterContext.isAcceptAllLanguages(),
-					segmentsExperience.getNameMap());
-
+				setKey(segmentsExperience::getSegmentsExperienceKey);
+				setName(
+					() -> segmentsExperience.getName(
+						dtoConverterContext.getLocale()));
+				setName_i18n(
+					() -> LocalizedMapUtil.getI18nMap(
+						dtoConverterContext.isAcceptAllLanguages(),
+						segmentsExperience.getNameMap()));
 				setSegments(
 					() -> {
-						if (segmentsExperience.getSegmentsEntryId() ==
-								SegmentsEntryConstants.ID_DEFAULT) {
-
+						if (segmentsExperience.hasDefaultSegmentsEntry()) {
 							return null;
 						}
 
@@ -68,9 +67,24 @@ public class ExperienceDTOConverter
 							return null;
 						}
 
+						Long groupId = ScopeUtil.getItemGroupId(
+							segmentsExperience.getCompanyId(),
+							segmentsExperience.getSegmentsEntryScopeERC(),
+							segmentsExperience.getGroupId());
+
+						if (groupId == null) {
+							return null;
+						}
+
 						SegmentsEntry segmentsEntry =
-							_segmentsEntryService.getSegmentsEntry(
-								segmentsExperience.getSegmentsEntryId());
+							_segmentsEntryService.
+								fetchSegmentsEntryByExternalReferenceCode(
+									segmentsExperience.getSegmentsEntryERC(),
+									groupId);
+
+						if (segmentsEntry == null) {
+							return null;
+						}
 
 						return new Segment[] {
 							dtoConverter.toDTO(segmentsEntry)

@@ -27,6 +27,11 @@ import org.osgi.service.component.annotations.Reference;
 public class GogoShellPanelApp extends BasePanelApp {
 
 	@Override
+	public String getIcon() {
+		return "code";
+	}
+
+	@Override
 	public Portlet getPortlet() {
 		return _portlet;
 	}
@@ -37,7 +42,7 @@ public class GogoShellPanelApp extends BasePanelApp {
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + GogoShellPortletKeys.GOGO_SHELL + ")"
+		target = "(jakarta.portlet.name=" + GogoShellPortletKeys.GOGO_SHELL + ")"
 	)
 	private Portlet _portlet;
 

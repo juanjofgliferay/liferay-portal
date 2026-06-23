@@ -10,8 +10,10 @@ import com.liferay.dynamic.data.mapping.model.DDMStructureLayoutModel;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
+import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.bean.AutoEscapeBeanHandler;
+import com.liferay.portal.kernel.dao.orm.EntityCacheUtil;
 import com.liferay.portal.kernel.exception.LocaleException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSON;
@@ -31,6 +33,8 @@ import com.liferay.portal.kernel.util.Validator;
 
 import java.io.Serializable;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -108,6 +112,8 @@ public class DDMStructureLayoutModelImpl
 		"create table DDMStructureLayout (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,structureLayoutId LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,classNameId LONG,structureLayoutKey VARCHAR(75) null,structureVersionId LONG,name TEXT null,description TEXT null,definition TEXT null,primary key (structureLayoutId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP = "drop table DDMStructureLayout";
+
+	public static final String ENTITY_ALIAS = "ddmStructureLayout";
 
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY ddmStructureLayout.structureLayoutId ASC";
@@ -1185,6 +1191,14 @@ public class DDMStructureLayoutModelImpl
 	}
 
 	@Override
+	public void copyCacheFields(DDMStructureLayout source) {
+		DDMStructureLayoutModelImpl sourceModelImpl =
+			(DDMStructureLayoutModelImpl)source;
+
+		setDDMFormLayout(sourceModelImpl.getDDMFormLayout());
+	}
+
+	@Override
 	public boolean equals(Object object) {
 		if (this == object) {
 			return true;
@@ -1332,9 +1346,17 @@ public class DDMStructureLayoutModelImpl
 			ddmStructureLayoutCacheModel.definition = null;
 		}
 
-		setDDMFormLayout(null);
+		try {
+			setDDMFormLayout(null);
 
-		ddmStructureLayoutCacheModel._ddmFormLayout = getDDMFormLayout();
+			ddmStructureLayoutCacheModel.ddmFormLayout =
+				(com.liferay.dynamic.data.mapping.model.DDMFormLayout)
+					_ddmFormLayoutMethodHandle.invokeExact(
+						(DDMStructureLayoutImpl)this);
+		}
+		catch (Throwable throwable) {
+			ReflectionUtil.throwException(throwable);
+		}
 
 		return ddmStructureLayoutCacheModel;
 	}
@@ -1523,6 +1545,43 @@ public class DDMStructureLayoutModelImpl
 	}
 
 	private long _columnBitmask;
+
+	protected static final BiConsumer
+		<DDMStructureLayout,
+		 com.liferay.dynamic.data.mapping.model.DDMFormLayout>
+			ddmFormLayoutUpdateEntityCacheBiConsumer =
+				(ddmStructureLayout, ddmFormLayout) -> {
+					DDMStructureLayoutCacheModel ddmStructureLayoutCacheModel =
+						EntityCacheUtil.fetchCacheModel(
+							DDMStructureLayoutImpl.class,
+							ddmStructureLayout.getPrimaryKey(),
+							DDMStructureLayoutCacheModel.class);
+
+					if ((ddmStructureLayoutCacheModel != null) &&
+						(ddmStructureLayoutCacheModel.getMvccVersion() ==
+							ddmStructureLayout.getMvccVersion())) {
+
+						ddmStructureLayoutCacheModel.ddmFormLayout =
+							ddmFormLayout;
+					}
+				};
+
+	private static final MethodHandle _ddmFormLayoutMethodHandle;
+
+	static {
+		MethodHandles.Lookup lookup = ReflectionUtil.getImplLookup();
+
+		try {
+			_ddmFormLayoutMethodHandle = lookup.findGetter(
+				DDMStructureLayoutImpl.class, "_ddmFormLayout",
+				com.liferay.dynamic.data.mapping.model.DDMFormLayout.class);
+		}
+		catch (ReflectiveOperationException reflectiveOperationException) {
+			throw new ExceptionInInitializerError(reflectiveOperationException);
+		}
+	}
+
 	private DDMStructureLayout _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:424602474

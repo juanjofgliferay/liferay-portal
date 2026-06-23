@@ -8,13 +8,15 @@ package com.liferay.object.rest.dto.v1_0.util;
 import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.service.DLAppService;
 import com.liferay.document.library.util.DLURLHelper;
+import com.liferay.object.field.util.ObjectFieldUtil;
+import com.liferay.object.model.ObjectEntry;
+import com.liferay.object.model.ObjectField;
 import com.liferay.object.rest.dto.v1_0.Link;
+import com.liferay.object.service.ObjectEntryService;
 import com.liferay.petra.string.StringBundler;
-import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.repository.model.FileEntry;
-import com.liferay.portal.kernel.util.HttpComponentsUtil;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.util.Portal;
 
 /**
@@ -24,32 +26,23 @@ public class LinkUtil {
 
 	public static Link toLink(
 		DLAppService dlAppService, DLFileEntry dlFileEntry,
-		DLURLHelper dlURLHelper, String objectDefinitionExternalReferenceCode,
-		String objectEntryExternalReferenceCode, Portal portal) {
+		DLURLHelper dlURLHelper, long groupId,
+		String objectDefinitionExternalReferenceCode, ObjectEntry objectEntry,
+		ObjectEntryService objectEntryService, ObjectField objectField,
+		PermissionChecker permissionChecker, Portal portal) {
 
 		return new Link() {
 			{
-				label = dlFileEntry.getFileName();
-
 				setHref(
 					() -> {
 						try {
-							FileEntry fileEntry = dlAppService.getFileEntry(
-								dlFileEntry.getFileEntryId());
-
-							String downloadURL = dlURLHelper.getDownloadURL(
-								fileEntry, fileEntry.getFileVersion(), null,
-								StringPool.BLANK);
-
-							downloadURL = HttpComponentsUtil.addParameter(
-								downloadURL,
-								"objectDefinitionExternalReferenceCode",
-								objectDefinitionExternalReferenceCode);
-							downloadURL = HttpComponentsUtil.addParameter(
-								downloadURL, "objectEntryExternalReferenceCode",
-								objectEntryExternalReferenceCode);
-
-							return downloadURL;
+							return ObjectFieldUtil.getAttachmentDownloadURL(
+								dlURLHelper,
+								dlAppService.getFileEntry(
+									dlFileEntry.getFileEntryId()),
+								groupId, objectDefinitionExternalReferenceCode,
+								objectEntry, objectEntryService, objectField,
+								permissionChecker, null);
 						}
 						catch (Exception exception) {
 							if (_log.isWarnEnabled()) {
@@ -61,6 +54,7 @@ public class LinkUtil {
 							portal.getPathContext(), portal.getPathMain(),
 							"/portal/login");
 					});
+				setLabel(dlFileEntry::getFileName);
 			}
 		};
 	}

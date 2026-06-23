@@ -13,41 +13,71 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 
+import com.liferay.headless.batch.engine.client.dto.v1_0.ImportTask;
+import com.liferay.headless.batch.engine.client.http.HttpInvoker.HttpResponse;
+import com.liferay.headless.batch.engine.client.resource.v1_0.ImportTaskResource;
 import com.liferay.headless.commerce.admin.order.client.dto.v1_0.OrderRule;
 import com.liferay.headless.commerce.admin.order.client.http.HttpInvoker;
 import com.liferay.headless.commerce.admin.order.client.pagination.Page;
 import com.liferay.headless.commerce.admin.order.client.pagination.Pagination;
 import com.liferay.headless.commerce.admin.order.client.resource.v1_0.OrderRuleResource;
 import com.liferay.headless.commerce.admin.order.client.serdes.v1_0.OrderRuleSerDes;
+import com.liferay.oauth2.provider.scope.ScopeChecker;
 import com.liferay.petra.function.UnsafeTriConsumer;
 import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.json.JSONArray;
+import com.liferay.portal.kernel.json.JSONDeserializer;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.ResourceActionLocalService;
+import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
+import com.liferay.portal.kernel.service.RoleLocalService;
+import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.DateUtil;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
+import com.liferay.portal.vulcan.crud.VulcanCRUDItemDelegate;
+import com.liferay.portal.vulcan.crud.VulcanCRUDItemDelegateBuilderRegistry;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
+
+import jakarta.annotation.Generated;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.PathSegment;
+import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriInfo;
 
 import java.lang.reflect.Method;
 
-import java.text.DateFormat;
+import java.net.URI;
+
+import java.text.Format;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -56,15 +86,11 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.lang.time.DateUtils;
+import java.util.TimeZone;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -73,6 +99,9 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 
 /**
  * @author Alessio Antonio Rendina
@@ -83,12 +112,14 @@ public abstract class BaseOrderRuleResourceTestCase {
 
 	@ClassRule
 	@Rule
-	public static final LiferayIntegrationTestRule liferayIntegrationTestRule =
-		new LiferayIntegrationTestRule();
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			new LiferayIntegrationTestRule(),
+			PermissionCheckerMethodTestRule.INSTANCE);
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
-		_dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
+		_format = FastDateFormatFactoryUtil.getSimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 	}
 
@@ -102,10 +133,27 @@ public abstract class BaseOrderRuleResourceTestCase {
 
 		_orderRuleResource.setContextCompany(testCompany);
 
-		OrderRuleResource.Builder builder = OrderRuleResource.builder();
+		_testCompanyAdminUser = UserTestUtil.getAdminUser(
+			testCompany.getCompanyId());
 
-		orderRuleResource = builder.authentication(
-			"test@liferay.com", "test"
+		orderRuleResource = OrderRuleResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(),
+			PortalUtil.getPortalServerPort(false), "http"
+		).locale(
+			LocaleUtil.getDefault()
+		).build();
+
+		importTaskResource = ImportTaskResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(),
+			PortalUtil.getPortalServerPort(false), "http"
 		).locale(
 			LocaleUtil.getDefault()
 		).build();
@@ -119,7 +167,32 @@ public abstract class BaseOrderRuleResourceTestCase {
 
 	@Test
 	public void testClientSerDesToDTO() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		OrderRule orderRule1 = randomOrderRule();
+
+		String json = objectMapper.writeValueAsString(orderRule1);
+
+		OrderRule orderRule2 = OrderRuleSerDes.toDTO(json);
+
+		Assert.assertTrue(equals(orderRule1, orderRule2));
+	}
+
+	@Test
+	public void testClientSerDesToJSON() throws Exception {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		OrderRule orderRule = randomOrderRule();
+
+		String json1 = objectMapper.writeValueAsString(orderRule);
+		String json2 = OrderRuleSerDes.toJSON(orderRule);
+
+		Assert.assertEquals(
+			objectMapper.readTree(json1), objectMapper.readTree(json2));
+	}
+
+	protected ObjectMapper getClientSerDesObjectMapper() {
+		return new ObjectMapper() {
 			{
 				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
 				configure(
@@ -134,40 +207,6 @@ public abstract class BaseOrderRuleResourceTestCase {
 					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
 			}
 		};
-
-		OrderRule orderRule1 = randomOrderRule();
-
-		String json = objectMapper.writeValueAsString(orderRule1);
-
-		OrderRule orderRule2 = OrderRuleSerDes.toDTO(json);
-
-		Assert.assertTrue(equals(orderRule1, orderRule2));
-	}
-
-	@Test
-	public void testClientSerDesToJSON() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
-			{
-				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-				configure(
-					SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
-				setDateFormat(new ISO8601DateFormat());
-				setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-				setSerializationInclusion(JsonInclude.Include.NON_NULL);
-				setVisibility(
-					PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-				setVisibility(
-					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
-			}
-		};
-
-		OrderRule orderRule = randomOrderRule();
-
-		String json1 = objectMapper.writeValueAsString(orderRule);
-		String json2 = OrderRuleSerDes.toJSON(orderRule);
-
-		Assert.assertEquals(
-			objectMapper.readTree(json1), objectMapper.readTree(json2));
 	}
 
 	@Test
@@ -195,6 +234,735 @@ public abstract class BaseOrderRuleResourceTestCase {
 		Assert.assertEquals(regex, orderRule.getName());
 		Assert.assertEquals(regex, orderRule.getType());
 		Assert.assertEquals(regex, orderRule.getTypeSettings());
+	}
+
+	@Test
+	public void testDeleteOrderRule() throws Exception {
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		OrderRule orderRule = testDeleteOrderRule_addOrderRule();
+
+		assertHttpResponseStatusCode(
+			204,
+			orderRuleResource.deleteOrderRuleHttpResponse(orderRule.getId()));
+
+		assertHttpResponseStatusCode(
+			404, orderRuleResource.getOrderRuleHttpResponse(orderRule.getId()));
+		assertHttpResponseStatusCode(
+			404, orderRuleResource.getOrderRuleHttpResponse(0L));
+	}
+
+	protected OrderRule testDeleteOrderRule_addOrderRule() throws Exception {
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLDeleteOrderRule() throws Exception {
+
+		// No namespace
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		OrderRule orderRule1 = testGraphQLDeleteOrderRule_addOrderRule();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"deleteOrderRule",
+						new HashMap<String, Object>() {
+							{
+								put("id", orderRule1.getId());
+							}
+						})),
+				"JSONObject/data", "Object/deleteOrderRule"));
+
+		JSONArray errorsJSONArray1 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"orderRule",
+					new HashMap<String, Object>() {
+						{
+							put("id", orderRule1.getId());
+						}
+					},
+					getGraphQLFields())),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray1.length() > 0);
+
+		// Using the namespace headlessCommerceAdminOrder_v1_0
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		OrderRule orderRule2 = testGraphQLDeleteOrderRule_addOrderRule();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessCommerceAdminOrder_v1_0",
+						new GraphQLField(
+							"deleteOrderRule",
+							new HashMap<String, Object>() {
+								{
+									put("id", orderRule2.getId());
+								}
+							}))),
+				"JSONObject/data", "JSONObject/headlessCommerceAdminOrder_v1_0",
+				"Object/deleteOrderRule"));
+
+		JSONArray errorsJSONArray2 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessCommerceAdminOrder_v1_0",
+					new GraphQLField(
+						"orderRule",
+						new HashMap<String, Object>() {
+							{
+								put("id", orderRule2.getId());
+							}
+						},
+						getGraphQLFields()))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray2.length() > 0);
+	}
+
+	protected OrderRule testGraphQLDeleteOrderRule_addOrderRule()
+		throws Exception {
+
+		return testGraphQLOrderRule_addOrderRule();
+	}
+
+	@Test
+	public void testDeleteOrderRuleBatch() throws Exception {
+		OrderRule orderRule1 = testDeleteOrderRuleBatch_addOrderRule();
+
+		testDeleteOrderRuleBatch_deleteOrderRule(
+			202, orderRule1.getExternalReferenceCode(), null);
+
+		assertHttpResponseStatusCode(
+			404,
+			orderRuleResource.getOrderRuleHttpResponse(orderRule1.getId()));
+
+		orderRule1 = testDeleteOrderRuleBatch_addOrderRule();
+
+		testDeleteOrderRuleBatch_deleteOrderRule(202, null, orderRule1.getId());
+
+		assertHttpResponseStatusCode(
+			404,
+			orderRuleResource.getOrderRuleHttpResponse(orderRule1.getId()));
+
+		orderRule1 = testDeleteOrderRuleBatch_addOrderRule();
+		OrderRule orderRule2 = testDeleteOrderRuleBatch_addOrderRule();
+
+		testDeleteOrderRuleBatch_deleteOrderRule(
+			202, orderRule2.getExternalReferenceCode(), orderRule1.getId());
+
+		assertHttpResponseStatusCode(
+			404,
+			orderRuleResource.getOrderRuleHttpResponse(orderRule1.getId()));
+		assertHttpResponseStatusCode(
+			200,
+			orderRuleResource.getOrderRuleHttpResponse(orderRule2.getId()));
+
+		testDeleteOrderRuleBatch_deleteOrderRule(
+			202, orderRule2.getExternalReferenceCode(), orderRule1.getId());
+
+		assertHttpResponseStatusCode(
+			404,
+			orderRuleResource.getOrderRuleHttpResponse(orderRule2.getId()));
+	}
+
+	protected OrderRule testDeleteOrderRuleBatch_addOrderRule()
+		throws Exception {
+
+		return testDeleteOrderRule_addOrderRule();
+	}
+
+	protected void testDeleteOrderRuleBatch_deleteOrderRule(
+			int expectedStatusCode, String externalReferenceCode, Long id)
+		throws Exception {
+
+		HttpInvoker.HttpResponse httpResponse =
+			orderRuleResource.deleteOrderRuleBatchHttpResponse(
+				null,
+				JSONUtil.putAll(
+					JSONUtil.put(
+						"externalReferenceCode", () -> externalReferenceCode
+					).put(
+						"id", () -> id
+					)));
+
+		Assert.assertEquals(expectedStatusCode, httpResponse.getStatusCode());
+
+		waitForFinish(
+			"COMPLETED",
+			JSONFactoryUtil.createJSONObject(httpResponse.getContent()));
+	}
+
+	@Test
+	public void testDeleteOrderRuleByExternalReferenceCode() throws Exception {
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		OrderRule orderRule =
+			testDeleteOrderRuleByExternalReferenceCode_addOrderRule();
+
+		assertHttpResponseStatusCode(
+			204,
+			orderRuleResource.
+				deleteOrderRuleByExternalReferenceCodeHttpResponse(
+					orderRule.getExternalReferenceCode()));
+
+		assertHttpResponseStatusCode(
+			404,
+			orderRuleResource.getOrderRuleByExternalReferenceCodeHttpResponse(
+				orderRule.getExternalReferenceCode()));
+		assertHttpResponseStatusCode(
+			404,
+			orderRuleResource.getOrderRuleByExternalReferenceCodeHttpResponse(
+				"-"));
+	}
+
+	protected OrderRule
+			testDeleteOrderRuleByExternalReferenceCode_addOrderRule()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLDeleteOrderRuleByExternalReferenceCode()
+		throws Exception {
+
+		// No namespace
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		OrderRule orderRule1 =
+			testGraphQLDeleteOrderRuleByExternalReferenceCode_addOrderRule();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"deleteOrderRuleByExternalReferenceCode",
+						new HashMap<String, Object>() {
+							{
+								put(
+									"externalReferenceCode",
+									"\"" +
+										orderRule1.getExternalReferenceCode() +
+											"\"");
+							}
+						})),
+				"JSONObject/data",
+				"Object/deleteOrderRuleByExternalReferenceCode"));
+
+		JSONArray errorsJSONArray1 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"orderRuleByExternalReferenceCode",
+					new HashMap<String, Object>() {
+						{
+							put(
+								"externalReferenceCode",
+								"\"" + orderRule1.getExternalReferenceCode() +
+									"\"");
+						}
+					},
+					getGraphQLFields())),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray1.length() > 0);
+
+		// Using the namespace headlessCommerceAdminOrder_v1_0
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		OrderRule orderRule2 =
+			testGraphQLDeleteOrderRuleByExternalReferenceCode_addOrderRule();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessCommerceAdminOrder_v1_0",
+						new GraphQLField(
+							"deleteOrderRuleByExternalReferenceCode",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"externalReferenceCode",
+										"\"" +
+											orderRule2.
+												getExternalReferenceCode() +
+													"\"");
+								}
+							}))),
+				"JSONObject/data", "JSONObject/headlessCommerceAdminOrder_v1_0",
+				"Object/deleteOrderRuleByExternalReferenceCode"));
+
+		JSONArray errorsJSONArray2 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessCommerceAdminOrder_v1_0",
+					new GraphQLField(
+						"orderRuleByExternalReferenceCode",
+						new HashMap<String, Object>() {
+							{
+								put(
+									"externalReferenceCode",
+									"\"" +
+										orderRule2.getExternalReferenceCode() +
+											"\"");
+							}
+						},
+						getGraphQLFields()))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray2.length() > 0);
+	}
+
+	protected OrderRule
+			testGraphQLDeleteOrderRuleByExternalReferenceCode_addOrderRule()
+		throws Exception {
+
+		return testGraphQLOrderRule_addOrderRule();
+	}
+
+	@Test
+	public void testGetOrderRule() throws Exception {
+		OrderRule postOrderRule = testGetOrderRule_addOrderRule();
+
+		OrderRule getOrderRule = orderRuleResource.getOrderRule(
+			postOrderRule.getId());
+
+		assertEquals(postOrderRule, getOrderRule);
+		assertValid(getOrderRule);
+	}
+
+	@Test
+	public void testVulcanCRUDItemDelegateGetItem() throws Exception {
+		OrderRule postOrderRule = testGetOrderRule_addOrderRule();
+
+		OrderRule getOrderRule = orderRuleResource.getOrderRule(
+			postOrderRule.getId());
+
+		VulcanCRUDItemDelegate vulcanCRUDItemDelegate =
+			_vulcanCRUDItemDelegateBuilderRegistry.builder(
+				testCompany,
+				"com.liferay.headless.commerce.admin.order.dto.v1_0.OrderRule"
+			).acceptLanguage(
+				new AcceptLanguage() {
+
+					@Override
+					public List<Locale> getLocales() {
+						return Arrays.asList(LocaleUtil.getDefault());
+					}
+
+					@Override
+					public String getPreferredLanguageId() {
+						return LocaleUtil.toLanguageId(LocaleUtil.getDefault());
+					}
+
+					@Override
+					public Locale getPreferredLocale() {
+						return LocaleUtil.getDefault();
+					}
+
+				}
+			).groupLocalService(
+				_groupLocalService
+			).httpServletRequest(
+				testVulcanCRUDItemDelegate_getHttpServletRequest()
+			).httpServletResponse(
+				new MockHttpServletResponse()
+			).resourceActionLocalService(
+				_resourceActionLocalService
+			).resourcePermissionLocalService(
+				_resourcePermissionLocalService
+			).roleLocalService(
+				_roleLocalService
+			).scopeChecker(
+				_scopeChecker
+			).uriInfo(
+				testVulcanCRUDItemDelegate_getUriInfo()
+			).user(
+				testVulcanCRUDItemDelegate_getUser()
+			).build();
+
+		Object item = vulcanCRUDItemDelegate.getItem(postOrderRule.getId());
+
+		assertEquals(getOrderRule, OrderRuleSerDes.toDTO(item.toString()));
+	}
+
+	protected HttpServletRequest
+		testVulcanCRUDItemDelegate_getHttpServletRequest() {
+
+		return new MockHttpServletRequest() {
+
+			@Override
+			public StringBuffer getRequestURL() {
+				return new StringBuffer(
+					StringBundler.concat(
+						"http://localhost:",
+						String.valueOf(PortalUtil.getPortalServerPort(false)),
+						"/o/v1.0/", RandomTestUtil.randomString(), "/",
+						RandomTestUtil.randomString()));
+			}
+
+		};
+	}
+
+	protected UriInfo testVulcanCRUDItemDelegate_getUriInfo() {
+		String applicationPath = RandomTestUtil.randomString() + "/";
+		String resourcePath = RandomTestUtil.randomString();
+
+		return new UriInfo() {
+
+			@Override
+			public String getPath() {
+				return resourcePath;
+			}
+
+			@Override
+			public String getPath(boolean decode) {
+				return getPath();
+			}
+
+			@Override
+			public List<PathSegment> getPathSegments() {
+				return Collections.emptyList();
+			}
+
+			@Override
+			public List<PathSegment> getPathSegments(boolean decode) {
+				return getPathSegments();
+			}
+
+			@Override
+			public URI getRequestUri() {
+				return URI.create(
+					StringBundler.concat(
+						"http://localhost:",
+						PortalUtil.getPortalServerPort(false), "/o/",
+						applicationPath, resourcePath));
+			}
+
+			@Override
+			public UriBuilder getRequestUriBuilder() {
+				return UriBuilder.fromUri(getRequestUri());
+			}
+
+			@Override
+			public URI getAbsolutePath() {
+				return getRequestUri();
+			}
+
+			@Override
+			public UriBuilder getAbsolutePathBuilder() {
+				return getRequestUriBuilder();
+			}
+
+			@Override
+			public URI getBaseUri() {
+				return URI.create(
+					StringBundler.concat(
+						"http://localhost:",
+						PortalUtil.getPortalServerPort(false), "/o/",
+						applicationPath));
+			}
+
+			@Override
+			public UriBuilder getBaseUriBuilder() {
+				return UriBuilder.fromUri(getBaseUri());
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getPathParameters() {
+				return new MultivaluedHashMap<>();
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getPathParameters(
+				boolean decode) {
+
+				return getPathParameters();
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getQueryParameters() {
+				return new MultivaluedHashMap<>();
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getQueryParameters(
+				boolean decode) {
+
+				return getQueryParameters();
+			}
+
+			@Override
+			public List<String> getMatchedURIs() {
+				return Collections.emptyList();
+			}
+
+			@Override
+			public List<String> getMatchedURIs(boolean decode) {
+				return getMatchedURIs();
+			}
+
+			@Override
+			public List<Object> getMatchedResources() {
+				return Collections.emptyList();
+			}
+
+			@Override
+			public URI resolve(URI requestUri) {
+				return getBaseUri().resolve(requestUri);
+			}
+
+			@Override
+			public URI relativize(URI uri) {
+				return getBaseUri().relativize(uri);
+			}
+
+		};
+	}
+
+	protected com.liferay.portal.kernel.model.User
+		testVulcanCRUDItemDelegate_getUser() {
+
+		return _testCompanyAdminUser;
+	}
+
+	protected OrderRule testGetOrderRule_addOrderRule() throws Exception {
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLGetOrderRule() throws Exception {
+		OrderRule orderRule = testGraphQLGetOrderRule_addOrderRule();
+
+		// No namespace
+
+		Assert.assertTrue(
+			equals(
+				orderRule,
+				OrderRuleSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"orderRule",
+								new HashMap<String, Object>() {
+									{
+										put("id", orderRule.getId());
+									}
+								},
+								getGraphQLFields())),
+						"JSONObject/data", "Object/orderRule"))));
+
+		// Using the namespace headlessCommerceAdminOrder_v1_0
+
+		Assert.assertTrue(
+			equals(
+				orderRule,
+				OrderRuleSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessCommerceAdminOrder_v1_0",
+								new GraphQLField(
+									"orderRule",
+									new HashMap<String, Object>() {
+										{
+											put("id", orderRule.getId());
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessCommerceAdminOrder_v1_0",
+						"Object/orderRule"))));
+	}
+
+	@Test
+	public void testGraphQLGetOrderRuleNotFound() throws Exception {
+		Long irrelevantId = RandomTestUtil.randomLong();
+
+		// No namespace
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"orderRule",
+						new HashMap<String, Object>() {
+							{
+								put("id", irrelevantId);
+							}
+						},
+						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessCommerceAdminOrder_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessCommerceAdminOrder_v1_0",
+						new GraphQLField(
+							"orderRule",
+							new HashMap<String, Object>() {
+								{
+									put("id", irrelevantId);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+	}
+
+	protected OrderRule testGraphQLGetOrderRule_addOrderRule()
+		throws Exception {
+
+		return testGraphQLOrderRule_addOrderRule();
+	}
+
+	@Test
+	public void testGetOrderRuleByExternalReferenceCode() throws Exception {
+		OrderRule postOrderRule =
+			testGetOrderRuleByExternalReferenceCode_addOrderRule();
+
+		OrderRule getOrderRule =
+			orderRuleResource.getOrderRuleByExternalReferenceCode(
+				postOrderRule.getExternalReferenceCode());
+
+		assertEquals(postOrderRule, getOrderRule);
+		assertValid(getOrderRule);
+	}
+
+	protected OrderRule testGetOrderRuleByExternalReferenceCode_addOrderRule()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLGetOrderRuleByExternalReferenceCode()
+		throws Exception {
+
+		OrderRule orderRule =
+			testGraphQLGetOrderRuleByExternalReferenceCode_addOrderRule();
+
+		// No namespace
+
+		Assert.assertTrue(
+			equals(
+				orderRule,
+				OrderRuleSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"orderRuleByExternalReferenceCode",
+								new HashMap<String, Object>() {
+									{
+										put(
+											"externalReferenceCode",
+											"\"" +
+												orderRule.
+													getExternalReferenceCode() +
+														"\"");
+									}
+								},
+								getGraphQLFields())),
+						"JSONObject/data",
+						"Object/orderRuleByExternalReferenceCode"))));
+
+		// Using the namespace headlessCommerceAdminOrder_v1_0
+
+		Assert.assertTrue(
+			equals(
+				orderRule,
+				OrderRuleSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessCommerceAdminOrder_v1_0",
+								new GraphQLField(
+									"orderRuleByExternalReferenceCode",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"externalReferenceCode",
+												"\"" +
+													orderRule.
+														getExternalReferenceCode() +
+															"\"");
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessCommerceAdminOrder_v1_0",
+						"Object/orderRuleByExternalReferenceCode"))));
+	}
+
+	@Test
+	public void testGraphQLGetOrderRuleByExternalReferenceCodeNotFound()
+		throws Exception {
+
+		String irrelevantExternalReferenceCode =
+			"\"" + RandomTestUtil.randomString() + "\"";
+
+		// No namespace
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"orderRuleByExternalReferenceCode",
+						new HashMap<String, Object>() {
+							{
+								put(
+									"externalReferenceCode",
+									irrelevantExternalReferenceCode);
+							}
+						},
+						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessCommerceAdminOrder_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessCommerceAdminOrder_v1_0",
+						new GraphQLField(
+							"orderRuleByExternalReferenceCode",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"externalReferenceCode",
+										irrelevantExternalReferenceCode);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+	}
+
+	protected OrderRule
+			testGraphQLGetOrderRuleByExternalReferenceCode_addOrderRule()
+		throws Exception {
+
+		return testGraphQLOrderRule_addOrderRule();
 	}
 
 	@Test
@@ -313,10 +1081,10 @@ public abstract class BaseOrderRuleResourceTestCase {
 
 	@Test
 	public void testGetOrderRulesPageWithPagination() throws Exception {
-		Page<OrderRule> orderRulePage = orderRuleResource.getOrderRulesPage(
+		Page<OrderRule> orderRulesPage = orderRuleResource.getOrderRulesPage(
 			null, null, null, null);
 
-		int totalCount = GetterUtil.getInteger(orderRulePage.getTotalCount());
+		int totalCount = GetterUtil.getInteger(orderRulesPage.getTotalCount());
 
 		OrderRule orderRule1 = testGetOrderRulesPage_addOrderRule(
 			randomOrderRule());
@@ -327,29 +1095,65 @@ public abstract class BaseOrderRuleResourceTestCase {
 		OrderRule orderRule3 = testGetOrderRulesPage_addOrderRule(
 			randomOrderRule());
 
-		Page<OrderRule> page1 = orderRuleResource.getOrderRulesPage(
-			null, null, Pagination.of(1, totalCount + 2), null);
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<OrderRule> orderRules1 = (List<OrderRule>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			orderRules1.toString(), totalCount + 2, orderRules1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<OrderRule> page1 = orderRuleResource.getOrderRulesPage(
+				null, null,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+					pageSizeLimit),
+				null);
 
-		Page<OrderRule> page2 = orderRuleResource.getOrderRulesPage(
-			null, null, Pagination.of(2, totalCount + 2), null);
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(orderRule1, (List<OrderRule>)page1.getItems());
 
-		List<OrderRule> orderRules2 = (List<OrderRule>)page2.getItems();
+			Page<OrderRule> page2 = orderRuleResource.getOrderRulesPage(
+				null, null,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+					pageSizeLimit),
+				null);
 
-		Assert.assertEquals(orderRules2.toString(), 1, orderRules2.size());
+			assertContains(orderRule2, (List<OrderRule>)page2.getItems());
 
-		Page<OrderRule> page3 = orderRuleResource.getOrderRulesPage(
-			null, null, Pagination.of(1, (int)totalCount + 3), null);
+			Page<OrderRule> page3 = orderRuleResource.getOrderRulesPage(
+				null, null,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+					pageSizeLimit),
+				null);
 
-		assertContains(orderRule1, (List<OrderRule>)page3.getItems());
-		assertContains(orderRule2, (List<OrderRule>)page3.getItems());
-		assertContains(orderRule3, (List<OrderRule>)page3.getItems());
+			assertContains(orderRule3, (List<OrderRule>)page3.getItems());
+		}
+		else {
+			Page<OrderRule> page1 = orderRuleResource.getOrderRulesPage(
+				null, null, Pagination.of(1, totalCount + 2), null);
+
+			List<OrderRule> orderRules1 = (List<OrderRule>)page1.getItems();
+
+			Assert.assertEquals(
+				orderRules1.toString(), totalCount + 2, orderRules1.size());
+
+			Page<OrderRule> page2 = orderRuleResource.getOrderRulesPage(
+				null, null, Pagination.of(2, totalCount + 2), null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<OrderRule> orderRules2 = (List<OrderRule>)page2.getItems();
+
+			Assert.assertEquals(orderRules2.toString(), 1, orderRules2.size());
+
+			Page<OrderRule> page3 = orderRuleResource.getOrderRulesPage(
+				null, null, Pagination.of(1, (int)totalCount + 3), null);
+
+			assertContains(orderRule1, (List<OrderRule>)page3.getItems());
+			assertContains(orderRule2, (List<OrderRule>)page3.getItems());
+			assertContains(orderRule3, (List<OrderRule>)page3.getItems());
+		}
 	}
 
 	@Test
@@ -359,7 +1163,7 @@ public abstract class BaseOrderRuleResourceTestCase {
 			(entityField, orderRule1, orderRule2) -> {
 				BeanTestUtil.setProperty(
 					orderRule1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
 			});
 	}
 
@@ -492,6 +1296,7 @@ public abstract class BaseOrderRuleResourceTestCase {
 			"orderRules",
 			new HashMap<String, Object>() {
 				{
+					put("search", null);
 					put("page", 1);
 					put("pageSize", 10);
 				}
@@ -499,14 +1304,19 @@ public abstract class BaseOrderRuleResourceTestCase {
 			new GraphQLField("items", getGraphQLFields()),
 			new GraphQLField("page"), new GraphQLField("totalCount"));
 
+		// No namespace
+
 		JSONObject orderRulesJSONObject = JSONUtil.getValueAsJSONObject(
 			invokeGraphQLQuery(graphQLField), "JSONObject/data",
 			"JSONObject/orderRules");
 
 		long totalCount = orderRulesJSONObject.getLong("totalCount");
 
-		OrderRule orderRule1 = testGraphQLGetOrderRulesPage_addOrderRule();
-		OrderRule orderRule2 = testGraphQLGetOrderRulesPage_addOrderRule();
+		OrderRule orderRule1 = testGraphQLOrderRule_addOrderRule(
+			randomOrderRule());
+
+		OrderRule orderRule2 = testGraphQLOrderRule_addOrderRule(
+			randomOrderRule());
 
 		orderRulesJSONObject = JSONUtil.getValueAsJSONObject(
 			invokeGraphQLQuery(graphQLField), "JSONObject/data",
@@ -525,143 +1335,56 @@ public abstract class BaseOrderRuleResourceTestCase {
 			Arrays.asList(
 				OrderRuleSerDes.toDTOs(
 					orderRulesJSONObject.getString("items"))));
-	}
 
-	protected OrderRule testGraphQLGetOrderRulesPage_addOrderRule()
-		throws Exception {
+		// Using the namespace headlessCommerceAdminOrder_v1_0
 
-		return testGraphQLOrderRule_addOrderRule();
+		orderRulesJSONObject = JSONUtil.getValueAsJSONObject(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessCommerceAdminOrder_v1_0", graphQLField)),
+			"JSONObject/data", "JSONObject/headlessCommerceAdminOrder_v1_0",
+			"JSONObject/orderRules");
+
+		Assert.assertEquals(
+			totalCount + 2, orderRulesJSONObject.getLong("totalCount"));
+
+		assertContains(
+			orderRule1,
+			Arrays.asList(
+				OrderRuleSerDes.toDTOs(
+					orderRulesJSONObject.getString("items"))));
+		assertContains(
+			orderRule2,
+			Arrays.asList(
+				OrderRuleSerDes.toDTOs(
+					orderRulesJSONObject.getString("items"))));
 	}
 
 	@Test
-	public void testPostOrderRule() throws Exception {
-		OrderRule randomOrderRule = randomOrderRule();
+	public void testPatchOrderRule() throws Exception {
+		OrderRule postOrderRule = testPatchOrderRule_addOrderRule();
 
-		OrderRule postOrderRule = testPostOrderRule_addOrderRule(
-			randomOrderRule);
+		OrderRule randomPatchOrderRule = randomPatchOrderRule();
 
-		assertEquals(randomOrderRule, postOrderRule);
-		assertValid(postOrderRule);
-	}
-
-	protected OrderRule testPostOrderRule_addOrderRule(OrderRule orderRule)
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	@Test
-	public void testDeleteOrderRuleByExternalReferenceCode() throws Exception {
 		@SuppressWarnings("PMD.UnusedLocalVariable")
-		OrderRule orderRule =
-			testDeleteOrderRuleByExternalReferenceCode_addOrderRule();
+		OrderRule patchOrderRule = orderRuleResource.patchOrderRule(
+			postOrderRule.getId(), randomPatchOrderRule);
 
-		assertHttpResponseStatusCode(
-			204,
-			orderRuleResource.
-				deleteOrderRuleByExternalReferenceCodeHttpResponse(
-					orderRule.getExternalReferenceCode()));
+		OrderRule expectedPatchOrderRule = postOrderRule.clone();
 
-		assertHttpResponseStatusCode(
-			404,
-			orderRuleResource.getOrderRuleByExternalReferenceCodeHttpResponse(
-				orderRule.getExternalReferenceCode()));
+		BeanTestUtil.copyProperties(
+			randomPatchOrderRule, expectedPatchOrderRule);
 
-		assertHttpResponseStatusCode(
-			404,
-			orderRuleResource.getOrderRuleByExternalReferenceCodeHttpResponse(
-				orderRule.getExternalReferenceCode()));
-	}
+		OrderRule getOrderRule = orderRuleResource.getOrderRule(
+			patchOrderRule.getId());
 
-	protected OrderRule
-			testDeleteOrderRuleByExternalReferenceCode_addOrderRule()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	@Test
-	public void testGetOrderRuleByExternalReferenceCode() throws Exception {
-		OrderRule postOrderRule =
-			testGetOrderRuleByExternalReferenceCode_addOrderRule();
-
-		OrderRule getOrderRule =
-			orderRuleResource.getOrderRuleByExternalReferenceCode(
-				postOrderRule.getExternalReferenceCode());
-
-		assertEquals(postOrderRule, getOrderRule);
+		assertEquals(expectedPatchOrderRule, getOrderRule);
 		assertValid(getOrderRule);
 	}
 
-	protected OrderRule testGetOrderRuleByExternalReferenceCode_addOrderRule()
-		throws Exception {
-
+	protected OrderRule testPatchOrderRule_addOrderRule() throws Exception {
 		throw new UnsupportedOperationException(
 			"This method needs to be implemented");
-	}
-
-	@Test
-	public void testGraphQLGetOrderRuleByExternalReferenceCode()
-		throws Exception {
-
-		OrderRule orderRule =
-			testGraphQLGetOrderRuleByExternalReferenceCode_addOrderRule();
-
-		Assert.assertTrue(
-			equals(
-				orderRule,
-				OrderRuleSerDes.toDTO(
-					JSONUtil.getValueAsString(
-						invokeGraphQLQuery(
-							new GraphQLField(
-								"orderRuleByExternalReferenceCode",
-								new HashMap<String, Object>() {
-									{
-										put(
-											"externalReferenceCode",
-											"\"" +
-												orderRule.
-													getExternalReferenceCode() +
-														"\"");
-									}
-								},
-								getGraphQLFields())),
-						"JSONObject/data",
-						"Object/orderRuleByExternalReferenceCode"))));
-	}
-
-	@Test
-	public void testGraphQLGetOrderRuleByExternalReferenceCodeNotFound()
-		throws Exception {
-
-		String irrelevantExternalReferenceCode =
-			"\"" + RandomTestUtil.randomString() + "\"";
-
-		Assert.assertEquals(
-			"Not Found",
-			JSONUtil.getValueAsString(
-				invokeGraphQLQuery(
-					new GraphQLField(
-						"orderRuleByExternalReferenceCode",
-						new HashMap<String, Object>() {
-							{
-								put(
-									"externalReferenceCode",
-									irrelevantExternalReferenceCode);
-							}
-						},
-						getGraphQLFields())),
-				"JSONArray/errors", "Object/0", "JSONObject/extensions",
-				"Object/code"));
-	}
-
-	protected OrderRule
-			testGraphQLGetOrderRuleByExternalReferenceCode_addOrderRule()
-		throws Exception {
-
-		return testGraphQLOrderRule_addOrderRule();
 	}
 
 	@Test
@@ -697,158 +1420,291 @@ public abstract class BaseOrderRuleResourceTestCase {
 	}
 
 	@Test
-	public void testDeleteOrderRule() throws Exception {
-		@SuppressWarnings("PMD.UnusedLocalVariable")
-		OrderRule orderRule = testDeleteOrderRule_addOrderRule();
+	public void testPostOrderRule() throws Exception {
+		OrderRule randomOrderRule = randomOrderRule();
 
-		assertHttpResponseStatusCode(
-			204,
-			orderRuleResource.deleteOrderRuleHttpResponse(orderRule.getId()));
+		OrderRule postOrderRule = testPostOrderRule_addOrderRule(
+			randomOrderRule);
 
-		assertHttpResponseStatusCode(
-			404, orderRuleResource.getOrderRuleHttpResponse(orderRule.getId()));
-
-		assertHttpResponseStatusCode(
-			404, orderRuleResource.getOrderRuleHttpResponse(orderRule.getId()));
+		assertEquals(randomOrderRule, postOrderRule);
+		assertValid(postOrderRule);
 	}
 
-	protected OrderRule testDeleteOrderRule_addOrderRule() throws Exception {
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	@Test
-	public void testGraphQLDeleteOrderRule() throws Exception {
-		OrderRule orderRule = testGraphQLDeleteOrderRule_addOrderRule();
-
-		Assert.assertTrue(
-			JSONUtil.getValueAsBoolean(
-				invokeGraphQLMutation(
-					new GraphQLField(
-						"deleteOrderRule",
-						new HashMap<String, Object>() {
-							{
-								put("id", orderRule.getId());
-							}
-						})),
-				"JSONObject/data", "Object/deleteOrderRule"));
-		JSONArray errorsJSONArray = JSONUtil.getValueAsJSONArray(
-			invokeGraphQLQuery(
-				new GraphQLField(
-					"orderRule",
-					new HashMap<String, Object>() {
-						{
-							put("id", orderRule.getId());
-						}
-					},
-					new GraphQLField("id"))),
-			"JSONArray/errors");
-
-		Assert.assertTrue(errorsJSONArray.length() > 0);
-	}
-
-	protected OrderRule testGraphQLDeleteOrderRule_addOrderRule()
+	protected OrderRule testPostOrderRule_addOrderRule(OrderRule orderRule)
 		throws Exception {
 
-		return testGraphQLOrderRule_addOrderRule();
-	}
-
-	@Test
-	public void testGetOrderRule() throws Exception {
-		OrderRule postOrderRule = testGetOrderRule_addOrderRule();
-
-		OrderRule getOrderRule = orderRuleResource.getOrderRule(
-			postOrderRule.getId());
-
-		assertEquals(postOrderRule, getOrderRule);
-		assertValid(getOrderRule);
-	}
-
-	protected OrderRule testGetOrderRule_addOrderRule() throws Exception {
 		throw new UnsupportedOperationException(
 			"This method needs to be implemented");
 	}
 
 	@Test
-	public void testGraphQLGetOrderRule() throws Exception {
-		OrderRule orderRule = testGraphQLGetOrderRule_addOrderRule();
+	public void testGraphQLPostOrderRule() throws Exception {
+		OrderRule randomOrderRule = randomOrderRule();
 
-		Assert.assertTrue(
-			equals(
-				orderRule,
-				OrderRuleSerDes.toDTO(
-					JSONUtil.getValueAsString(
-						invokeGraphQLQuery(
-							new GraphQLField(
-								"orderRule",
-								new HashMap<String, Object>() {
-									{
-										put("id", orderRule.getId());
-									}
-								},
-								getGraphQLFields())),
-						"JSONObject/data", "Object/orderRule"))));
+		OrderRule orderRule = testGraphQLOrderRule_addOrderRule(
+			randomOrderRule);
+
+		Assert.assertTrue(equals(randomOrderRule, orderRule));
 	}
 
 	@Test
-	public void testGraphQLGetOrderRuleNotFound() throws Exception {
-		Long irrelevantId = RandomTestUtil.randomLong();
+	public void testPutOrderRuleByExternalReferenceCode() throws Exception {
+		OrderRule postOrderRule =
+			testPutOrderRuleByExternalReferenceCode_addOrderRule();
+
+		OrderRule randomOrderRule = randomOrderRule();
+
+		OrderRule putOrderRule =
+			orderRuleResource.putOrderRuleByExternalReferenceCode(
+				postOrderRule.getExternalReferenceCode(), randomOrderRule);
+
+		assertEquals(randomOrderRule, putOrderRule);
+		assertValid(putOrderRule);
+
+		OrderRule getOrderRule =
+			orderRuleResource.getOrderRuleByExternalReferenceCode(
+				putOrderRule.getExternalReferenceCode());
+
+		assertEquals(randomOrderRule, getOrderRule);
+		assertValid(getOrderRule);
+
+		OrderRule newOrderRule =
+			testPutOrderRuleByExternalReferenceCode_createOrderRule();
+
+		putOrderRule = orderRuleResource.putOrderRuleByExternalReferenceCode(
+			newOrderRule.getExternalReferenceCode(), newOrderRule);
+
+		assertEquals(newOrderRule, putOrderRule);
+		assertValid(putOrderRule);
+
+		getOrderRule = orderRuleResource.getOrderRuleByExternalReferenceCode(
+			putOrderRule.getExternalReferenceCode());
+
+		assertEquals(newOrderRule, getOrderRule);
 
 		Assert.assertEquals(
-			"Not Found",
-			JSONUtil.getValueAsString(
-				invokeGraphQLQuery(
-					new GraphQLField(
-						"orderRule",
-						new HashMap<String, Object>() {
-							{
-								put("id", irrelevantId);
-							}
-						},
-						getGraphQLFields())),
-				"JSONArray/errors", "Object/0", "JSONObject/extensions",
-				"Object/code"));
+			newOrderRule.getExternalReferenceCode(),
+			putOrderRule.getExternalReferenceCode());
 	}
 
-	protected OrderRule testGraphQLGetOrderRule_addOrderRule()
+	protected OrderRule testPutOrderRuleByExternalReferenceCode_addOrderRule()
 		throws Exception {
 
-		return testGraphQLOrderRule_addOrderRule();
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected OrderRule
+			testPutOrderRuleByExternalReferenceCode_createOrderRule()
+		throws Exception {
+
+		return randomOrderRule();
 	}
 
 	@Test
-	public void testPatchOrderRule() throws Exception {
-		OrderRule postOrderRule = testPatchOrderRule_addOrderRule();
+	public void testBatchEngineDeleteImportTask() throws Exception {
+		OrderRule orderRule1 = testBatchEngineDeleteImportTask_addOrderRule();
 
-		OrderRule randomPatchOrderRule = randomPatchOrderRule();
+		testBatchEngineDeleteImportTask_deleteOrderRule(
+			200, orderRule1.getExternalReferenceCode(), null);
 
-		@SuppressWarnings("PMD.UnusedLocalVariable")
-		OrderRule patchOrderRule = orderRuleResource.patchOrderRule(
-			postOrderRule.getId(), randomPatchOrderRule);
+		assertHttpResponseStatusCode(
+			404,
+			orderRuleResource.getOrderRuleHttpResponse(orderRule1.getId()));
 
-		OrderRule expectedPatchOrderRule = postOrderRule.clone();
+		orderRule1 = testBatchEngineDeleteImportTask_addOrderRule();
 
-		BeanTestUtil.copyProperties(
-			randomPatchOrderRule, expectedPatchOrderRule);
+		testBatchEngineDeleteImportTask_deleteOrderRule(
+			200, null, orderRule1.getId());
 
-		OrderRule getOrderRule = orderRuleResource.getOrderRule(
-			patchOrderRule.getId());
+		assertHttpResponseStatusCode(
+			404,
+			orderRuleResource.getOrderRuleHttpResponse(orderRule1.getId()));
 
-		assertEquals(expectedPatchOrderRule, getOrderRule);
-		assertValid(getOrderRule);
+		orderRule1 = testBatchEngineDeleteImportTask_addOrderRule();
+		OrderRule orderRule2 = testBatchEngineDeleteImportTask_addOrderRule();
+
+		testBatchEngineDeleteImportTask_deleteOrderRule(
+			200, orderRule2.getExternalReferenceCode(), orderRule1.getId());
+
+		assertHttpResponseStatusCode(
+			404,
+			orderRuleResource.getOrderRuleHttpResponse(orderRule1.getId()));
+		assertHttpResponseStatusCode(
+			200,
+			orderRuleResource.getOrderRuleHttpResponse(orderRule2.getId()));
+
+		testBatchEngineDeleteImportTask_deleteOrderRule(
+			200, orderRule2.getExternalReferenceCode(), orderRule1.getId());
+
+		assertHttpResponseStatusCode(
+			404,
+			orderRuleResource.getOrderRuleHttpResponse(orderRule2.getId()));
 	}
 
-	protected OrderRule testPatchOrderRule_addOrderRule() throws Exception {
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
+	protected OrderRule testBatchEngineDeleteImportTask_addOrderRule()
+		throws Exception {
+
+		return testDeleteOrderRule_addOrderRule();
+	}
+
+	protected void testBatchEngineDeleteImportTask_deleteOrderRule(
+			int expectedStatusCode, String externalReferenceCode, Long id,
+			String... parameters)
+		throws Exception {
+
+		ImportTaskResource importTaskResource = ImportTaskResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(),
+			PortalUtil.getPortalServerPort(false), "http"
+		).parameters(
+			parameters
+		).build();
+
+		HttpResponse httpResponse =
+			importTaskResource.deleteImportTaskHttpResponse(
+				"com.liferay.headless.commerce.admin.order.dto.v1_0.OrderRule",
+				null, null, null, null,
+				JSONUtil.putAll(
+					JSONUtil.put(
+						"externalReferenceCode", () -> externalReferenceCode
+					).put(
+						"id", () -> id
+					)));
+
+		Assert.assertEquals(expectedStatusCode, httpResponse.getStatusCode());
+
+		if (expectedStatusCode == 200) {
+			waitForFinish(
+				"COMPLETED",
+				JSONFactoryUtil.createJSONObject(httpResponse.getContent()));
+		}
 	}
 
 	@Rule
 	public SearchTestRule searchTestRule = new SearchTestRule();
 
 	protected OrderRule testGraphQLOrderRule_addOrderRule() throws Exception {
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
+		return testGraphQLOrderRule_addOrderRule(randomOrderRule());
+	}
+
+	protected OrderRule testGraphQLOrderRule_addOrderRule(OrderRule orderRule)
+		throws Exception {
+
+		JSONDeserializer<OrderRule> jsonDeserializer =
+			JSONFactoryUtil.createJSONDeserializer();
+
+		StringBuilder sb = new StringBuilder("{");
+
+		for (java.lang.reflect.Field field :
+				getDeclaredFields(OrderRule.class)) {
+
+			if (getGraphQLValue(field.get(orderRule)) != null) {
+				if (sb.length() > 1) {
+					sb.append(", ");
+				}
+
+				sb.append(field.getName());
+				sb.append(": ");
+				sb.append(getGraphQLValue(field.get(orderRule)));
+			}
+		}
+
+		sb.append("}");
+
+		List<GraphQLField> graphQLFields = getGraphQLFields();
+
+		return jsonDeserializer.deserialize(
+			JSONUtil.getValueAsString(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"createOrderRule",
+						new HashMap<String, Object>() {
+							{
+								put("orderRule", sb.toString());
+							}
+						},
+						graphQLFields)),
+				"JSONObject/data", "JSONObject/createOrderRule"),
+			OrderRule.class);
+	}
+
+	protected String getGraphQLValue(Object value) throws Exception {
+		if (value == null) {
+			return null;
+		}
+		else if (value instanceof Boolean || value instanceof Number) {
+			return value.toString();
+		}
+		else if (value instanceof Date) {
+			Date date = (Date)value;
+
+			return "\"" +
+				DateUtil.getDate(
+					date, "yyyy-MM-dd'T'HH:mm:ss'Z'", LocaleUtil.getDefault(),
+					TimeZone.getTimeZone("UTC")) + "\"";
+		}
+		else if (value instanceof Enum) {
+			Enum<?> enm = (Enum<?>)value;
+
+			return enm.name();
+		}
+		else if (value instanceof Map) {
+			Map<?, ?> map = (Map<?, ?>)value;
+
+			List<String> entries = new ArrayList<>();
+
+			for (Map.Entry<?, ?> entry : map.entrySet()) {
+				String graphQLValue = getGraphQLValue(entry.getValue());
+
+				if (graphQLValue != null) {
+					entries.add(entry.getKey() + ": " + graphQLValue);
+				}
+			}
+
+			return "{" + String.join(", ", entries) + "}";
+		}
+		else if (value instanceof Object[]) {
+			Object[] array = (Object[])value;
+
+			List<String> entries = new ArrayList<>();
+
+			for (Object entry : array) {
+				String graphQLValue = getGraphQLValue(entry);
+
+				if (graphQLValue != null) {
+					entries.add(graphQLValue);
+				}
+			}
+
+			return "[" + String.join(", ", entries) + "]";
+		}
+		else if (value instanceof String) {
+			return "\"" + value + "\"";
+		}
+		else {
+			List<String> entries = new ArrayList<>();
+
+			Class<?> clazz = value.getClass();
+			java.lang.reflect.Field[] declaredFields = getDeclaredFields(clazz);
+
+			if (declaredFields.length == 0) {
+				declaredFields = getDeclaredFields(clazz.getSuperclass());
+			}
+
+			for (java.lang.reflect.Field field : declaredFields) {
+				String graphQLValue = getGraphQLValue(field.get(value));
+
+				if (graphQLValue != null) {
+					entries.add(field.getName() + ": " + graphQLValue);
+				}
+			}
+
+			return "{" + String.join(", ", entries) + "}";
+		}
 	}
 
 	protected void assertContains(
@@ -1135,6 +1991,10 @@ public abstract class BaseOrderRuleResourceTestCase {
 
 	protected List<GraphQLField> getGraphQLFields() throws Exception {
 		List<GraphQLField> graphQLFields = new ArrayList<>();
+
+		graphQLFields.add(new GraphQLField("externalReferenceCode"));
+
+		graphQLFields.add(new GraphQLField("id"));
 
 		for (java.lang.reflect.Field field :
 				getDeclaredFields(
@@ -1443,6 +2303,10 @@ public abstract class BaseOrderRuleResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
+
 		return TransformUtil.transform(
 			ReflectionUtil.getDeclaredFields(clazz),
 			field -> {
@@ -1567,20 +2431,18 @@ public abstract class BaseOrderRuleResourceTestCase {
 
 		if (entityFieldName.equals("createDate")) {
 			if (operator.equals("between")) {
+				Date date = orderRule.getCreateDate();
+
 				sb = new StringBundler();
 
 				sb.append("(");
 				sb.append(entityFieldName);
 				sb.append(" gt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(orderRule.getCreateDate(), -2)));
+				sb.append(_format.format(date.getTime() - (2 * Time.SECOND)));
 				sb.append(" and ");
 				sb.append(entityFieldName);
 				sb.append(" lt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(orderRule.getCreateDate(), 2)));
+				sb.append(_format.format(date.getTime() + (2 * Time.SECOND)));
 				sb.append(")");
 			}
 			else {
@@ -1590,7 +2452,7 @@ public abstract class BaseOrderRuleResourceTestCase {
 				sb.append(operator);
 				sb.append(" ");
 
-				sb.append(_dateFormat.format(orderRule.getCreateDate()));
+				sb.append(_format.format(orderRule.getCreateDate()));
 			}
 
 			return sb.toString();
@@ -1644,20 +2506,18 @@ public abstract class BaseOrderRuleResourceTestCase {
 
 		if (entityFieldName.equals("displayDate")) {
 			if (operator.equals("between")) {
+				Date date = orderRule.getDisplayDate();
+
 				sb = new StringBundler();
 
 				sb.append("(");
 				sb.append(entityFieldName);
 				sb.append(" gt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(orderRule.getDisplayDate(), -2)));
+				sb.append(_format.format(date.getTime() - (2 * Time.SECOND)));
 				sb.append(" and ");
 				sb.append(entityFieldName);
 				sb.append(" lt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(orderRule.getDisplayDate(), 2)));
+				sb.append(_format.format(date.getTime() + (2 * Time.SECOND)));
 				sb.append(")");
 			}
 			else {
@@ -1667,7 +2527,7 @@ public abstract class BaseOrderRuleResourceTestCase {
 				sb.append(operator);
 				sb.append(" ");
 
-				sb.append(_dateFormat.format(orderRule.getDisplayDate()));
+				sb.append(_format.format(orderRule.getDisplayDate()));
 			}
 
 			return sb.toString();
@@ -1675,22 +2535,18 @@ public abstract class BaseOrderRuleResourceTestCase {
 
 		if (entityFieldName.equals("expirationDate")) {
 			if (operator.equals("between")) {
+				Date date = orderRule.getExpirationDate();
+
 				sb = new StringBundler();
 
 				sb.append("(");
 				sb.append(entityFieldName);
 				sb.append(" gt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							orderRule.getExpirationDate(), -2)));
+				sb.append(_format.format(date.getTime() - (2 * Time.SECOND)));
 				sb.append(" and ");
 				sb.append(entityFieldName);
 				sb.append(" lt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							orderRule.getExpirationDate(), 2)));
+				sb.append(_format.format(date.getTime() + (2 * Time.SECOND)));
 				sb.append(")");
 			}
 			else {
@@ -1700,7 +2556,7 @@ public abstract class BaseOrderRuleResourceTestCase {
 				sb.append(operator);
 				sb.append(" ");
 
-				sb.append(_dateFormat.format(orderRule.getExpirationDate()));
+				sb.append(_format.format(orderRule.getExpirationDate()));
 			}
 
 			return sb.toString();
@@ -1944,8 +2800,11 @@ public abstract class BaseOrderRuleResourceTestCase {
 			).toString(),
 			"application/json");
 		httpInvoker.httpMethod(HttpInvoker.HttpMethod.POST);
-		httpInvoker.path("http://localhost:8080/o/graphql");
-		httpInvoker.userNameAndPassword("test@liferay.com:test");
+		httpInvoker.path(
+			"http://localhost:" + PortalUtil.getPortalServerPort(false) +
+				"/o/graphql");
+		httpInvoker.userNameAndPassword(
+			"test@liferay.com:" + PropsValues.DEFAULT_ADMIN_PASSWORD);
 
 		HttpInvoker.HttpResponse httpResponse = httpInvoker.invoke();
 
@@ -2005,22 +2864,45 @@ public abstract class BaseOrderRuleResourceTestCase {
 		return randomOrderRule();
 	}
 
+	protected final JSONObject waitForFinish(
+			String expectedExecuteStatus, JSONObject jsonObject)
+		throws Exception {
+
+		while (true) {
+			ImportTask importTask = importTaskResource.getImportTask(
+				jsonObject.getLong("id"));
+
+			ImportTask.ExecuteStatus executeStatus =
+				importTask.getExecuteStatus();
+
+			if (StringUtil.equals(executeStatus.getValue(), "COMPLETED") ||
+				StringUtil.equals(executeStatus.getValue(), "FAILED")) {
+
+				Assert.assertEquals(
+					expectedExecuteStatus, executeStatus.getValue());
+
+				return jsonObject;
+			}
+		}
+	}
+
 	protected OrderRuleResource orderRuleResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected ImportTaskResource importTaskResource;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
 
 	protected static class BeanTestUtil {
 
 		public static void copyProperties(Object source, Object target)
 			throws Exception {
 
-			Class<?> sourceClass = _getSuperClass(source.getClass());
+			Class<?> sourceClass = source.getClass();
 
 			Class<?> targetClass = target.getClass();
 
 			for (java.lang.reflect.Field field :
-					sourceClass.getDeclaredFields()) {
+					_getAllDeclaredFields(sourceClass)) {
 
 				if (field.isSynthetic()) {
 					continue;
@@ -2029,11 +2911,16 @@ public abstract class BaseOrderRuleResourceTestCase {
 				Method getMethod = _getMethod(
 					sourceClass, field.getName(), "get");
 
-				Method setMethod = _getMethod(
-					targetClass, field.getName(), "set",
-					getMethod.getReturnType());
+				try {
+					Method setMethod = _getMethod(
+						targetClass, field.getName(), "set",
+						getMethod.getReturnType());
 
-				setMethod.invoke(target, getMethod.invoke(source));
+					setMethod.invoke(target, getMethod.invoke(source));
+				}
+				catch (Exception e) {
+					continue;
+				}
 			}
 		}
 
@@ -2065,6 +2952,24 @@ public abstract class BaseOrderRuleResourceTestCase {
 			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
 		}
 
+		private static List<java.lang.reflect.Field> _getAllDeclaredFields(
+			Class<?> clazz) {
+
+			List<java.lang.reflect.Field> fields = new ArrayList<>();
+
+			while ((clazz != null) && (clazz != Object.class)) {
+				for (java.lang.reflect.Field field :
+						clazz.getDeclaredFields()) {
+
+					fields.add(field);
+				}
+
+				clazz = clazz.getSuperclass();
+			}
+
+			return fields;
+		}
+
 		private static Method _getMethod(Class<?> clazz, String name) {
 			for (Method method : clazz.getMethods()) {
 				if (name.equals(method.getName()) &&
@@ -2086,16 +2991,6 @@ public abstract class BaseOrderRuleResourceTestCase {
 			return clazz.getMethod(
 				prefix + StringUtil.upperCaseFirstLetter(fieldName),
 				parameterTypes);
-		}
-
-		private static Class<?> _getSuperClass(Class<?> clazz) {
-			Class<?> superClass = clazz.getSuperclass();
-
-			if ((superClass == null) || (superClass == Object.class)) {
-				return clazz;
-			}
-
-			return superClass;
 		}
 
 		private static Object _translateValue(
@@ -2193,11 +3088,36 @@ public abstract class BaseOrderRuleResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BaseOrderRuleResourceTestCase.class);
 
-	private static DateFormat _dateFormat;
+	private static Format _format;
+
+	private com.liferay.portal.kernel.model.User _testCompanyAdminUser;
 
 	@Inject
 	private
 		com.liferay.headless.commerce.admin.order.resource.v1_0.
 			OrderRuleResource _orderRuleResource;
 
+	@Inject
+	private GroupLocalService _groupLocalService;
+
+	@Inject
+	private ResourceActionLocalService _resourceActionLocalService;
+
+	@Inject
+	private ResourcePermissionLocalService _resourcePermissionLocalService;
+
+	@Inject
+	private RoleLocalService _roleLocalService;
+
+	@Inject
+	private ScopeChecker _scopeChecker;
+
+	@Inject
+	private UserLocalService _userLocalService;
+
+	@Inject
+	private VulcanCRUDItemDelegateBuilderRegistry
+		_vulcanCRUDItemDelegateBuilderRegistry;
+
 }
+// LIFERAY-REST-BUILDER-HASH:2080332030

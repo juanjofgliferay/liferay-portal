@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.constraints.DecimalMin;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,19 +28,20 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.constraints.DecimalMin;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Zoltán Takács
  * @generated
  */
 @Generated("")
-@GraphQLName("ProductTaxConfiguration")
+@GraphQLName(
+	description = "Tax classification for a product; pairs the tax category used by tax engines with a taxable flag; sourced from the product itself at the product level and from the configuration entry when embedded inside a product configuration.",
+	value = "ProductTaxConfiguration"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "Tax classification for a product; pairs the tax category used by tax engines with a taxable flag; sourced from the product itself at the product level and from the configuration entry when embedded inside a product configuration."
+)
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "ProductTaxConfiguration")
 public class ProductTaxConfiguration implements Serializable {
@@ -51,87 +56,141 @@ public class ProductTaxConfiguration implements Serializable {
 	}
 
 	@DecimalMin("0")
-	@Schema(example = "30130")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Identifier of the tax category assigned to the product; 0 means no tax category is assigned.",
+		example = "30130"
+	)
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Identifier of the tax category assigned to the product; 0 means no tax category is assigned."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long id;
 
-	@Schema(example = "taxCategoryName")
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Localized name of the tax category for the request locale; read-only.",
+		example = "taxCategoryName"
+	)
 	public String getTaxCategory() {
+		if (_taxCategorySupplier != null) {
+			taxCategory = _taxCategorySupplier.get();
+
+			_taxCategorySupplier = null;
+		}
+
 		return taxCategory;
 	}
 
 	public void setTaxCategory(String taxCategory) {
 		this.taxCategory = taxCategory;
+
+		_taxCategorySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setTaxCategory(
 		UnsafeSupplier<String, Exception> taxCategoryUnsafeSupplier) {
 
-		try {
-			taxCategory = taxCategoryUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_taxCategorySupplier = () -> {
+			try {
+				return taxCategoryUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Localized name of the tax category for the request locale; read-only."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String taxCategory;
 
-	@Schema(example = "true")
+	@JsonIgnore
+	private Supplier<String> _taxCategorySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Whether the product is subject to tax; defaults to true on create when omitted.",
+		example = "true"
+	)
 	public Boolean getTaxable() {
+		if (_taxableSupplier != null) {
+			taxable = _taxableSupplier.get();
+
+			_taxableSupplier = null;
+		}
+
 		return taxable;
 	}
 
 	public void setTaxable(Boolean taxable) {
 		this.taxable = taxable;
+
+		_taxableSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setTaxable(
 		UnsafeSupplier<Boolean, Exception> taxableUnsafeSupplier) {
 
-		try {
-			taxable = taxableUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_taxableSupplier = () -> {
+			try {
+				return taxableUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Whether the product is subject to tax; defaults to true on create when omitted."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean taxable;
+
+	@JsonIgnore
+	private Supplier<Boolean> _taxableSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -161,6 +220,8 @@ public class ProductTaxConfiguration implements Serializable {
 
 		sb.append("{");
 
+		Long id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -170,6 +231,8 @@ public class ProductTaxConfiguration implements Serializable {
 
 			sb.append(id);
 		}
+
+		String taxCategory = getTaxCategory();
 
 		if (taxCategory != null) {
 			if (sb.length() > 1) {
@@ -184,6 +247,8 @@ public class ProductTaxConfiguration implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Boolean taxable = getTaxable();
 
 		if (taxable != null) {
 			if (sb.length() > 1) {
@@ -200,8 +265,8 @@ public class ProductTaxConfiguration implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.admin.catalog.dto.v1_0.ProductTaxConfiguration",
 		name = "x-class-name"
 	)
@@ -247,7 +312,10 @@ public class ProductTaxConfiguration implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -293,3 +361,4 @@ public class ProductTaxConfiguration implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-955474157

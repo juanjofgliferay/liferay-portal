@@ -14,7 +14,7 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.segments.asah.connector.internal.cache.AsahSegmentsEntryCache;
+import com.liferay.segments.asah.connector.cache.AsahSegmentsEntryCache;
 import com.liferay.segments.asah.connector.internal.context.contributor.SegmentsAsahRequestContextContributor;
 import com.liferay.segments.constants.SegmentsEntryConstants;
 import com.liferay.segments.context.Context;
@@ -46,6 +46,14 @@ public class AsahSegmentsEntryProvider implements SegmentsEntryProvider {
 
 	@Override
 	public long[] getSegmentsEntryClassPKs(
+			long segmentsEntryId, boolean memberLookup, int start, int end)
+		throws PortalException {
+
+		return getSegmentsEntryClassPKs(segmentsEntryId, start, end);
+	}
+
+	@Override
+	public long[] getSegmentsEntryClassPKs(
 			long segmentsEntryId, int start, int end)
 		throws PortalException {
 
@@ -61,6 +69,14 @@ public class AsahSegmentsEntryProvider implements SegmentsEntryProvider {
 
 		return _segmentsEntryRelLocalService.getSegmentsEntryRelsCount(
 			segmentsEntryId);
+	}
+
+	@Override
+	public int getSegmentsEntryClassPKsCount(
+			long segmentsEntryId, boolean memberLookup)
+		throws PortalException {
+
+		return getSegmentsEntryClassPKsCount(segmentsEntryId);
 	}
 
 	@Override
@@ -84,8 +100,10 @@ public class AsahSegmentsEntryProvider implements SegmentsEntryProvider {
 		if (GetterUtil.getBoolean(context.get(Context.SIGNED_IN))) {
 			List<SegmentsEntry> segmentsEntries =
 				_segmentsEntryLocalService.getSegmentsEntries(
-					groupId, true,
-					SegmentsEntryConstants.SOURCE_ASAH_FARO_BACKEND, className,
+					groupId,
+					new String[] {
+						SegmentsEntryConstants.SOURCE_ASAH_FARO_BACKEND
+					},
 					QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
 
 			if (segmentsEntries.isEmpty()) {

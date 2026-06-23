@@ -7,30 +7,49 @@ package com.liferay.change.tracking.internal.background.task;
 
 import com.liferay.change.tracking.conflict.ConflictInfo;
 import com.liferay.change.tracking.constants.CTConstants;
+import com.liferay.change.tracking.constants.PublicationRoleConstants;
+import com.liferay.change.tracking.exception.CTPublishConflictException;
 import com.liferay.change.tracking.internal.CTServiceRegistry;
 import com.liferay.change.tracking.internal.background.task.display.CTPublishBackgroundTaskDisplay;
 import com.liferay.change.tracking.internal.helper.CTTableMapperHelper;
+import com.liferay.change.tracking.internal.notification.CTUserNotificationSender;
 import com.liferay.change.tracking.model.CTCollection;
 import com.liferay.change.tracking.model.CTEntry;
 import com.liferay.change.tracking.service.CTCollectionLocalService;
 import com.liferay.change.tracking.service.CTEntryLocalService;
 import com.liferay.change.tracking.service.CTSchemaVersionLocalService;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTask;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTaskExecutor;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTaskResult;
+import com.liferay.portal.kernel.backgroundtask.BackgroundTaskStatus;
+import com.liferay.portal.kernel.backgroundtask.BackgroundTaskStatusRegistry;
 import com.liferay.portal.kernel.backgroundtask.BaseBackgroundTaskExecutor;
 import com.liferay.portal.kernel.backgroundtask.constants.BackgroundTaskConstants;
 import com.liferay.portal.kernel.backgroundtask.display.BackgroundTaskDisplay;
 import com.liferay.portal.kernel.cache.MultiVMPool;
 import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
+import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Role;
+import com.liferay.portal.kernel.model.role.RoleConstants;
+import com.liferay.portal.kernel.notifications.UserNotificationDefinition;
+import com.liferay.portal.kernel.service.RoleLocalService;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.service.change.tracking.CTService;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.Transactional;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HtmlUtil;
+import com.liferay.portal.kernel.util.MapUtil;
+import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
 import java.io.Serializable;
@@ -40,6 +59,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -74,65 +94,30 @@ public class CTPublishBackgroundTaskExecutor
 		Map<String, Serializable> taskContextMap =
 			backgroundTask.getTaskContextMap();
 
-		long fromCTCollectionId = GetterUtil.getLong(
-			taskContextMap.get("fromCTCollectionId"));
+		long ctCollectionId = GetterUtil.getLong(
+			taskContextMap.get("ctCollectionId"));
 
-		CTCollection fromCTCollection =
-			_ctCollectionLocalService.getCTCollection(fromCTCollectionId);
-
-		String fromCTCollectionName = fromCTCollection.getName();
-
-		long toCTCollectionId = GetterUtil.getLong(
-			taskContextMap.get("toCTCollectionId"));
-
-		String toCTCollectionName;
-
-		if (toCTCollectionId == CTConstants.CT_COLLECTION_ID_PRODUCTION) {
-			toCTCollectionName = "Production";
-		}
-		else {
-			CTCollection toCTCollection =
-				_ctCollectionLocalService.getCTCollection(toCTCollectionId);
-
-			toCTCollectionName = toCTCollection.getName();
-		}
+		CTCollection ctCollection = _ctCollectionLocalService.getCTCollection(
+			ctCollectionId);
 
 		if (!_ctSchemaVersionLocalService.isLatestCTSchemaVersion(
-				fromCTCollection.getSchemaVersionId())) {
+				ctCollection.getSchemaVersionId())) {
 
 			throw new IllegalArgumentException(
 				StringBundler.concat(
-					"Unable to publish from ", fromCTCollectionName, " to ",
-					toCTCollectionName,
+					"Unable to publish ", ctCollection.getName(),
 					" because it is out of date with the current release"));
 		}
 
-		if (toCTCollectionId == CTConstants.CT_COLLECTION_ID_PRODUCTION) {
-			try (SafeCloseable safeCloseable =
-					CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
-						fromCTCollectionId)) {
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					ctCollectionId)) {
 
-				_ctServiceRegistry.onBeforePublish(fromCTCollectionId);
-			}
-		}
-
-		List<CTEntry> ctEntries = null;
-
-		long[] ctEntryIds = (long[])taskContextMap.get("ctEntryIds");
-
-		if (ctEntryIds != null) {
-			ctEntries = _ctCollectionLocalService.getRelatedCTEntries(
-				fromCTCollectionId, ctEntryIds);
-		}
-		else {
-			ctEntries = _ctEntryLocalService.getCTCollectionCTEntries(
-				fromCTCollectionId);
+			_ctServiceRegistry.onBeforePublish(ctCollectionId);
 		}
 
 		Map<Long, List<ConflictInfo>> conflictInfosMap =
-			_ctCollectionLocalService.checkConflicts(
-				fromCTCollection.getCompanyId(), ctEntries, fromCTCollectionId,
-				fromCTCollectionName, toCTCollectionId, toCTCollectionName);
+			_ctCollectionLocalService.checkConflicts(ctCollection);
 
 		if (!conflictInfosMap.isEmpty()) {
 			List<ConflictInfo> unresolvedConflictInfos = new ArrayList<>();
@@ -140,24 +125,31 @@ public class CTPublishBackgroundTaskExecutor
 			for (Map.Entry<Long, List<ConflictInfo>> entry :
 					conflictInfosMap.entrySet()) {
 
-				for (ConflictInfo conflictInfo : entry.getValue()) {
-					if (!conflictInfo.isResolved()) {
-						unresolvedConflictInfos.add(conflictInfo);
-					}
-				}
+				unresolvedConflictInfos.addAll(
+					TransformUtil.transform(
+						entry.getValue(),
+						conflictInfo -> {
+							if (!conflictInfo.isResolved()) {
+								return conflictInfo;
+							}
+
+							return null;
+						}));
 			}
 
 			if (!unresolvedConflictInfos.isEmpty()) {
-				throw new SystemException(
+				throw new CTPublishConflictException(
 					StringBundler.concat(
-						"Unable to publish ", fromCTCollectionName, " to ",
-						toCTCollectionName,
+						"Unable to publish ", ctCollection.getName(),
 						" because of unresolved conflicts: ",
 						unresolvedConflictInfos));
 			}
 		}
 
 		Map<Long, CTServicePublisher<?>> ctServicePublishers = new HashMap<>();
+
+		List<CTEntry> ctEntries = _ctEntryLocalService.getCTCollectionCTEntries(
+			ctCollectionId);
 
 		for (CTEntry ctEntry : ctEntries) {
 			CTServicePublisher<?> ctServicePublisher =
@@ -170,14 +162,13 @@ public class CTPublishBackgroundTaskExecutor
 						if (ctService != null) {
 							return new CTServicePublisher<>(
 								_ctEntryLocalService, ctService,
-								modelClassNameId, fromCTCollectionId,
-								toCTCollectionId);
+								modelClassNameId, ctCollectionId,
+								CTConstants.CT_COLLECTION_ID_PRODUCTION);
 						}
 
 						throw new SystemException(
 							StringBundler.concat(
-								"Unable to publish from ", fromCTCollectionName,
-								" to ", toCTCollectionName,
+								"Unable to publish ", ctCollection.getName(),
 								" because service for ", modelClassNameId,
 								" is missing"));
 					});
@@ -185,40 +176,42 @@ public class CTPublishBackgroundTaskExecutor
 			ctServicePublisher.addCTEntry(ctEntry);
 		}
 
+		BackgroundTaskStatus backgroundTaskStatus =
+			_backgroundTaskStatusRegistry.getBackgroundTaskStatus(
+				backgroundTask.getBackgroundTaskId());
+
+		int i = 0;
+
 		for (CTServicePublisher<?> ctServicePublisher :
 				ctServicePublishers.values()) {
 
 			ctServicePublisher.publish();
+
+			backgroundTaskStatus.setAttribute(
+				"percentage", ++i / ctServicePublishers.size());
 		}
 
 		for (CTTableMapperHelper ctTableMapperHelper :
 				_ctServiceRegistry.getCTTableMapperHelpers()) {
 
 			ctTableMapperHelper.publish(
-				fromCTCollectionId, toCTCollectionId,
-				_multiVMPool.getPortalCacheManager());
+				ctCollectionId, _multiVMPool.getPortalCacheManager());
 		}
 
-		if (toCTCollectionId == CTConstants.CT_COLLECTION_ID_PRODUCTION) {
-			Date modifiedDate = new Date();
+		CTCollection latestCTCollection =
+			_ctCollectionLocalService.getCTCollection(ctCollectionId);
 
-			fromCTCollection.setModifiedDate(modifiedDate);
+		Date modifiedDate = new Date();
 
-			fromCTCollection.setStatus(WorkflowConstants.STATUS_APPROVED);
-			fromCTCollection.setStatusByUserId(backgroundTask.getUserId());
-			fromCTCollection.setStatusDate(modifiedDate);
+		latestCTCollection.setModifiedDate(modifiedDate);
 
-			_ctCollectionLocalService.updateCTCollection(fromCTCollection);
+		latestCTCollection.setStatus(WorkflowConstants.STATUS_APPROVED);
+		latestCTCollection.setStatusByUserId(backgroundTask.getUserId());
+		latestCTCollection.setStatusDate(modifiedDate);
 
-			_ctServiceRegistry.onAfterPublish(fromCTCollectionId);
-		}
-		else {
-			for (CTEntry ctEntry : ctEntries) {
-				ctEntry.setCtCollectionId(toCTCollectionId);
+		_ctCollectionLocalService.updateCTCollection(latestCTCollection);
 
-				_ctEntryLocalService.updateCTEntry(ctEntry);
-			}
-		}
+		_ctServiceRegistry.onAfterPublish(ctCollectionId);
 
 		return BackgroundTaskResult.SUCCESS;
 	}
@@ -236,11 +229,82 @@ public class CTPublishBackgroundTaskExecutor
 	}
 
 	@Override
+	public String handleException(
+		BackgroundTask backgroundTask, Exception exception) {
+
+		boolean showConflicts = false;
+
+		if (exception instanceof CTPublishConflictException) {
+			showConflicts = true;
+		}
+
+		long ctCollectionId = MapUtil.getLong(
+			backgroundTask.getTaskContextMap(), "ctCollectionId");
+
+		try {
+			CTCollection ctCollection =
+				_ctCollectionLocalService.getCTCollection(ctCollectionId);
+
+			_ctUserNotificationSender.sendUserNotificationEvents(
+				ctCollection,
+				JSONUtil.put(
+					"backgroundTaskId", backgroundTask.getBackgroundTaskId()
+				).put(
+					"ctCollectionId", ctCollectionId
+				).put(
+					"ctCollectionName", HtmlUtil.escape(ctCollection.getName())
+				).put(
+					"notificationType",
+					UserNotificationDefinition.NOTIFICATION_TYPE_REVIEW_ENTRY
+				).put(
+					"showConflicts", showConflicts
+				),
+				_getPublicationRolesUserIds(ctCollection, showConflicts));
+		}
+		catch (PortalException portalException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(portalException);
+			}
+		}
+
+		return super.handleException(backgroundTask, exception);
+	}
+
+	@Override
 	public void setAopProxy(Object aopProxy) {
 		_backgroundTaskExecutor = (BackgroundTaskExecutor)aopProxy;
 	}
 
+	private long[] _getPublicationRolesUserIds(
+		CTCollection ctCollection, boolean showConflicts) {
+
+		Set<Long> userIds = SetUtil.fromArray(
+			_ctUserNotificationSender.getPublicationRoleUserIds(
+				ctCollection, true, PublicationRoleConstants.NAME_ADMIN,
+				PublicationRoleConstants.NAME_EDITOR,
+				PublicationRoleConstants.NAME_PUBLISHER));
+
+		if (!showConflicts) {
+			Role role = _roleLocalService.fetchRole(
+				ctCollection.getCompanyId(), RoleConstants.ADMINISTRATOR);
+
+			for (long userId :
+					_userLocalService.getRoleUserIds(role.getRoleId())) {
+
+				userIds.add(userId);
+			}
+		}
+
+		return ArrayUtil.toLongArray(userIds);
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		CTPublishBackgroundTaskExecutor.class);
+
 	private BackgroundTaskExecutor _backgroundTaskExecutor;
+
+	@Reference
+	private BackgroundTaskStatusRegistry _backgroundTaskStatusRegistry;
 
 	@Reference
 	private CTCollectionLocalService _ctCollectionLocalService;
@@ -255,6 +319,15 @@ public class CTPublishBackgroundTaskExecutor
 	private CTServiceRegistry _ctServiceRegistry;
 
 	@Reference
+	private CTUserNotificationSender _ctUserNotificationSender;
+
+	@Reference
 	private MultiVMPool _multiVMPool;
+
+	@Reference
+	private RoleLocalService _roleLocalService;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

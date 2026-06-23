@@ -108,6 +108,20 @@ public interface SamlSpMessageModel
 	public void setSamlIdpEntityId(String samlIdpEntityId);
 
 	/**
+	 * Returns the expiration date of this saml sp message.
+	 *
+	 * @return the expiration date of this saml sp message
+	 */
+	public Date getExpirationDate();
+
+	/**
+	 * Sets the expiration date of this saml sp message.
+	 *
+	 * @param expirationDate the expiration date of this saml sp message
+	 */
+	public void setExpirationDate(Date expirationDate);
+
+	/**
 	 * Returns the saml idp response key of this saml sp message.
 	 *
 	 * @return the saml idp response key of this saml sp message
@@ -122,20 +136,6 @@ public interface SamlSpMessageModel
 	 */
 	public void setSamlIdpResponseKey(String samlIdpResponseKey);
 
-	/**
-	 * Returns the expiration date of this saml sp message.
-	 *
-	 * @return the expiration date of this saml sp message
-	 */
-	public Date getExpirationDate();
-
-	/**
-	 * Sets the expiration date of this saml sp message.
-	 *
-	 * @param expirationDate the expiration date of this saml sp message
-	 */
-	public void setExpirationDate(Date expirationDate);
-
 	@Override
 	public SamlSpMessage cloneWithOriginalValues();
 
@@ -144,3 +144,4 @@ public interface SamlSpMessageModel
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1472699914

@@ -5,12 +5,12 @@
 
 package com.liferay.fragment.web.internal.portlet.action;
 
+import com.liferay.fragment.constants.FragmentExportImportConstants;
 import com.liferay.fragment.constants.FragmentPortletKeys;
 import com.liferay.fragment.importer.FragmentsImportStrategy;
 import com.liferay.fragment.importer.FragmentsImporter;
 import com.liferay.fragment.importer.FragmentsImporterResultEntry;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManager;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
@@ -28,14 +28,17 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+
 import java.io.File;
 
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -45,7 +48,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + FragmentPortletKeys.FRAGMENT,
+		"jakarta.portlet.name=" + FragmentPortletKeys.FRAGMENT,
 		"mvc.command.name=/fragment/import"
 	},
 	service = MVCResourceCommand.class
@@ -57,7 +60,7 @@ public class ImportMVCResourceCommand extends BaseMVCResourceCommand {
 			ResourceRequest resourceRequest, ResourceResponse resourceResponse)
 		throws Exception {
 
-		JSONObject jsonObject = _jsonFactory.createJSONObject();
+		JSONObject jsonObject = JSONUtil.put("needsFragmentCollection", false);
 
 		ThemeDisplay themeDisplay = (ThemeDisplay)resourceRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
@@ -75,6 +78,15 @@ public class ImportMVCResourceCommand extends BaseMVCResourceCommand {
 		boolean validFragmentEntries = true;
 
 		if (Validator.isNull(importType)) {
+			if ((fragmentCollectionId <= 0) && _needsFragmentCollection(file)) {
+				jsonObject.put("needsFragmentCollection", true);
+
+				JSONPortletResponseUtil.writeJSON(
+					resourceRequest, resourceResponse, jsonObject);
+
+				return;
+			}
+
 			validFragmentEntries = _fragmentsImporter.validateFragmentEntries(
 				themeDisplay.getUserId(), themeDisplay.getScopeGroupId(),
 				fragmentCollectionId, file);
@@ -89,13 +101,16 @@ public class ImportMVCResourceCommand extends BaseMVCResourceCommand {
 					FragmentsImportStrategy.DO_NOT_OVERWRITE;
 			}
 
+			boolean marketplace = ParamUtil.getBoolean(
+				resourceRequest, "marketplace");
+
 			jsonObject = _importFragmentEntries(
 				file, fragmentCollectionId, themeDisplay.getScopeGroupId(),
-				fragmentsImportStrategy, themeDisplay.getLocale(),
+				fragmentsImportStrategy, themeDisplay.getLocale(), marketplace,
 				themeDisplay.getUserId());
 		}
 		else {
-			jsonObject.put("valid", false);
+			jsonObject.put("hasConflicts", true);
 		}
 
 		JSONPortletResponseUtil.writeJSON(
@@ -118,10 +133,57 @@ public class ImportMVCResourceCommand extends BaseMVCResourceCommand {
 		return StringPool.BLANK;
 	}
 
+	private boolean _hasFragmentCollection(ZipFile zipFile) {
+		Enumeration<? extends ZipEntry> enumeration = zipFile.entries();
+
+		while (enumeration.hasMoreElements()) {
+			ZipEntry zipEntry = enumeration.nextElement();
+
+			if (zipEntry.isDirectory()) {
+				continue;
+			}
+
+			String zipEntryName = zipEntry.getName();
+
+			if (zipEntryName.endsWith(
+					FragmentExportImportConstants.FILE_NAME_COLLECTION)) {
+
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private boolean _hasFragmentEntries(ZipFile zipFile) {
+		Enumeration<? extends ZipEntry> enumeration = zipFile.entries();
+
+		while (enumeration.hasMoreElements()) {
+			ZipEntry zipEntry = enumeration.nextElement();
+
+			if (zipEntry.isDirectory()) {
+				continue;
+			}
+
+			String zipEntryName = zipEntry.getName();
+
+			if (zipEntryName.endsWith(
+					FragmentExportImportConstants.FILE_NAME_FRAGMENT) ||
+				zipEntryName.endsWith(
+					FragmentExportImportConstants.
+						FILE_NAME_FRAGMENT_COMPOSITION)) {
+
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	private JSONObject _importFragmentEntries(
 		File file, long fragmentCollectionId, long groupId,
 		FragmentsImportStrategy fragmentsImportStrategy, Locale locale,
-		long userId) {
+		boolean marketplace, long userId) {
 
 		JSONObject jsonObject = _jsonFactory.createJSONObject();
 
@@ -129,7 +191,7 @@ public class ImportMVCResourceCommand extends BaseMVCResourceCommand {
 			List<FragmentsImporterResultEntry> fragmentsImporterResultEntries =
 				_fragmentsImporter.importFragmentEntries(
 					userId, groupId, fragmentCollectionId, file,
-					fragmentsImportStrategy);
+					fragmentsImportStrategy, marketplace);
 
 			JSONObject importResultsJSONObject =
 				_jsonFactory.createJSONObject();
@@ -179,11 +241,20 @@ public class ImportMVCResourceCommand extends BaseMVCResourceCommand {
 		return jsonObject;
 	}
 
+	private boolean _needsFragmentCollection(File file) throws Exception {
+		try (ZipFile zipFile = new ZipFile(file)) {
+			if (!_hasFragmentCollection(zipFile) &&
+				_hasFragmentEntries(zipFile)) {
+
+				return true;
+			}
+
+			return false;
+		}
+	}
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		ImportMVCResourceCommand.class);
-
-	@Reference
-	private FeatureFlagManager _featureFlagManager;
 
 	@Reference
 	private FragmentsImporter _fragmentsImporter;

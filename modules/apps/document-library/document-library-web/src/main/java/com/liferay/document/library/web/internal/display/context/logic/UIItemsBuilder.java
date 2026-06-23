@@ -14,16 +14,29 @@ import com.liferay.document.library.display.context.DLUIItemKeys;
 import com.liferay.document.library.kernel.document.conversion.DocumentConversionUtil;
 import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.model.DLFileEntryConstants;
+import com.liferay.document.library.kernel.model.DLFileEntryMetadata;
+import com.liferay.document.library.kernel.model.DLFileEntryTypeConstants;
 import com.liferay.document.library.kernel.model.DLFileShortcutConstants;
+import com.liferay.document.library.kernel.model.DLFileVersion;
+import com.liferay.document.library.kernel.model.DLFolderConstants;
+import com.liferay.document.library.kernel.service.DLFileEntryMetadataLocalServiceUtil;
 import com.liferay.document.library.kernel.versioning.VersioningStrategy;
 import com.liferay.document.library.util.DLURLHelper;
 import com.liferay.document.library.web.internal.display.context.helper.FileEntryDisplayContextHelper;
 import com.liferay.document.library.web.internal.display.context.helper.FileShortcutDisplayContextHelper;
 import com.liferay.document.library.web.internal.helper.DLTrashHelper;
+import com.liferay.document.library.web.internal.util.DLSubscriptionUtil;
+import com.liferay.document.library.web.internal.util.FolderItemSelectorURLProvider;
+import com.liferay.dynamic.data.mapping.kernel.StorageEngineManagerUtil;
+import com.liferay.dynamic.data.mapping.util.DDMBeanTranslatorUtil;
+import com.liferay.dynamic.data.mapping.validator.DDMFormValuesValidationException;
+import com.liferay.dynamic.data.mapping.validator.DDMFormValuesValidator;
 import com.liferay.exportimport.kernel.lar.StagedModelDataHandler;
 import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerRegistryUtil;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemBuilder;
+import com.liferay.item.selector.ItemSelector;
+import com.liferay.layout.service.LayoutClassedModelUsageLocalServiceUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -31,6 +44,7 @@ import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
@@ -42,6 +56,8 @@ import com.liferay.portal.kernel.repository.capabilities.TrashCapability;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.FileShortcut;
 import com.liferay.portal.kernel.repository.model.FileVersion;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.service.permission.GroupPermissionUtil;
 import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
@@ -49,26 +65,27 @@ import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HtmlUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.staging.StagingGroupHelper;
 import com.liferay.staging.StagingGroupHelperUtil;
 import com.liferay.taglib.security.PermissionsURLTag;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowStateException;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Objects;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
-import javax.portlet.WindowStateException;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Iván Zaera
@@ -115,6 +132,8 @@ public class UIItemsBuilder {
 					Constants.CANCEL_CHECKOUT)
 			).setParameter(
 				"fileEntryId", _fileEntry.getFileEntryId()
+			).setParameter(
+				"folderId", _fileEntry.getFolderId()
 			).buildString()
 		).setKey(
 			DLUIItemKeys.CANCEL_CHECKOUT
@@ -129,6 +148,8 @@ public class UIItemsBuilder {
 				"/document_library/edit_file_entry", Constants.CHECKIN)
 		).setParameter(
 			"fileEntryId", _fileEntry.getFileEntryId()
+		).setParameter(
+			"folderId", _fileEntry.getFolderId()
 		).buildPortletURL();
 
 		if (!_versioningStrategy.isOverridable()) {
@@ -163,6 +184,8 @@ public class UIItemsBuilder {
 					"/document_library/edit_file_entry", Constants.CHECKOUT)
 			).setParameter(
 				"fileEntryId", _fileEntry.getFileEntryId()
+			).setParameter(
+				"folderId", _fileEntry.getFolderId()
 			).buildString()
 		).setIcon(
 			"lock"
@@ -334,6 +357,9 @@ public class UIItemsBuilder {
 
 		return DropdownItemBuilder.setData(
 			HashMapBuilder.<String, Object>put(
+				"analytics-external-reference-code",
+				_fileEntry.getExternalReferenceCode()
+			).put(
 				"analytics-file-entry-id", _fileEntry.getFileEntryId()
 			).put(
 				"analytics-file-entry-title", _fileEntry.getTitle()
@@ -343,9 +369,10 @@ public class UIItemsBuilder {
 				"senna-off", "true"
 			).build()
 		).setHref(
-			_dlURLHelper.getDownloadURL(
-				_fileEntry, _fileVersion, _themeDisplay, StringPool.BLANK,
-				appendVersion, true)
+			_addDoAsUserIdParameter(
+				_dlURLHelper.getDownloadURL(
+					_fileEntry, _fileVersion, _themeDisplay, StringPool.BLANK,
+					appendVersion, true))
 		).setIcon(
 			"download"
 		).setKey(
@@ -393,6 +420,8 @@ public class UIItemsBuilder {
 			"imageURL",
 			_dlURLHelper.getPreviewURL(
 				_fileEntry, _fileVersion, _themeDisplay, StringPool.BLANK)
+		).putData(
+			"mimeType", HtmlUtil.escapeAttribute(_fileEntry.getMimeType())
 		).setKey(
 			DLUIItemKeys.EDIT_IMAGE
 		).setLabel(
@@ -402,11 +431,8 @@ public class UIItemsBuilder {
 
 	public DropdownItem createHistoryDropdownItem() {
 		return DropdownItemBuilder.setHref(
-			PortletURLBuilder.create(
-				_getRenderURL("/document_library/view_file_entry_history")
-			).setBackURL(
-				_getCurrentURL()
-			).buildPortletURL()
+			_getControlPanelRenderURL(
+				"/document_library/view_file_entry_history", _getCurrentURL())
 		).setIcon(
 			"date-time"
 		).setKey(
@@ -427,6 +453,27 @@ public class UIItemsBuilder {
 			(_fileShortcut != null) ?
 				String.valueOf(_fileShortcut.getFileShortcutId()) :
 					String.valueOf(_fileEntry.getFileEntryId())
+		).putData(
+			"selectFolderURL",
+			() -> {
+				FolderItemSelectorURLProvider folderItemSelectorURLProvider =
+					new FolderItemSelectorURLProvider(
+						_httpServletRequest,
+						(ItemSelector)_httpServletRequest.getAttribute(
+							ItemSelector.class.getName()));
+
+				if (_fileShortcut != null) {
+					return folderItemSelectorURLProvider.
+						getSelectMoveToFolderURL(
+							_fileShortcut.getRepositoryId(),
+							_fileShortcut.getFolderId(),
+							DLFolderConstants.DEFAULT_PARENT_FOLDER_ID);
+				}
+
+				return folderItemSelectorURLProvider.getSelectMoveToFolderURL(
+					_fileEntry.getRepositoryId(), _fileEntry.getFolderId(),
+					DLFolderConstants.DEFAULT_PARENT_FOLDER_ID);
+			}
 		).setIcon(
 			"move-folder"
 		).setKey(
@@ -522,6 +569,62 @@ public class UIItemsBuilder {
 		).build();
 	}
 
+	public DropdownItem createSubscribeDropdownItem() {
+		return DropdownItemBuilder.putData(
+			"action", "subscribeFileEntry"
+		).putData(
+			"subscribeFileEntryURL",
+			PortletURLBuilder.createActionURL(
+				_getLiferayPortletResponse()
+			).setActionName(
+				"/document_library/subscribe_file_entry"
+			).setRedirect(
+				_getCurrentURL()
+			).setParameter(
+				"fileEntryId", _fileEntry.getFileEntryId()
+			).buildString()
+		).setIcon(
+			"bell-on"
+		).setLabel(
+			LanguageUtil.get(_httpServletRequest, "subscribe")
+		).build();
+	}
+
+	public DropdownItem createUnsubscribeDropdownItem() throws PortalException {
+		if (!DLSubscriptionUtil.isSubscribedToFolder(
+				_themeDisplay.getCompanyId(), _themeDisplay.getScopeGroupId(),
+				_themeDisplay.getUserId(), _fileEntry.getFolderId())) {
+
+			return DropdownItemBuilder.putData(
+				"action", "unsubscribeFileEntry"
+			).putData(
+				"unsubscribeFileEntryURL",
+				PortletURLBuilder.createActionURL(
+					_getLiferayPortletResponse()
+				).setActionName(
+					"/document_library/unsubscribe_file_entry"
+				).setRedirect(
+					_getCurrentURL()
+				).setParameter(
+					"fileEntryId", _fileEntry.getFileEntryId()
+				).buildString()
+			).setIcon(
+				"bell-off"
+			).setLabel(
+				LanguageUtil.get(_httpServletRequest, "unsubscribe")
+			).build();
+		}
+
+		return DropdownItemBuilder.setDisabled(
+			true
+		).setIcon(
+			"bell-off"
+		).setLabel(
+			LanguageUtil.get(
+				_httpServletRequest, "subscribed-to-a-parent-folder")
+		).build();
+	}
+
 	public DropdownItem createViewOriginalFileDropdownItem() {
 		if (_fileShortcut == null) {
 			return null;
@@ -537,6 +640,34 @@ public class UIItemsBuilder {
 			DLUIItemKeys.VIEW_ORIGINAL_FILE
 		).setLabel(
 			LanguageUtil.get(_httpServletRequest, "view-original-file")
+		).build();
+	}
+
+	public DropdownItem createViewUsagesDropdownItem() {
+		return DropdownItemBuilder.setDisabled(
+			() -> {
+				int count =
+					LayoutClassedModelUsageLocalServiceUtil.
+						getLayoutClassedModelUsagesCount(
+							PortalUtil.getClassNameId(FileEntry.class),
+							_fileEntry.getFileEntryId());
+
+				if (count == 0) {
+					return true;
+				}
+
+				return false;
+			}
+		).setHref(
+			PortletURLBuilder.create(
+				_getRenderURL("/document_library/view_file_entry_usages")
+			).setParameter(
+				"fileEntryId", _fileEntry.getFileEntryId()
+			).buildString()
+		).setIcon(
+			"list-ul"
+		).setLabel(
+			LanguageUtil.get(_httpServletRequest, "view-usages")
 		).build();
 	}
 
@@ -638,7 +769,10 @@ public class UIItemsBuilder {
 
 	public boolean isDeleteVersionActionAvailable() throws PortalException {
 		if ((_fileEntry == null) ||
-			(_fileVersion.getStatus() != WorkflowConstants.STATUS_APPROVED) ||
+			((_fileVersion.getStatus() != WorkflowConstants.STATUS_APPROVED) &&
+			 (_fileVersion.getStatus() != WorkflowConstants.STATUS_EXPIRED) &&
+			 (_fileVersion.getStatus() !=
+				 WorkflowConstants.STATUS_SCHEDULED)) ||
 			!_fileEntryDisplayContextHelper.hasDeletePermission() ||
 			!(_fileEntry.getModel() instanceof DLFileEntry)) {
 
@@ -648,7 +782,16 @@ public class UIItemsBuilder {
 		int fileVersionsCount = _fileEntry.getFileVersionsCount(
 			WorkflowConstants.STATUS_APPROVED);
 
-		if (fileVersionsCount > 1) {
+		fileVersionsCount += _fileEntry.getFileVersionsCount(
+			WorkflowConstants.STATUS_SCHEDULED);
+
+		int fileVersionsExpired = _fileEntry.getFileVersionsCount(
+			WorkflowConstants.STATUS_EXPIRED);
+
+		if ((fileVersionsCount > 1) ||
+			((_fileVersion.getStatus() == WorkflowConstants.STATUS_EXPIRED) &&
+			 ((fileVersionsCount == 1) || (fileVersionsExpired > 1)))) {
+
 			return true;
 		}
 
@@ -690,11 +833,11 @@ public class UIItemsBuilder {
 	}
 
 	public boolean isHistoryActionAvailable() throws PortalException {
-		if (_fileShortcut == null) {
-			return true;
+		if (_fileShortcut != null) {
+			return _fileShortcutDisplayContextHelper.isHistoryActionAvailable();
 		}
 
-		return false;
+		return _fileEntryDisplayContextHelper.isHistoryActionAvailable();
 	}
 
 	public boolean isMoveActionAvailable() throws PortalException {
@@ -729,7 +872,11 @@ public class UIItemsBuilder {
 		StagingGroupHelper stagingGroupHelper =
 			StagingGroupHelperUtil.getStagingGroupHelper();
 
-		if (!stagingGroupHelper.isStagingGroup(
+		if (!GroupPermissionUtil.contains(
+				_themeDisplay.getPermissionChecker(),
+				_themeDisplay.getScopeGroupId(),
+				ActionKeys.EXPORT_IMPORT_PORTLET_INFO) ||
+			!stagingGroupHelper.isStagingGroup(
 				_themeDisplay.getScopeGroupId()) ||
 			!stagingGroupHelper.isStagedPortlet(
 				_themeDisplay.getScopeGroupId(),
@@ -742,29 +889,50 @@ public class UIItemsBuilder {
 
 		String portletName = portletDisplay.getPortletName();
 
-		if (!portletName.equals(DLPortletKeys.DOCUMENT_LIBRARY_ADMIN)) {
-			return false;
-		}
-
-		return true;
+		return portletName.equals(DLPortletKeys.DOCUMENT_LIBRARY_ADMIN);
 	}
 
 	public boolean isRevertToVersionActionAvailable() throws PortalException {
-		if ((_fileVersion.getStatus() != WorkflowConstants.STATUS_APPROVED) ||
+		if (((_fileVersion.getStatus() != WorkflowConstants.STATUS_APPROVED) &&
+			 (_fileVersion.getStatus() !=
+				 WorkflowConstants.STATUS_SCHEDULED)) ||
 			!_fileEntryDisplayContextHelper.hasUpdatePermission()) {
 
 			return false;
 		}
 
-		FileVersion latestFileVersion = _fileEntry.getLatestFileVersion();
-
-		if (Objects.equals(
-				latestFileVersion.getVersion(), _fileVersion.getVersion())) {
-
+		if (!_isValidDDMFormValues(_fileVersion)) {
 			return false;
 		}
 
-		return true;
+		FileVersion latestFileVersion = _fileEntry.getLatestFileVersion();
+
+		return !Objects.equals(
+			latestFileVersion.getVersion(), _fileVersion.getVersion());
+	}
+
+	public boolean isSubscribeActionAvailable() throws PortalException {
+		if (!_fileEntryDisplayContextHelper.hasSubscribePermission()) {
+			return false;
+		}
+
+		return !isUnsubscribeActionAvailable();
+	}
+
+	public boolean isUnsubscribeActionAvailable() throws PortalException {
+		if (_subscribed != null) {
+			return _subscribed;
+		}
+
+		_subscribed = false;
+
+		if (_fileEntryDisplayContextHelper.hasSubscribePermission()) {
+			_subscribed = DLSubscriptionUtil.isSubscribedToFileEntry(
+				_fileEntry.getCompanyId(), _themeDisplay.getScopeGroupId(),
+				_themeDisplay.getUserId(), _fileEntry.getFileEntryId());
+		}
+
+		return _subscribed;
 	}
 
 	public boolean isViewOriginalFileActionAvailable() {
@@ -773,6 +941,15 @@ public class UIItemsBuilder {
 		}
 
 		return false;
+	}
+
+	public boolean isViewUsagesActionAvailable() throws PortalException {
+		if (_fileShortcut != null) {
+			return _fileShortcutDisplayContextHelper.
+				isViewUsagesActionAvailable();
+		}
+
+		return _fileEntryDisplayContextHelper.isViewUsagesActionAvailable();
 	}
 
 	public boolean isViewVersionActionAvailable() {
@@ -819,6 +996,17 @@ public class UIItemsBuilder {
 				"Unable to build UIItemsBuilder for " + fileVersion,
 				portalException);
 		}
+	}
+
+	private String _addDoAsUserIdParameter(String url) {
+		if (Validator.isNull(_themeDisplay.getDoAsUserId()) ||
+			Validator.isNull(url)) {
+
+			return url;
+		}
+
+		return HttpComponentsUtil.setParameter(
+			url, "doAsUserId", _themeDisplay.getDoAsUserId());
 	}
 
 	private PortletURL _getActionURL(String mvcActionCommandName) {
@@ -977,7 +1165,7 @@ public class UIItemsBuilder {
 	private LiferayPortletRequest _getLiferayPortletRequest() {
 		PortletRequest portletRequest =
 			(PortletRequest)_httpServletRequest.getAttribute(
-				JavaConstants.JAVAX_PORTLET_REQUEST);
+				JavaConstants.JAKARTA_PORTLET_REQUEST);
 
 		return PortalUtil.getLiferayPortletRequest(portletRequest);
 	}
@@ -985,7 +1173,7 @@ public class UIItemsBuilder {
 	private LiferayPortletResponse _getLiferayPortletResponse() {
 		PortletResponse portletResponse =
 			(PortletResponse)_httpServletRequest.getAttribute(
-				JavaConstants.JAVAX_PORTLET_RESPONSE);
+				JavaConstants.JAKARTA_PORTLET_RESPONSE);
 
 		return PortalUtil.getLiferayPortletResponse(portletResponse);
 	}
@@ -1074,15 +1262,9 @@ public class UIItemsBuilder {
 	}
 
 	private boolean _isFileVersionContentTypeAllowed() {
-		if (Objects.equals(
-				_fileVersion.getMimeType(),
-				ContentTypes.
-					APPLICATION_VND_LIFERAY_VIDEO_EXTERNAL_SHORTCUT_HTML)) {
-
-			return false;
-		}
-
-		return true;
+		return !Objects.equals(
+			_fileVersion.getMimeType(),
+			ContentTypes.APPLICATION_VND_LIFERAY_VIDEO_EXTERNAL_SHORTCUT_HTML);
 	}
 
 	private boolean _isFileVersionExportable(boolean latestVersion) {
@@ -1106,14 +1288,9 @@ public class UIItemsBuilder {
 					StagedModelDataHandlerRegistryUtil.
 						getStagedModelDataHandler(FileEntry.class.getName());
 
-			if (ArrayUtil.contains(
-					stagedModelDataHandler.getExportableStatuses(),
-					fileVersion.getStatus())) {
-
-				return true;
-			}
-
-			return false;
+			return ArrayUtil.contains(
+				stagedModelDataHandler.getExportableStatuses(),
+				fileVersion.getStatus());
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
@@ -1156,7 +1333,61 @@ public class UIItemsBuilder {
 		return _trashEnabled;
 	}
 
+	private boolean _isValidDDMFormValues(FileVersion fileVersion)
+		throws PortalException {
+
+		if (!(fileVersion.getModel() instanceof DLFileVersion)) {
+			return true;
+		}
+
+		DLFileVersion dlFileVersion = (DLFileVersion)fileVersion.getModel();
+
+		if (dlFileVersion.getFileEntryTypeId() ==
+				DLFileEntryTypeConstants.FILE_ENTRY_TYPE_ID_BASIC_DOCUMENT) {
+
+			return true;
+		}
+
+		try {
+			_validateDLFileVersionDDMFormValues(dlFileVersion);
+
+			return true;
+		}
+		catch (DDMFormValuesValidationException
+					ddmFormValuesValidationException) {
+
+			if (_log.isDebugEnabled()) {
+				_log.debug(ddmFormValuesValidationException);
+			}
+
+			return false;
+		}
+	}
+
+	private void _validateDLFileVersionDDMFormValues(
+			DLFileVersion dlFileVersion)
+		throws PortalException {
+
+		DDMFormValuesValidator ddmFormValuesValidator =
+			_ddmFormValuesValidatorSnapshot.get();
+
+		for (DLFileEntryMetadata dlFileEntryMetadata :
+				DLFileEntryMetadataLocalServiceUtil.
+					getFileVersionFileEntryMetadatas(
+						dlFileVersion.getFileVersionId())) {
+
+			ddmFormValuesValidator.validate(
+				DDMBeanTranslatorUtil.translate(
+					StorageEngineManagerUtil.getDDMFormValues(
+						dlFileEntryMetadata.getDDMStorageId())));
+		}
+	}
+
 	private static final Log _log = LogFactoryUtil.getLog(UIItemsBuilder.class);
+
+	private static final Snapshot<DDMFormValuesValidator>
+		_ddmFormValuesValidatorSnapshot = new Snapshot<>(
+			UIItemsBuilder.class, DDMFormValuesValidator.class);
 
 	private String _currentURL;
 	private final DLTrashHelper _dlTrashHelper;
@@ -1169,6 +1400,7 @@ public class UIItemsBuilder {
 	private final FileVersion _fileVersion;
 	private final HttpServletRequest _httpServletRequest;
 	private String _redirect;
+	private Boolean _subscribed;
 	private final ThemeDisplay _themeDisplay;
 	private Boolean _trashEnabled;
 	private final VersioningStrategy _versioningStrategy;

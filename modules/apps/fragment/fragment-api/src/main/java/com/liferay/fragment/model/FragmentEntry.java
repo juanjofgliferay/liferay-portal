@@ -51,8 +51,6 @@ public interface FragmentEntry extends FragmentEntryModel, PersistedModel {
 
 	public String getContent();
 
-	public int getGlobalUsageCount();
-
 	public String getImagePreviewURL(
 		com.liferay.portal.kernel.theme.ThemeDisplay themeDisplay);
 
@@ -77,3 +75,4 @@ public interface FragmentEntry extends FragmentEntryModel, PersistedModel {
 	public void setImagePreviewURL(String imagePreviewURL);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1320415919

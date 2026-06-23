@@ -5,6 +5,7 @@
 
 package com.liferay.osb.faro.engine.client.model.provider;
 
+import com.liferay.osb.faro.engine.client.model.ChannelsConfiguration;
 import com.liferay.osb.faro.engine.client.model.Provider;
 
 import java.util.List;
@@ -20,6 +21,10 @@ public class LiferayProvider implements Provider {
 		return _analyticsConfiguration;
 	}
 
+	public ChannelsConfiguration getChannelsConfiguration() {
+		return _channelsConfiguration;
+	}
+
 	public ContactsConfiguration getContactsConfiguration() {
 		return _contactsConfiguration;
 	}
@@ -33,6 +38,12 @@ public class LiferayProvider implements Provider {
 		AnalyticsConfiguration analyticsConfiguration) {
 
 		_analyticsConfiguration = analyticsConfiguration;
+	}
+
+	public void setChannelsConfiguration(
+		ChannelsConfiguration channelsConfiguration) {
+
+		_channelsConfiguration = channelsConfiguration;
 	}
 
 	public void setContactsConfiguration(
@@ -129,6 +140,7 @@ public class LiferayProvider implements Provider {
 	}
 
 	private AnalyticsConfiguration _analyticsConfiguration;
+	private ChannelsConfiguration _channelsConfiguration;
 	private ContactsConfiguration _contactsConfiguration;
 
 }

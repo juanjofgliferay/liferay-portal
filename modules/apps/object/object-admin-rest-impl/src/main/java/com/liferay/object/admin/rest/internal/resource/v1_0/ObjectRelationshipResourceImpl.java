@@ -12,19 +12,25 @@ import com.liferay.object.admin.rest.internal.dto.v1_0.converter.constants.DTOCo
 import com.liferay.object.admin.rest.internal.dto.v1_0.util.ObjectFieldUtil;
 import com.liferay.object.admin.rest.internal.odata.entity.v1_0.ObjectRelationshipEntityModel;
 import com.liferay.object.admin.rest.resource.v1_0.ObjectRelationshipResource;
+import com.liferay.object.constants.ObjectDefinitionConstants;
 import com.liferay.object.model.ObjectField;
+import com.liferay.object.model.ObjectFolder;
 import com.liferay.object.service.ObjectDefinitionLocalService;
 import com.liferay.object.service.ObjectFieldLocalService;
 import com.liferay.object.service.ObjectFieldSettingLocalService;
 import com.liferay.object.service.ObjectFilterLocalService;
+import com.liferay.object.service.ObjectFolderLocalService;
 import com.liferay.object.service.ObjectRelationshipService;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
+import com.liferay.portal.kernel.lazy.referencing.LazyReferencingThreadLocal;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
@@ -35,7 +41,7 @@ import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
 import com.liferay.portal.vulcan.util.SearchUtil;
 
-import javax.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.MultivaluedMap;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -124,6 +130,8 @@ public class ObjectRelationshipResourceImpl
 				searchContext.setAttribute(
 					"objectDefinitionId", objectDefinitionId);
 				searchContext.setCompanyId(contextCompany.getCompanyId());
+				searchContext.setLocale(
+					contextAcceptLanguage.getPreferredLocale());
 			},
 			sorts,
 			document -> _toObjectRelationship(
@@ -153,8 +161,7 @@ public class ObjectRelationshipResourceImpl
 					externalReferenceCode, contextCompany.getCompanyId());
 
 		com.liferay.object.model.ObjectDefinition objectDefinition2 =
-			_getObjectDefinition2(
-				objectDefinition1.getObjectFolderId(), objectRelationship);
+			_getObjectDefinition2(objectRelationship);
 
 		objectRelationship.setParameterObjectFieldId(
 			() -> {
@@ -179,7 +186,9 @@ public class ObjectRelationshipResourceImpl
 				objectDefinition2.getObjectDefinitionId(),
 				objectRelationship.getParameterObjectFieldId(),
 				objectRelationship.getDeletionTypeAsString(),
-				LocalizedMapUtil.getLocalizedMap(objectRelationship.getLabel()),
+				GetterUtil.getBoolean(objectRelationship.getEdge()),
+				LocalizedMapUtil.populateLocalizedMap(
+					objectRelationship.getLabel()),
 				objectRelationship.getName(),
 				GetterUtil.getBoolean(objectRelationship.getSystem()),
 				objectRelationship.getTypeAsString(), null));
@@ -193,17 +202,11 @@ public class ObjectRelationshipResourceImpl
 		long objectDefinitionId2 = GetterUtil.getLong(
 			objectRelationship.getObjectDefinitionId2());
 
-		if ((objectDefinitionId2 == 0) &&
-			(objectRelationship.getObjectDefinitionExternalReferenceCode2() !=
-				null)) {
-
-			com.liferay.object.model.ObjectDefinition objectDefinition1 =
-				_objectDefinitionLocalService.getObjectDefinition(
-					objectDefinitionId);
+		if (objectRelationship.getObjectDefinitionExternalReferenceCode2() !=
+				null) {
 
 			com.liferay.object.model.ObjectDefinition objectDefinition2 =
-				_getObjectDefinition2(
-					objectDefinition1.getObjectFolderId(), objectRelationship);
+				_getObjectDefinition2(objectRelationship);
 
 			objectDefinitionId2 = objectDefinition2.getObjectDefinitionId();
 		}
@@ -215,12 +218,15 @@ public class ObjectRelationshipResourceImpl
 				GetterUtil.getLong(
 					objectRelationship.getParameterObjectFieldId()),
 				objectRelationship.getDeletionTypeAsString(),
-				LocalizedMapUtil.getLocalizedMap(objectRelationship.getLabel()),
+				GetterUtil.getBoolean(objectRelationship.getEdge()),
+				LocalizedMapUtil.populateLocalizedMap(
+					objectRelationship.getLabel()),
 				objectRelationship.getName(),
 				GetterUtil.getBoolean(objectRelationship.getSystem()),
 				objectRelationship.getTypeAsString(),
 				ObjectFieldUtil.toObjectField(
-					false, _listTypeDefinitionLocalService,
+					LocaleUtil.toLanguageId(LocaleUtil.getSiteDefault()),
+					groupLocalService, _listTypeDefinitionLocalService,
 					objectRelationship.getObjectField(),
 					_objectFieldLocalService, _objectFieldSettingLocalService,
 					_objectFilterLocalService)));
@@ -232,7 +238,8 @@ public class ObjectRelationshipResourceImpl
 		throws Exception {
 
 		if (Validator.isNotNull(objectRelationship.getEdge()) &&
-			!FeatureFlagManagerUtil.isEnabled("LPS-187142")) {
+			!FeatureFlagManagerUtil.isEnabled(
+				contextCompany.getCompanyId(), "LPD-34594")) {
 
 			throw new UnsupportedOperationException();
 		}
@@ -266,9 +273,11 @@ public class ObjectRelationshipResourceImpl
 					objectRelationship.getParameterObjectFieldId()),
 				objectRelationship.getDeletionTypeAsString(),
 				GetterUtil.getBoolean(objectRelationship.getEdge()),
-				LocalizedMapUtil.getLocalizedMap(objectRelationship.getLabel()),
+				LocalizedMapUtil.populateLocalizedMap(
+					objectRelationship.getLabel()),
 				ObjectFieldUtil.toObjectField(
-					false, _listTypeDefinitionLocalService,
+					LocaleUtil.toLanguageId(LocaleUtil.getSiteDefault()),
+					groupLocalService, _listTypeDefinitionLocalService,
 					objectRelationship.getObjectField(),
 					_objectFieldLocalService, _objectFieldSettingLocalService,
 					_objectFilterLocalService)));
@@ -279,6 +288,33 @@ public class ObjectRelationshipResourceImpl
 			String externalReferenceCode, ObjectRelationship objectRelationship)
 		throws Exception {
 
+		com.liferay.object.model.ObjectDefinition
+			serviceBuilderObjectDefinition = null;
+
+		if (Validator.isNotNull(
+				objectRelationship.
+					getObjectDefinitionExternalReferenceCode1())) {
+
+			serviceBuilderObjectDefinition =
+				_objectDefinitionLocalService.
+					fetchObjectDefinitionByExternalReferenceCode(
+						objectRelationship.
+							getObjectDefinitionExternalReferenceCode1(),
+						contextCompany.getCompanyId());
+		}
+
+		if (serviceBuilderObjectDefinition == null) {
+			serviceBuilderObjectDefinition =
+				_objectDefinitionLocalService.getObjectDefinition(
+					GetterUtil.getLong(
+						objectRelationship.getObjectDefinitionId1()));
+		}
+
+		long objectDefinitionId =
+			serviceBuilderObjectDefinition.getObjectDefinitionId();
+
+		objectRelationship.setObjectDefinitionId1(() -> objectDefinitionId);
+
 		com.liferay.object.model.ObjectRelationship
 			serviceBuilderObjectRelationship =
 				_objectRelationshipService.
@@ -286,7 +322,8 @@ public class ObjectRelationshipResourceImpl
 						externalReferenceCode, contextCompany.getCompanyId(),
 						objectRelationship.getObjectDefinitionId1());
 
-		objectRelationship.setExternalReferenceCode(externalReferenceCode);
+		objectRelationship.setExternalReferenceCode(
+			() -> externalReferenceCode);
 
 		if (serviceBuilderObjectRelationship != null) {
 			return putObjectRelationship(
@@ -299,27 +336,28 @@ public class ObjectRelationshipResourceImpl
 	}
 
 	private com.liferay.object.model.ObjectDefinition _getObjectDefinition2(
-			long objectFolderId, ObjectRelationship objectRelationship)
+			ObjectRelationship objectRelationship)
 		throws Exception {
 
-		com.liferay.object.model.ObjectDefinition objectDefinition =
-			_objectDefinitionLocalService.
-				fetchObjectDefinitionByExternalReferenceCode(
-					objectRelationship.
-						getObjectDefinitionExternalReferenceCode2(),
+		try (SafeCloseable safeCloseable =
+				LazyReferencingThreadLocal.setEnabledWithSafeCloseable(true)) {
+
+			ObjectFolder defaultObjectFolder =
+				_objectFolderLocalService.getOrAddDefaultObjectFolder(
 					contextCompany.getCompanyId());
 
-		if (objectDefinition != null) {
-			return objectDefinition;
+			return _objectDefinitionLocalService.getOrAddEmptyObjectDefinition(
+				objectRelationship.getObjectDefinitionExternalReferenceCode2(),
+				contextCompany.getCompanyId(), contextUser.getUserId(),
+				defaultObjectFolder.getObjectFolderId(),
+				GetterUtil.get(
+					objectRelationship.getObjectDefinitionModifiable2(), true),
+				GetterUtil.get(
+					objectRelationship.getObjectDefinitionScope2(),
+					ObjectDefinitionConstants.SCOPE_COMPANY),
+				GetterUtil.get(
+					objectRelationship.getObjectDefinitionSystem2(), false));
 		}
-
-		return _objectDefinitionLocalService.addObjectDefinition(
-			objectRelationship.getObjectDefinitionExternalReferenceCode2(),
-			contextUser.getUserId(), objectFolderId,
-			GetterUtil.get(
-				objectRelationship.getObjectDefinitionModifiable2(), true),
-			GetterUtil.get(
-				objectRelationship.getObjectDefinitionSystem2(), false));
 	}
 
 	private ObjectRelationship _toObjectRelationship(
@@ -365,6 +403,9 @@ public class ObjectRelationshipResourceImpl
 
 	@Reference
 	private ObjectFilterLocalService _objectFilterLocalService;
+
+	@Reference
+	private ObjectFolderLocalService _objectFolderLocalService;
 
 	@Reference(target = DTOConverterConstants.OBJECT_RELATIONSHIP_DTO_CONVERTER)
 	private DTOConverter

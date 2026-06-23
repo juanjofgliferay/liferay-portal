@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.constraints.NotEmpty;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.constraints.NotEmpty;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -40,11 +39,11 @@ import javax.xml.bind.annotation.XmlRootElement;
 	description = "Represents a custom CSS viewport.",
 	value = "CustomCSSViewport"
 )
-@JsonFilter("Liferay.Vulcan")
-@Schema(
+@io.swagger.v3.oas.annotations.media.Schema(
 	description = "Represents a custom CSS viewport.",
 	requiredProperties = {"id", "customCSS"}
 )
+@JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "CustomCSSViewport")
 public class CustomCSSViewport implements Serializable {
 
@@ -56,28 +55,40 @@ public class CustomCSSViewport implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(CustomCSSViewport.class, json);
 	}
 
-	@Schema(description = "The definition of the custom CSS viewport.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The definition of the custom CSS viewport."
+	)
 	public String getCustomCSS() {
+		if (_customCSSSupplier != null) {
+			customCSS = _customCSSSupplier.get();
+
+			_customCSSSupplier = null;
+		}
+
 		return customCSS;
 	}
 
 	public void setCustomCSS(String customCSS) {
 		this.customCSS = customCSS;
+
+		_customCSSSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCustomCSS(
 		UnsafeSupplier<String, Exception> customCSSUnsafeSupplier) {
 
-		try {
-			customCSS = customCSSUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_customCSSSupplier = () -> {
+			try {
+				return customCSSUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The definition of the custom CSS viewport.")
@@ -85,32 +96,50 @@ public class CustomCSSViewport implements Serializable {
 	@NotEmpty
 	protected String customCSS;
 
-	@Schema(description = "The custom CSS viewport's ID.")
+	@JsonIgnore
+	private Supplier<String> _customCSSSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The custom CSS viewport's ID."
+	)
 	public String getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(String id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<String, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The custom CSS viewport's ID.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	@NotEmpty
 	protected String id;
+
+	@JsonIgnore
+	private Supplier<String> _idSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -139,6 +168,8 @@ public class CustomCSSViewport implements Serializable {
 
 		sb.append("{");
 
+		String customCSS = getCustomCSS();
+
 		if (customCSS != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -152,6 +183,8 @@ public class CustomCSSViewport implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String id = getId();
 
 		if (id != null) {
 			if (sb.length() > 1) {
@@ -172,8 +205,8 @@ public class CustomCSSViewport implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.CustomCSSViewport",
 		name = "x-class-name"
 	)
@@ -219,7 +252,10 @@ public class CustomCSSViewport implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -265,3 +301,4 @@ public class CustomCSSViewport implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-640725120

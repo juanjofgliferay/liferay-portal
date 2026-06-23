@@ -16,10 +16,8 @@ import org.osgi.annotation.versioning.ProviderType;
  *
  * @author Brian Wing Shun Chan
  * @see DDMContentModel
- * @deprecated
  * @generated
  */
-@Deprecated
 @ImplementationClassName(
 	"com.liferay.dynamic.data.mapping.model.impl.DDMContentImpl"
 )
@@ -52,3 +50,4 @@ public interface DDMContent extends DDMContentModel, PersistedModel {
 		};
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-773895450

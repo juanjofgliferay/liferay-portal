@@ -11,6 +11,7 @@ import {COOKIE_TYPES, checkConsent} from 'frontend-js-web';
 import PropTypes from 'prop-types';
 import React, {useCallback, useEffect, useState} from 'react';
 
+import './mini_compare.scss';
 import CommerceCookie from '../../utilities/cookies';
 import {
 	ITEM_REMOVED_FROM_COMPARE,
@@ -69,7 +70,11 @@ function Item(props) {
 				/>
 			</ClaySticker>
 
-			<button className="mini-compare-delete" onClick={props.onDelete}>
+			<button
+				aria-label={Liferay.Language.get('delete-item')}
+				className="mini-compare-delete"
+				onClick={props.onDelete}
+			>
 				<ClayIcon symbol="times" />
 			</button>
 		</div>
@@ -77,7 +82,14 @@ function Item(props) {
 }
 
 function MiniCompare(props) {
-	const [items, setItems] = useState(props.items);
+	const [items, setItems] = useState(() => {
+		const value = compareCookie.getValue(props.commerceChannelGroupId);
+		const ids = value ? value.split(':') : [];
+
+		return ids.map(
+			(id) => props.items?.find((item) => item.id === id) || {id}
+		);
+	});
 	const [functionalCookiesConsent, setFunctionalCookiesConsent] = useState(
 		checkConsent(COOKIE_TYPES.FUNCTIONAL)
 	);
@@ -162,8 +174,8 @@ function MiniCompare(props) {
 		});
 	}, [items, props.itemsLimit]);
 
-	return triggerCheckCookieConsent() ? null : (
-		<div className={classnames('mini-compare', !!items.length && 'active')}>
+	return !items.length || triggerCheckCookieConsent() ? null : (
+		<div className={classnames('mini-compare', 'active')}>
 			{Array(props.itemsLimit)
 				.fill(null)
 				.map((_el, i) => {

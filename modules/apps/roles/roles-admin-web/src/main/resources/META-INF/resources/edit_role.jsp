@@ -28,6 +28,7 @@ RoleTypeContributor currentRoleTypeContributor = RoleTypeContributorRetrieverUti
 
 portletDisplay.setShowBackIcon(true);
 portletDisplay.setURLBack(backURL);
+portletDisplay.setURLBackTitle(portletDisplay.getPortletDisplayName());
 
 renderResponse.setTitle((role == null) ? LanguageUtil.get(request, "new-role") : role.getTitle(locale));
 %>
@@ -64,10 +65,11 @@ renderResponse.setTitle((role == null) ? LanguageUtil.get(request, "new-role") :
 
 	<liferay-ui:error exception="<%= DuplicateRoleException.class %>" message="please-enter-a-unique-name" />
 	<liferay-ui:error exception="<%= RequiredRoleException.class %>" message="old-role-name-is-a-required-system-role" />
+	<liferay-ui:error exception="<%= RoleSubtypeException.class %>" message="please-enter-a-valid-subtype" />
 
 	<aui:model-context bean="<%= role %>" model="<%= Role.class %>" />
 
-	<div class="sheet">
+	<div class="mt-4 sheet">
 		<div class="panel-group panel-group-flush">
 			<aui:fieldset>
 				<c:choose>
@@ -137,7 +139,7 @@ renderResponse.setTitle((role == null) ? LanguageUtil.get(request, "new-role") :
 				</liferay-ui:error>
 
 				<c:choose>
-					<c:when test="<%= (role != null) && role.isSystem() %>">
+					<c:when test="<%= RoleConstants.isUnmodifiable(role) %>">
 						<aui:input disabled="<%= true %>" helpMessage="key-field-help" label="key" name="viewNameField" type="text" value="<%= roleName %>" />
 						<aui:input name="name" type="hidden" value="<%= roleName %>" />
 					</c:when>
@@ -182,9 +184,7 @@ renderResponse.setTitle((role == null) ? LanguageUtil.get(request, "new-role") :
 </aui:form>
 
 <c:if test="<%= role == null %>">
-	<aui:script require="frontend-js-web/index as frontendJsWeb">
-		var {debounce} = frontendJsWeb;
-
+	<aui:script sandbox="<%= true %>">
 		var form = document.getElementById('<portlet:namespace />fm');
 
 		if (form) {
@@ -202,7 +202,10 @@ renderResponse.setTitle((role == null) ? LanguageUtil.get(request, "new-role") :
 					nameInput.value = value;
 				};
 
-				titleInput.addEventListener('input', debounce(handleOnTitleInput, 200));
+				titleInput.addEventListener(
+					'input',
+					Liferay.Util.debounce(handleOnTitleInput, 200)
+				);
 			}
 		}
 	</aui:script>

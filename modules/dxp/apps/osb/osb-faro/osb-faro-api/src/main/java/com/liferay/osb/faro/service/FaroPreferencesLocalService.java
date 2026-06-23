@@ -256,6 +256,9 @@ public interface FaroPreferencesLocalService
 	public PersistedModel getPersistedModel(Serializable primaryKeyObj)
 		throws PortalException;
 
+	public FaroPreferences saveGlobalPreferences(String preferences)
+		throws PortalException;
+
 	public FaroPreferences savePreferences(
 			long userId, long groupId, long ownerId, String preferences)
 		throws PortalException;
@@ -275,3 +278,4 @@ public interface FaroPreferencesLocalService
 		FaroPreferences faroPreferences);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:481294087

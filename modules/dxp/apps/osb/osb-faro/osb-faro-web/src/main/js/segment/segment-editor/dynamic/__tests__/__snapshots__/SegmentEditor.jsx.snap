@@ -165,7 +165,6 @@ exports[`SegmentEditor should render 1`] = `
                 >
                   <button
                     class="button-root btn btn-sm btn-primary"
-                    disabled=""
                     type="submit"
                   >
                     Save Segment
@@ -175,7 +174,7 @@ exports[`SegmentEditor should render 1`] = `
                   class="btn-group-item cancel"
                 >
                   <a
-                    class="button-root btn btn-secondary"
+                    class="button-root btn btn-sm btn-secondary"
                     href="/workspace/23/321/contacts/segments"
                   >
                     Cancel
@@ -205,49 +204,98 @@ exports[`SegmentEditor should render 1`] = `
                 class="content-wrapper"
               >
                 <div
-                  class="sheet"
+                  class="segment-erc"
                 >
                   <div
-                    class="criteria-builder-root"
+                    class="form-group form-group-autofit"
                   >
                     <div
-                      class="criteria-group-root criteria-group-item-root"
+                      class="form-group-item form-group-item-label form-group-item-shrink"
+                    >
+                      <label
+                        class="form-control-label label-root required"
+                        for="externalReferenceCode"
+                      >
+                        <span
+                          class="content-container"
+                        >
+                          Segment ERC
+                        </span>
+                        <span
+                          class="info-popover-root"
+                        >
+                          <svg
+                            class="lexicon-icon lexicon-icon-question-circle-full icon-root"
+                            role="presentation"
+                          >
+                            <use
+                              href="#question-circle-full"
+                            />
+                          </svg>
+                        </span>
+                      </label>
+                    </div>
+                    <div
+                      class="form-group-item"
                     >
                       <div
-                        class="empty-drop-zone-root empty-drop-zone-dashed border-primary rounded"
+                        class=""
                       >
-                        <div
-                          class="drop-zone-target p-5"
-                        >
-                          <div
-                            class="empty-drop-zone-indicator"
-                          />
-                          <div
-                            class="criteria-message"
+                        <input
+                          class="input-root form-control"
+                          id="externalReferenceCode"
+                          name="externalReferenceCode"
+                          type="text"
+                          value="00000000-0000-0000-0000-000000000000"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="criteria-builder-root"
+                >
+                  <div
+                    class="empty-drop-zone-root"
+                  >
+                    <div
+                      class="empty-drop-zone-target"
+                    >
+                      <div
+                        class="empty-drop-zone-indicator"
+                      />
+                      <div
+                        class="empty-drop-zone-message"
+                      >
+                        <div>
+                          <svg
+                            class="lexicon-icon lexicon-icon-ac_rule icon-root icon-size-md mr-3"
+                            role="presentation"
                           >
-                            <svg
-                              class="lexicon-icon lexicon-icon-ac-rule icon-root icon-size-md"
-                              role="presentation"
-                            >
-                              <use
-                                href="#ac-rule"
-                              />
-                            </svg>
+                            <use
+                              href="#ac_rule"
+                            />
+                          </svg>
+                          <span
+                            class="text-4"
+                          >
                             Drag and drop criterion from the right to add rules.
-                          </div>
-                          <div
-                            class="groups-message"
+                          </span>
+                        </div>
+                        <div>
+                          <svg
+                            class="lexicon-icon lexicon-icon-ac_group icon-root icon-size-md mr-3"
+                            role="presentation"
                           >
-                            <svg
-                              class="lexicon-icon lexicon-icon-ac-group icon-root icon-size-md"
-                              role="presentation"
-                            >
-                              <use
-                                href="#ac-group"
-                              />
-                            </svg>
+                            <use
+                              href="#ac_group"
+                            />
+                          </svg>
+                          <span
+                            class="text-4"
+                          >
                             Drag and drop over an existing criteria to form groups.
-                          </div>
+                          </span>
                         </div>
                       </div>
                     </div>

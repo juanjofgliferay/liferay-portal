@@ -8,7 +8,7 @@ package com.liferay.commerce.machine.learning.internal.forecast;
 import com.liferay.commerce.machine.learning.forecast.CommerceMLForecast;
 import com.liferay.commerce.machine.learning.internal.forecast.constants.CommerceMLForecastField;
 import com.liferay.commerce.machine.learning.internal.forecast.constants.CommerceMLForecastPeriod;
-import com.liferay.commerce.machine.learning.internal.search.api.CommerceMLIndexer;
+import com.liferay.commerce.machine.learning.internal.search.constants.IndexNamePatterns;
 import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.lang.HashUtil;
 import com.liferay.petra.string.StringBundler;
@@ -27,7 +27,6 @@ import com.liferay.portal.kernel.search.SortFactoryUtil;
 import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.search.filter.RangeTermFilter;
 import com.liferay.portal.kernel.search.filter.TermFilter;
-import com.liferay.portal.kernel.search.generic.BooleanQueryImpl;
 import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.search.engine.adapter.SearchEngineAdapter;
@@ -37,6 +36,7 @@ import com.liferay.portal.search.engine.adapter.search.CountSearchRequest;
 import com.liferay.portal.search.engine.adapter.search.CountSearchResponse;
 import com.liferay.portal.search.engine.adapter.search.SearchSearchRequest;
 import com.liferay.portal.search.engine.adapter.search.SearchSearchResponse;
+import com.liferay.portal.search.index.IndexNameBuilder;
 
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -68,7 +68,7 @@ public abstract class BaseCommerceMLForecastServiceImpl
 		document.addKeyword(Field.UID, String.valueOf(model.getForecastId()));
 
 		IndexDocumentRequest indexDocumentRequest = new IndexDocumentRequest(
-			commerceMLIndexer.getIndexName(model.getCompanyId()), document);
+			getIndexName(model.getCompanyId()), document);
 
 		IndexDocumentResponse indexDocumentResponse =
 			searchEngineAdapter.execute(indexDocumentRequest);
@@ -88,7 +88,7 @@ public abstract class BaseCommerceMLForecastServiceImpl
 	protected BooleanQuery getBooleanQuery(
 		String scope, String period, String target) {
 
-		return new BooleanQueryImpl() {
+		return new BooleanQuery() {
 			{
 				setPreBooleanFilter(_getBooleanFilter(scope, period, target));
 			}
@@ -100,7 +100,7 @@ public abstract class BaseCommerceMLForecastServiceImpl
 			Date endDate)
 		throws com.liferay.portal.kernel.search.ParseException {
 
-		return new BooleanQueryImpl() {
+		return new BooleanQuery() {
 			{
 				BooleanFilter booleanFilter = _getBooleanFilter(
 					scope, period, target);
@@ -120,18 +120,19 @@ public abstract class BaseCommerceMLForecastServiceImpl
 	protected T getCommerceMLForecast(long companyId, long forecastId)
 		throws PortalException {
 
-		TermFilter termFilter = new TermFilter(
-			CommerceMLForecastField.FORECAST_ID, String.valueOf(forecastId));
-
 		List<T> searchResults = getSearchResults(
 			getSearchSearchRequest(
-				commerceMLIndexer.getIndexName(companyId),
-				new BooleanQueryImpl() {
+				getIndexName(companyId),
+				new BooleanQuery() {
 					{
 						setPreBooleanFilter(
 							new BooleanFilter() {
 								{
-									add(termFilter, BooleanClauseOccur.MUST);
+									add(
+										new TermFilter(
+											CommerceMLForecastField.FORECAST_ID,
+											String.valueOf(forecastId)),
+										BooleanClauseOccur.MUST);
 								}
 							});
 					}
@@ -219,7 +220,6 @@ public abstract class BaseCommerceMLForecastServiceImpl
 
 		document.addNumber(
 			CommerceMLForecastField.ACTUAL, commerceMLForecast.getActual());
-		document.addNumber(Field.COMPANY_ID, commerceMLForecast.getCompanyId());
 		document.addNumber(
 			CommerceMLForecastField.FORECAST, commerceMLForecast.getForecast());
 		document.addNumber(
@@ -242,6 +242,7 @@ public abstract class BaseCommerceMLForecastServiceImpl
 		document.addDate(
 			CommerceMLForecastField.TIMESTAMP,
 			commerceMLForecast.getTimestamp());
+		document.addNumber(Field.COMPANY_ID, commerceMLForecast.getCompanyId());
 
 		return document;
 	}
@@ -279,6 +280,11 @@ public abstract class BaseCommerceMLForecastServiceImpl
 		}
 
 		return HashUtil.hash(values.length, sb.toString());
+	}
+
+	protected String getIndexName(long companyId) {
+		return IndexNamePatterns.getIndexName(
+			indexNameBuilder, IndexNamePatterns.FORECAST, companyId);
 	}
 
 	protected List<T> getSearchResults(
@@ -341,10 +347,8 @@ public abstract class BaseCommerceMLForecastServiceImpl
 
 	protected static final String SORTABLE_FIELD_SUFFIX = "_sortable";
 
-	@Reference(
-		target = "(component.name=com.liferay.commerce.machine.learning.internal.forecast.search.index.ForecastCommerceMLIndexer)"
-	)
-	protected volatile CommerceMLIndexer commerceMLIndexer;
+	@Reference
+	protected IndexNameBuilder indexNameBuilder;
 
 	@Reference
 	protected volatile SearchEngineAdapter searchEngineAdapter;

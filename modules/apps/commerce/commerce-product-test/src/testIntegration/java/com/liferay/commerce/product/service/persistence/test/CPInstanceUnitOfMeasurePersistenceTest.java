@@ -118,12 +118,8 @@ public class CPInstanceUnitOfMeasurePersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
 		CPInstanceUnitOfMeasure newCPInstanceUnitOfMeasure =
-			_persistence.create(pk);
-
-		newCPInstanceUnitOfMeasure.setMvccVersion(RandomTestUtil.nextLong());
+			addCPInstanceUnitOfMeasure();
 
 		newCPInstanceUnitOfMeasure.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -151,6 +147,9 @@ public class CPInstanceUnitOfMeasurePersistenceTest {
 		newCPInstanceUnitOfMeasure.setName(RandomTestUtil.randomString());
 
 		newCPInstanceUnitOfMeasure.setPrecision(RandomTestUtil.nextInt());
+
+		newCPInstanceUnitOfMeasure.setPricingQuantity(
+			new BigDecimal(RandomTestUtil.nextDouble()));
 
 		newCPInstanceUnitOfMeasure.setPrimary(RandomTestUtil.randomBoolean());
 
@@ -216,6 +215,9 @@ public class CPInstanceUnitOfMeasurePersistenceTest {
 		Assert.assertEquals(
 			existingCPInstanceUnitOfMeasure.getPrecision(),
 			newCPInstanceUnitOfMeasure.getPrecision());
+		Assert.assertEquals(
+			existingCPInstanceUnitOfMeasure.getPricingQuantity(),
+			newCPInstanceUnitOfMeasure.getPricingQuantity());
 		Assert.assertEquals(
 			existingCPInstanceUnitOfMeasure.isPrimary(),
 			newCPInstanceUnitOfMeasure.isPrimary());
@@ -333,8 +335,8 @@ public class CPInstanceUnitOfMeasurePersistenceTest {
 			"userId", true, "userName", true, "createDate", true,
 			"modifiedDate", true, "CPInstanceId", true, "active", true,
 			"incrementalOrderQuantity", true, "key", true, "name", true,
-			"precision", true, "primary", true, "priority", true, "rate", true,
-			"sku", true);
+			"precision", true, "pricingQuantity", true, "primary", true,
+			"priority", true, "rate", true, "sku", true);
 	}
 
 	@Test
@@ -650,8 +652,6 @@ public class CPInstanceUnitOfMeasurePersistenceTest {
 		CPInstanceUnitOfMeasure cpInstanceUnitOfMeasure = _persistence.create(
 			pk);
 
-		cpInstanceUnitOfMeasure.setMvccVersion(RandomTestUtil.nextLong());
-
 		cpInstanceUnitOfMeasure.setCtCollectionId(RandomTestUtil.nextLong());
 
 		cpInstanceUnitOfMeasure.setUuid(RandomTestUtil.randomString());
@@ -679,6 +679,9 @@ public class CPInstanceUnitOfMeasurePersistenceTest {
 
 		cpInstanceUnitOfMeasure.setPrecision(RandomTestUtil.nextInt());
 
+		cpInstanceUnitOfMeasure.setPricingQuantity(
+			new BigDecimal(RandomTestUtil.nextDouble()));
+
 		cpInstanceUnitOfMeasure.setPrimary(RandomTestUtil.randomBoolean());
 
 		cpInstanceUnitOfMeasure.setPriority(RandomTestUtil.nextDouble());
@@ -700,3 +703,4 @@ public class CPInstanceUnitOfMeasurePersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:922751571

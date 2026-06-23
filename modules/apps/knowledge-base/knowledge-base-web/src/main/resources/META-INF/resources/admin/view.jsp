@@ -36,11 +36,10 @@ KBAdminManagementToolbarDisplayContext kbAdminManagementToolbarDisplayContext = 
 		clearResultsURL="<%= String.valueOf(kbAdminManagementToolbarDisplayContext.getSearchURL()) %>"
 		creationMenu="<%= kbAdminManagementToolbarDisplayContext.getCreationMenu() %>"
 		disabled="<%= kbAdminManagementToolbarDisplayContext.isDisabled() %>"
-		filterDropdownItems="<%= kbAdminManagementToolbarDisplayContext.getFilterDropDownItems() %>"
 		infoPanelId="infoPanelId"
 		itemsTotal="<%= kbAdminManagementToolbarDisplayContext.getTotal() %>"
 		orderDropdownItems="<%= kbAdminManagementToolbarDisplayContext.getOrderByDropdownItems() %>"
-		propsTransformer="admin/js/ManagementToolbarPropsTransformer"
+		propsTransformer="{ManagementToolbarPropsTransformer} from knowledge-base-web"
 		searchActionURL="<%= String.valueOf(kbAdminManagementToolbarDisplayContext.getSearchURL()) %>"
 		searchContainerId="kbObjects"
 		selectable="<%= true %>"
@@ -71,6 +70,7 @@ KBAdminManagementToolbarDisplayContext kbAdminManagementToolbarDisplayContext = 
 
 		<clay:container-fluid
 			cssClass="container-view sidenav-content"
+			size="xxxl"
 		>
 
 			<%
@@ -157,6 +157,30 @@ String kbArticleSuccessMessage = GetterUtil.getString(MultiSessionMessages.get(r
 				"message", kbArticleSuccessMessage
 			).build()
 		%>'
-		module="admin/js/utils/openToast"
+		module="{openToast} from knowledge-base-web"
 	/>
 </c:if>
+
+<div>
+
+	<%
+	LockedKBArticleException lockedKBArticleException = (LockedKBArticleException)MultiSessionErrors.get(liferayPortletRequest, LockedKBArticleException.class.getName());
+	%>
+
+	<react:component
+		module="{LockedKBArticleModal} from knowledge-base-web"
+		props='<%=
+			HashMapBuilder.<String, Object>put(
+				"actionLabel", (lockedKBArticleException != null) ? LanguageUtil.get(request, lockedKBArticleException.getCmd()) : null
+			).put(
+				"actionURL", (lockedKBArticleException != null) ? lockedKBArticleException.getActionURL() : null
+			).put(
+				"groupAdmin", permissionChecker.isGroupAdmin(scopeGroupId)
+			).put(
+				"open", lockedKBArticleException != null
+			).put(
+				"userName", (lockedKBArticleException != null) ? lockedKBArticleException.getUserName() : null
+			).build()
+		%>'
+	/>
+</div>

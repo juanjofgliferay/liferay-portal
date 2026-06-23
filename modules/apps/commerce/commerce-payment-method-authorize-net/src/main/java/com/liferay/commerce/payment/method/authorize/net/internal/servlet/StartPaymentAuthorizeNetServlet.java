@@ -5,21 +5,25 @@
 
 package com.liferay.commerce.payment.method.authorize.net.internal.servlet;
 
+import com.liferay.commerce.model.CommerceOrder;
+import com.liferay.commerce.payment.helper.CommercePaymentHttpHelper;
 import com.liferay.commerce.payment.method.authorize.net.internal.constants.AuthorizeNetCommercePaymentMethodConstants;
+import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.servlet.PortalSessionThreadLocal;
 import com.liferay.portal.kernel.util.Portal;
 
-import java.io.IOException;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.RequestDispatcher;
-import javax.servlet.Servlet;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -49,9 +53,21 @@ public class StartPaymentAuthorizeNetServlet extends HttpServlet {
 					httpServletRequest.getSession());
 			}
 
+			User currentUser = _portal.getUser(httpServletRequest);
+
+			if (currentUser == null) {
+				CommerceOrder commerceOrder =
+					_commercePaymentHttpHelper.getCommerceOrder(
+						httpServletRequest);
+
+				if (commerceOrder != null) {
+					currentUser = _userLocalService.fetchUser(
+						commerceOrder.getUserId());
+				}
+			}
+
 			PermissionThreadLocal.setPermissionChecker(
-				PermissionCheckerFactoryUtil.create(
-					_portal.getUser(httpServletRequest)));
+				PermissionCheckerFactoryUtil.create(currentUser));
 
 			RequestDispatcher requestDispatcher =
 				_servletContext.getRequestDispatcher(
@@ -66,11 +82,17 @@ public class StartPaymentAuthorizeNetServlet extends HttpServlet {
 	}
 
 	@Reference
+	private CommercePaymentHttpHelper _commercePaymentHttpHelper;
+
+	@Reference
 	private Portal _portal;
 
 	@Reference(
 		target = "(osgi.web.symbolicname=com.liferay.commerce.payment.method.authorize.net)"
 	)
 	private ServletContext _servletContext;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

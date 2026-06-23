@@ -16,7 +16,12 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -28,20 +33,20 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.DecimalMin;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Zoltán Takács
  * @generated
  */
 @Generated("")
-@GraphQLName("Attachment")
+@GraphQLName(
+	description = "An attachment associated with a product (or one of its options or option values) in the admin catalog write surface. Used to create, read, replace, and patch either gallery images (type 0) or generic attachments (type 1).",
+	value = "Attachment"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "An attachment associated with a product (or one of its options or option values) in the admin catalog write surface. Used to create, read, replace, and patch either gallery images (type 0) or generic attachments (type 1)."
+)
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "Attachment")
 public class Attachment implements Serializable {
@@ -54,510 +59,939 @@ public class Attachment implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Attachment.class, json);
 	}
 
-	@Schema(description = "Base64 encoded file")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Base64-encoded payload used only when supplying the file body inline; decoded server-side and stored as a new document-library file entry. Mutually exclusive with `src`; ignored when `src` is supplied. Not populated on read responses.",
+		example = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+	)
 	public String getAttachment() {
+		if (_attachmentSupplier != null) {
+			attachment = _attachmentSupplier.get();
+
+			_attachmentSupplier = null;
+		}
+
 		return attachment;
 	}
 
 	public void setAttachment(String attachment) {
 		this.attachment = attachment;
+
+		_attachmentSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setAttachment(
 		UnsafeSupplier<String, Exception> attachmentUnsafeSupplier) {
 
-		try {
-			attachment = attachmentUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_attachmentSupplier = () -> {
+			try {
+				return attachmentUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField(description = "Base64 encoded file")
+	@GraphQLField(
+		description = "Base64-encoded payload used only when supplying the file body inline; decoded server-side and stored as a new document-library file entry. Mutually exclusive with `src`; ignored when `src` is supplied. Not populated on read responses."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String attachment;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _attachmentSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "When true the attachment is treated as an externally hosted asset -- no uploaded file is required and `cdnURL` becomes mandatory and must be a valid URL. When false the attachment must reference an existing document-library file.",
+		example = "true"
+	)
 	public Boolean getCdnEnabled() {
+		if (_cdnEnabledSupplier != null) {
+			cdnEnabled = _cdnEnabledSupplier.get();
+
+			_cdnEnabledSupplier = null;
+		}
+
 		return cdnEnabled;
 	}
 
 	public void setCdnEnabled(Boolean cdnEnabled) {
 		this.cdnEnabled = cdnEnabled;
+
+		_cdnEnabledSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCdnEnabled(
 		UnsafeSupplier<Boolean, Exception> cdnEnabledUnsafeSupplier) {
 
-		try {
-			cdnEnabled = cdnEnabledUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_cdnEnabledSupplier = () -> {
+			try {
+				return cdnEnabledUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "When true the attachment is treated as an externally hosted asset -- no uploaded file is required and `cdnURL` becomes mandatory and must be a valid URL. When false the attachment must reference an existing document-library file."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean cdnEnabled;
 
-	@Schema(example = "AB-34098-789-N")
+	@JsonIgnore
+	private Supplier<Boolean> _cdnEnabledSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Public CDN URL used when `cdnEnabled` is true; must be a valid URL. Ignored when `cdnEnabled` is false.",
+		example = "https://cdn.example.com/attachment.png"
+	)
 	public String getCdnURL() {
+		if (_cdnURLSupplier != null) {
+			cdnURL = _cdnURLSupplier.get();
+
+			_cdnURLSupplier = null;
+		}
+
 		return cdnURL;
 	}
 
 	public void setCdnURL(String cdnURL) {
 		this.cdnURL = cdnURL;
+
+		_cdnURLSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCdnURL(
 		UnsafeSupplier<String, Exception> cdnURLUnsafeSupplier) {
 
-		try {
-			cdnURL = cdnURLUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_cdnURLSupplier = () -> {
+			try {
+				return cdnURLUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Public CDN URL used when `cdnEnabled` is true; must be a valid URL. Ignored when `cdnEnabled` is false."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String cdnURL;
 
-	@Schema(description = "Content type of attachment")
+	@JsonIgnore
+	private Supplier<String> _cdnURLSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "MIME type of the uploaded file. When omitted, the server derives it from the decoded file content; the resolved type then drives the file extension applied to the generated unique file name.",
+		example = "image/png"
+	)
 	public String getContentType() {
+		if (_contentTypeSupplier != null) {
+			contentType = _contentTypeSupplier.get();
+
+			_contentTypeSupplier = null;
+		}
+
 		return contentType;
 	}
 
 	public void setContentType(String contentType) {
 		this.contentType = contentType;
+
+		_contentTypeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setContentType(
 		UnsafeSupplier<String, Exception> contentTypeUnsafeSupplier) {
 
-		try {
-			contentType = contentTypeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_contentTypeSupplier = () -> {
+			try {
+				return contentTypeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField(description = "Content type of attachment")
+	@GraphQLField(
+		description = "MIME type of the uploaded file. When omitted, the server derives it from the decoded file content; the resolved type then drives the file extension applied to the generated unique file name."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String contentType;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _contentTypeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Custom expando attributes attached to the attachment; on read they are filtered by the accept-language locale, and on write they are applied to the attachment's expando bridge."
+	)
 	@Valid
-	public CustomField[] getCustomFields() {
+	public com.liferay.portal.vulcan.custom.field.CustomField[]
+		getCustomFields() {
+
+		if (_customFieldsSupplier != null) {
+			customFields = _customFieldsSupplier.get();
+
+			_customFieldsSupplier = null;
+		}
+
 		return customFields;
 	}
 
-	public void setCustomFields(CustomField[] customFields) {
+	public void setCustomFields(
+		com.liferay.portal.vulcan.custom.field.CustomField[] customFields) {
+
 		this.customFields = customFields;
+
+		_customFieldsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCustomFields(
-		UnsafeSupplier<CustomField[], Exception> customFieldsUnsafeSupplier) {
+		UnsafeSupplier
+			<com.liferay.portal.vulcan.custom.field.CustomField[], Exception>
+				customFieldsUnsafeSupplier) {
 
-		try {
-			customFields = customFieldsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_customFieldsSupplier = () -> {
+			try {
+				return customFieldsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Custom expando attributes attached to the attachment; on read they are filtered by the accept-language locale, and on write they are applied to the attachment's expando bridge."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
-	protected CustomField[] customFields;
+	protected com.liferay.portal.vulcan.custom.field.CustomField[] customFields;
 
-	@Schema(example = "2017-07-21")
+	@JsonIgnore
+	private Supplier<com.liferay.portal.vulcan.custom.field.CustomField[]>
+		_customFieldsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Date when the attachment becomes visible. ISO 8601 date (yyyy-MM-dd) interpreted in the request user's time zone. When the value lies in the future the attachment is persisted as scheduled instead of draft or approved.",
+		example = "2017-07-21"
+	)
 	public Date getDisplayDate() {
+		if (_displayDateSupplier != null) {
+			displayDate = _displayDateSupplier.get();
+
+			_displayDateSupplier = null;
+		}
+
 		return displayDate;
 	}
 
 	public void setDisplayDate(Date displayDate) {
 		this.displayDate = displayDate;
+
+		_displayDateSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDisplayDate(
 		UnsafeSupplier<Date, Exception> displayDateUnsafeSupplier) {
 
-		try {
-			displayDate = displayDateUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_displayDateSupplier = () -> {
+			try {
+				return displayDateUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Date when the attachment becomes visible. ISO 8601 date (yyyy-MM-dd) interpreted in the request user's time zone. When the value lies in the future the attachment is persisted as scheduled instead of draft or approved."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Date displayDate;
 
-	@Schema(example = "2017-08-21")
+	@JsonIgnore
+	private Supplier<Date> _displayDateSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Date when the attachment is hidden. ISO 8601 date in the user's time zone; must be in the future and after `displayDate`. When this date has already passed the attachment is persisted as expired. Ignored when `neverExpire` is true.",
+		example = "2017-08-21"
+	)
 	public Date getExpirationDate() {
+		if (_expirationDateSupplier != null) {
+			expirationDate = _expirationDateSupplier.get();
+
+			_expirationDateSupplier = null;
+		}
+
 		return expirationDate;
 	}
 
 	public void setExpirationDate(Date expirationDate) {
 		this.expirationDate = expirationDate;
+
+		_expirationDateSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setExpirationDate(
 		UnsafeSupplier<Date, Exception> expirationDateUnsafeSupplier) {
 
-		try {
-			expirationDate = expirationDateUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_expirationDateSupplier = () -> {
+			try {
+				return expirationDateUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Date when the attachment is hidden. ISO 8601 date in the user's time zone; must be in the future and after `displayDate`. When this date has already passed the attachment is persisted as expired. Ignored when `neverExpire` is true."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Date expirationDate;
 
-	@Schema(example = "AB-34098-789-N")
+	@JsonIgnore
+	private Supplier<Date> _expirationDateSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Idempotency key for create and update; must be unique per attachment within the company. Used to resolve the upsert target; reusing a code that points at a different parent is rejected as a duplicate.",
+		example = "AB-34098-789-N"
+	)
 	public String getExternalReferenceCode() {
+		if (_externalReferenceCodeSupplier != null) {
+			externalReferenceCode = _externalReferenceCodeSupplier.get();
+
+			_externalReferenceCodeSupplier = null;
+		}
+
 		return externalReferenceCode;
 	}
 
 	public void setExternalReferenceCode(String externalReferenceCode) {
 		this.externalReferenceCode = externalReferenceCode;
+
+		_externalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setExternalReferenceCode(
 		UnsafeSupplier<String, Exception> externalReferenceCodeUnsafeSupplier) {
 
-		try {
-			externalReferenceCode = externalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_externalReferenceCodeSupplier = () -> {
+			try {
+				return externalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Idempotency key for create and update; must be unique per attachment within the company. Used to resolve the upsert target; reusing a code that points at a different parent is rejected as a duplicate."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String externalReferenceCode;
 
+	@JsonIgnore
+	private Supplier<String> _externalReferenceCodeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Optional external reference code of an existing document-library file to attach. On write the server resolves it scoped to `fileEntryGroupExternalReferenceCode` and links the resulting file. Required together with `fileEntryGroupExternalReferenceCode` when `fileEntryId` is 0 and no inline content or URL is supplied. On read it reflects the linked file.",
+		example = "AB-34098-789-N"
+	)
+	public String getFileEntryExternalReferenceCode() {
+		if (_fileEntryExternalReferenceCodeSupplier != null) {
+			fileEntryExternalReferenceCode =
+				_fileEntryExternalReferenceCodeSupplier.get();
+
+			_fileEntryExternalReferenceCodeSupplier = null;
+		}
+
+		return fileEntryExternalReferenceCode;
+	}
+
+	public void setFileEntryExternalReferenceCode(
+		String fileEntryExternalReferenceCode) {
+
+		this.fileEntryExternalReferenceCode = fileEntryExternalReferenceCode;
+
+		_fileEntryExternalReferenceCodeSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setFileEntryExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			fileEntryExternalReferenceCodeUnsafeSupplier) {
+
+		_fileEntryExternalReferenceCodeSupplier = () -> {
+			try {
+				return fileEntryExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(
+		description = "Optional external reference code of an existing document-library file to attach. On write the server resolves it scoped to `fileEntryGroupExternalReferenceCode` and links the resulting file. Required together with `fileEntryGroupExternalReferenceCode` when `fileEntryId` is 0 and no inline content or URL is supplied. On read it reflects the linked file."
+	)
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String fileEntryExternalReferenceCode;
+
+	@JsonIgnore
+	private Supplier<String> _fileEntryExternalReferenceCodeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "External reference code of the site that owns the referenced document-library file. An unknown value is rejected. On read it returns the site code of the underlying file.",
+		example = "AB-34098-789-N"
+	)
+	public String getFileEntryGroupExternalReferenceCode() {
+		if (_fileEntryGroupExternalReferenceCodeSupplier != null) {
+			fileEntryGroupExternalReferenceCode =
+				_fileEntryGroupExternalReferenceCodeSupplier.get();
+
+			_fileEntryGroupExternalReferenceCodeSupplier = null;
+		}
+
+		return fileEntryGroupExternalReferenceCode;
+	}
+
+	public void setFileEntryGroupExternalReferenceCode(
+		String fileEntryGroupExternalReferenceCode) {
+
+		this.fileEntryGroupExternalReferenceCode =
+			fileEntryGroupExternalReferenceCode;
+
+		_fileEntryGroupExternalReferenceCodeSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setFileEntryGroupExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			fileEntryGroupExternalReferenceCodeUnsafeSupplier) {
+
+		_fileEntryGroupExternalReferenceCodeSupplier = () -> {
+			try {
+				return fileEntryGroupExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(
+		description = "External reference code of the site that owns the referenced document-library file. An unknown value is rejected. On read it returns the site code of the underlying file."
+	)
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String fileEntryGroupExternalReferenceCode;
+
+	@JsonIgnore
+	private Supplier<String> _fileEntryGroupExternalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30130")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Identifier of the underlying document-library file. When 0 on write, a new file is created from the supplied base64 body, URL, or file external reference code. When `cdnEnabled` is false a non-zero value is required, otherwise the request is rejected. The current user must hold view permission on this file.",
+		example = "30130"
+	)
 	public Long getFileEntryId() {
+		if (_fileEntryIdSupplier != null) {
+			fileEntryId = _fileEntryIdSupplier.get();
+
+			_fileEntryIdSupplier = null;
+		}
+
 		return fileEntryId;
 	}
 
 	public void setFileEntryId(Long fileEntryId) {
 		this.fileEntryId = fileEntryId;
+
+		_fileEntryIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setFileEntryId(
 		UnsafeSupplier<Long, Exception> fileEntryIdUnsafeSupplier) {
 
-		try {
-			fileEntryId = fileEntryIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_fileEntryIdSupplier = () -> {
+			try {
+				return fileEntryIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Identifier of the underlying document-library file. When 0 on write, a new file is created from the supplied base64 body, URL, or file external reference code. When `cdnEnabled` is false a non-zero value is required, otherwise the request is rejected. The current user must hold view permission on this file."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long fileEntryId;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _fileEntryIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "When true the attachment is exposed in the storefront product gallery. Defaults to true when omitted on write.",
+		example = "true"
+	)
 	public Boolean getGalleryEnabled() {
+		if (_galleryEnabledSupplier != null) {
+			galleryEnabled = _galleryEnabledSupplier.get();
+
+			_galleryEnabledSupplier = null;
+		}
+
 		return galleryEnabled;
 	}
 
 	public void setGalleryEnabled(Boolean galleryEnabled) {
 		this.galleryEnabled = galleryEnabled;
+
+		_galleryEnabledSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setGalleryEnabled(
 		UnsafeSupplier<Boolean, Exception> galleryEnabledUnsafeSupplier) {
 
-		try {
-			galleryEnabled = galleryEnabledUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_galleryEnabledSupplier = () -> {
+			try {
+				return galleryEnabledUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "When true the attachment is exposed in the storefront product gallery. Defaults to true when omitted on write."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean galleryEnabled;
 
+	@JsonIgnore
+	private Supplier<Boolean> _galleryEnabledSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30130")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Identifier of the attachment. Read-only; assigned by the server.",
+		example = "30130"
+	)
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Identifier of the attachment. Read-only; assigned by the server."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long id;
 
-	@Schema(example = "true")
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "When true the attachment never expires and `expirationDate` is ignored. Defaults to false on write.",
+		example = "true"
+	)
 	public Boolean getNeverExpire() {
+		if (_neverExpireSupplier != null) {
+			neverExpire = _neverExpireSupplier.get();
+
+			_neverExpireSupplier = null;
+		}
+
 		return neverExpire;
 	}
 
 	public void setNeverExpire(Boolean neverExpire) {
 		this.neverExpire = neverExpire;
+
+		_neverExpireSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setNeverExpire(
 		UnsafeSupplier<Boolean, Exception> neverExpireUnsafeSupplier) {
 
-		try {
-			neverExpire = neverExpireUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_neverExpireSupplier = () -> {
+			try {
+				return neverExpireUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "When true the attachment never expires and `expirationDate` is ignored. Defaults to false on write."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean neverExpire;
 
-	@Schema(example = "{color=yellow, optionKey=optionValueKey, size=xs}")
+	@JsonIgnore
+	private Supplier<Boolean> _neverExpireSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Free-form key/value map that binds the attachment to a specific SKU variant of the parent product; each entry is resolved against the product's options and option values, and unknown keys, options, or values are rejected.",
+		example = "{color=yellow, optionKey=optionValueKey, size=xs}"
+	)
 	@Valid
 	public Map<String, String> getOptions() {
+		if (_optionsSupplier != null) {
+			options = _optionsSupplier.get();
+
+			_optionsSupplier = null;
+		}
+
 		return options;
 	}
 
 	public void setOptions(Map<String, String> options) {
 		this.options = options;
+
+		_optionsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setOptions(
 		UnsafeSupplier<Map<String, String>, Exception> optionsUnsafeSupplier) {
 
-		try {
-			options = optionsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_optionsSupplier = () -> {
+			try {
+				return optionsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Free-form key/value map that binds the attachment to a specific SKU variant of the parent product; each entry is resolved against the product's options and option values, and unknown keys, options, or values are rejected."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, String> options;
 
-	@Schema(example = "1.2")
+	@JsonIgnore
+	private Supplier<Map<String, String>> _optionsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Sort weight used to order attachments within a product gallery; higher values are returned first. Defaults to 0.0 when omitted.",
+		example = "1.2"
+	)
 	public Double getPriority() {
+		if (_prioritySupplier != null) {
+			priority = _prioritySupplier.get();
+
+			_prioritySupplier = null;
+		}
+
 		return priority;
 	}
 
 	public void setPriority(Double priority) {
 		this.priority = priority;
+
+		_prioritySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPriority(
 		UnsafeSupplier<Double, Exception> priorityUnsafeSupplier) {
 
-		try {
-			priority = priorityUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_prioritySupplier = () -> {
+			try {
+				return priorityUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Sort weight used to order attachments within a product gallery; higher values are returned first. Defaults to 0.0 when omitted."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Double priority;
 
-	@Schema(description = "URL of the location")
+	@JsonIgnore
+	private Supplier<Double> _prioritySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "URL pointing at the binary to download. On write the server fetches the URL and stores the body as a new document-library file; the `file://` protocol is rejected. On read it returns the portal download URL; for external video shortcuts the URL is intentionally blank.",
+		example = "https://example.com/attachment.png"
+	)
 	public String getSrc() {
+		if (_srcSupplier != null) {
+			src = _srcSupplier.get();
+
+			_srcSupplier = null;
+		}
+
 		return src;
 	}
 
 	public void setSrc(String src) {
 		this.src = src;
+
+		_srcSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSrc(UnsafeSupplier<String, Exception> srcUnsafeSupplier) {
-		try {
-			src = srcUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_srcSupplier = () -> {
+			try {
+				return srcUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField(description = "URL of the location")
+	@GraphQLField(
+		description = "URL pointing at the binary to download. On write the server fetches the URL and stores the body as a new document-library file; the `file://` protocol is rejected. On read it returns the portal download URL; for external video shortcuts the URL is intentionally blank."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String src;
 
-	@Schema(example = "[tag1, tag2, tag3]")
+	@JsonIgnore
+	private Supplier<String> _srcSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Asset tag names attached to the underlying asset entry; used for categorization and search facets.",
+		example = "[tag1, tag2, tag3]"
+	)
 	public String[] getTags() {
+		if (_tagsSupplier != null) {
+			tags = _tagsSupplier.get();
+
+			_tagsSupplier = null;
+		}
+
 		return tags;
 	}
 
 	public void setTags(String[] tags) {
 		this.tags = tags;
+
+		_tagsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setTags(
 		UnsafeSupplier<String[], Exception> tagsUnsafeSupplier) {
 
-		try {
-			tags = tagsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_tagsSupplier = () -> {
+			try {
+				return tagsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Asset tag names attached to the underlying asset entry; used for categorization and search facets."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String[] tags;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<String[]> _tagsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Localized text. Map keys are locale codes; values are the translated strings. Falls back to the file name in the site default locale when no value is supplied.",
 		example = "{en_US=Hand Saw, hr_HR=Attachment Title HR, hu_HU=Attachment Title HU}"
 	)
 	@Valid
 	public Map<String, String> getTitle() {
+		if (_titleSupplier != null) {
+			title = _titleSupplier.get();
+
+			_titleSupplier = null;
+		}
+
 		return title;
 	}
 
 	public void setTitle(Map<String, String> title) {
 		this.title = title;
+
+		_titleSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setTitle(
 		UnsafeSupplier<Map<String, String>, Exception> titleUnsafeSupplier) {
 
-		try {
-			title = titleUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_titleSupplier = () -> {
+			try {
+				return titleUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Localized text. Map keys are locale codes; values are the translated strings. Falls back to the file name in the site default locale when no value is supplied."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, String> title;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Map<String, String>> _titleSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Integer type code. Mapping -- 0=Image, 1=Other. Set by the resource endpoint -- image endpoints write 0, attachment endpoints write 1. The diagram image variant uses code 2 internally but is not exposed through the attachment surface.",
+		example = "0"
+	)
 	public Integer getType() {
+		if (_typeSupplier != null) {
+			type = _typeSupplier.get();
+
+			_typeSupplier = null;
+		}
+
 		return type;
 	}
 
 	public void setType(Integer type) {
 		this.type = type;
+
+		_typeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setType(UnsafeSupplier<Integer, Exception> typeUnsafeSupplier) {
-		try {
-			type = typeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_typeSupplier = () -> {
+			try {
+				return typeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Integer type code. Mapping -- 0=Image, 1=Other. Set by the resource endpoint -- image endpoints write 0, attachment endpoints write 1. The diagram image variant uses code 2 internally but is not exposed through the attachment surface."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Integer type;
+
+	@JsonIgnore
+	private Supplier<Integer> _typeSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -589,6 +1023,8 @@ public class Attachment implements Serializable {
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 
+		String attachment = getAttachment();
+
 		if (attachment != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -603,6 +1039,8 @@ public class Attachment implements Serializable {
 			sb.append("\"");
 		}
 
+		Boolean cdnEnabled = getCdnEnabled();
+
 		if (cdnEnabled != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -612,6 +1050,8 @@ public class Attachment implements Serializable {
 
 			sb.append(cdnEnabled);
 		}
+
+		String cdnURL = getCdnURL();
 
 		if (cdnURL != null) {
 			if (sb.length() > 1) {
@@ -627,6 +1067,8 @@ public class Attachment implements Serializable {
 			sb.append("\"");
 		}
 
+		String contentType = getContentType();
+
 		if (contentType != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -641,6 +1083,9 @@ public class Attachment implements Serializable {
 			sb.append("\"");
 		}
 
+		com.liferay.portal.vulcan.custom.field.CustomField[] customFields =
+			getCustomFields();
+
 		if (customFields != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -651,7 +1096,7 @@ public class Attachment implements Serializable {
 			sb.append("[");
 
 			for (int i = 0; i < customFields.length; i++) {
-				sb.append(String.valueOf(customFields[i]));
+				sb.append(customFields[i]);
 
 				if ((i + 1) < customFields.length) {
 					sb.append(", ");
@@ -660,6 +1105,8 @@ public class Attachment implements Serializable {
 
 			sb.append("]");
 		}
+
+		Date displayDate = getDisplayDate();
 
 		if (displayDate != null) {
 			if (sb.length() > 1) {
@@ -675,6 +1122,8 @@ public class Attachment implements Serializable {
 			sb.append("\"");
 		}
 
+		Date expirationDate = getExpirationDate();
+
 		if (expirationDate != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -688,6 +1137,8 @@ public class Attachment implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String externalReferenceCode = getExternalReferenceCode();
 
 		if (externalReferenceCode != null) {
 			if (sb.length() > 1) {
@@ -703,6 +1154,42 @@ public class Attachment implements Serializable {
 			sb.append("\"");
 		}
 
+		String fileEntryExternalReferenceCode =
+			getFileEntryExternalReferenceCode();
+
+		if (fileEntryExternalReferenceCode != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"fileEntryExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(fileEntryExternalReferenceCode));
+
+			sb.append("\"");
+		}
+
+		String fileEntryGroupExternalReferenceCode =
+			getFileEntryGroupExternalReferenceCode();
+
+		if (fileEntryGroupExternalReferenceCode != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"fileEntryGroupExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(fileEntryGroupExternalReferenceCode));
+
+			sb.append("\"");
+		}
+
+		Long fileEntryId = getFileEntryId();
+
 		if (fileEntryId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -712,6 +1199,8 @@ public class Attachment implements Serializable {
 
 			sb.append(fileEntryId);
 		}
+
+		Boolean galleryEnabled = getGalleryEnabled();
 
 		if (galleryEnabled != null) {
 			if (sb.length() > 1) {
@@ -723,6 +1212,8 @@ public class Attachment implements Serializable {
 			sb.append(galleryEnabled);
 		}
 
+		Long id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -732,6 +1223,8 @@ public class Attachment implements Serializable {
 
 			sb.append(id);
 		}
+
+		Boolean neverExpire = getNeverExpire();
 
 		if (neverExpire != null) {
 			if (sb.length() > 1) {
@@ -743,6 +1236,8 @@ public class Attachment implements Serializable {
 			sb.append(neverExpire);
 		}
 
+		Map<String, String> options = getOptions();
+
 		if (options != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -753,6 +1248,8 @@ public class Attachment implements Serializable {
 			sb.append(_toJSON(options));
 		}
 
+		Double priority = getPriority();
+
 		if (priority != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -762,6 +1259,8 @@ public class Attachment implements Serializable {
 
 			sb.append(priority);
 		}
+
+		String src = getSrc();
 
 		if (src != null) {
 			if (sb.length() > 1) {
@@ -776,6 +1275,8 @@ public class Attachment implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String[] tags = getTags();
 
 		if (tags != null) {
 			if (sb.length() > 1) {
@@ -801,6 +1302,8 @@ public class Attachment implements Serializable {
 			sb.append("]");
 		}
 
+		Map<String, String> title = getTitle();
+
 		if (title != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -810,6 +1313,8 @@ public class Attachment implements Serializable {
 
 			sb.append(_toJSON(title));
 		}
+
+		Integer type = getType();
 
 		if (type != null) {
 			if (sb.length() > 1) {
@@ -826,8 +1331,8 @@ public class Attachment implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.admin.catalog.dto.v1_0.Attachment",
 		name = "x-class-name"
 	)
@@ -873,7 +1378,10 @@ public class Attachment implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -919,3 +1427,4 @@ public class Attachment implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1236340267

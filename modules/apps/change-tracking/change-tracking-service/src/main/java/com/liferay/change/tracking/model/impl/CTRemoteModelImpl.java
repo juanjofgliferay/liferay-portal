@@ -93,11 +93,18 @@ public class CTRemoteModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table CTRemote";
 
+	public static final String ENTITY_ALIAS = "ctRemote";
+
+	public static final String FILTER_PK_COLUMN_NAME = "ctRemoteId";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY ctRemote.createDate ASC";
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY CTRemote.createDate ASC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY ctRemote.createDate ASC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -907,3 +914,4 @@ public class CTRemoteModelImpl
 	private CTRemote _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1725860377

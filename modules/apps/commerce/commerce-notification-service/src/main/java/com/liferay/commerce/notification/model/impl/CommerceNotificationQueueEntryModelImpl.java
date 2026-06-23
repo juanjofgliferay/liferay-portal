@@ -50,8 +50,10 @@ import java.util.function.Function;
  *
  * @author Alessio Antonio Rendina
  * @see CommerceNotificationQueueEntryImpl
+ * @deprecated
  * @generated
  */
+@Deprecated
 @JSON(strict = true)
 public class CommerceNotificationQueueEntryModelImpl
 	extends BaseModelImpl<CommerceNotificationQueueEntry>
@@ -113,6 +115,8 @@ public class CommerceNotificationQueueEntryModelImpl
 
 	public static final String TABLE_SQL_DROP =
 		"drop table CommerceNotificationQueueEntry";
+
+	public static final String ENTITY_ALIAS = "commerceNotificationQueueEntry";
 
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY commerceNotificationQueueEntry.priority DESC";
@@ -1509,3 +1513,4 @@ public class CommerceNotificationQueueEntryModelImpl
 	private CommerceNotificationQueueEntry _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-647199620

@@ -24,6 +24,7 @@ export const ACTION_TYPES: {[key: string]: ActionType} = {
 export enum EntityType {
 	Assets = 'assets',
 	Attributes = 'attributes',
+	CustomEvents = 'custom-events',
 	Groups = 'groups',
 	Organizations = 'organizations',
 	Roles = 'roles',
@@ -84,7 +85,14 @@ export const referencedPropertiesReducer = (
 					payload
 				);
 			} else if (payload.propertyKey === 'event') {
-				return state.setIn([payload.propertyKey, payload.id], payload);
+				return state.setIn(
+					[payload.propertyKey, payload.name],
+					payload
+				);
+			} else if (payload.propertyKey === 'vocabulary') {
+				return state.setIn(['vocabulary', payload.name], payload);
+			} else if (payload.propertyKey === 'tag') {
+				return state.setIn(['tag', payload.name], payload);
 			}
 
 			return state;
@@ -103,7 +111,12 @@ export const referencedEntitiesReducer = (
 		case ActionType.AddEntities:
 			return state.mergeIn(
 				[entityType],
-				Map(payload.map(item => [item.get('id'), item]))
+				Map(
+					payload.map((item: Map<string, any>) => [
+						item.get('id'),
+						item
+					])
+				)
 			);
 		case ActionType.AddEntity:
 			return state.setIn(
@@ -120,13 +133,16 @@ export const referencedEntitiesReducer = (
 const createReferencedEntitiesIMapFromSegment = (
 	segment: Segment
 ): ReferencedEntities => {
-	const {referencedObjects} = segment;
+	const referencedObjects = segment.referencedObjects ?? Map();
 
 	return Map({
 		[EntityType.Assets]: referencedObjects.get(EntityType.Assets),
 		[EntityType.Attributes]: referencedObjects.get(
 			EntityType.Attributes,
 			Map({})
+		),
+		[EntityType.CustomEvents]: referencedObjects.get(
+			EntityType.CustomEvents
 		),
 		[EntityType.Groups]: referencedObjects.get(EntityType.Groups),
 		[EntityType.Organizations]: referencedObjects.get(
@@ -224,16 +240,34 @@ export const ReferencedObjectsProvider = ({
 	);
 };
 
-export const withReferencedObjectsProvider = WrappedComponent => props => (
-	<ReferencedObjectsProvider segment={props.segment}>
-		<WrappedComponent {...props} />
-	</ReferencedObjectsProvider>
-);
+export const withReferencedObjectsProvider =
+	<P extends {segment?: Segment}>(WrappedComponent: React.ComponentType<P>) =>
+	(props: P) =>
+		(
+			<ReferencedObjectsProvider segment={props.segment}>
+				<WrappedComponent {...props} />
+			</ReferencedObjectsProvider>
+		);
 
-export const withReferencedObjectsConsumer = WrappedComponent => props => (
-	<ReferencedObjectsContext.Consumer>
-		{referencedObjects => (
-			<WrappedComponent {...props} {...referencedObjects} />
-		)}
-	</ReferencedObjectsContext.Consumer>
-);
+export const withReferencedObjectsConsumer =
+	<P extends object>(WrappedComponent: React.ComponentType<P>) =>
+	(
+		props: Omit<
+			P,
+			| 'addEntities'
+			| 'addEntity'
+			| 'addProperty'
+			| 'referencedEntities'
+			| 'referencedProperties'
+		>
+	) =>
+		(
+			<ReferencedObjectsContext.Consumer>
+				{referencedObjects => (
+					<WrappedComponent
+						{...(props as P)}
+						{...(referencedObjects as any)}
+					/>
+				)}
+			</ReferencedObjectsContext.Consumer>
+		);

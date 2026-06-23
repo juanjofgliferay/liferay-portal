@@ -63,6 +63,7 @@ public class DLFileVersionWrapper
 		attributes.put("size", getSize());
 		attributes.put("checksum", getChecksum());
 		attributes.put("storeUUID", getStoreUUID());
+		attributes.put("displayDate", getDisplayDate());
 		attributes.put("expirationDate", getExpirationDate());
 		attributes.put("reviewDate", getReviewDate());
 		attributes.put("lastPublishDate", getLastPublishDate());
@@ -232,6 +233,12 @@ public class DLFileVersionWrapper
 			setStoreUUID(storeUUID);
 		}
 
+		Date displayDate = (Date)attributes.get("displayDate");
+
+		if (displayDate != null) {
+			setDisplayDate(displayDate);
+		}
+
 		Date expirationDate = (Date)attributes.get("expirationDate");
 
 		if (expirationDate != null) {
@@ -365,6 +372,16 @@ public class DLFileVersionWrapper
 	@Override
 	public String getDescription() {
 		return model.getDescription();
+	}
+
+	/**
+	 * Returns the display date of this document library file version.
+	 *
+	 * @return the display date of this document library file version
+	 */
+	@Override
+	public Date getDisplayDate() {
+		return model.getDisplayDate();
 	}
 
 	@Override
@@ -856,6 +873,16 @@ public class DLFileVersionWrapper
 	}
 
 	/**
+	 * Sets the display date of this document library file version.
+	 *
+	 * @param displayDate the display date of this document library file version
+	 */
+	@Override
+	public void setDisplayDate(Date displayDate) {
+		model.setDisplayDate(displayDate);
+	}
+
+	/**
 	 * Sets the expiration date of this document library file version.
 	 *
 	 * @param expirationDate the expiration date of this document library file version
@@ -1198,3 +1225,4 @@ public class DLFileVersionWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:760485771

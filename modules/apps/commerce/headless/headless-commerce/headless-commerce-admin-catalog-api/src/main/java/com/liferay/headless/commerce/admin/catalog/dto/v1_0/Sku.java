@@ -16,7 +16,13 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotEmpty;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -30,23 +36,22 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.DecimalMin;
-import javax.validation.constraints.NotEmpty;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Zoltán Takács
  * @generated
  */
 @Generated("")
-@GraphQLName("Sku")
+@GraphQLName(
+	description = "A purchasable stock keeping unit (variant) of a product, with its own SKU code, pricing, dimensions, subscription configuration, and optional virtual download settings.",
+	value = "Sku"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "A purchasable stock keeping unit (variant) of a product, with its own SKU code, pricing, dimensions, subscription configuration, and optional virtual download settings.",
+	requiredProperties = {"sku"}
+)
 @JsonFilter("Liferay.Vulcan")
-@Schema(requiredProperties = {"sku"})
 @XmlRootElement(name = "Sku")
 public class Sku implements Serializable {
 
@@ -59,350 +64,583 @@ public class Sku implements Serializable {
 	}
 
 	@DecimalMin("0")
-	@Schema(example = "101")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Cost paid to acquire the SKU, before margin; expressed in the parent product catalog's default currency and rejected when negative.",
+		example = "101"
+	)
 	@Valid
 	public BigDecimal getCost() {
+		if (_costSupplier != null) {
+			cost = _costSupplier.get();
+
+			_costSupplier = null;
+		}
+
 		return cost;
 	}
 
 	public void setCost(BigDecimal cost) {
 		this.cost = cost;
+
+		_costSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCost(
 		UnsafeSupplier<BigDecimal, Exception> costUnsafeSupplier) {
 
-		try {
-			cost = costUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_costSupplier = () -> {
+			try {
+				return costUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Cost paid to acquire the SKU, before margin; expressed in the parent product catalog's default currency and rejected when negative."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected BigDecimal cost;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<BigDecimal> _costSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Custom expando fields defined for SKUs; read using the request locale and written back as expando attributes alongside the SKU."
+	)
 	@Valid
-	public CustomField[] getCustomFields() {
+	public com.liferay.portal.vulcan.custom.field.CustomField[]
+		getCustomFields() {
+
+		if (_customFieldsSupplier != null) {
+			customFields = _customFieldsSupplier.get();
+
+			_customFieldsSupplier = null;
+		}
+
 		return customFields;
 	}
 
-	public void setCustomFields(CustomField[] customFields) {
+	public void setCustomFields(
+		com.liferay.portal.vulcan.custom.field.CustomField[] customFields) {
+
 		this.customFields = customFields;
+
+		_customFieldsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCustomFields(
-		UnsafeSupplier<CustomField[], Exception> customFieldsUnsafeSupplier) {
+		UnsafeSupplier
+			<com.liferay.portal.vulcan.custom.field.CustomField[], Exception>
+				customFieldsUnsafeSupplier) {
 
-		try {
-			customFields = customFieldsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_customFieldsSupplier = () -> {
+			try {
+				return customFieldsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Custom expando fields defined for SKUs; read using the request locale and written back as expando attributes alongside the SKU."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
-	protected CustomField[] customFields;
+	protected com.liferay.portal.vulcan.custom.field.CustomField[] customFields;
+
+	@JsonIgnore
+	private Supplier<com.liferay.portal.vulcan.custom.field.CustomField[]>
+		_customFieldsSupplier;
 
 	@DecimalMin("0")
-	@Schema(example = "1.1")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Depth dimension of the SKU; rejected when negative; expressed in the dimensions unit configured on the parent catalog or commerce shop settings.",
+		example = "1.1"
+	)
 	public Double getDepth() {
+		if (_depthSupplier != null) {
+			depth = _depthSupplier.get();
+
+			_depthSupplier = null;
+		}
+
 		return depth;
 	}
 
 	public void setDepth(Double depth) {
 		this.depth = depth;
+
+		_depthSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDepth(
 		UnsafeSupplier<Double, Exception> depthUnsafeSupplier) {
 
-		try {
-			depth = depthUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_depthSupplier = () -> {
+			try {
+				return depthUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Depth dimension of the SKU; rejected when negative; expressed in the dimensions unit configured on the parent catalog or commerce shop settings."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Double depth;
 
-	@Schema(example = "false")
+	@JsonIgnore
+	private Supplier<Double> _depthSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Whether the SKU is marked as discontinued; when true the service resolves the replacement SKU from `replacementSkuId` or `replacementSkuExternalReferenceCode` and records the link to it.",
+		example = "false"
+	)
 	public Boolean getDiscontinued() {
+		if (_discontinuedSupplier != null) {
+			discontinued = _discontinuedSupplier.get();
+
+			_discontinuedSupplier = null;
+		}
+
 		return discontinued;
 	}
 
 	public void setDiscontinued(Boolean discontinued) {
 		this.discontinued = discontinued;
+
+		_discontinuedSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDiscontinued(
 		UnsafeSupplier<Boolean, Exception> discontinuedUnsafeSupplier) {
 
-		try {
-			discontinued = discontinuedUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_discontinuedSupplier = () -> {
+			try {
+				return discontinuedUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Whether the SKU is marked as discontinued; when true the service resolves the replacement SKU from `replacementSkuId` or `replacementSkuExternalReferenceCode` and records the link to it."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean discontinued;
 
-	@Schema(example = "2017-07-21")
+	@JsonIgnore
+	private Supplier<Boolean> _discontinuedSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Date on which the SKU was marked discontinued; accepted in the request locale and time zone and normalized to the portal's time zone.",
+		example = "2017-07-21"
+	)
 	public Date getDiscontinuedDate() {
+		if (_discontinuedDateSupplier != null) {
+			discontinuedDate = _discontinuedDateSupplier.get();
+
+			_discontinuedDateSupplier = null;
+		}
+
 		return discontinuedDate;
 	}
 
 	public void setDiscontinuedDate(Date discontinuedDate) {
 		this.discontinuedDate = discontinuedDate;
+
+		_discontinuedDateSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDiscontinuedDate(
 		UnsafeSupplier<Date, Exception> discontinuedDateUnsafeSupplier) {
 
-		try {
-			discontinuedDate = discontinuedDateUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_discontinuedDateSupplier = () -> {
+			try {
+				return discontinuedDateUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Date on which the SKU was marked discontinued; accepted in the request locale and time zone and normalized to the portal's time zone."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Date discontinuedDate;
 
-	@Schema(example = "2017-07-21")
+	@JsonIgnore
+	private Supplier<Date> _discontinuedDateSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Date and time from which the SKU becomes visible; accepted in the request locale and time zone, normalized to the portal's time zone, and indexed for sorting.",
+		example = "2017-07-21"
+	)
 	public Date getDisplayDate() {
+		if (_displayDateSupplier != null) {
+			displayDate = _displayDateSupplier.get();
+
+			_displayDateSupplier = null;
+		}
+
 		return displayDate;
 	}
 
 	public void setDisplayDate(Date displayDate) {
 		this.displayDate = displayDate;
+
+		_displayDateSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDisplayDate(
 		UnsafeSupplier<Date, Exception> displayDateUnsafeSupplier) {
 
-		try {
-			displayDate = displayDateUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_displayDateSupplier = () -> {
+			try {
+				return displayDateUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Date and time from which the SKU becomes visible; accepted in the request locale and time zone, normalized to the portal's time zone, and indexed for sorting."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Date displayDate;
 
-	@Schema(example = "2017-08-21")
+	@JsonIgnore
+	private Supplier<Date> _displayDateSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Date and time after which the SKU is considered expired; accepted in the request locale and time zone and ignored when `neverExpire` is true.",
+		example = "2017-08-21"
+	)
 	public Date getExpirationDate() {
+		if (_expirationDateSupplier != null) {
+			expirationDate = _expirationDateSupplier.get();
+
+			_expirationDateSupplier = null;
+		}
+
 		return expirationDate;
 	}
 
 	public void setExpirationDate(Date expirationDate) {
 		this.expirationDate = expirationDate;
+
+		_expirationDateSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setExpirationDate(
 		UnsafeSupplier<Date, Exception> expirationDateUnsafeSupplier) {
 
-		try {
-			expirationDate = expirationDateUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_expirationDateSupplier = () -> {
+			try {
+				return expirationDateUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Date and time after which the SKU is considered expired; accepted in the request locale and time zone and ignored when `neverExpire` is true."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Date expirationDate;
 
-	@Schema(example = "AB-34098-789-N")
+	@JsonIgnore
+	private Supplier<Date> _expirationDateSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Idempotency key for create and update; must be unique per SKU within the company and limited to 75 characters; indexed for exact-match search.",
+		example = "AB-34098-789-N"
+	)
 	public String getExternalReferenceCode() {
+		if (_externalReferenceCodeSupplier != null) {
+			externalReferenceCode = _externalReferenceCodeSupplier.get();
+
+			_externalReferenceCodeSupplier = null;
+		}
+
 		return externalReferenceCode;
 	}
 
 	public void setExternalReferenceCode(String externalReferenceCode) {
 		this.externalReferenceCode = externalReferenceCode;
+
+		_externalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setExternalReferenceCode(
 		UnsafeSupplier<String, Exception> externalReferenceCodeUnsafeSupplier) {
 
-		try {
-			externalReferenceCode = externalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_externalReferenceCodeSupplier = () -> {
+			try {
+				return externalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Idempotency key for create and update; must be unique per SKU within the company and limited to 75 characters; indexed for exact-match search."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String externalReferenceCode;
 
-	@Schema(example = "12341234")
+	@JsonIgnore
+	private Supplier<String> _externalReferenceCodeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Global Trade Item Number (UPC, EAN, JAN, or ISBN) assigned to the SKU; limited to 75 characters and indexed for exact-match search.",
+		example = "12341234"
+	)
 	public String getGtin() {
+		if (_gtinSupplier != null) {
+			gtin = _gtinSupplier.get();
+
+			_gtinSupplier = null;
+		}
+
 		return gtin;
 	}
 
 	public void setGtin(String gtin) {
 		this.gtin = gtin;
+
+		_gtinSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setGtin(UnsafeSupplier<String, Exception> gtinUnsafeSupplier) {
-		try {
-			gtin = gtinUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_gtinSupplier = () -> {
+			try {
+				return gtinUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Global Trade Item Number (UPC, EAN, JAN, or ISBN) assigned to the SKU; limited to 75 characters and indexed for exact-match search."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String gtin;
 
+	@JsonIgnore
+	private Supplier<String> _gtinSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "20.2")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Height dimension of the SKU; rejected when negative; expressed in the dimensions unit configured on the parent catalog or commerce shop settings.",
+		example = "20.2"
+	)
 	public Double getHeight() {
+		if (_heightSupplier != null) {
+			height = _heightSupplier.get();
+
+			_heightSupplier = null;
+		}
+
 		return height;
 	}
 
 	public void setHeight(Double height) {
 		this.height = height;
+
+		_heightSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setHeight(
 		UnsafeSupplier<Double, Exception> heightUnsafeSupplier) {
 
-		try {
-			height = heightUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_heightSupplier = () -> {
+			try {
+				return heightUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Height dimension of the SKU; rejected when negative; expressed in the dimensions unit configured on the parent catalog or commerce shop settings."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Double height;
 
+	@JsonIgnore
+	private Supplier<Double> _heightSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30130")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Internal numeric identifier of the SKU; read-only and assigned by the service on create.",
+		example = "30130"
+	)
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Internal numeric identifier of the SKU; read-only and assigned by the service on create."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long id;
 
-	@Schema(example = "29")
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Reserved field for the current stock quantity of the SKU; not populated by this API. Use the headless commerce admin inventory API to read actual inventory.",
+		example = "29"
+	)
 	public Integer getInventoryLevel() {
+		if (_inventoryLevelSupplier != null) {
+			inventoryLevel = _inventoryLevelSupplier.get();
+
+			_inventoryLevelSupplier = null;
+		}
+
 		return inventoryLevel;
 	}
 
 	public void setInventoryLevel(Integer inventoryLevel) {
 		this.inventoryLevel = inventoryLevel;
+
+		_inventoryLevelSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setInventoryLevel(
 		UnsafeSupplier<Integer, Exception> inventoryLevelUnsafeSupplier) {
 
-		try {
-			inventoryLevel = inventoryLevelUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_inventoryLevelSupplier = () -> {
+			try {
+				return inventoryLevelUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Reserved field for the current stock quantity of the SKU; not populated by this API. Use the headless commerce admin inventory API to read actual inventory."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Integer inventoryLevel;
 
-	@Schema(example = "12341234")
+	@JsonIgnore
+	private Supplier<Integer> _inventoryLevelSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Manufacturer part number (MPN) assigned by the manufacturer; limited to 75 characters.",
+		example = "12341234"
+	)
 	public String getManufacturerPartNumber() {
+		if (_manufacturerPartNumberSupplier != null) {
+			manufacturerPartNumber = _manufacturerPartNumberSupplier.get();
+
+			_manufacturerPartNumberSupplier = null;
+		}
+
 		return manufacturerPartNumber;
 	}
 
 	public void setManufacturerPartNumber(String manufacturerPartNumber) {
 		this.manufacturerPartNumber = manufacturerPartNumber;
+
+		_manufacturerPartNumberSupplier = null;
 	}
 
 	@JsonIgnore
@@ -410,116 +648,188 @@ public class Sku implements Serializable {
 		UnsafeSupplier<String, Exception>
 			manufacturerPartNumberUnsafeSupplier) {
 
-		try {
-			manufacturerPartNumber = manufacturerPartNumberUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_manufacturerPartNumberSupplier = () -> {
+			try {
+				return manufacturerPartNumberUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Manufacturer part number (MPN) assigned by the manufacturer; limited to 75 characters."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String manufacturerPartNumber;
 
-	@Schema(example = "true")
+	@JsonIgnore
+	private Supplier<String> _manufacturerPartNumberSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "When true the SKU has no expiration date and `expirationDate` is ignored on update; defaults to true when `expirationDate` is not supplied on create.",
+		example = "true"
+	)
 	public Boolean getNeverExpire() {
+		if (_neverExpireSupplier != null) {
+			neverExpire = _neverExpireSupplier.get();
+
+			_neverExpireSupplier = null;
+		}
+
 		return neverExpire;
 	}
 
 	public void setNeverExpire(Boolean neverExpire) {
 		this.neverExpire = neverExpire;
+
+		_neverExpireSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setNeverExpire(
 		UnsafeSupplier<Boolean, Exception> neverExpireUnsafeSupplier) {
 
-		try {
-			neverExpire = neverExpireUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_neverExpireSupplier = () -> {
+			try {
+				return neverExpireUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "When true the SKU has no expiration date and `expirationDate` is ignored on update; defaults to true when `expirationDate` is not supplied on create."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean neverExpire;
 
+	@JsonIgnore
+	private Supplier<Boolean> _neverExpireSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "101")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Regular selling price of the SKU before any promotion; expressed in the parent catalog's default currency, rejected when negative, and synchronized to a base price-list entry for the SKU.",
+		example = "101"
+	)
 	@Valid
 	public BigDecimal getPrice() {
+		if (_priceSupplier != null) {
+			price = _priceSupplier.get();
+
+			_priceSupplier = null;
+		}
+
 		return price;
 	}
 
 	public void setPrice(BigDecimal price) {
 		this.price = price;
+
+		_priceSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPrice(
 		UnsafeSupplier<BigDecimal, Exception> priceUnsafeSupplier) {
 
-		try {
-			price = priceUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_priceSupplier = () -> {
+			try {
+				return priceUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Regular selling price of the SKU before any promotion; expressed in the parent catalog's default currency, rejected when negative, and synchronized to a base price-list entry for the SKU."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected BigDecimal price;
 
+	@JsonIgnore
+	private Supplier<BigDecimal> _priceSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30129")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Internal numeric identifier of the parent product; read-only.",
+		example = "30129"
+	)
 	public Long getProductId() {
+		if (_productIdSupplier != null) {
+			productId = _productIdSupplier.get();
+
+			_productIdSupplier = null;
+		}
+
 		return productId;
 	}
 
 	public void setProductId(Long productId) {
 		this.productId = productId;
+
+		_productIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setProductId(
 		UnsafeSupplier<Long, Exception> productIdUnsafeSupplier) {
 
-		try {
-			productId = productIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_productIdSupplier = () -> {
+			try {
+				return productIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Internal numeric identifier of the parent product; read-only."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long productId;
 
-	@Schema(example = "{en_US=Croatia, hr_HR=Hrvatska, hu_HU=Horvatorszag}")
+	@JsonIgnore
+	private Supplier<Long> _productIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Localized text. Map keys are locale codes; values are the translated strings. Mirrors the parent product's name and is read-only.",
+		example = "{en_US=Hand Saw, hr_HR=Pila, hu_HU=Kezi fureszrol}"
+	)
 	@Valid
 	public Map<String, String> getProductName() {
+		if (_productNameSupplier != null) {
+			productName = _productNameSupplier.get();
+
+			_productNameSupplier = null;
+		}
+
 		return productName;
 	}
 
 	public void setProductName(Map<String, String> productName) {
 		this.productName = productName;
+
+		_productNameSupplier = null;
 	}
 
 	@JsonIgnore
@@ -527,109 +837,180 @@ public class Sku implements Serializable {
 		UnsafeSupplier<Map<String, String>, Exception>
 			productNameUnsafeSupplier) {
 
-		try {
-			productName = productNameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_productNameSupplier = () -> {
+			try {
+				return productNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Localized text. Map keys are locale codes; values are the translated strings. Mirrors the parent product's name and is read-only."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Map<String, String> productName;
 
+	@JsonIgnore
+	private Supplier<Map<String, String>> _productNameSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "202")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Promotional selling price applied in place of `price` when a promotion is active; expressed in the parent catalog's default currency, rejected when negative, and synchronized to a promotion price-list entry for the SKU.",
+		example = "202"
+	)
 	@Valid
 	public BigDecimal getPromoPrice() {
+		if (_promoPriceSupplier != null) {
+			promoPrice = _promoPriceSupplier.get();
+
+			_promoPriceSupplier = null;
+		}
+
 		return promoPrice;
 	}
 
 	public void setPromoPrice(BigDecimal promoPrice) {
 		this.promoPrice = promoPrice;
+
+		_promoPriceSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPromoPrice(
 		UnsafeSupplier<BigDecimal, Exception> promoPriceUnsafeSupplier) {
 
-		try {
-			promoPrice = promoPriceUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_promoPriceSupplier = () -> {
+			try {
+				return promoPriceUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Promotional selling price applied in place of `price` when a promotion is active; expressed in the parent catalog's default currency, rejected when negative, and synchronized to a promotion price-list entry for the SKU."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected BigDecimal promoPrice;
 
-	@Schema(example = "true")
+	@JsonIgnore
+	private Supplier<BigDecimal> _promoPriceSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Whether the SKU is publicly published; indexed for filtering and defaults to true on create.",
+		example = "true"
+	)
 	public Boolean getPublished() {
+		if (_publishedSupplier != null) {
+			published = _publishedSupplier.get();
+
+			_publishedSupplier = null;
+		}
+
 		return published;
 	}
 
 	public void setPublished(Boolean published) {
 		this.published = published;
+
+		_publishedSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPublished(
 		UnsafeSupplier<Boolean, Exception> publishedUnsafeSupplier) {
 
-		try {
-			published = publishedUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_publishedSupplier = () -> {
+			try {
+				return publishedUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Whether the SKU is publicly published; indexed for filtering and defaults to true on create."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean published;
 
-	@Schema(example = "true")
+	@JsonIgnore
+	private Supplier<Boolean> _publishedSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Whether the SKU can be added to an order; indexed for filtering and defaults to true on create.",
+		example = "true"
+	)
 	public Boolean getPurchasable() {
+		if (_purchasableSupplier != null) {
+			purchasable = _purchasableSupplier.get();
+
+			_purchasableSupplier = null;
+		}
+
 		return purchasable;
 	}
 
 	public void setPurchasable(Boolean purchasable) {
 		this.purchasable = purchasable;
+
+		_purchasableSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPurchasable(
 		UnsafeSupplier<Boolean, Exception> purchasableUnsafeSupplier) {
 
-		try {
-			purchasable = purchasableUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_purchasableSupplier = () -> {
+			try {
+				return purchasableUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Whether the SKU can be added to an order; indexed for filtering and defaults to true on create."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean purchasable;
 
-	@Schema(example = "SKU0111")
+	@JsonIgnore
+	private Supplier<Boolean> _purchasableSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "External reference code of the replacement SKU that customers are redirected to when this SKU is discontinued; on read the value mirrors the replacement's external reference code, and on write it is honored only when `discontinued` is true.",
+		example = "SKU0111"
+	)
 	public String getReplacementSkuExternalReferenceCode() {
+		if (_replacementSkuExternalReferenceCodeSupplier != null) {
+			replacementSkuExternalReferenceCode =
+				_replacementSkuExternalReferenceCodeSupplier.get();
+
+			_replacementSkuExternalReferenceCodeSupplier = null;
+		}
+
 		return replacementSkuExternalReferenceCode;
 	}
 
@@ -638,6 +1019,8 @@ public class Sku implements Serializable {
 
 		this.replacementSkuExternalReferenceCode =
 			replacementSkuExternalReferenceCode;
+
+		_replacementSkuExternalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
@@ -645,110 +1028,176 @@ public class Sku implements Serializable {
 		UnsafeSupplier<String, Exception>
 			replacementSkuExternalReferenceCodeUnsafeSupplier) {
 
-		try {
-			replacementSkuExternalReferenceCode =
-				replacementSkuExternalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_replacementSkuExternalReferenceCodeSupplier = () -> {
+			try {
+				return replacementSkuExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "External reference code of the replacement SKU that customers are redirected to when this SKU is discontinued; on read the value mirrors the replacement's external reference code, and on write it is honored only when `discontinued` is true."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String replacementSkuExternalReferenceCode;
 
+	@JsonIgnore
+	private Supplier<String> _replacementSkuExternalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "33135")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Internal numeric identifier of the replacement SKU used when `discontinued` is true; honored only when `replacementSkuExternalReferenceCode` does not resolve. Pointing a SKU to itself is rejected.",
+		example = "33135"
+	)
 	public Long getReplacementSkuId() {
+		if (_replacementSkuIdSupplier != null) {
+			replacementSkuId = _replacementSkuIdSupplier.get();
+
+			_replacementSkuIdSupplier = null;
+		}
+
 		return replacementSkuId;
 	}
 
 	public void setReplacementSkuId(Long replacementSkuId) {
 		this.replacementSkuId = replacementSkuId;
+
+		_replacementSkuIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setReplacementSkuId(
 		UnsafeSupplier<Long, Exception> replacementSkuIdUnsafeSupplier) {
 
-		try {
-			replacementSkuId = replacementSkuIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_replacementSkuIdSupplier = () -> {
+			try {
+				return replacementSkuIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Internal numeric identifier of the replacement SKU used when `discontinued` is true; honored only when `replacementSkuExternalReferenceCode` does not resolve. Pointing a SKU to itself is rejected."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long replacementSkuId;
 
-	@Schema(example = "12341234")
+	@JsonIgnore
+	private Supplier<Long> _replacementSkuIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Stable SKU code that uniquely identifies the variant within its parent product; required on create, limited to 75 characters, indexed as text and sortable, and rejected when another SKU within the same product already uses it.",
+		example = "12341234"
+	)
 	public String getSku() {
+		if (_skuSupplier != null) {
+			sku = _skuSupplier.get();
+
+			_skuSupplier = null;
+		}
+
 		return sku;
 	}
 
 	public void setSku(String sku) {
 		this.sku = sku;
+
+		_skuSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSku(UnsafeSupplier<String, Exception> skuUnsafeSupplier) {
-		try {
-			sku = skuUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_skuSupplier = () -> {
+			try {
+				return skuUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Stable SKU code that uniquely identifies the variant within its parent product; required on create, limited to 75 characters, indexed as text and sortable, and rejected when another SKU within the same product already uses it."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	@NotEmpty
 	protected String sku;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _skuSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Option selections that define which product option values this variant represents; each entry references a product option and one of its option values, either by numeric identifier or by stable string key."
+	)
 	@Valid
 	public SkuOption[] getSkuOptions() {
+		if (_skuOptionsSupplier != null) {
+			skuOptions = _skuOptionsSupplier.get();
+
+			_skuOptionsSupplier = null;
+		}
+
 		return skuOptions;
 	}
 
 	public void setSkuOptions(SkuOption[] skuOptions) {
 		this.skuOptions = skuOptions;
+
+		_skuOptionsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSkuOptions(
 		UnsafeSupplier<SkuOption[], Exception> skuOptionsUnsafeSupplier) {
 
-		try {
-			skuOptions = skuOptionsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_skuOptionsSupplier = () -> {
+			try {
+				return skuOptionsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Option selections that define which product option values this variant represents; each entry references a product option and one of its option values, either by numeric identifier or by stable string key."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected SkuOption[] skuOptions;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<SkuOption[]> _skuOptionsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public SkuSubscriptionConfiguration getSkuSubscriptionConfiguration() {
+		if (_skuSubscriptionConfigurationSupplier != null) {
+			skuSubscriptionConfiguration =
+				_skuSubscriptionConfigurationSupplier.get();
+
+			_skuSubscriptionConfigurationSupplier = null;
+		}
+
 		return skuSubscriptionConfiguration;
 	}
 
@@ -756,6 +1205,8 @@ public class Sku implements Serializable {
 		SkuSubscriptionConfiguration skuSubscriptionConfiguration) {
 
 		this.skuSubscriptionConfiguration = skuSubscriptionConfiguration;
+
+		_skuSubscriptionConfigurationSupplier = null;
 	}
 
 	@JsonIgnore
@@ -763,30 +1214,45 @@ public class Sku implements Serializable {
 		UnsafeSupplier<SkuSubscriptionConfiguration, Exception>
 			skuSubscriptionConfigurationUnsafeSupplier) {
 
-		try {
-			skuSubscriptionConfiguration =
-				skuSubscriptionConfigurationUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_skuSubscriptionConfigurationSupplier = () -> {
+			try {
+				return skuSubscriptionConfigurationUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected SkuSubscriptionConfiguration skuSubscriptionConfiguration;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<SkuSubscriptionConfiguration>
+		_skuSubscriptionConfigurationSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Alternative units in which the SKU is sold (per kg, per box, per pallet, and similar) with their conversion rates and per-unit pricing."
+	)
 	@Valid
 	public SkuUnitOfMeasure[] getSkuUnitOfMeasures() {
+		if (_skuUnitOfMeasuresSupplier != null) {
+			skuUnitOfMeasures = _skuUnitOfMeasuresSupplier.get();
+
+			_skuUnitOfMeasuresSupplier = null;
+		}
+
 		return skuUnitOfMeasures;
 	}
 
 	public void setSkuUnitOfMeasures(SkuUnitOfMeasure[] skuUnitOfMeasures) {
 		this.skuUnitOfMeasures = skuUnitOfMeasures;
+
+		_skuUnitOfMeasuresSupplier = null;
 	}
 
 	@JsonIgnore
@@ -794,29 +1260,44 @@ public class Sku implements Serializable {
 		UnsafeSupplier<SkuUnitOfMeasure[], Exception>
 			skuUnitOfMeasuresUnsafeSupplier) {
 
-		try {
-			skuUnitOfMeasures = skuUnitOfMeasuresUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_skuUnitOfMeasuresSupplier = () -> {
+			try {
+				return skuUnitOfMeasuresUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Alternative units in which the SKU is sold (per kg, per box, per pallet, and similar) with their conversion rates and per-unit pricing."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected SkuUnitOfMeasure[] skuUnitOfMeasures;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<SkuUnitOfMeasure[]> _skuUnitOfMeasuresSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public SkuVirtualSettings getSkuVirtualSettings() {
+		if (_skuVirtualSettingsSupplier != null) {
+			skuVirtualSettings = _skuVirtualSettingsSupplier.get();
+
+			_skuVirtualSettingsSupplier = null;
+		}
+
 		return skuVirtualSettings;
 	}
 
 	public void setSkuVirtualSettings(SkuVirtualSettings skuVirtualSettings) {
 		this.skuVirtualSettings = skuVirtualSettings;
+
+		_skuVirtualSettingsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -824,57 +1305,91 @@ public class Sku implements Serializable {
 		UnsafeSupplier<SkuVirtualSettings, Exception>
 			skuVirtualSettingsUnsafeSupplier) {
 
-		try {
-			skuVirtualSettings = skuVirtualSettingsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_skuVirtualSettingsSupplier = () -> {
+			try {
+				return skuVirtualSettingsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected SkuVirtualSettings skuVirtualSettings;
 
-	@Schema(example = "pl")
+	@JsonIgnore
+	private Supplier<SkuVirtualSettings> _skuVirtualSettingsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Stable key of the unit of measure carried in the current row; only populated when the SKU was expanded through the unit-of-measure SKUs endpoint for a specific unit of measure.",
+		example = "pl"
+	)
 	public String getUnitOfMeasureKey() {
+		if (_unitOfMeasureKeySupplier != null) {
+			unitOfMeasureKey = _unitOfMeasureKeySupplier.get();
+
+			_unitOfMeasureKeySupplier = null;
+		}
+
 		return unitOfMeasureKey;
 	}
 
 	public void setUnitOfMeasureKey(String unitOfMeasureKey) {
 		this.unitOfMeasureKey = unitOfMeasureKey;
+
+		_unitOfMeasureKeySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setUnitOfMeasureKey(
 		UnsafeSupplier<String, Exception> unitOfMeasureKeyUnsafeSupplier) {
 
-		try {
-			unitOfMeasureKey = unitOfMeasureKeyUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_unitOfMeasureKeySupplier = () -> {
+			try {
+				return unitOfMeasureKeyUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Stable key of the unit of measure carried in the current row; only populated when the SKU was expanded through the unit-of-measure SKUs endpoint for a specific unit of measure."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String unitOfMeasureKey;
 
-	@Schema(example = "{en_US=Pallet, hr_HR=Pallet HR, hu_HU=Pallet HU}")
+	@JsonIgnore
+	private Supplier<String> _unitOfMeasureKeySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Localized text. Map keys are locale codes; values are the translated strings. Mirrors the unit-of-measure name and is only populated when the SKU was expanded for a specific unit of measure.",
+		example = "{en_US=Pallet, hr_HR=Pallet HR, hu_HU=Pallet HU}"
+	)
 	@Valid
 	public Map<String, String> getUnitOfMeasureName() {
+		if (_unitOfMeasureNameSupplier != null) {
+			unitOfMeasureName = _unitOfMeasureNameSupplier.get();
+
+			_unitOfMeasureNameSupplier = null;
+		}
+
 		return unitOfMeasureName;
 	}
 
 	public void setUnitOfMeasureName(Map<String, String> unitOfMeasureName) {
 		this.unitOfMeasureName = unitOfMeasureName;
+
+		_unitOfMeasureNameSupplier = null;
 	}
 
 	@JsonIgnore
@@ -882,134 +1397,213 @@ public class Sku implements Serializable {
 		UnsafeSupplier<Map<String, String>, Exception>
 			unitOfMeasureNameUnsafeSupplier) {
 
-		try {
-			unitOfMeasureName = unitOfMeasureNameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_unitOfMeasureNameSupplier = () -> {
+			try {
+				return unitOfMeasureNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Localized text. Map keys are locale codes; values are the translated strings. Mirrors the unit-of-measure name and is only populated when the SKU was expanded for a specific unit of measure."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Map<String, String> unitOfMeasureName;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Map<String, String>> _unitOfMeasureNameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Composite identifier in the form <skuId>-<unitOfMeasureId> returned by the unit-of-measure SKUs endpoint; falls back to the SKU's numeric identifier as a string when no unit of measure is in context.",
+		example = "30130-piece"
+	)
 	public String getUnitOfMeasureSkuId() {
+		if (_unitOfMeasureSkuIdSupplier != null) {
+			unitOfMeasureSkuId = _unitOfMeasureSkuIdSupplier.get();
+
+			_unitOfMeasureSkuIdSupplier = null;
+		}
+
 		return unitOfMeasureSkuId;
 	}
 
 	public void setUnitOfMeasureSkuId(String unitOfMeasureSkuId) {
 		this.unitOfMeasureSkuId = unitOfMeasureSkuId;
+
+		_unitOfMeasureSkuIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setUnitOfMeasureSkuId(
 		UnsafeSupplier<String, Exception> unitOfMeasureSkuIdUnsafeSupplier) {
 
-		try {
-			unitOfMeasureSkuId = unitOfMeasureSkuIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_unitOfMeasureSkuIdSupplier = () -> {
+			try {
+				return unitOfMeasureSkuIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Composite identifier in the form <skuId>-<unitOfMeasureId> returned by the unit-of-measure SKUs endpoint; falls back to the SKU's numeric identifier as a string when no unit of measure is in context."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String unitOfMeasureSkuId;
 
-	@Schema(example = "1234567890")
+	@JsonIgnore
+	private Supplier<String> _unitOfMeasureSkuIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "United Nations Standard Products and Services Code categorizing the SKU for procurement; limited to 75 characters and indexed for exact-match search.",
+		example = "1234567890"
+	)
 	public String getUnspsc() {
+		if (_unspscSupplier != null) {
+			unspsc = _unspscSupplier.get();
+
+			_unspscSupplier = null;
+		}
+
 		return unspsc;
 	}
 
 	public void setUnspsc(String unspsc) {
 		this.unspsc = unspsc;
+
+		_unspscSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setUnspsc(
 		UnsafeSupplier<String, Exception> unspscUnsafeSupplier) {
 
-		try {
-			unspsc = unspscUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_unspscSupplier = () -> {
+			try {
+				return unspscUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "United Nations Standard Products and Services Code categorizing the SKU for procurement; limited to 75 characters and indexed for exact-match search."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String unspsc;
 
+	@JsonIgnore
+	private Supplier<String> _unspscSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "1.1")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Weight of the SKU; rejected when negative; expressed in the weight unit configured on the parent catalog or commerce shop settings.",
+		example = "1.1"
+	)
 	public Double getWeight() {
+		if (_weightSupplier != null) {
+			weight = _weightSupplier.get();
+
+			_weightSupplier = null;
+		}
+
 		return weight;
 	}
 
 	public void setWeight(Double weight) {
 		this.weight = weight;
+
+		_weightSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setWeight(
 		UnsafeSupplier<Double, Exception> weightUnsafeSupplier) {
 
-		try {
-			weight = weightUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_weightSupplier = () -> {
+			try {
+				return weightUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Weight of the SKU; rejected when negative; expressed in the weight unit configured on the parent catalog or commerce shop settings."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Double weight;
 
+	@JsonIgnore
+	private Supplier<Double> _weightSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "20.2")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Width dimension of the SKU; rejected when negative; expressed in the dimensions unit configured on the parent catalog or commerce shop settings.",
+		example = "20.2"
+	)
 	public Double getWidth() {
+		if (_widthSupplier != null) {
+			width = _widthSupplier.get();
+
+			_widthSupplier = null;
+		}
+
 		return width;
 	}
 
 	public void setWidth(Double width) {
 		this.width = width;
+
+		_widthSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setWidth(
 		UnsafeSupplier<Double, Exception> widthUnsafeSupplier) {
 
-		try {
-			width = widthUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_widthSupplier = () -> {
+			try {
+				return widthUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Width dimension of the SKU; rejected when negative; expressed in the dimensions unit configured on the parent catalog or commerce shop settings."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Double width;
+
+	@JsonIgnore
+	private Supplier<Double> _widthSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -1041,6 +1635,8 @@ public class Sku implements Serializable {
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 
+		BigDecimal cost = getCost();
+
 		if (cost != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -1050,6 +1646,9 @@ public class Sku implements Serializable {
 
 			sb.append(cost);
 		}
+
+		com.liferay.portal.vulcan.custom.field.CustomField[] customFields =
+			getCustomFields();
 
 		if (customFields != null) {
 			if (sb.length() > 1) {
@@ -1061,7 +1660,7 @@ public class Sku implements Serializable {
 			sb.append("[");
 
 			for (int i = 0; i < customFields.length; i++) {
-				sb.append(String.valueOf(customFields[i]));
+				sb.append(customFields[i]);
 
 				if ((i + 1) < customFields.length) {
 					sb.append(", ");
@@ -1070,6 +1669,8 @@ public class Sku implements Serializable {
 
 			sb.append("]");
 		}
+
+		Double depth = getDepth();
 
 		if (depth != null) {
 			if (sb.length() > 1) {
@@ -1081,6 +1682,8 @@ public class Sku implements Serializable {
 			sb.append(depth);
 		}
 
+		Boolean discontinued = getDiscontinued();
+
 		if (discontinued != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -1090,6 +1693,8 @@ public class Sku implements Serializable {
 
 			sb.append(discontinued);
 		}
+
+		Date discontinuedDate = getDiscontinuedDate();
 
 		if (discontinuedDate != null) {
 			if (sb.length() > 1) {
@@ -1105,6 +1710,8 @@ public class Sku implements Serializable {
 			sb.append("\"");
 		}
 
+		Date displayDate = getDisplayDate();
+
 		if (displayDate != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -1118,6 +1725,8 @@ public class Sku implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Date expirationDate = getExpirationDate();
 
 		if (expirationDate != null) {
 			if (sb.length() > 1) {
@@ -1133,6 +1742,8 @@ public class Sku implements Serializable {
 			sb.append("\"");
 		}
 
+		String externalReferenceCode = getExternalReferenceCode();
+
 		if (externalReferenceCode != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -1146,6 +1757,8 @@ public class Sku implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String gtin = getGtin();
 
 		if (gtin != null) {
 			if (sb.length() > 1) {
@@ -1161,6 +1774,8 @@ public class Sku implements Serializable {
 			sb.append("\"");
 		}
 
+		Double height = getHeight();
+
 		if (height != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -1170,6 +1785,8 @@ public class Sku implements Serializable {
 
 			sb.append(height);
 		}
+
+		Long id = getId();
 
 		if (id != null) {
 			if (sb.length() > 1) {
@@ -1181,6 +1798,8 @@ public class Sku implements Serializable {
 			sb.append(id);
 		}
 
+		Integer inventoryLevel = getInventoryLevel();
+
 		if (inventoryLevel != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -1190,6 +1809,8 @@ public class Sku implements Serializable {
 
 			sb.append(inventoryLevel);
 		}
+
+		String manufacturerPartNumber = getManufacturerPartNumber();
 
 		if (manufacturerPartNumber != null) {
 			if (sb.length() > 1) {
@@ -1205,6 +1826,8 @@ public class Sku implements Serializable {
 			sb.append("\"");
 		}
 
+		Boolean neverExpire = getNeverExpire();
+
 		if (neverExpire != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -1214,6 +1837,8 @@ public class Sku implements Serializable {
 
 			sb.append(neverExpire);
 		}
+
+		BigDecimal price = getPrice();
 
 		if (price != null) {
 			if (sb.length() > 1) {
@@ -1225,6 +1850,8 @@ public class Sku implements Serializable {
 			sb.append(price);
 		}
 
+		Long productId = getProductId();
+
 		if (productId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -1234,6 +1861,8 @@ public class Sku implements Serializable {
 
 			sb.append(productId);
 		}
+
+		Map<String, String> productName = getProductName();
 
 		if (productName != null) {
 			if (sb.length() > 1) {
@@ -1245,6 +1874,8 @@ public class Sku implements Serializable {
 			sb.append(_toJSON(productName));
 		}
 
+		BigDecimal promoPrice = getPromoPrice();
+
 		if (promoPrice != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -1254,6 +1885,8 @@ public class Sku implements Serializable {
 
 			sb.append(promoPrice);
 		}
+
+		Boolean published = getPublished();
 
 		if (published != null) {
 			if (sb.length() > 1) {
@@ -1265,6 +1898,8 @@ public class Sku implements Serializable {
 			sb.append(published);
 		}
 
+		Boolean purchasable = getPurchasable();
+
 		if (purchasable != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -1274,6 +1909,9 @@ public class Sku implements Serializable {
 
 			sb.append(purchasable);
 		}
+
+		String replacementSkuExternalReferenceCode =
+			getReplacementSkuExternalReferenceCode();
 
 		if (replacementSkuExternalReferenceCode != null) {
 			if (sb.length() > 1) {
@@ -1289,6 +1927,8 @@ public class Sku implements Serializable {
 			sb.append("\"");
 		}
 
+		Long replacementSkuId = getReplacementSkuId();
+
 		if (replacementSkuId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -1298,6 +1938,8 @@ public class Sku implements Serializable {
 
 			sb.append(replacementSkuId);
 		}
+
+		String sku = getSku();
 
 		if (sku != null) {
 			if (sb.length() > 1) {
@@ -1312,6 +1954,8 @@ public class Sku implements Serializable {
 
 			sb.append("\"");
 		}
+
+		SkuOption[] skuOptions = getSkuOptions();
 
 		if (skuOptions != null) {
 			if (sb.length() > 1) {
@@ -1333,6 +1977,9 @@ public class Sku implements Serializable {
 			sb.append("]");
 		}
 
+		SkuSubscriptionConfiguration skuSubscriptionConfiguration =
+			getSkuSubscriptionConfiguration();
+
 		if (skuSubscriptionConfiguration != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -1342,6 +1989,8 @@ public class Sku implements Serializable {
 
 			sb.append(String.valueOf(skuSubscriptionConfiguration));
 		}
+
+		SkuUnitOfMeasure[] skuUnitOfMeasures = getSkuUnitOfMeasures();
 
 		if (skuUnitOfMeasures != null) {
 			if (sb.length() > 1) {
@@ -1363,6 +2012,8 @@ public class Sku implements Serializable {
 			sb.append("]");
 		}
 
+		SkuVirtualSettings skuVirtualSettings = getSkuVirtualSettings();
+
 		if (skuVirtualSettings != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -1372,6 +2023,8 @@ public class Sku implements Serializable {
 
 			sb.append(String.valueOf(skuVirtualSettings));
 		}
+
+		String unitOfMeasureKey = getUnitOfMeasureKey();
 
 		if (unitOfMeasureKey != null) {
 			if (sb.length() > 1) {
@@ -1387,6 +2040,8 @@ public class Sku implements Serializable {
 			sb.append("\"");
 		}
 
+		Map<String, String> unitOfMeasureName = getUnitOfMeasureName();
+
 		if (unitOfMeasureName != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -1396,6 +2051,8 @@ public class Sku implements Serializable {
 
 			sb.append(_toJSON(unitOfMeasureName));
 		}
+
+		String unitOfMeasureSkuId = getUnitOfMeasureSkuId();
 
 		if (unitOfMeasureSkuId != null) {
 			if (sb.length() > 1) {
@@ -1411,6 +2068,8 @@ public class Sku implements Serializable {
 			sb.append("\"");
 		}
 
+		String unspsc = getUnspsc();
+
 		if (unspsc != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -1425,6 +2084,8 @@ public class Sku implements Serializable {
 			sb.append("\"");
 		}
 
+		Double weight = getWeight();
+
 		if (weight != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -1434,6 +2095,8 @@ public class Sku implements Serializable {
 
 			sb.append(weight);
 		}
+
+		Double width = getWidth();
 
 		if (width != null) {
 			if (sb.length() > 1) {
@@ -1450,8 +2113,8 @@ public class Sku implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.admin.catalog.dto.v1_0.Sku",
 		name = "x-class-name"
 	)
@@ -1497,7 +2160,10 @@ public class Sku implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -1543,3 +2209,4 @@ public class Sku implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:1588692532

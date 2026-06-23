@@ -16,7 +16,12 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,22 +29,22 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.constraints.DecimalMin;
-import javax.validation.constraints.NotNull;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Zoltán Takács
  * @generated
  */
 @Generated("")
-@GraphQLName("PriceListDiscount")
+@GraphQLName(
+	description = "Discount linkage attached to a price list. Ties one discount to the price list so its rules participate in price resolution against that list. Backed by price list discount link.",
+	value = "PriceListDiscount"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "Discount linkage attached to a price list. Ties one discount to the price list so its rules participate in price resolution against that list. Backed by price list discount link.",
+	requiredProperties = {"discountId", "priceListId"}
+)
 @JsonFilter("Liferay.Vulcan")
-@Schema(requiredProperties = {"discountId", "priceListId"})
 @XmlRootElement(name = "PriceListDiscount")
 public class PriceListDiscount implements Serializable {
 
@@ -51,8 +56,18 @@ public class PriceListDiscount implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(PriceListDiscount.class, json);
 	}
 
-	@Schema(example = "DAB-34098-789-N")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "External reference code of the bound discount; alternative to `discountId` for lookup.",
+		example = "DAB-34098-789-N"
+	)
 	public String getDiscountExternalReferenceCode() {
+		if (_discountExternalReferenceCodeSupplier != null) {
+			discountExternalReferenceCode =
+				_discountExternalReferenceCodeSupplier.get();
+
+			_discountExternalReferenceCodeSupplier = null;
+		}
+
 		return discountExternalReferenceCode;
 	}
 
@@ -60,6 +75,8 @@ public class PriceListDiscount implements Serializable {
 		String discountExternalReferenceCode) {
 
 		this.discountExternalReferenceCode = discountExternalReferenceCode;
+
+		_discountExternalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
@@ -67,140 +84,228 @@ public class PriceListDiscount implements Serializable {
 		UnsafeSupplier<String, Exception>
 			discountExternalReferenceCodeUnsafeSupplier) {
 
-		try {
-			discountExternalReferenceCode =
-				discountExternalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_discountExternalReferenceCodeSupplier = () -> {
+			try {
+				return discountExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "External reference code of the bound discount; alternative to `discountId` for lookup."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String discountExternalReferenceCode;
 
+	@JsonIgnore
+	private Supplier<String> _discountExternalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30324")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Reference to the discount entity (FK identifier).",
+		example = "30324"
+	)
 	public Long getDiscountId() {
+		if (_discountIdSupplier != null) {
+			discountId = _discountIdSupplier.get();
+
+			_discountIdSupplier = null;
+		}
+
 		return discountId;
 	}
 
 	public void setDiscountId(Long discountId) {
 		this.discountId = discountId;
+
+		_discountIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDiscountId(
 		UnsafeSupplier<Long, Exception> discountIdUnsafeSupplier) {
 
-		try {
-			discountId = discountIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_discountIdSupplier = () -> {
+			try {
+				return discountIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Reference to the discount entity (FK identifier)."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	@NotNull
 	protected Long discountId;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _discountIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Display name of the linked discount, mirrored from discount.title. Read-only.",
+		example = "20% Off"
+	)
 	public String getDiscountName() {
+		if (_discountNameSupplier != null) {
+			discountName = _discountNameSupplier.get();
+
+			_discountNameSupplier = null;
+		}
+
 		return discountName;
 	}
 
 	public void setDiscountName(String discountName) {
 		this.discountName = discountName;
+
+		_discountNameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDiscountName(
 		UnsafeSupplier<String, Exception> discountNameUnsafeSupplier) {
 
-		try {
-			discountName = discountNameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_discountNameSupplier = () -> {
+			try {
+				return discountNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Display name of the linked discount, mirrored from discount.title. Read-only."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String discountName;
 
+	@JsonIgnore
+	private Supplier<String> _discountNameSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "1")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Ordering integer that orders this pricelistdiscount relative to its peers. Lower numbers resolve first.",
+		example = "1"
+	)
 	public Integer getOrder() {
+		if (_orderSupplier != null) {
+			order = _orderSupplier.get();
+
+			_orderSupplier = null;
+		}
+
 		return order;
 	}
 
 	public void setOrder(Integer order) {
 		this.order = order;
+
+		_orderSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setOrder(
 		UnsafeSupplier<Integer, Exception> orderUnsafeSupplier) {
 
-		try {
-			order = orderUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_orderSupplier = () -> {
+			try {
+				return orderUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Ordering integer that orders this pricelistdiscount relative to its peers. Lower numbers resolve first."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Integer order;
 
+	@JsonIgnore
+	private Supplier<Integer> _orderSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30643")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Reference to the priceListDiscount entity (FK identifier).",
+		example = "30643"
+	)
 	public Long getPriceListDiscountId() {
+		if (_priceListDiscountIdSupplier != null) {
+			priceListDiscountId = _priceListDiscountIdSupplier.get();
+
+			_priceListDiscountIdSupplier = null;
+		}
+
 		return priceListDiscountId;
 	}
 
 	public void setPriceListDiscountId(Long priceListDiscountId) {
 		this.priceListDiscountId = priceListDiscountId;
+
+		_priceListDiscountIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPriceListDiscountId(
 		UnsafeSupplier<Long, Exception> priceListDiscountIdUnsafeSupplier) {
 
-		try {
-			priceListDiscountId = priceListDiscountIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_priceListDiscountIdSupplier = () -> {
+			try {
+				return priceListDiscountIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Reference to the priceListDiscount entity (FK identifier)."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long priceListDiscountId;
 
-	@Schema(example = "PAB-34098-789-N")
+	@JsonIgnore
+	private Supplier<Long> _priceListDiscountIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "External reference code of the bound priceList; alternative to `priceListId` for lookup.",
+		example = "PAB-34098-789-N"
+	)
 	public String getPriceListExternalReferenceCode() {
+		if (_priceListExternalReferenceCodeSupplier != null) {
+			priceListExternalReferenceCode =
+				_priceListExternalReferenceCodeSupplier.get();
+
+			_priceListExternalReferenceCodeSupplier = null;
+		}
+
 		return priceListExternalReferenceCode;
 	}
 
@@ -208,6 +313,8 @@ public class PriceListDiscount implements Serializable {
 		String priceListExternalReferenceCode) {
 
 		this.priceListExternalReferenceCode = priceListExternalReferenceCode;
+
+		_priceListExternalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
@@ -215,51 +322,75 @@ public class PriceListDiscount implements Serializable {
 		UnsafeSupplier<String, Exception>
 			priceListExternalReferenceCodeUnsafeSupplier) {
 
-		try {
-			priceListExternalReferenceCode =
-				priceListExternalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_priceListExternalReferenceCodeSupplier = () -> {
+			try {
+				return priceListExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "External reference code of the bound priceList; alternative to `priceListId` for lookup."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String priceListExternalReferenceCode;
 
+	@JsonIgnore
+	private Supplier<String> _priceListExternalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30130")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Reference to the priceList entity (FK identifier).",
+		example = "30130"
+	)
 	public Long getPriceListId() {
+		if (_priceListIdSupplier != null) {
+			priceListId = _priceListIdSupplier.get();
+
+			_priceListIdSupplier = null;
+		}
+
 		return priceListId;
 	}
 
 	public void setPriceListId(Long priceListId) {
 		this.priceListId = priceListId;
+
+		_priceListIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPriceListId(
 		UnsafeSupplier<Long, Exception> priceListIdUnsafeSupplier) {
 
-		try {
-			priceListId = priceListIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_priceListIdSupplier = () -> {
+			try {
+				return priceListIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Reference to the priceList entity (FK identifier)."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	@NotNull
 	protected Long priceListId;
+
+	@JsonIgnore
+	private Supplier<Long> _priceListIdSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -288,6 +419,9 @@ public class PriceListDiscount implements Serializable {
 
 		sb.append("{");
 
+		String discountExternalReferenceCode =
+			getDiscountExternalReferenceCode();
+
 		if (discountExternalReferenceCode != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -302,6 +436,8 @@ public class PriceListDiscount implements Serializable {
 			sb.append("\"");
 		}
 
+		Long discountId = getDiscountId();
+
 		if (discountId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -311,6 +447,8 @@ public class PriceListDiscount implements Serializable {
 
 			sb.append(discountId);
 		}
+
+		String discountName = getDiscountName();
 
 		if (discountName != null) {
 			if (sb.length() > 1) {
@@ -326,6 +464,8 @@ public class PriceListDiscount implements Serializable {
 			sb.append("\"");
 		}
 
+		Integer order = getOrder();
+
 		if (order != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -336,6 +476,8 @@ public class PriceListDiscount implements Serializable {
 			sb.append(order);
 		}
 
+		Long priceListDiscountId = getPriceListDiscountId();
+
 		if (priceListDiscountId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -345,6 +487,9 @@ public class PriceListDiscount implements Serializable {
 
 			sb.append(priceListDiscountId);
 		}
+
+		String priceListExternalReferenceCode =
+			getPriceListExternalReferenceCode();
 
 		if (priceListExternalReferenceCode != null) {
 			if (sb.length() > 1) {
@@ -359,6 +504,8 @@ public class PriceListDiscount implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Long priceListId = getPriceListId();
 
 		if (priceListId != null) {
 			if (sb.length() > 1) {
@@ -375,8 +522,8 @@ public class PriceListDiscount implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.admin.pricing.dto.v2_0.PriceListDiscount",
 		name = "x-class-name"
 	)
@@ -422,7 +569,10 @@ public class PriceListDiscount implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -468,3 +618,4 @@ public class PriceListDiscount implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-351728650

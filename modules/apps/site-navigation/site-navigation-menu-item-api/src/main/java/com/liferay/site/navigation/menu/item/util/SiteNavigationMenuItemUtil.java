@@ -26,13 +26,13 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.site.navigation.menu.item.layout.constants.SiteNavigationMenuItemTypeConstants;
 import com.liferay.site.navigation.model.SiteNavigationMenuItem;
 
+import jakarta.portlet.PortletRequest;
+
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.portlet.PortletRequest;
 
 /**
  * @author Pavel Savinov
@@ -117,25 +117,41 @@ public class SiteNavigationMenuItemUtil {
 				siteNavigationMenuItem.getType(),
 				SiteNavigationMenuItemTypeConstants.LAYOUT)) {
 
-			String layoutUuid = typeSettingsUnicodeProperties.get("layoutUuid");
+			Layout layout =
+				LayoutLocalServiceUtil.fetchLayoutByExternalReferenceCode(
+					typeSettingsUnicodeProperties.get("externalReferenceCode"),
+					siteNavigationMenuItem.getGroupId());
 
-			boolean privateLayout = GetterUtil.getBoolean(
-				typeSettingsUnicodeProperties.get("privateLayout"));
+			if (layout != null) {
+				Map<Locale, String> nameMap = layout.getNameMap();
 
-			Layout layout = LayoutLocalServiceUtil.getLayoutByUuidAndGroupId(
-				layoutUuid, siteNavigationMenuItem.getGroupId(), privateLayout);
+				for (Map.Entry<Locale, String> nameEntry : nameMap.entrySet()) {
+					String languageId = LocaleUtil.toLanguageId(
+						nameEntry.getKey());
 
-			Map<Locale, String> nameMap = layout.getNameMap();
+					if (Validator.isNull(
+							typeSettingsUnicodeProperties.getProperty(
+								"name_" + languageId))) {
 
-			for (Map.Entry<Locale, String> nameEntry : nameMap.entrySet()) {
-				String languageId = LocaleUtil.toLanguageId(nameEntry.getKey());
+						typeSettingsUnicodeProperties.setProperty(
+							"name_" + languageId, nameEntry.getValue());
+					}
+				}
+			}
+			else {
+				String defaultLanguageId =
+					typeSettingsUnicodeProperties.getProperty(
+						Field.DEFAULT_LANGUAGE_ID,
+						LocaleUtil.toLanguageId(
+							LocaleUtil.getMostRelevantLocale()));
 
 				if (Validator.isNull(
 						typeSettingsUnicodeProperties.getProperty(
-							"name_" + languageId))) {
+							"name_" + defaultLanguageId))) {
 
 					typeSettingsUnicodeProperties.setProperty(
-						"name_" + languageId, nameEntry.getValue());
+						"name_" + defaultLanguageId,
+						typeSettingsUnicodeProperties.getProperty("title"));
 				}
 			}
 		}

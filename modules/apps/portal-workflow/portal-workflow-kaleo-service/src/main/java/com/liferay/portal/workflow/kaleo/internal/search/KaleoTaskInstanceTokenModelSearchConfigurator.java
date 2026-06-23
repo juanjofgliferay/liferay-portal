@@ -9,7 +9,9 @@ import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.search.spi.model.index.contributor.ModelIndexerWriterContributor;
 import com.liferay.portal.search.spi.model.registrar.ModelSearchConfigurator;
 import com.liferay.portal.workflow.kaleo.model.KaleoTaskInstanceToken;
+import com.liferay.portal.workflow.kaleo.service.KaleoTaskInstanceTokenLocalService;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -50,12 +52,20 @@ public class KaleoTaskInstanceTokenModelSearchConfigurator
 
 	@Override
 	public boolean isPermissionAware() {
-		return false;
+		return true;
 	}
 
-	@Reference(
-		target = "(indexer.class.name=com.liferay.portal.workflow.kaleo.model.KaleoTaskInstanceToken)"
-	)
+	@Activate
+	protected void activate() {
+		_modelIndexWriterContributor = new ModelIndexerWriterContributor<>(
+			_kaleoTaskInstanceTokenLocalService::
+				getIndexableActionableDynamicQuery);
+	}
+
+	@Reference
+	private KaleoTaskInstanceTokenLocalService
+		_kaleoTaskInstanceTokenLocalService;
+
 	private ModelIndexerWriterContributor<KaleoTaskInstanceToken>
 		_modelIndexWriterContributor;
 

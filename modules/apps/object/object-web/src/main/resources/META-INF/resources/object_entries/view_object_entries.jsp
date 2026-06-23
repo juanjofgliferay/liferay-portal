@@ -15,8 +15,29 @@ ObjectDefinition objectDefinition = viewObjectEntriesDisplayContext.getObjectDef
 
 <c:choose>
 	<c:when test="<%= objectDefinition.isPortlet() || Objects.equals(layout.getType(), LayoutConstants.TYPE_CONTROL_PANEL) %>">
+
+		<%
+		BulkSelectionRunner bulkSelectionRunner = BulkSelectionRunnerUtil.getBulkSelectionRunner();
+		%>
+
+		<div>
+			<react:component
+				module="{BulkStatus} from object-web"
+				props='<%=
+					HashMapBuilder.<String, Object>put(
+						"bulkComponentId", liferayPortletResponse.getNamespace() + "BulkStatus"
+					).put(
+						"bulkInProgress", bulkSelectionRunner.isBusy(user)
+					).put(
+						"pathModule", PortalUtil.getPathModule()
+					).build()
+				%>'
+			/>
+		</div>
+
 		<frontend-data-set:headless-display
 			apiURL="<%= viewObjectEntriesDisplayContext.getAPIURL() %>"
+			bulkActionDropdownItems="<%= viewObjectEntriesDisplayContext.getBulkActionDropdownItems() %>"
 			creationMenu="<%= viewObjectEntriesDisplayContext.getCreationMenu() %>"
 			fdsActionDropdownItems="<%= viewObjectEntriesDisplayContext.getFDSActionDropdownItems() %>"
 			fdsFilters="<%= viewObjectEntriesDisplayContext.getFDSFilters() %>"
@@ -27,16 +48,31 @@ ObjectDefinition objectDefinition = viewObjectEntriesDisplayContext.getObjectDef
 			namespace="<%= liferayPortletResponse.getNamespace() %>"
 			pageNumber="<%= 1 %>"
 			portletURL="<%= liferayPortletResponse.createRenderURL() %>"
-			propsTransformer="js/components/FDSPropsTransformer/ViewObjectEntriesFDSPropsTransformer"
+			propsTransformer="{ViewObjectEntriesFDSPropsTransformer} from object-web"
+			selectionType="multiple"
+			showSelectAll="<%= true %>"
 			style="fluid"
 		/>
 
 		<div>
 			<react:component
-				module="js/components/ModalDeleteObjectEntry"
+				module="{ModalDeleteObjectEntry} from object-web"
 				props='<%=
 					HashMapBuilder.<String, Object>put(
 						"byExternalReferenceCodePath", viewObjectEntriesDisplayContext.getByExternalReferenceCodePath()
+					).build()
+				%>'
+			/>
+		</div>
+
+		<div>
+			<react:component
+				module="{ModalBulkDeleteObjectEntries} from object-web"
+				props='<%=
+					HashMapBuilder.<String, Object>put(
+						"namespace", liferayPortletResponse.getNamespace()
+					).put(
+						"objectDefinition", objectDefinition
 					).build()
 				%>'
 			/>

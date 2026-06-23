@@ -33,10 +33,15 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.portlet.FriendlyURLResolver;
+import com.liferay.portal.kernel.portlet.FriendlyURLResolverRegistryUtil;
+import com.liferay.portal.kernel.portlet.constants.FriendlyURLResolverConstants;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.ScopeUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
@@ -63,7 +68,7 @@ public class DisplayPageInfoItemFieldSetProviderImpl
 		).infoFieldSetEntries(
 			_getInfoFieldSetEntries(
 				itemClassName, infoItemFormVariationKey, namespace,
-				scopeGroupId)
+				ScopeUtil.getScopeGroupId(scopeGroupId))
 		).labelInfoLocalizedValue(
 			InfoLocalizedValue.localize(getClass(), "display-page")
 		).name(
@@ -74,7 +79,7 @@ public class DisplayPageInfoItemFieldSetProviderImpl
 	@Override
 	public List<InfoFieldValue<Object>> getInfoFieldValues(
 			InfoItemReference infoItemReference,
-			String infoItemFormVariationKey, String namespace,
+			String infoItemFormVariationKey, String namespace, Object object,
 			ThemeDisplay themeDisplay)
 		throws Exception {
 
@@ -95,21 +100,21 @@ public class DisplayPageInfoItemFieldSetProviderImpl
 				).labelInfoLocalizedValue(
 					InfoLocalizedValue.localize(getClass(), "default")
 				).build(),
-				_getDefaultDisplayPageURL(infoItemReference, themeDisplay)));
+				_getDefaultDisplayPageURL(
+					infoItemReference, object, themeDisplay)));
 
 		Group group = themeDisplay.getScopeGroup();
 
 		String groupFriendlyURL = _portal.getGroupFriendlyURL(
 			group.getPublicLayoutSet(), themeDisplay, false, false);
 
-		String url = groupFriendlyURL + "/e";
-
 		List<LayoutPageTemplateEntry> layoutPageTemplateEntries =
 			_layoutPageTemplateEntryService.getLayoutPageTemplateEntries(
 				themeDisplay.getScopeGroupId(),
 				_portal.getClassNameId(infoItemReference.getClassName()),
 				GetterUtil.getLong(infoItemFormVariationKey),
-				LayoutPageTemplateEntryTypeConstants.DISPLAY_PAGE);
+				LayoutPageTemplateEntryTypeConstants.DISPLAY_PAGE,
+				WorkflowConstants.STATUS_APPROVED);
 
 		for (LayoutPageTemplateEntry layoutPageTemplateEntry :
 				layoutPageTemplateEntries) {
@@ -117,45 +122,18 @@ public class DisplayPageInfoItemFieldSetProviderImpl
 			Layout layout = _layoutLocalService.fetchLayout(
 				layoutPageTemplateEntry.getPlid());
 
-			infoFieldValues.add(
-				new InfoFieldValue<>(
-					InfoField.builder(
-					).infoFieldType(
-						URLInfoFieldType.INSTANCE
-					).uniqueId(
-						_getUniqueId(
-							layoutPageTemplateEntry.
-								getLayoutPageTemplateEntryKey())
-					).name(
-						layoutPageTemplateEntry.getName()
-					).attribute(
-						URLInfoFieldType.NOFOLLOW, Boolean.TRUE
-					).labelInfoLocalizedValue(
-						InfoLocalizedValue.singleValue(
-							layoutPageTemplateEntry.getName())
-					).build(),
-					new FunctionInfoLocalizedValue<>(
-						locale -> {
-							WebURL webURL = new WebURL(
-								StringBundler.concat(
-									url, layout.getFriendlyURL(locale),
-									StringPool.SLASH,
-									_portal.getClassNameId(
-										infoItemReference.getClassName()),
-									StringPool.SLASH,
-									_getInfoItemIdentifier(infoItemReference)));
-
-							webURL.setNofollow(true);
-
-							return webURL;
-						})));
+			infoFieldValues.addAll(
+				_getInfoFieldValues(
+					groupFriendlyURL, infoItemReference, layout,
+					layoutPageTemplateEntry, themeDisplay));
 		}
 
 		return infoFieldValues;
 	}
 
 	private String _getDefaultDisplayPageURL(
-			InfoItemReference infoItemReference, ThemeDisplay themeDisplay)
+			InfoItemReference infoItemReference, Object object,
+			ThemeDisplay themeDisplay)
 		throws Exception {
 
 		AssetRendererFactory<?> assetRendererFactory =
@@ -164,7 +142,7 @@ public class DisplayPageInfoItemFieldSetProviderImpl
 
 		if (assetRendererFactory == null) {
 			return _assetDisplayPageFriendlyURLProvider.getFriendlyURL(
-				infoItemReference, themeDisplay);
+				infoItemReference, object, themeDisplay);
 		}
 
 		try {
@@ -183,7 +161,7 @@ public class DisplayPageInfoItemFieldSetProviderImpl
 
 			if (assetRenderer == null) {
 				return _assetDisplayPageFriendlyURLProvider.getFriendlyURL(
-					infoItemReference, themeDisplay);
+					infoItemReference, object, themeDisplay);
 			}
 
 			String viewInContextURL = assetRenderer.getURLViewInContext(
@@ -200,7 +178,7 @@ public class DisplayPageInfoItemFieldSetProviderImpl
 		}
 
 		return _assetDisplayPageFriendlyURLProvider.getFriendlyURL(
-			infoItemReference, themeDisplay);
+			infoItemReference, object, themeDisplay);
 	}
 
 	private InfoField<InfoFieldType> _getDefaultDisplayPageURLInfoField(
@@ -219,6 +197,12 @@ public class DisplayPageInfoItemFieldSetProviderImpl
 
 	private InfoFieldType _getDisplayPageInfoFieldType() {
 		return DisplayPageInfoFieldType.INSTANCE;
+	}
+
+	private String _getExternalUniqueId(String externalReferenceCode) {
+		return StringBundler.concat(
+			LayoutPageTemplateEntry.class.getSimpleName(), "__ERC__",
+			externalReferenceCode);
 	}
 
 	private List<InfoFieldSetEntry> _getInfoFieldSetEntries(
@@ -245,9 +229,14 @@ public class DisplayPageInfoItemFieldSetProviderImpl
 					_getDisplayPageInfoFieldType()
 				).uniqueId(
 					_getUniqueId(
-						layoutPageTemplateEntry.getLayoutPageTemplateEntryKey())
+						String.valueOf(
+							layoutPageTemplateEntry.
+								getLayoutPageTemplateEntryId()))
 				).name(
 					layoutPageTemplateEntry.getName()
+				).externalUniqueId(
+					_getExternalUniqueId(
+						layoutPageTemplateEntry.getExternalReferenceCode())
 				).labelInfoLocalizedValue(
 					InfoLocalizedValue.singleValue(
 						layoutPageTemplateEntry.getName())
@@ -255,6 +244,73 @@ public class DisplayPageInfoItemFieldSetProviderImpl
 		}
 
 		return infoFieldSetEntries;
+	}
+
+	private List<InfoFieldValue<Object>> _getInfoFieldValues(
+		String groupFriendlyURL, InfoItemReference infoItemReference,
+		Layout layout, LayoutPageTemplateEntry layoutPageTemplateEntry,
+		ThemeDisplay themeDisplay) {
+
+		FunctionInfoLocalizedValue<WebURL> functionInfoLocalizedValue =
+			new FunctionInfoLocalizedValue<>(
+				locale -> {
+					WebURL webURL = new WebURL(
+						_portal.addPreservedParameters(
+							themeDisplay,
+							StringBundler.concat(
+								groupFriendlyURL + _getURLSeparator(),
+								layout.getFriendlyURL(locale), StringPool.SLASH,
+								_portal.getClassNameId(
+									infoItemReference.getClassName()),
+								StringPool.SLASH,
+								_getInfoItemIdentifier(infoItemReference))));
+
+					webURL.setNofollow(true);
+
+					return webURL;
+				});
+
+		return ListUtil.fromArray(
+			new InfoFieldValue<>(
+				InfoField.builder(
+				).infoFieldType(
+					URLInfoFieldType.INSTANCE
+				).uniqueId(
+					_getUniqueId(
+						String.valueOf(
+							layoutPageTemplateEntry.
+								getLayoutPageTemplateEntryId()))
+				).name(
+					layoutPageTemplateEntry.getName()
+				).attribute(
+					URLInfoFieldType.NOFOLLOW, Boolean.TRUE
+				).externalUniqueId(
+					_getExternalUniqueId(
+						layoutPageTemplateEntry.getExternalReferenceCode())
+				).labelInfoLocalizedValue(
+					InfoLocalizedValue.singleValue(
+						layoutPageTemplateEntry.getName())
+				).build(),
+				functionInfoLocalizedValue),
+			new InfoFieldValue<>(
+				InfoField.builder(
+				).infoFieldType(
+					URLInfoFieldType.INSTANCE
+				).uniqueId(
+					_getUniqueId(
+						layoutPageTemplateEntry.getLayoutPageTemplateEntryKey())
+				).name(
+					layoutPageTemplateEntry.getName()
+				).attribute(
+					URLInfoFieldType.NOFOLLOW, Boolean.TRUE
+				).externalUniqueId(
+					_getExternalUniqueId(
+						layoutPageTemplateEntry.getExternalReferenceCode())
+				).labelInfoLocalizedValue(
+					InfoLocalizedValue.singleValue(
+						layoutPageTemplateEntry.getName())
+				).build(),
+				functionInfoLocalizedValue));
 	}
 
 	private String _getInfoItemIdentifier(InfoItemReference infoItemReference) {
@@ -278,9 +334,24 @@ public class DisplayPageInfoItemFieldSetProviderImpl
 		return StringPool.BLANK;
 	}
 
-	private String _getUniqueId(String layoutPageTemplateEntryKey) {
+	private String _getUniqueId(String id) {
 		return LayoutPageTemplateEntry.class.getSimpleName() +
-			StringPool.UNDERLINE + layoutPageTemplateEntryKey;
+			StringPool.UNDERLINE + id;
+	}
+
+	private String _getURLSeparator() {
+		FriendlyURLResolver friendlyURLResolver =
+			FriendlyURLResolverRegistryUtil.
+				getFriendlyURLResolverByDefaultURLSeparator(
+					FriendlyURLResolverConstants.URL_SEPARATOR_CUSTOM_ASSET);
+
+		if (friendlyURLResolver != null) {
+			String urlSeparator = friendlyURLResolver.getURLSeparator();
+
+			return urlSeparator.substring(0, urlSeparator.length() - 1);
+		}
+
+		return FriendlyURLResolverConstants.URL_SEPARATOR_X_CUSTOM_ASSET;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

@@ -8,7 +8,6 @@ package com.liferay.headless.delivery.internal.dto.v1_0.converter;
 import com.liferay.document.library.kernel.model.DLFolder;
 import com.liferay.headless.delivery.dto.v1_0.StructuredContentFolder;
 import com.liferay.headless.delivery.dto.v1_0.util.CreatorUtil;
-import com.liferay.headless.delivery.dto.v1_0.util.CustomFieldsUtil;
 import com.liferay.journal.model.JournalFolder;
 import com.liferay.journal.service.JournalArticleService;
 import com.liferay.journal.service.JournalFolderService;
@@ -17,6 +16,7 @@ import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.portal.vulcan.custom.field.CustomFieldsUtil;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
 import com.liferay.portal.vulcan.util.GroupUtil;
@@ -53,37 +53,35 @@ public class StructuredContentFolderDTOConverter
 
 		return new StructuredContentFolder() {
 			{
-				actions = dtoConverterContext.getActions();
-				assetLibraryKey = GroupUtil.getAssetLibraryKey(group);
-				creator = CreatorUtil.toCreator(
-					dtoConverterContext, _portal,
-					_userLocalService.fetchUser(journalFolder.getUserId()));
-				customFields = CustomFieldsUtil.toCustomFields(
-					dtoConverterContext.isAcceptAllLanguages(),
-					JournalFolder.class.getName(), journalFolder.getFolderId(),
-					journalFolder.getCompanyId(),
-					dtoConverterContext.getLocale());
-				dateCreated = journalFolder.getCreateDate();
-				dateModified = journalFolder.getModifiedDate();
-				description = journalFolder.getDescription();
-				externalReferenceCode =
-					journalFolder.getExternalReferenceCode();
-				id = journalFolder.getFolderId();
-				name = journalFolder.getName();
-				numberOfStructuredContentFolders =
-					_journalFolderService.getFoldersCount(
+				setActions(dtoConverterContext::getActions);
+				setAssetLibraryKey(() -> GroupUtil.getAssetLibraryKey(group));
+				setCreator(
+					() -> CreatorUtil.toCreator(
+						dtoConverterContext, _portal,
+						_userLocalService.fetchUser(
+							journalFolder.getUserId())));
+				setCustomFields(
+					() -> CustomFieldsUtil.toCustomFields(
+						dtoConverterContext.isAcceptAllLanguages(),
+						JournalFolder.class.getName(),
+						journalFolder.getFolderId(),
+						journalFolder.getCompanyId(),
+						dtoConverterContext.getLocale()));
+				setDateCreated(journalFolder::getCreateDate);
+				setDateModified(journalFolder::getModifiedDate);
+				setDescription(journalFolder::getDescription);
+				setExternalReferenceCode(
+					journalFolder::getExternalReferenceCode);
+				setId(journalFolder::getFolderId);
+				setName(journalFolder::getName);
+				setNumberOfStructuredContentFolders(
+					() -> _journalFolderService.getFoldersCount(
 						journalFolder.getGroupId(),
-						journalFolder.getFolderId());
-				numberOfStructuredContents =
-					_journalArticleService.getArticlesCount(
+						journalFolder.getFolderId()));
+				setNumberOfStructuredContents(
+					() -> _journalArticleService.getArticlesCount(
 						journalFolder.getGroupId(), journalFolder.getFolderId(),
-						WorkflowConstants.STATUS_APPROVED);
-				siteId = GroupUtil.getSiteId(group);
-				subscribed = _subscriptionLocalService.isSubscribed(
-					journalFolder.getCompanyId(),
-					dtoConverterContext.getUserId(),
-					JournalFolder.class.getName(), journalFolder.getFolderId());
-
+						WorkflowConstants.STATUS_APPROVED));
 				setParentStructuredContentFolderId(
 					() -> {
 						if (journalFolder.getParentFolderId() == 0L) {
@@ -92,6 +90,13 @@ public class StructuredContentFolderDTOConverter
 
 						return journalFolder.getParentFolderId();
 					});
+				setSiteId(() -> GroupUtil.getSiteId(group));
+				setSubscribed(
+					() -> _subscriptionLocalService.isSubscribed(
+						journalFolder.getCompanyId(),
+						dtoConverterContext.getUserId(),
+						JournalFolder.class.getName(),
+						journalFolder.getFolderId()));
 			}
 		};
 	}

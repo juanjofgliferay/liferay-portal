@@ -9,7 +9,7 @@ import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.kernel.util.PropsValues;
 
 import java.io.InputStream;
 
@@ -73,6 +73,7 @@ public class ModuleReadHookImpl implements ModuleReadHook {
 				if (matcher.find()) {
 					try (ZipFile zipFile = new ZipFile(
 							_normalizePath(matcher.group(2)));
+
 						InputStream inputStream = zipFile.getInputStream(
 							zipFile.getEntry(matcher.group(1)))) {
 

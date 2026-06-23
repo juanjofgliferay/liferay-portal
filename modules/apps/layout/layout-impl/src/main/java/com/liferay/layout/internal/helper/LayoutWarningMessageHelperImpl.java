@@ -16,7 +16,6 @@ import com.liferay.info.constants.InfoDisplayWebKeys;
 import com.liferay.info.exception.NoSuchInfoItemException;
 import com.liferay.info.item.ClassPKInfoItemIdentifier;
 import com.liferay.info.item.InfoItemDetails;
-import com.liferay.info.item.InfoItemIdentifier;
 import com.liferay.info.item.InfoItemReference;
 import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.item.provider.InfoItemObjectProvider;
@@ -46,19 +45,19 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PropsValues;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.util.PropsValues;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -77,7 +76,10 @@ public class LayoutWarningMessageHelperImpl
 			HttpServletRequest httpServletRequest)
 		throws Exception {
 
-		int totalCount = _getTotalCount(collectionStyledLayoutStructureItem);
+		int totalCount = _getTotalCount(
+			collectionStyledLayoutStructureItem,
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY));
 
 		if (!Objects.equals(
 				collectionStyledLayoutStructureItem.getPaginationType(),
@@ -224,7 +226,7 @@ public class LayoutWarningMessageHelperImpl
 	private long _getFileEntryId(
 			JSONObject editableValueJSONObject,
 			HttpServletRequest httpServletRequest,
-			HttpServletResponse httpServletResponse, Locale locale)
+			HttpServletResponse httpServletResponse, ThemeDisplay themeDisplay)
 		throws Exception {
 
 		if (_fragmentEntryProcessorHelper.isMapped(editableValueJSONObject) ||
@@ -236,8 +238,10 @@ public class LayoutWarningMessageHelperImpl
 			Object fieldValue = _fragmentEntryProcessorHelper.getFieldValue(
 				editableValueJSONObject, new HashMap<>(),
 				new DefaultFragmentEntryProcessorContext(
-					httpServletRequest, httpServletResponse,
-					FragmentEntryLinkConstants.VIEW, locale));
+					themeDisplay.getCompanyId(), httpServletRequest,
+					httpServletResponse, themeDisplay.getLocale(),
+					FragmentEntryLinkConstants.VIEW,
+					themeDisplay.getScopeGroupId()));
 
 			if (fieldValue == null) {
 				return 0;
@@ -267,7 +271,7 @@ public class LayoutWarningMessageHelperImpl
 		}
 
 		String value = _fragmentEntryProcessorHelper.getEditableValue(
-			editableValueJSONObject, locale);
+			editableValueJSONObject, themeDisplay.getLocale());
 
 		if (JSONUtil.isJSONObject(value)) {
 			try {
@@ -286,9 +290,8 @@ public class LayoutWarningMessageHelperImpl
 	}
 
 	private long _getFileEntryId(
-			String fieldId, InfoItemDetails infoItemDetails,
-			ThemeDisplay themeDisplay)
-		throws Exception {
+		String fieldId, InfoItemDetails infoItemDetails,
+		ThemeDisplay themeDisplay) {
 
 		if (infoItemDetails == null) {
 			return 0;
@@ -301,36 +304,23 @@ public class LayoutWarningMessageHelperImpl
 			return 0;
 		}
 
-		InfoItemIdentifier infoItemIdentifier =
-			infoItemReference.getInfoItemIdentifier();
-
-		if (!(infoItemIdentifier instanceof ClassPKInfoItemIdentifier)) {
-			return 0;
-		}
-
-		ClassPKInfoItemIdentifier classPKInfoItemIdentifier =
-			(ClassPKInfoItemIdentifier)infoItemIdentifier;
-
 		return _fragmentEntryProcessorHelper.getFileEntryId(
-			_portal.getClassNameId(infoItemReference.getClassName()),
-			classPKInfoItemIdentifier.getClassPK(), fieldId,
-			themeDisplay.getLocale());
+			infoItemReference, fieldId, themeDisplay.getLocale());
 	}
 
 	private Object _getInfoItem(JSONObject layoutObjectReferenceJSONObject) {
-		long classNameId = layoutObjectReferenceJSONObject.getLong(
-			"classNameId");
+		String className = _portal.fetchClassName(
+			layoutObjectReferenceJSONObject.getLong("classNameId"));
 		long classPK = layoutObjectReferenceJSONObject.getLong("classPK");
 
-		if ((classNameId <= 0) && (classPK <= 0)) {
+		if (Validator.isNull(className) && (classPK <= 0)) {
 			return null;
 		}
 
 		InfoItemObjectProvider<Object> infoItemObjectProvider =
 			(InfoItemObjectProvider<Object>)
 				_infoItemServiceRegistry.getFirstInfoItemService(
-					InfoItemObjectProvider.class,
-					_portal.getClassName(classNameId),
+					InfoItemObjectProvider.class, className,
 					ClassPKInfoItemIdentifier.INFO_ITEM_SERVICE_FILTER);
 
 		if (infoItemObjectProvider == null) {
@@ -352,7 +342,8 @@ public class LayoutWarningMessageHelperImpl
 
 	private int _getTotalCount(
 			CollectionStyledLayoutStructureItem
-				collectionStyledLayoutStructureItem)
+				collectionStyledLayoutStructureItem,
+			ThemeDisplay themeDisplay)
 		throws Exception {
 
 		JSONObject layoutObjectReferenceJSONObject =
@@ -389,8 +380,14 @@ public class LayoutWarningMessageHelperImpl
 			defaultLayoutListRetrieverContext.setContextObject(infoItem);
 		}
 
+		if (themeDisplay != null) {
+			defaultLayoutListRetrieverContext.setScopeGroupId(
+				themeDisplay.getScopeGroupId());
+		}
+
 		InfoPage<?> infoPage = layoutListRetriever.getInfoPage(
 			listObjectReferenceFactory.getListObjectReference(
+				themeDisplay.getCompanyId(), themeDisplay.getScopeGroupId(),
 				layoutObjectReferenceJSONObject),
 			defaultLayoutListRetrieverContext);
 
@@ -410,17 +407,10 @@ public class LayoutWarningMessageHelperImpl
 
 		long fileEntryId = 0;
 
-		if (backgroundImageJSONObject.has("fileEntryId")) {
-			fileEntryId = backgroundImageJSONObject.getLong("fileEntryId");
-		}
-		else if (backgroundImageJSONObject.has("classNameId") &&
-				 backgroundImageJSONObject.has("classPK") &&
-				 backgroundImageJSONObject.has("fieldId")) {
-
+		if (backgroundImageJSONObject.has("fieldId")) {
 			fileEntryId = _fragmentEntryProcessorHelper.getFileEntryId(
-				backgroundImageJSONObject.getLong("classNameId"),
-				backgroundImageJSONObject.getLong("classPK"),
 				backgroundImageJSONObject.getString("fieldId"),
+				themeDisplay.getScopeGroupId(), backgroundImageJSONObject,
 				themeDisplay.getLocale());
 		}
 		else if (backgroundImageJSONObject.has("collectionFieldId")) {
@@ -437,12 +427,12 @@ public class LayoutWarningMessageHelperImpl
 					InfoDisplayWebKeys.INFO_ITEM_DETAILS),
 				themeDisplay);
 		}
-
-		if (_exceedsFileSize(fileEntryId)) {
-			return true;
+		else {
+			fileEntryId = _fragmentEntryProcessorHelper.getFileEntryId(
+				themeDisplay.getScopeGroupId(), backgroundImageJSONObject);
 		}
 
-		return false;
+		return _exceedsFileSize(fileEntryId);
 	}
 
 	private boolean _showWarningMessage(
@@ -451,8 +441,7 @@ public class LayoutWarningMessageHelperImpl
 			FragmentEntryLink fragmentEntryLink, ThemeDisplay themeDisplay)
 		throws Exception {
 
-		JSONObject jsonObject = _jsonFactory.createJSONObject(
-			fragmentEntryLink.getEditableValues());
+		JSONObject jsonObject = fragmentEntryLink.getEditableValuesJSONObject();
 
 		for (String fragmentEntryProcessorKey :
 				_FRAGMENT_ENTRY_PROCESSOR_KEYS) {
@@ -482,7 +471,7 @@ public class LayoutWarningMessageHelperImpl
 				if (_exceedsFileSize(
 						_getFileEntryId(
 							editableValueJSONObject, httpServletRequest,
-							httpServletResponse, themeDisplay.getLocale()))) {
+							httpServletResponse, themeDisplay))) {
 
 					return true;
 				}

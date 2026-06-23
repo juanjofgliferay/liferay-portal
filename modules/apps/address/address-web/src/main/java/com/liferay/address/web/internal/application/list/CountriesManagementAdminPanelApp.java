@@ -27,6 +27,11 @@ import org.osgi.service.component.annotations.Reference;
 public class CountriesManagementAdminPanelApp extends BasePanelApp {
 
 	@Override
+	public String getIcon() {
+		return "flag-full";
+	}
+
+	@Override
 	public Portlet getPortlet() {
 		return _portlet;
 	}
@@ -37,7 +42,7 @@ public class CountriesManagementAdminPanelApp extends BasePanelApp {
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + AddressPortletKeys.COUNTRIES_MANAGEMENT_ADMIN + ")"
+		target = "(jakarta.portlet.name=" + AddressPortletKeys.COUNTRIES_MANAGEMENT_ADMIN + ")"
 	)
 	private Portlet _portlet;
 

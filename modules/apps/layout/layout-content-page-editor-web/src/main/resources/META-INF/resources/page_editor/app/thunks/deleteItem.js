@@ -3,13 +3,12 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {openToast} from 'frontend-js-web';
+import {openConfirmModal} from '@liferay/layout-js-components-web';
+import {openToast} from 'frontend-js-components-web';
 
 import deleteItemAction from '../actions/deleteItem';
-import {FREEMARKER_FRAGMENT_ENTRY_PROCESSOR} from '../config/constants/freemarkerFragmentEntryProcessor';
 import {ITEM_ACTIVATION_ORIGINS} from '../config/constants/itemActivationOrigins';
 import {LAYOUT_DATA_ITEM_TYPES} from '../config/constants/layoutDataItemTypes';
-import selectEditableValue from '../selectors/selectEditableValue';
 import selectFormConfiguration from '../selectors/selectFormConfiguration';
 import FormService from '../services/FormService';
 import LayoutService from '../services/LayoutService';
@@ -18,66 +17,161 @@ import {
 	FORM_ERROR_TYPES,
 	getFormErrorDescription,
 } from '../utils/getFormErrorDescription';
+import {getFormParent} from '../utils/getFormParent';
 import getFragmentEntryLinkIdsFromItemId from '../utils/getFragmentEntryLinkIdsFromItemId';
-import {hasFormParent} from '../utils/hasFormParent';
+import getPortletId from '../utils/getPortletId';
 import {isRequiredFormInput} from '../utils/isRequiredFormInput';
+import {clearPageContents} from '../utils/usePageContents';
+import filterSelectedItems from './filterSelectedItems';
 
-export default function deleteItem({itemId, selectItem = () => {}}) {
+export function getPreviousItemId(deletedItems, items, nextItems) {
+	const parentId = items[deletedItems[0]].parentId;
+
+	const parent = items[parentId];
+
+	if (nextItems[parentId].children.length) {
+		const firstDeletedChild = parent.children.find((childId) =>
+			deletedItems.includes(childId)
+		);
+		const index = parent.children.indexOf(firstDeletedChild);
+
+		return nextItems[parentId].children[index ? index - 1 : index];
+	}
+	else if (
+		parent.type === LAYOUT_DATA_ITEM_TYPES.collectionItem ||
+		parent.type === LAYOUT_DATA_ITEM_TYPES.column
+	) {
+		return nextItems[parent.parentId].itemId;
+	}
+	else if (parent.type === LAYOUT_DATA_ITEM_TYPES.root) {
+		return null;
+	}
+
+	return parentId;
+}
+
+export default function deleteItem({itemIds, selectItems = () => {}}) {
 	return (dispatch, getState) => {
-		const {
-			fragmentEntryLinks,
-			layoutData,
-			segmentsExperienceId,
-		} = getState();
+		const {fragmentEntryLinks, layoutData, segmentsExperienceId} =
+			getState();
 
-		return markItemForDeletion({
-			fragmentEntryLinks,
-			itemId,
-			layoutData,
-			onNetworkStatus: dispatch,
-			segmentsExperienceId,
-		}).then(
-			({pageContents, portletIds = [], layoutData: nextLayoutData}) => {
-				const [firstChild] = nextLayoutData.items[
-					nextLayoutData.rootItems.main
-				].children;
+		const isUsedInRule = layoutData.pageRules.some((rule) => {
+			const actionHasItem = rule.actions.some(({itemId}) =>
+				itemIds.includes(itemId)
+			);
 
-				selectItem(firstChild, {
-					origin: ITEM_ACTIVATION_ORIGINS.itemActions,
-				});
+			const conditionHasItem = rule.conditions.some(({field}) =>
+				itemIds.includes(field)
+			);
 
-				const fragmentEntryLinkIds = getFragmentEntryLinkIdsFromItemId({
-					itemId,
-					layoutData: nextLayoutData,
-				});
+			return actionHasItem || conditionHasItem;
+		});
+
+		const handleDeleteItems = async () => {
+			return markItemForDeletion({
+				fragmentEntryLinks,
+				itemIds,
+				layoutData,
+				onNetworkStatus: dispatch,
+				segmentsExperienceId,
+			}).then(async ({portletIds = [], layoutData: nextLayoutData}) => {
+				const nextItemId = getPreviousItemId(
+					itemIds,
+					layoutData.items,
+					nextLayoutData.items
+				);
+
+				if (!nextItemId) {
+					document
+						.querySelector('button[data-panel-id="browser"]')
+						.focus();
+
+					selectItems(null);
+				}
+				else {
+					selectItems([nextItemId], {
+						origin: ITEM_ACTIVATION_ORIGINS.itemActions,
+					});
+				}
+
+				const fragmentEntryLinkIds = itemIds.flatMap((itemId) =>
+					getFragmentEntryLinkIdsFromItemId({
+						itemId,
+						layoutData: nextLayoutData,
+					})
+				);
 
 				dispatch(
 					deleteItemAction({
 						fragmentEntryLinkIds,
-						itemId,
+						itemIds,
 						layoutData: nextLayoutData,
-						pageContents,
 						portletIds,
 					})
 				);
 
-				maybeShowAlert(layoutData, itemId, fragmentEntryLinks);
-			}
-		);
+				clearPageContents();
+
+				// Show warning if deleting some required form input
+
+				for (const itemId of itemIds) {
+					if (
+						await isRequiredFormField(
+							layoutData,
+							itemId,
+							fragmentEntryLinks
+						)
+					) {
+						const {message} = getFormErrorDescription({
+							type: FORM_ERROR_TYPES.deletedFragment,
+						});
+
+						openToast({
+							message,
+							type: 'warning',
+						});
+
+						break;
+					}
+				}
+			});
+		};
+
+		if (isUsedInRule) {
+			openConfirmModal({
+				buttonLabel: Liferay.Language.get('delete'),
+				onConfirm: handleDeleteItems,
+				status: 'warning',
+				text: Liferay.Language.get(
+					'one-or-more-of-the-selected-fragments-are-referenced-in-one-or-more-rules'
+				),
+				title: Liferay.Language.get('delete-referenced-fragments'),
+			});
+		}
+		else {
+			return handleDeleteItems();
+		}
 	};
 }
 
-function markItemForDeletion({
+async function markItemForDeletion({
 	fragmentEntryLinks,
-	itemId,
+	itemIds,
 	layoutData,
 	onNetworkStatus: dispatch,
 	segmentsExperienceId,
 }) {
-	const portletIds = findPortletIds(itemId, layoutData, fragmentEntryLinks);
+
+	// We just need to remove the parents of the selected items
+
+	const selectedItemIds = filterSelectedItems(itemIds, layoutData.items);
+
+	const portletIds = selectedItemIds.flatMap((itemId) =>
+		findPortletIds(itemId, layoutData, fragmentEntryLinks)
+	);
 
 	return LayoutService.markItemForDeletion({
-		itemId,
+		itemIds: selectedItemIds,
 		onNetworkStatus: dispatch,
 		portletIds,
 		segmentsExperienceId,
@@ -95,16 +189,11 @@ function findPortletIds(itemId, layoutData, fragmentEntryLinks) {
 		item.type === LAYOUT_DATA_ITEM_TYPES.fragment &&
 		config.fragmentEntryLinkId
 	) {
-		const {editableValues = {}} = fragmentEntryLinks[
-			config.fragmentEntryLinkId
-		];
+		const {editableValues = {}} =
+			fragmentEntryLinks[config.fragmentEntryLinkId];
 
 		if (editableValues.portletId) {
-			return [
-				editableValues.instanceId
-					? `${editableValues.portletId}_INSTANCE_${editableValues.instanceId}`
-					: editableValues.portletId,
-			];
+			return [getPortletId(editableValues)];
 		}
 	}
 
@@ -119,15 +208,15 @@ function findPortletIds(itemId, layoutData, fragmentEntryLinks) {
 	return deletedWidgets;
 }
 
-function maybeShowAlert(layoutData, itemId, fragmentEntryLinks) {
+async function isRequiredFormField(layoutData, itemId, fragmentEntryLinks) {
 	const item = layoutData?.items?.[itemId];
 
 	if (
 		!item ||
 		item.type !== LAYOUT_DATA_ITEM_TYPES.fragment ||
-		!hasFormParent(item, layoutData)
+		!getFormParent(item, layoutData)
 	) {
-		return null;
+		return false;
 	}
 
 	const {classNameId, classTypeId} = selectFormConfiguration(
@@ -148,35 +237,14 @@ function maybeShowAlert(layoutData, itemId, fragmentEntryLinks) {
 		: FormService.getFormFields({
 				classNameId,
 				classTypeId,
-		  });
-
-	promise.then((formFields) => {
-		if (
-			item.type === LAYOUT_DATA_ITEM_TYPES.fragment &&
-			isRequiredFormInput(item, fragmentEntryLinks, formFields)
-		) {
-			const fieldId = selectEditableValue(
-				{fragmentEntryLinks},
-				item.config.fragmentEntryLinkId,
-				'inputFieldId',
-				FREEMARKER_FRAGMENT_ENTRY_PROCESSOR
-			);
-
-			const {message} = getFormErrorDescription({
-				name: getFieldLabel(fieldId, formFields),
-				type: FORM_ERROR_TYPES.deletedFragment,
 			});
 
-			openToast({
-				message,
-				type: 'warning',
-			});
-		}
-	});
-}
+	const formFields = await promise;
 
-function getFieldLabel(fieldId, formFields) {
-	const flattenedFields = formFields.flatMap((fieldSet) => fieldSet.fields);
-
-	return flattenedFields.find((field) => field.key === fieldId).label;
+	if (
+		item.type === LAYOUT_DATA_ITEM_TYPES.fragment &&
+		isRequiredFormInput(item, fragmentEntryLinks, formFields)
+	) {
+		return true;
+	}
 }

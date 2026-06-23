@@ -9,6 +9,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.workflow.kaleo.model.KaleoNotification;
 
@@ -247,6 +248,14 @@ public class KaleoNotificationLocalServiceUtil {
 		return getService().getIndexableActionableDynamicQuery();
 	}
 
+	public static List<KaleoNotification>
+		getKaleoDefinitionVersionKaleoNotifications(
+			String kaleoClassName, long kaleoDefinitionVersionId) {
+
+		return getService().getKaleoDefinitionVersionKaleoNotifications(
+			kaleoClassName, kaleoDefinitionVersionId);
+	}
+
 	/**
 	 * Returns the kaleo notification with the primary key.
 	 *
@@ -335,13 +344,13 @@ public class KaleoNotificationLocalServiceUtil {
 	}
 
 	public static KaleoNotificationLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(KaleoNotificationLocalService service) {
-		_service = service;
-	}
-
-	private static volatile KaleoNotificationLocalService _service;
+	private static final Snapshot<KaleoNotificationLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			KaleoNotificationLocalServiceUtil.class,
+			KaleoNotificationLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-189100578

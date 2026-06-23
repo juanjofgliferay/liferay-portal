@@ -258,14 +258,6 @@ public abstract class BaseBuildData implements BuildData {
 
 	@Override
 	public void setBuildURL(String buildURL) {
-		String currentBuildURL = getBuildURL();
-
-		if ((currentBuildURL != null) && !currentBuildURL.isEmpty() &&
-			!currentBuildURL.equals(buildURL)) {
-
-			throw new IllegalStateException("Build URL may not be changed");
-		}
-
 		Matcher matcher = _buildURLPattern.matcher(buildURL);
 
 		if (!matcher.find()) {
@@ -354,7 +346,7 @@ public abstract class BaseBuildData implements BuildData {
 			setBuildDescription(_getDefaultBuildDescription());
 		}
 
-		setJenkinsGitHubURL(URL_JENKINS_GITHUB_DEFAULT);
+		setJenkinsGitHubURL(JenkinsResultsParserUtil.getJenkinsGitHubURL());
 		setWorkspaceDir(DIR_WORKSPACE_DEFAULT);
 
 		validateKeys(_KEYS_REQUIRED);
@@ -523,7 +515,7 @@ public abstract class BaseBuildData implements BuildData {
 	private static final Pattern _buildURLPattern = Pattern.compile(
 		JenkinsResultsParserUtil.combine(
 			"(?<jobURL>https?://(?<masterHostname>",
-			"(?<cohortName>test-\\d+)-\\d+)(\\.liferay\\.com)?/job/",
+			"(?<cohortName>test-\\d+)-\\d+)(-aws)?(\\.liferay\\.com)?/job/",
 			"(?<jobName>[^/]+)/(.*/)?)(?<buildNumber>\\d+)/?"));
 	private static final Pattern _gitHubBranchURLPattern = Pattern.compile(
 		"https://github.com/(?<username>[^/]+)/(?<repositoryName>[^/]+)/tree/" +

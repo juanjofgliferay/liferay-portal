@@ -5,6 +5,7 @@
 
 package com.liferay.commerce.product.internal.upgrade.v1_3_0;
 
+import com.liferay.commerce.product.internal.upgrade.v1_3_0.util.CProductTable;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
@@ -40,8 +41,10 @@ public class CProductUpgradeProcess extends UpgradeProcess {
 			PreparedStatement preparedStatement2 =
 				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
 					connection, updateCPDefinitionSQL);
+
 			Statement s = connection.createStatement(
 				ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+
 			ResultSet resultSet = s.executeQuery(
 				"select cpDefinitionId, groupId, companyId, userId, userName " +
 					"from CPDefinition")) {
@@ -78,6 +81,7 @@ public class CProductUpgradeProcess extends UpgradeProcess {
 			}
 
 			preparedStatement1.executeBatch();
+
 			preparedStatement2.executeBatch();
 		}
 	}
@@ -85,6 +89,7 @@ public class CProductUpgradeProcess extends UpgradeProcess {
 	@Override
 	protected UpgradeStep[] getPreUpgradeSteps() {
 		return new UpgradeStep[] {
+			CProductTable.create(),
 			UpgradeProcessFactory.addColumns(
 				"CPDefinition", "CProductId LONG", "version INTEGER")
 		};

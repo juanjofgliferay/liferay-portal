@@ -12,9 +12,7 @@ import com.liferay.asset.kernel.model.AssetTag;
 import com.liferay.asset.kernel.service.AssetTagLocalService;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
-import com.liferay.portal.kernel.util.StringUtil;
 
 import java.util.List;
 
@@ -61,17 +59,13 @@ public class AssetAutoTaggerEntryLocalServiceImpl
 			AssetEntry assetEntry, String assetTagName)
 		throws PortalException {
 
-		if (!FeatureFlagManagerUtil.isEnabled("LPS-194362")) {
-			assetTagName = StringUtil.toLowerCase(assetTagName);
-		}
-
 		AssetTag assetTag = _assetTagLocalService.fetchTag(
 			assetEntry.getGroupId(), assetTagName);
 
 		if (assetTag == null) {
 			assetTag = _assetTagLocalService.addTag(
-				assetEntry.getUserId(), assetEntry.getGroupId(), assetTagName,
-				new ServiceContext());
+				null, assetEntry.getUserId(), assetEntry.getGroupId(),
+				assetTagName, new ServiceContext());
 		}
 
 		_assetTagLocalService.addAssetEntryAssetTag(

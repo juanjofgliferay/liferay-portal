@@ -110,9 +110,7 @@ public class ModulePersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		Module newModule = _persistence.create(pk);
+		Module newModule = addModule();
 
 		newModule.setUuid(RandomTestUtil.randomString());
 
@@ -492,17 +490,6 @@ public class ModulePersistenceTest {
 				module, "getColumnOriginalValue", new Class<?>[] {String.class},
 				"appId"));
 		Assert.assertEquals(
-			module.getContextName(),
-			ReflectionTestUtil.invoke(
-				module, "getColumnOriginalValue", new Class<?>[] {String.class},
-				"contextName"));
-
-		Assert.assertEquals(
-			Long.valueOf(module.getAppId()),
-			ReflectionTestUtil.<Long>invoke(
-				module, "getColumnOriginalValue", new Class<?>[] {String.class},
-				"appId"));
-		Assert.assertEquals(
 			module.getBundleSymbolicName(),
 			ReflectionTestUtil.invoke(
 				module, "getColumnOriginalValue", new Class<?>[] {String.class},
@@ -541,3 +528,4 @@ public class ModulePersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:489448110

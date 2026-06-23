@@ -392,20 +392,6 @@ public interface LayoutSEOEntryModel
 	public void setCanonicalURLEnabled(boolean canonicalURLEnabled);
 
 	/**
-	 * Returns the ddm storage ID of this layout seo entry.
-	 *
-	 * @return the ddm storage ID of this layout seo entry
-	 */
-	public long getDDMStorageId();
-
-	/**
-	 * Sets the ddm storage ID of this layout seo entry.
-	 *
-	 * @param DDMStorageId the ddm storage ID of this layout seo entry
-	 */
-	public void setDDMStorageId(long DDMStorageId);
-
-	/**
 	 * Returns the open graph description of this layout seo entry.
 	 *
 	 * @return the open graph description of this layout seo entry
@@ -634,18 +620,36 @@ public interface LayoutSEOEntryModel
 		Map<Locale, String> openGraphImageAltMap, Locale defaultLocale);
 
 	/**
-	 * Returns the open graph image file entry ID of this layout seo entry.
+	 * Returns the open graph image file entry erc of this layout seo entry.
 	 *
-	 * @return the open graph image file entry ID of this layout seo entry
+	 * @return the open graph image file entry erc of this layout seo entry
 	 */
-	public long getOpenGraphImageFileEntryId();
+	@AutoEscape
+	public String getOpenGraphImageFileEntryERC();
 
 	/**
-	 * Sets the open graph image file entry ID of this layout seo entry.
+	 * Sets the open graph image file entry erc of this layout seo entry.
 	 *
-	 * @param openGraphImageFileEntryId the open graph image file entry ID of this layout seo entry
+	 * @param openGraphImageFileEntryERC the open graph image file entry erc of this layout seo entry
 	 */
-	public void setOpenGraphImageFileEntryId(long openGraphImageFileEntryId);
+	public void setOpenGraphImageFileEntryERC(
+		String openGraphImageFileEntryERC);
+
+	/**
+	 * Returns the open graph image file entry scope erc of this layout seo entry.
+	 *
+	 * @return the open graph image file entry scope erc of this layout seo entry
+	 */
+	@AutoEscape
+	public String getOpenGraphImageFileEntryScopeERC();
+
+	/**
+	 * Sets the open graph image file entry scope erc of this layout seo entry.
+	 *
+	 * @param openGraphImageFileEntryScopeERC the open graph image file entry scope erc of this layout seo entry
+	 */
+	public void setOpenGraphImageFileEntryScopeERC(
+		String openGraphImageFileEntryScopeERC);
 
 	/**
 	 * Returns the open graph title of this layout seo entry.
@@ -806,3 +810,4 @@ public interface LayoutSEOEntryModel
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:228713861

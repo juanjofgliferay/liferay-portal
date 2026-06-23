@@ -22,10 +22,8 @@ import java.util.Date;
  * The cache model class for representing DDMContent in entity cache.
  *
  * @author Brian Wing Shun Chan
- * @deprecated
  * @generated
  */
-@Deprecated
 public class DDMContentCacheModel
 	implements CacheModel<DDMContent>, Externalizable, MVCCModel {
 
@@ -261,3 +259,4 @@ public class DDMContentCacheModel
 	public String data;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1397740454

@@ -22,7 +22,7 @@ renderResponse.setTitle(accountEntryDisplay.getName());
 
 <clay:management-toolbar
 	managementToolbarDisplayContext="<%= viewAccountRolesManagementToolbarDisplayContext %>"
-	propsTransformer="account_entries_admin/js/AccountRolesManagementToolbarPropsTransformer"
+	propsTransformer="{AccountRolesManagementToolbarPropsTransformer} from account-admin-web"
 />
 
 <clay:container-fluid>
@@ -78,6 +78,21 @@ renderResponse.setTitle(accountEntryDisplay.getName());
 					name="type"
 					value="<%= accountRoleDisplay.getTypeLabel(locale) %>"
 				/>
+
+				<liferay-ui:search-container-column-text
+					cssClass="table-cell-expand-small table-cell-minw-150"
+					name="status"
+				>
+
+					<%
+					Role role = accountRoleDisplay.getRole();
+					%>
+
+					<clay:label
+						displayType="<%= WorkflowConstants.getStatusStyle(role.getStatus()) %>"
+						label="<%= WorkflowConstants.getStatusLabel(role.getStatus()) %>"
+					/>
+				</liferay-ui:search-container-column-text>
 
 				<liferay-ui:search-container-column-jsp
 					path="/account_entries_admin/account_role_action.jsp"

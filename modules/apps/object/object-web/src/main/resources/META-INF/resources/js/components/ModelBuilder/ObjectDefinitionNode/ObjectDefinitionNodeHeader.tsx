@@ -7,15 +7,22 @@ import {ClayButtonWithIcon} from '@clayui/button';
 import {ClayDropDownWithItems} from '@clayui/drop-down';
 import ClayIcon from '@clayui/icon';
 import ClayLabel from '@clayui/label';
+import {ClayTooltipProvider} from '@clayui/tooltip';
+import classNames from 'classnames';
 import React from 'react';
 
-import './ObjectDefinitionNodeHeader.scss';
 import {DropDownItems} from '../types';
 
+import './ObjectDefinitionNodeHeader.scss';
+
 interface ObjectDefinitionNodeHeaderProps {
+	allowStandaloneObjectEntry: boolean;
+	dbTableName: string | undefined;
 	dropDownItems: DropDownItems[];
 	handleSelectObjectDefinitionNode: () => void;
 	isLinkedObjectDefinition: boolean;
+	isRootDescendantNode: boolean;
+	isRootNode: boolean;
 	objectDefinitionLabel: string;
 	status: {
 		code: number;
@@ -26,9 +33,13 @@ interface ObjectDefinitionNodeHeaderProps {
 }
 
 export default function ObjectDefinitionNodeHeader({
+	allowStandaloneObjectEntry,
+	dbTableName,
 	dropDownItems,
 	handleSelectObjectDefinitionNode,
 	isLinkedObjectDefinition,
+	isRootDescendantNode,
+	isRootNode,
 	objectDefinitionLabel,
 	status,
 	system,
@@ -44,9 +55,22 @@ export default function ObjectDefinitionNodeHeader({
 				}}
 			>
 				<div className="lfr-objects__model-builder-node-header-label-container">
-					<div className="lfr-objects__model-builder-node-header-label-title">
-						{isLinkedObjectDefinition && (
-							<ClayIcon className="c-pt-1 text-4" symbol="link" />
+					<div
+						className={classNames(
+							'lfr-objects__model-builder-node-header-label-title',
+							!dbTableName?.length &&
+								'lfr-objects__model-builder-node-header-label-title--danger'
+						)}
+					>
+						{(!dbTableName?.length || isLinkedObjectDefinition) && (
+							<ClayIcon
+								className="c-pt-1 text-4"
+								symbol={
+									!dbTableName?.length
+										? 'exclamation-circle'
+										: 'link'
+								}
+							/>
 						)}
 
 						<span>{objectDefinitionLabel}</span>
@@ -54,10 +78,6 @@ export default function ObjectDefinitionNodeHeader({
 
 					<ClayDropDownWithItems
 						items={dropDownItems}
-						menuElementAttrs={{
-							className:
-								'lfr-objects__model-builder-node-dropdown',
-						}}
 						trigger={
 							<ClayButtonWithIcon
 								aria-label={Liferay.Language.get(
@@ -75,8 +95,57 @@ export default function ObjectDefinitionNodeHeader({
 				</div>
 
 				<div>
+					{Liferay.FeatureFlags['LPD-34594'] && (
+						<ClayTooltipProvider>
+							<ClayLabel
+								className={classNames(
+									'label-inverse-secondary',
+									{
+										'label-inverse-info':
+											isRootDescendantNode || isRootNode,
+									}
+								)}
+								title={
+									Liferay.FeatureFlags['LPD-69877'] &&
+									isRootDescendantNode
+										? allowStandaloneObjectEntry
+											? Liferay.Language.get(
+													'flexible-inheritance-tooltip'
+												)
+											: Liferay.Language.get(
+													'strict-inheritance-tooltip'
+												)
+										: undefined
+								}
+							>
+								<span className="align-items-center d-inline-flex">
+									{isRootNode
+										? Liferay.Language.get('root-object')
+										: isRootDescendantNode
+											? Liferay.Language.get('inherited')
+											: Liferay.Language.get('standard')}
+
+									{Liferay.FeatureFlags['LPD-69877'] &&
+										isRootDescendantNode && (
+											<ClayIcon
+												aria-hidden="true"
+												className="c-ml-1"
+												symbol={
+													allowStandaloneObjectEntry
+														? 'unlock'
+														: 'lock'
+												}
+											/>
+										)}
+								</span>
+							</ClayLabel>
+						</ClayTooltipProvider>
+					)}
+
 					<ClayLabel displayType={system ? 'info' : 'warning'}>
-						{Liferay.Language.get(system ? 'system' : 'custom')}
+						{system
+							? Liferay.Language.get('system')
+							: Liferay.Language.get('custom')}
 					</ClayLabel>
 
 					<ClayLabel
@@ -84,17 +153,15 @@ export default function ObjectDefinitionNodeHeader({
 							status?.label === 'approved'
 								? 'success'
 								: status?.label === 'pending'
-								? 'info'
-								: 'secondary'
+									? 'info'
+									: 'secondary'
 						}
 					>
-						{Liferay.Language.get(
-							status?.label === 'approved'
-								? 'approved'
-								: status?.label === 'pending'
-								? 'pending'
-								: 'draft'
-						)}
+						{status?.label === 'approved'
+							? Liferay.Language.get('approved')
+							: status?.label === 'pending'
+								? Liferay.Language.get('pending')
+								: Liferay.Language.get('draft')}
 					</ClayLabel>
 				</div>
 			</div>

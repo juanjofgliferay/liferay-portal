@@ -4,80 +4,26 @@
  */
 
 import ClayButton from '@clayui/button';
-import ClayIcon from '@clayui/icon';
-import classNames from 'classnames';
-import {UseFormReturn} from 'react-hook-form';
 
 import {Header} from '../../../components/Header/Header';
-import {getSiteURL} from '../../../components/InviteMemberModal/services';
 import i18n from '../../../i18n';
 import {Liferay} from '../../../liferay/liferay';
-import {PublisherForm, StepType} from './PublisherGateSteps';
+import {getSiteURL} from '../../../utils/site';
+import {PublisherGateStep} from './PublisherGateSteps';
 
 type PublisherGateSummaryProps = {
-	form: UseFormReturn<
-		{
-			emailAddress: string;
-			extension?: string | undefined;
-			firstName: string;
-			lastName: string;
-			phone?: {
-				code: string;
-				flag: string;
-			};
-			phoneNumber: string;
-			requestDescription: string;
-		},
-		any,
-		undefined
-	>;
-	setStep: React.Dispatch<React.SetStateAction<StepType>>;
-	submit: (form: PublisherForm) => Promise<void>;
+	children: JSX.Element;
+	setStep: React.Dispatch<React.SetStateAction<PublisherGateStep>>;
+	submit: () => void;
 };
-
-type DisplayCardInfoProps = {
-	className?: string;
-	icon: string;
-	iconAlign?: any;
-	info: any;
-	title: string;
-};
-const DisplayCardInfo: React.FC<DisplayCardInfoProps> = ({
-	className,
-	icon,
-	info,
-	title,
-}) => (
-	<div
-		className={classNames('d-flex ', className, {
-			'align-items-center': info?.length < 60,
-			'align-items-start': info?.length >= 60,
-		})}
-	>
-		<span className="align-items-center d-flex icon-container justify-content-center mr-4">
-			<ClayIcon
-				className="detailed-card-header-clay-icon"
-				symbol={icon}
-			/>
-		</span>
-		<div className="d-flex flex-column text-wrap">
-			<span className="font-weight-bold">{title}</span>
-			<span className="display-card-description text-secondary">
-				{info}
-			</span>
-		</div>
-	</div>
-);
 
 const PublisherGateSummary: React.FC<PublisherGateSummaryProps> = ({
-	form,
+	children,
 	setStep,
 	submit,
 }) => {
-	const userInfo = form.watch();
-
 	return (
-		<div className="publisher-gate-page-container">
+		<>
 			<div className="publisher-gate-page-body">
 				<Header
 					description={i18n.translate(
@@ -85,64 +31,40 @@ const PublisherGateSummary: React.FC<PublisherGateSummaryProps> = ({
 					)}
 					title={i18n.translate('complete-publisher-account-request')}
 				/>
-
-				<div className="border mt-8 p-5 rounded">
-					<h3>{i18n.translate('request-details')}</h3>
-
-					<hr className="mb-5" />
-
-					<span className="mb-3">
-						<DisplayCardInfo
-							className="mb-5"
-							icon="user"
-							info={`${userInfo.firstName} ${userInfo.lastName}`}
-							title={i18n.translate('name')}
-						/>
-					</span>
-
-					<div>
-						<div className="d-flex justify-content-between">
-							<DisplayCardInfo
-								className="mb-5"
-								icon="phone"
-								info={`${userInfo?.phone?.code} ${userInfo.phoneNumber}`}
-								title={i18n.translate('phone')}
-							/>
-
-							<DisplayCardInfo
-								className="mb-5"
-								icon="envelope-closed"
-								info={userInfo.emailAddress}
-								title={i18n.translate('email')}
-							/>
-						</div>
-						<span>
-							<DisplayCardInfo
-								icon="document"
-								info={userInfo.requestDescription}
-								title={i18n.translate('description')}
-							/>
-						</span>
-					</div>
-				</div>
+				{children}
 				<div className="mt-5">
 					<span>
 						<p className="privacy-text text-justify">
 							{i18n.translate(
-								'by-requesting-a-publisher-account-,-you-agree-to-the'
+								'by-requesting-a-publisher-account-you-agree-to-the'
 							)}
-							&nbsp;
-							<strong>{i18n.translate('content-policy')}</strong>
-							.&nbsp;{i18n.translate('liferay-s')}&nbsp;
-							<strong>
-								{i18n.translate('terms-of-service')}
-							</strong>
-							{i18n.translate('and')}&nbsp;
-							<strong>{i18n.translate('privacy-policy')}</strong>
-							&nbsp;
-							{i18n.translate(
-								'apply-to-your-use-of-this-service-the-name-on-your-liferay-account-will-be-used-in-this-liferay-marketplace-publisher-profile-it-may-appear-where-you-contribute-and-be-changed-at-any-time'
-							)}
+							<span className="mx-2">
+								{i18n.translate('liferay-s')}
+							</span>
+							<a
+								className="d-inline-block"
+								href="https://www.liferay.com/legal/marketplace-terms-of-service"
+								target="_blank"
+							>
+								<strong>
+									{i18n.translate('terms-of-service')}
+								</strong>
+							</a>
+							<span className="mx-2">{`${i18n.translate('and')}`}</span>
+							<a
+								className="d-inline-block"
+								href="https://www.liferay.com/privacy-policy"
+								target="_blank"
+							>
+								<strong>
+									{i18n.translate('privacy-policy')}
+								</strong>
+							</a>
+							<span className="ml-2">
+								{i18n.translate(
+									'apply-to-your-use-of-this-service-the-name-on-your-liferay-account-will-be-used-in-this-liferay-marketplace-publisher-profile-it-may-appear-where-you-contribute-and-can-be-changed-at-any-time'
+								)}
+							</span>
 							.
 						</p>
 					</span>
@@ -166,19 +88,19 @@ const PublisherGateSummary: React.FC<PublisherGateSummaryProps> = ({
 							<ClayButton
 								className="mr-4"
 								displayType="secondary"
-								onClick={() => setStep(StepType.FORM)}
+								onClick={() => setStep(PublisherGateStep.FORM)}
 							>
 								{i18n.translate('back')}
 							</ClayButton>
 
-							<ClayButton onClick={form.handleSubmit(submit)}>
+							<ClayButton onClick={() => submit()}>
 								{i18n.translate('request-account')}
 							</ClayButton>
 						</div>
 					</div>
 				</div>
 			</div>
-		</div>
+		</>
 	);
 };
 

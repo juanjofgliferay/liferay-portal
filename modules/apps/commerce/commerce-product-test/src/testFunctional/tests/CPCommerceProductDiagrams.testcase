@@ -1,16 +1,24 @@
 @component-name = "portal-commerce"
 definition {
 
+	property custom.properties = "feature.flag.LPD-11235=true";
 	property osgi.module.configuration.file.names = "com.liferay.commerce.shop.by.diagram.configuration.CSDiagramCPTypeConfiguration.config";
 	property osgi.module.configurations = "enabled=\"true\"";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property release.feature.flags.disable.DISABLE_PRIVATE_LAYOUTS = "true";
 	property test.run.environment = "EE";
 	property testray.main.component.name = "Product Info Management";
 
 	setUp {
 		CommerceConfiguration.commerceSetUp();
+
+		task ("Enable private pages") {
+			PagesAdmin.enablePrivatePages();
+		}
+
+		task ("Enable CKE4") {
+			PagesAdmin.enableCKE4();
+		}
 	}
 
 	tearDown {
@@ -65,9 +73,7 @@ definition {
 	test AddDiagramProduct {
 		property portal.acceptance = "true";
 
-		CommerceNavigator.gotoPortlet(
-			category = "Product Management",
-			portlet = "Products");
+		CommerceProducts.openProductsAdmin();
 
 		CPCommerceCatalog.newProductsEntry(
 			productCatalog = "Master",
@@ -96,6 +102,7 @@ definition {
 	@description = "This is a test for COMMERCE-8865. CanDragFunctionWorkAfterDoubleClickOnMappedProduct"
 	@priority = 4
 	test CanDragFunctionWorkAfterDoubleClickOnMappedProduct {
+		property browser.chrome.version = "139.0";
 		property portal.acceptance = "false";
 
 		task ("Given a Minium site") {
@@ -159,9 +166,7 @@ definition {
 		property portal.acceptance = "false";
 
 		task ("Given a diagram product with an image") {
-			CommerceNavigator.gotoPortlet(
-				category = "Product Management",
-				portlet = "Products");
+			CommerceProducts.openProductsAdmin();
 
 			CPCommerceCatalog.newProductsEntry(
 				productCatalog = "Master",
@@ -341,9 +346,7 @@ definition {
 		property portal.acceptance = "false";
 
 		task ("Given a diagram product with an image") {
-			CommerceNavigator.gotoPortlet(
-				category = "Product Management",
-				portlet = "Products");
+			CommerceProducts.openProductsAdmin();
 
 			CommerceJSONProductsAPI._addCommerceProduct(
 				catalogName = "Master",
@@ -368,9 +371,7 @@ definition {
 		}
 
 		task ("When a user navigates to the product and adds a pin") {
-			CommerceNavigator.gotoPortlet(
-				category = "Product Management",
-				portlet = "Products");
+			CommerceProducts.openProductsAdmin();
 
 			CommerceNavigator.gotoEntry(entryName = "Diagram T-Shirt");
 
@@ -430,9 +431,7 @@ definition {
 	test RemoveDiagramProduct {
 		property portal.acceptance = "true";
 
-		CommerceNavigator.gotoPortlet(
-			category = "Product Management",
-			portlet = "Products");
+		CommerceProducts.openProductsAdmin();
 
 		CPCommerceCatalog.newProductsEntry(
 			productCatalog = "Master",
@@ -476,9 +475,7 @@ definition {
 		property portal.acceptance = "false";
 
 		task ("Given a diagram product with an image") {
-			CommerceNavigator.gotoPortlet(
-				category = "Product Management",
-				portlet = "Products");
+			CommerceProducts.openProductsAdmin();
 
 			CPCommerceCatalog.newProductsEntry(
 				productCatalog = "Master",
@@ -571,9 +568,7 @@ definition {
 	test UploadANotMappedNewImage {
 		property portal.acceptance = "false";
 
-		CommerceNavigator.gotoPortlet(
-			category = "Product Management",
-			portlet = "Products");
+		CommerceProducts.openProductsAdmin();
 
 		CPCommerceCatalog.newProductsEntry(
 			productCatalog = "Master",
@@ -643,6 +638,7 @@ definition {
 	@description = "Verify user can use the pin tooltip to edit the information of a diagram product image pin"
 	@priority = 3
 	test UseToolTip {
+		property browser.chrome.version = "139.0";
 		property portal.acceptance = "false";
 
 		task ("Given a Minium site") {
@@ -702,44 +698,10 @@ definition {
 		}
 	}
 
-	@description = "This is a test for COMMERCE-7035. UseZoomAndDragBackground"
-	@priority = 3
-	test UseZoomAndDragBackground {
-		property portal.acceptance = "false";
-		property portal.release = "quarantine";
-		property portal.upstream = "quarantine";
-
-		// TODO COMMERCE-8269 Test needs refactoring due to a failure locating the Reset Zoom button.
-
-		CommerceNavigator.gotoPortlet(
-			category = "Product Management",
-			portlet = "Products");
-
-		CPCommerceCatalog.newProductsEntry(
-			productCatalog = "Master",
-			productName = "Diagram T-Shirt",
-			productType = "Diagram");
-
-		CommerceEntry.gotoMenuTab(menuTab = "Diagram");
-
-		CommerceProductImages.addDiagramImages(
-			imageTitles = "Black",
-			productType = "Diagram");
-
-		Button.clickPublish();
-
-		Alert.viewSuccessMessage();
-
-		CommerceDiagram.usePreDefinedZoom(key_list = "50%,75%,100%,125%,150%,175%,200%");
-
-		CommerceDiagram.useDragOnBackground(
-			image_name = "Commerce_Black",
-			position = "300,0");
-	}
-
 	@description = "This test asserts that the Mapped Products Table saves all info from pins"
 	@priority = 5
 	test VerifyMappedProductsTableSavesAllPins {
+		property browser.chrome.version = "139.0";
 		property portal.acceptance = "true";
 
 		task ("Given a minium site") {
@@ -749,19 +711,19 @@ definition {
 		task ("And Given two diagram products") {
 			CommerceJSONProductsAPI._addCommerceProduct(
 				catalogName = "Master",
-				productName = "Diagram T-Shirt 2",
+				productName = "Diagram T-Shirt1",
 				productType = "diagram");
 
 			CommerceJSONProductsAPI._addCommerceProduct(
 				catalogName = "Master",
-				productName = "Diagram T-Shirt",
+				productName = "Diagram T-Shirt2",
 				productType = "diagram");
 
 			CommerceProducts.openProductsAdmin();
 
-			CommerceNavigator.searchEntry(entryName = "Diagram T-Shirt");
+			CommerceNavigator.searchEntry(entryName = "Diagram T-Shirt1");
 
-			CommerceNavigator.gotoEntry(entryName = "Diagram T-Shirt");
+			CommerceNavigator.gotoEntry(entryName = "Diagram T-Shirt1");
 
 			CommerceEntry.gotoMenuTab(menuTab = "Diagram");
 
@@ -790,14 +752,14 @@ definition {
 				sku = "MIN93015");
 
 			CommerceDiagram.addPin(
-				diagram = "Diagram T-Shirt 2",
+				diagram = "Diagram T-Shirt2",
 				pinNumber = 3,
 				quantity = 1,
 				selectType = "Linked to a Diagram");
 		}
 
 		task ("Then the Mapped Products table should save information for all pins") {
-			for (var mappedProducts : list "Test,MIN93015,Diagram T-Shirt 2") {
+			for (var mappedProducts : list "Test,MIN93015,Diagram T-Shirt2") {
 				AssertElementPresent(
 					key_productName = ${mappedProducts},
 					locator1 = "CommerceDiagrams#DIAGRAM_MAPPED_PRODUCTS_CONTENT");

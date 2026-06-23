@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -80,6 +79,24 @@ public class JSONFactoryTest {
 	}
 
 	@Test
+	public void testDeserializeLongArray() {
+		String json = JSONFactoryUtil.serialize(
+			HashMapBuilder.<String, long[]>put(
+				"key", new long[] {0L, 45078596106622L, 77273576882230L}
+			).build());
+
+		Object object = JSONFactoryUtil.deserialize(json);
+
+		Assert.assertTrue(object instanceof Map);
+
+		Map<String, long[]> deserializedMap = (Map<String, long[]>)object;
+
+		Object values = deserializedMap.get("key");
+
+		Assert.assertTrue(values instanceof Long[]);
+	}
+
+	@Test
 	public void testDeserializeLongArrayToIntegerArray() {
 		String json = JSONFactoryUtil.serialize(
 			HashMapBuilder.<String, long[]>put(
@@ -101,9 +118,9 @@ public class JSONFactoryTest {
 	public void testDeserializeNonwhitelistedClass() {
 		String json = JSONFactoryUtil.serialize(new JSONFactoryTest());
 
-		try (LogCapture logCapture = LoggerTestUtil.configureJDKLogger(
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
 				LiferayJSONDeserializationWhitelist.class.getName(),
-				Level.WARNING)) {
+				LoggerTestUtil.WARN)) {
 
 			Object object = JSONFactoryUtil.deserialize(json);
 

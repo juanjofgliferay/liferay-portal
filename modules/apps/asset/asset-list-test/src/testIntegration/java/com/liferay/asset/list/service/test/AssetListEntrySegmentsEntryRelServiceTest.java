@@ -12,7 +12,7 @@ import com.liferay.asset.list.model.AssetListEntrySegmentsEntryRel;
 import com.liferay.asset.list.service.AssetListEntrySegmentsEntryRelLocalService;
 import com.liferay.asset.list.service.persistence.AssetListEntryAssetEntryRelUtil;
 import com.liferay.asset.list.service.persistence.AssetListEntrySegmentsEntryRelUtil;
-import com.liferay.asset.list.util.AssetListTestUtil;
+import com.liferay.asset.list.test.util.AssetListTestUtil;
 import com.liferay.asset.test.util.AssetTestUtil;
 import com.liferay.asset.test.util.asset.renderer.factory.TestAssetRendererFactory;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
@@ -158,18 +158,17 @@ public class AssetListEntrySegmentsEntryRelServiceTest {
 			AssetListTestUtil.addAssetListEntrySegmentsEntryRel(
 				_group.getGroupId(), assetListEntry);
 
-		List<AssetListEntrySegmentsEntryRel>
-			assetListEntrySegmentsEntryRelList =
-				_assetListEntrySegmentsEntryRelLocalService.
-					getAssetListEntrySegmentsEntryRels(
-						assetListEntry.getAssetListEntryId(), QueryUtil.ALL_POS,
-						QueryUtil.ALL_POS);
+		List<AssetListEntrySegmentsEntryRel> assetListEntrySegmentsEntryRels =
+			_assetListEntrySegmentsEntryRelLocalService.
+				getAssetListEntrySegmentsEntryRels(
+					assetListEntry.getAssetListEntryId(), QueryUtil.ALL_POS,
+					QueryUtil.ALL_POS);
 
 		Assert.assertTrue(
-			assetListEntrySegmentsEntryRelList.contains(
+			assetListEntrySegmentsEntryRels.contains(
 				assetListEntrySegmentsEntryRel1));
 		Assert.assertTrue(
-			assetListEntrySegmentsEntryRelList.contains(
+			assetListEntrySegmentsEntryRels.contains(
 				assetListEntrySegmentsEntryRel2));
 	}
 

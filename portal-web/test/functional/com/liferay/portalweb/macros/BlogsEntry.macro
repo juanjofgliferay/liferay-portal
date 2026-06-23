@@ -187,7 +187,7 @@ definition {
 
 	@summary = "Default summary"
 	macro addRelatedAsset(depotName = null, assetTitle = null, assetType = null) {
-		Panel.expandPanel(panel = "Related Assets");
+		Blogs.expandPanel(panel = "Related Assets");
 
 		AssertClick(
 			locator1 = "AssetRelatedAssets#RELATED_ASSETS_SELECT",
@@ -230,7 +230,7 @@ definition {
 
 	@summary = "Default summary"
 	macro addSmallImage(navTab = null, depotName = null, uploadFileName = null, imageFileName = null) {
-		Panel.expandPanel(panel = "Configuration");
+		Blogs.expandPanel(panel = "Configuration");
 
 		if (isSet(browseImage)) {
 			Click(locator1 = "BlogsEntry#SMALL_IMAGE_BROWSE_IMAGE");
@@ -307,7 +307,7 @@ definition {
 			entryContent = ${entryContent2},
 			entryTitle = ${entryTitle2});
 
-		Panel.expandPanel(panel = "Configuration");
+		Blogs.expandPanel(panel = "Configuration");
 
 		Type(
 			locator1 = "TextInput#TRACKBACKS",
@@ -575,11 +575,12 @@ definition {
 	macro executePingbackViacURL(entryTitle = null) {
 		var ip = ${ip};
 		var portalURL = ${portalURL};
+		var userPassword = PropsUtil.get("default.admin.password");
 
 		var curl = '''
 			${portalURL}/xmlrpc/pingback \
 				-H 'Content-Type: text/xml' \
-				-u test@liferay.com:test \
+				-u test@liferay.com:${userPassword} \
 				-d '
 				<?xml version="1.0" encoding="iso-8859-1"?>
 				<methodCall>
@@ -790,7 +791,7 @@ definition {
 
 	@summary = "Default summary"
 	macro removeSmallImage(uploadFileName = null) {
-		Panel.expandPanel(panel = "Configuration");
+		Blogs.expandPanel(panel = "Configuration");
 
 		if (isSet(images)) {
 			Click(locator1 = "Button#REMOVE_IMAGE_LAST");
@@ -861,7 +862,7 @@ definition {
 
 	@summary = "Default summary"
 	macro scheduleBlogEntry() {
-		Panel.expandPanel(panel = "Configuration");
+		Blogs.expandPanel(panel = "Configuration");
 
 		var displayDate = DateUtil.getFormattedCurrentDate("MM/dd/yyyy");
 
@@ -1015,8 +1016,6 @@ definition {
 	@summary = "Default summary"
 	macro viewAutoTag(entryTitle = null) {
 		var key_entryTitle = ${entryTitle};
-		var tagName = StringUtil.lowerCase(${tagName});
-
 		var key_tagName = ${tagName};
 
 		if (IsElementNotPresent(locator1 = "BlogsEntry#TAG")) {
@@ -1162,7 +1161,7 @@ definition {
 		}
 
 		if (isSet(entrySmallImage)) {
-			Panel.expandPanel(panel = "Configuration");
+			Blogs.expandPanel(panel = "Configuration");
 
 			AssertVisible(
 				key_smallImage = ${entrySmallImage},
@@ -1426,12 +1425,12 @@ definition {
 		if (isSet(duplicate)) {
 			AssertElementNotPresent(
 				locator1 = "BlogsEntry#TAG_2",
-				tagName = StringUtil.lowerCase(${tagName}));
+				tagName = ${tagName});
 		}
 		else {
 			AssertElementNotPresent(
 				locator1 = "BlogsEntry#TAG",
-				tagName = StringUtil.lowerCase(${tagName}));
+				tagName = ${tagName});
 		}
 	}
 
@@ -1562,10 +1561,6 @@ definition {
 
 	@summary = "Default summary"
 	macro viewSharedAsset(contentSharingPermission = null, entryTitle = null, entryContent = null) {
-		AssertTextEquals(
-			locator1 = "Portlet#HEADER",
-			value1 = "Shared Content");
-
 		if (${contentSharingPermission} == "View") {
 			AssertElementNotPresent(locator1 = "CKEditor#BODY_FIELD_IFRAME");
 
@@ -1650,7 +1645,6 @@ definition {
 
 		if (isSet(tagNameList)) {
 			for (var tagName : list ${tagNameList}) {
-				var tagName = StringUtil.lowerCase(${tagName});
 				var key_tagName = "tagName";
 
 				AssertTextEquals(
@@ -1671,7 +1665,6 @@ definition {
 			}
 		}
 		else {
-			var tagName = StringUtil.lowerCase(${tagName});
 			var key_tagName = "tagName";
 
 			AssertTextEquals(
@@ -1696,11 +1689,9 @@ definition {
 	@summary = "Default summary"
 	macro viewTagNotPresentPG(tagNameList = null, entryTitle = null) {
 		for (var tagName : list ${tagNameList}) {
-			var lowerCaseTagName = StringUtil.lowerCase(${tagName});
-
 			AssertElementNotPresent(
 				key_entryTitle = ${entryTitle},
-				key_tagName = ${lowerCaseTagName},
+				key_tagName = ${tagName},
 				locator1 = "BlogsEntry#TAG");
 		}
 	}
@@ -1711,8 +1702,6 @@ definition {
 
 		if (isSet(tagNameList)) {
 			for (var tagName : list ${tagNameList}) {
-				var tagName = StringUtil.lowerCase(${tagName});
-
 				var key_tagName = ${tagName};
 
 				BlogsNavigator.gotoEntryPG(
@@ -1734,7 +1723,6 @@ definition {
 		}
 		else {
 			var key_tagName = ${tagName};
-			var tagName = StringUtil.upperCase(${tagName});
 
 			AssertClick(
 				locator1 = "BlogsEntry#TAG",

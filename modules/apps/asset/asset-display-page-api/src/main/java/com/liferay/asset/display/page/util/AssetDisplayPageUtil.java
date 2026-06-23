@@ -17,12 +17,51 @@ import com.liferay.layout.display.page.LayoutDisplayPageProviderRegistry;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalServiceUtil;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryServiceUtil;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.util.PortalUtil;
 
 /**
  * @author Jürgen Kappler
  */
 public class AssetDisplayPageUtil {
+
+	public static LayoutPageTemplateEntry
+		getAssetDisplayPageLayoutPageTemplateEntry(
+			long groupId, InfoItemReference infoItemReference) {
+
+		LayoutDisplayPageProviderRegistry layoutDisplayPageProviderRegistry =
+			LayoutDisplayPageProviderRegistryUtil.
+				getLayoutDisplayPageProviderRegistry();
+
+		LayoutDisplayPageProvider<?> layoutDisplayPageProvider =
+			layoutDisplayPageProviderRegistry.
+				getLayoutDisplayPageProviderByClassName(
+					CompanyThreadLocal.getCompanyId(),
+					infoItemReference.getClassName());
+
+		if (layoutDisplayPageProvider == null) {
+			return null;
+		}
+
+		LayoutDisplayPageObjectProvider<?> layoutDisplayPageObjectProvider =
+			layoutDisplayPageProvider.getLayoutDisplayPageObjectProvider(
+				groupId, infoItemReference);
+
+		if (layoutDisplayPageObjectProvider == null) {
+			return null;
+		}
+
+		LayoutPageTemplateEntry defaultLayoutPageTemplateEntry =
+			LayoutPageTemplateEntryServiceUtil.
+				fetchDefaultLayoutPageTemplateEntry(
+					groupId, layoutDisplayPageObjectProvider.getClassNameId(),
+					layoutDisplayPageObjectProvider.getClassTypeId());
+
+		return _getAssetDisplayPage(
+			groupId, layoutDisplayPageObjectProvider.getClassNameId(),
+			layoutDisplayPageObjectProvider.getClassPK(),
+			defaultLayoutPageTemplateEntry, layoutDisplayPageProvider);
+	}
 
 	public static LayoutPageTemplateEntry
 		getAssetDisplayPageLayoutPageTemplateEntry(
@@ -37,14 +76,12 @@ public class AssetDisplayPageUtil {
 			LayoutDisplayPageProviderRegistryUtil.
 				getLayoutDisplayPageProviderRegistry();
 
-		LayoutDisplayPageProvider<?> layoutDisplayPageProvider =
-			layoutDisplayPageProviderRegistry.
-				getLayoutDisplayPageProviderByClassName(
-					PortalUtil.getClassName(classNameId));
-
 		return _getAssetDisplayPage(
 			groupId, classNameId, classPK, defaultLayoutPageTemplateEntry,
-			layoutDisplayPageProvider);
+			layoutDisplayPageProviderRegistry.
+				getLayoutDisplayPageProviderByClassName(
+					CompanyThreadLocal.getCompanyId(),
+					PortalUtil.getClassName(classNameId)));
 	}
 
 	public static boolean hasAssetDisplayPage(
@@ -60,6 +97,37 @@ public class AssetDisplayPageUtil {
 		}
 
 		return false;
+	}
+
+	public static boolean hasAssetDisplayPage(
+		long groupId, InfoItemReference infoItemReference) {
+
+		LayoutDisplayPageProviderRegistry layoutDisplayPageProviderRegistry =
+			LayoutDisplayPageProviderRegistryUtil.
+				getLayoutDisplayPageProviderRegistry();
+
+		LayoutDisplayPageProvider<?> layoutDisplayPageProvider =
+			layoutDisplayPageProviderRegistry.
+				getLayoutDisplayPageProviderByClassName(
+					CompanyThreadLocal.getCompanyId(),
+					infoItemReference.getClassName());
+
+		if (layoutDisplayPageProvider == null) {
+			return false;
+		}
+
+		LayoutDisplayPageObjectProvider<?> layoutDisplayPageObjectProvider =
+			layoutDisplayPageProvider.getLayoutDisplayPageObjectProvider(
+				groupId, infoItemReference);
+
+		if (layoutDisplayPageObjectProvider == null) {
+			return false;
+		}
+
+		return hasAssetDisplayPage(
+			groupId, layoutDisplayPageObjectProvider.getClassNameId(),
+			layoutDisplayPageObjectProvider.getClassPK(),
+			layoutDisplayPageObjectProvider.getClassTypeId());
 	}
 
 	public static boolean hasAssetDisplayPage(
@@ -85,7 +153,9 @@ public class AssetDisplayPageUtil {
 			AssetDisplayPageEntryLocalServiceUtil.fetchAssetDisplayPageEntry(
 				groupId, classNameId, classPK);
 
-		if (assetDisplayPageEntry == null) {
+		if ((assetDisplayPageEntry == null) ||
+			(layoutDisplayPageProvider == null)) {
+
 			return defaultLayoutPageTemplateEntry;
 		}
 

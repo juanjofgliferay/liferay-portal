@@ -10,8 +10,10 @@ import com.liferay.fragment.constants.FragmentConfigurationFieldDataType;
 import com.liferay.fragment.model.FragmentEntryLink;
 import com.liferay.fragment.service.FragmentEntryLinkLocalServiceUtil;
 import com.liferay.fragment.util.configuration.FragmentEntryConfigurationParser;
+import com.liferay.info.collection.provider.RepeatableFieldInfoItemCollectionProvider;
 import com.liferay.info.constants.InfoDisplayWebKeys;
 import com.liferay.info.exception.NoSuchInfoItemException;
+import com.liferay.info.field.RepeatableInfoFieldValue;
 import com.liferay.info.filter.InfoFilter;
 import com.liferay.info.filter.InfoFilterProvider;
 import com.liferay.info.item.InfoItemIdentifier;
@@ -38,6 +40,7 @@ import com.liferay.layout.taglib.internal.servlet.ServletContextUtil;
 import com.liferay.layout.util.CollectionPaginationUtil;
 import com.liferay.layout.util.structure.CollectionStyledLayoutStructureItem;
 import com.liferay.petra.string.CharPool;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.petra.string.StringUtil;
 import com.liferay.portal.kernel.json.JSONArray;
@@ -51,21 +54,25 @@ import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
+import com.liferay.portal.kernel.util.ScopeUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.segments.SegmentsEntryRetriever;
 import com.liferay.segments.context.RequestContextMapper;
+import com.liferay.segments.model.SegmentsEntry;
 import com.liferay.segments.model.SegmentsExperience;
+import com.liferay.segments.service.SegmentsEntryLocalServiceUtil;
 import com.liferay.segments.service.SegmentsExperienceLocalServiceUtil;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
+import java.util.Objects;
 
 /**
  * @author Eudaldo Alonso
@@ -120,15 +127,28 @@ public class RenderCollectionLayoutStructureItemDisplayContext {
 			return _collectionItemType;
 		}
 
+		String collectionItemType = StringPool.BLANK;
+
 		JSONObject collectionJSONObject =
 			_collectionStyledLayoutStructureItem.getCollectionJSONObject();
 
-		String collectionItemType = StringPool.BLANK;
+		if (collectionJSONObject != null) {
+			collectionItemType = collectionJSONObject.getString("itemType");
+		}
 
 		if ((collectionJSONObject != null) &&
-			collectionJSONObject.has("itemType")) {
+			Objects.equals(
+				collectionJSONObject.getString("key"),
+				RepeatableFieldInfoItemCollectionProvider.class.getName())) {
 
-			collectionItemType = collectionJSONObject.getString("itemType");
+			collectionItemType = RepeatableInfoFieldValue.class.getName();
+		}
+		else {
+			ListObjectReference listObjectReference = getListObjectReference();
+
+			if (listObjectReference != null) {
+				collectionItemType = listObjectReference.getItemType();
+			}
 		}
 
 		_collectionItemType = collectionItemType;
@@ -159,6 +179,7 @@ public class RenderCollectionLayoutStructureItemDisplayContext {
 
 		return layoutDisplayPageProviderRegistry.
 			getLayoutDisplayPageProviderByClassName(
+				_themeDisplay.getCompanyId(),
 				InfoSearchClassMapperRegistryUtil.getClassName(
 					listObjectReference.getItemType()));
 	}
@@ -215,6 +236,7 @@ public class RenderCollectionLayoutStructureItemDisplayContext {
 
 		_listObjectReference =
 			listObjectReferenceFactory.getListObjectReference(
+				_themeDisplay.getCompanyId(), _themeDisplay.getScopeGroupId(),
 				collectionJSONObject);
 
 		return _listObjectReference;
@@ -358,10 +380,33 @@ public class RenderCollectionLayoutStructureItemDisplayContext {
 				(SegmentsEntryLayoutListRetriever<ListObjectReference>)
 					layoutListRetriever;
 
-		if (segmentsEntryLayoutListRetriever.hasSegmentsEntryVariation(
-				listObjectReference, segmentsExperience.getSegmentsEntryId())) {
+		Long groupId = ScopeUtil.getItemGroupId(
+			segmentsExperience.getCompanyId(),
+			segmentsExperience.getSegmentsEntryScopeERC(),
+			segmentsExperience.getGroupId());
 
-			return new long[] {segmentsExperience.getSegmentsEntryId()};
+		if (groupId == null) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(
+					StringBundler.concat(
+						"Unable to resolve group ID for segments experience ",
+						segmentsExperience.getSegmentsExperienceId(),
+						" with segments entry scope external reference code ",
+						segmentsExperience.getSegmentsEntryScopeERC()));
+			}
+		}
+		else {
+			SegmentsEntry segmentsEntry =
+				SegmentsEntryLocalServiceUtil.
+					fetchSegmentsEntryByExternalReferenceCode(
+						segmentsExperience.getSegmentsEntryERC(), groupId);
+
+			if ((segmentsEntry != null) &&
+				segmentsEntryLayoutListRetriever.hasSegmentsEntryVariation(
+					listObjectReference, segmentsEntry.getSegmentsEntryId())) {
+
+				return new long[] {segmentsEntry.getSegmentsEntryId()};
+			}
 		}
 
 		return new long[] {
@@ -381,17 +426,23 @@ public class RenderCollectionLayoutStructureItemDisplayContext {
 			return _configuration;
 		}
 
+		Map<String, String[]> configuration = new HashMap<>();
+
 		JSONObject collectionJSONObject =
 			_collectionStyledLayoutStructureItem.getCollectionJSONObject();
+
+		String fieldName = collectionJSONObject.getString("fieldName");
+
+		if (Validator.isNotNull(fieldName)) {
+			configuration.put("fieldNames", new String[] {fieldName});
+		}
 
 		JSONObject configurationJSONObject = collectionJSONObject.getJSONObject(
 			"config");
 
 		if (configurationJSONObject == null) {
-			return null;
+			return configuration;
 		}
-
-		Map<String, String[]> configuration = new HashMap<>();
 
 		for (String key : configurationJSONObject.keySet()) {
 			List<String> values = new ArrayList<>();
@@ -507,7 +558,7 @@ public class RenderCollectionLayoutStructureItemDisplayContext {
 			JSONArray targetCollectionsJSONArray =
 				(JSONArray)
 					fragmentEntryConfigurationParser.getConfigurationFieldValue(
-						fragmentEntryLink.getEditableValues(),
+						fragmentEntryLink.getEditableValuesJSONObject(),
 						"targetCollections",
 						FragmentConfigurationFieldDataType.ARRAY);
 
@@ -593,6 +644,8 @@ public class RenderCollectionLayoutStructureItemDisplayContext {
 				_collectionStyledLayoutStructureItem.getNumberOfItems(),
 				_collectionStyledLayoutStructureItem.getNumberOfItemsPerPage(),
 				_collectionStyledLayoutStructureItem.getPaginationType()));
+		defaultLayoutListRetrieverContext.setScopeGroupId(
+			_themeDisplay.getScopeGroupId());
 		defaultLayoutListRetrieverContext.setSegmentsEntryIds(
 			_getSegmentsEntryIds(layoutListRetriever, listObjectReference));
 

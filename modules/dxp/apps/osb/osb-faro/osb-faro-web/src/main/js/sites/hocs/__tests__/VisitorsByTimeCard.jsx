@@ -1,14 +1,17 @@
 import BasePage from 'shared/components/base-page';
-import client from 'shared/apollo/client';
+import mockStore from 'test/mock-store';
 import React from 'react';
 import VisitorsByTimeCard, {
 	formatHour,
 	renderTooltip
 } from '../VisitorsByTimeCard';
-import {ApolloProvider} from '@apollo/react-components';
+import {InMemoryCache} from '@apollo/client';
+import {MemoryRouter, Route} from 'react-router-dom';
+import {MockedProvider} from '@apollo/client/testing';
+import {mockPreferenceReq, mockTimeRangeReq} from 'test/graphql-data';
+import {Provider} from 'react-redux';
 import {render} from '@testing-library/react';
-import {StaticRouter} from 'react-router-dom';
-import {waitForLoading} from 'test/helpers';
+import {waitForLoadingToBeRemoved} from 'test/helpers';
 
 jest.unmock('react-dom');
 
@@ -26,20 +29,32 @@ const MOCK_CONTEXT = {
 };
 
 const WrappedComponent = props => (
-	<ApolloProvider client={client}>
-		<BasePage.Context.Provider value={MOCK_CONTEXT}>
-			<StaticRouter>
-				<VisitorsByTimeCard {...props} />
-			</StaticRouter>
-		</BasePage.Context.Provider>
-	</ApolloProvider>
+	<Provider store={mockStore()}>
+		<MemoryRouter initialEntries={['/workspace/2000/123']}>
+			<Route path='/workspace/:groupId/:channelId'>
+				<BasePage.Context.Provider value={MOCK_CONTEXT}>
+					<MockedProvider
+						cache={
+							new InMemoryCache({
+								addTypename: false,
+								freezeResults: false
+							})
+						}
+						mocks={[mockTimeRangeReq(), mockPreferenceReq()]}
+					>
+						<VisitorsByTimeCard {...props} />
+					</MockedProvider>
+				</BasePage.Context.Provider>
+			</Route>
+		</MemoryRouter>
+	</Provider>
 );
 
 describe('VisitorsByTimeCard', () => {
 	it('render', async () => {
 		const {container} = render(<WrappedComponent />);
 
-		await waitForLoading(container);
+		await waitForLoadingToBeRemoved(container);
 
 		expect(container).toMatchSnapshot();
 	});

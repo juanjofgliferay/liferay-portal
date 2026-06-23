@@ -84,6 +84,8 @@ public class PropertiesBuildIncludeDirsCheck extends BaseFileCheck {
 	private Set<String> _getBuildIncludeDirs(String absolutePath)
 		throws IOException {
 
+		Set<String> buildIncludeDirs = new TreeSet<>();
+
 		File modulesDir = new File(getPortalDir(), "modules");
 
 		List<String> buildExcludeModuleNames = getAttributeValues(
@@ -92,8 +94,6 @@ public class PropertiesBuildIncludeDirsCheck extends BaseFileCheck {
 		List<String> skipModuleNames = ListUtil.concat(
 			buildExcludeModuleNames,
 			_getIgnoredModuleNames(SourceUtil.getRootDirName(absolutePath)));
-
-		Set<String> buildIncludeDirs = new TreeSet<>();
 
 		Files.walkFileTree(
 			modulesDir.toPath(), EnumSet.noneOf(FileVisitOption.class), 15,
@@ -104,9 +104,10 @@ public class PropertiesBuildIncludeDirsCheck extends BaseFileCheck {
 						Path dirPath, BasicFileAttributes basicFileAttributes)
 					throws IOException {
 
-					if (ArrayUtil.contains(
-							_SKIP_DIR_NAMES,
-							String.valueOf(dirPath.getFileName()))) {
+					String dirName = String.valueOf(dirPath.getFileName());
+
+					if (ArrayUtil.contains(_SKIP_DIR_NAMES, dirName) ||
+						dirName.contains("-test-")) {
 
 						return FileVisitResult.SKIP_SUBTREE;
 					}
@@ -215,6 +216,6 @@ public class PropertiesBuildIncludeDirsCheck extends BaseFileCheck {
 	private static final Pattern _ignoredModuleNamePattern = Pattern.compile(
 		"^/modules/([^/\n]+/)*\\w+$", Pattern.MULTILINE);
 	private static final Pattern _pattern = Pattern.compile(
-		"([^\\S\\n]*)#build\\.include\\.dirs=\\\\(\\s*#.*)*");
+		"([^\\S\\n]*)#build\\.include\\.dirs=\\\\(\\s*#    .*)*");
 
 }

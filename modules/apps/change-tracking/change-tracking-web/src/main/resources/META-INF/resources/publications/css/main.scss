@@ -1,3 +1,7 @@
+.dnd-tr {
+	width: auto !important;
+}
+
 .publications-conflicts-container {
 	button.panel-header {
 		border-bottom-color: #a7a9bc;
@@ -276,6 +280,18 @@
 	.publications-key-td {
 		font-weight: 600;
 	}
+
+	.publications-section-header {
+		background: var(--Color-Light-light-l1, #f7f8f9);
+		border-bottom: 0.0695rem solid
+			var(--Color-Secondary-secondary-l2, #cdced9);
+		border-top: 0.0695rem solid var(--Color-Secondary-secondary-l2, #cdced9);
+		color: #6b6c7e;
+		font-weight: var(--font-weight-semi-bold, 600);
+		height: 34px;
+		line-height: 150%;
+		vertical-align: middle;
+	}
 }
 
 table.publications-render-view {
@@ -369,7 +385,7 @@ table.publications-render-view {
 	}
 
 	td.publications-render-view-content-split iframe {
-		width: 1100px;
+		width: 200%;
 		zoom: 0.5;
 		-moz-transform: scale(0.5);
 		-moz-transform-origin: 0 0;
@@ -453,6 +469,10 @@ table.publications-render-view {
 		margin-bottom: 20px;
 	}
 
+	.c-slideout-push-end {
+		padding-right: 472px !important;
+	}
+
 	.management-bar {
 		.nav-item-expand {
 			flex-grow: 1;
@@ -483,6 +503,43 @@ table.publications-render-view {
 
 			.custom-control:only-child {
 				margin-bottom: 1rem;
+			}
+		}
+
+		.publications-layout-changes-sidebar {
+			.btn-group-spaced {
+				display: flex;
+				justify-content: flex-end;
+				margin: 16px;
+				margin-top: 0px;
+
+				button {
+					padding-bottom: 16px;
+					padding-left: 8px;
+					padding-right: 8px;
+					padding-top: 16px;
+				}
+			}
+
+			.c-slideout {
+				border-color: #e7e7ed;
+				border-radius: 0.25rem;
+				border-style: solid;
+				border-width: 0.0625rem;
+				margin-bottom: 16px;
+			}
+
+			.panel {
+				border-color: #e7e7ed;
+				border-radius: 0.25rem;
+				border-style: solid;
+				border-width: 0.0625rem;
+				margin-bottom: 0px;
+				padding: 16px;
+
+				.panel-header {
+					border-color: transparent;
+				}
 			}
 		}
 

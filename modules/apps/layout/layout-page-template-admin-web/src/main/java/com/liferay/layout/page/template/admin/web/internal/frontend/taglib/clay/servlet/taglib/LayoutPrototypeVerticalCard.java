@@ -24,13 +24,13 @@ import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Date;
 import java.util.List;
-
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -85,8 +85,11 @@ public class LayoutPrototypeVerticalCard
 			String layoutFullURL = layoutPrototypeGroup.getDisplayURL(
 				_themeDisplay, true);
 
-			return HttpComponentsUtil.setParameter(
-				layoutFullURL, "p_l_back_url", _themeDisplay.getURLCurrent());
+			return HttpComponentsUtil.addParameters(
+				layoutFullURL, "p_l_back_url", _themeDisplay.getURLCurrent(),
+				"p_l_back_url_title",
+				LanguageUtil.get(
+					_themeDisplay.getLocale(), "widget-page-templates"));
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
@@ -140,12 +143,12 @@ public class LayoutPrototypeVerticalCard
 
 	@Override
 	public String getTitle() {
-		if (_layoutPrototype != null) {
-			return HtmlUtil.escape(
-				_layoutPrototype.getName(_themeDisplay.getLocale()));
+		if (_layoutPrototype == null) {
+			return null;
 		}
 
-		return null;
+		return HtmlUtil.escape(
+			_layoutPrototype.getName(_themeDisplay.getLocale()));
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

@@ -5,7 +5,7 @@
 
 package com.liferay.portal.service;
 
-import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
+import com.liferay.petra.io.unsync.UnsyncBufferedReader;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.io.File;
@@ -64,6 +64,7 @@ public class ServiceXMLTest {
 
 	private void _assertNoTXRequiredElement(File file) throws IOException {
 		try (FileInputStream fileInputStream = new FileInputStream(file);
+
 			UnsyncBufferedReader unsyncBufferedReader =
 				new UnsyncBufferedReader(
 					new InputStreamReader(fileInputStream))) {
@@ -82,11 +83,7 @@ public class ServiceXMLTest {
 	private boolean _isServiceXml(Path path) {
 		Path fileNamePath = path.getFileName();
 
-		if (Objects.equals(fileNamePath.toString(), "service.xml")) {
-			return true;
-		}
-
-		return false;
+		return Objects.equals(fileNamePath.toString(), "service.xml");
 	}
 
 }

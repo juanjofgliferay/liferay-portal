@@ -126,30 +126,6 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro editSecurityCredential(securityCredential = null) {
-		Type(
-			locator1 = "SystemSettings#SECURITY_CREDENTIAL_FIELD",
-			value1 = ${securityCredential});
-
-		var key_fieldName = "securityPrincipal";
-
-		Type(
-			locator1 = "FormFields#TEXT_MULTILINE_FIELD",
-			value1 = "test");
-
-		AssertElementPresent(locator1 = "SystemSettings#SECURITY_CREDENTIAL_FIELD");
-
-		ScrollBy(value1 = "0, 500");
-
-		SetWindowSize.maximizeWindow();
-
-		OcularAssertElementImage(
-			locator1 = "SystemSettings#SECURITY_CREDENTIAL_FIELD",
-			value1 = "obscured_credential/ldap_server_security_credential.png",
-			value2 = 70);
-	}
-
-	@summary = "Default summary"
 	macro editTextAreaSetting(settingValue = null, settingName = null) {
 		Type(
 			key_label = ${settingName},
@@ -291,10 +267,6 @@ definition {
 
 		if (!(isSet(baseURL))) {
 			var baseURL = JSONCompany.getPortalURL();
-		}
-
-		if (${portlet} == "Applications Menu") {
-			var portletId = "com.liferay.product.navigation.applications.menu.configuration.ApplicationsMenuInstanceConfiguration";
 		}
 
 		Open(value1 = "${baseURL}/group/control_panel/manage?p_p_id=com_liferay_configuration_admin_web_portlet_SystemSettingsPortlet&_com_liferay_configuration_admin_web_portlet_SystemSettingsPortlet_factoryPid=${portletId}&_com_liferay_configuration_admin_web_portlet_SystemSettingsPortlet_mvcRenderCommandName=%2Fconfiguration_admin%2Fedit_configuration");

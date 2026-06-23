@@ -14,7 +14,7 @@ import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -31,6 +31,11 @@ import org.osgi.service.component.annotations.Reference;
 	service = PanelApp.class
 )
 public class ObjectDefinitionsPanelApp extends BasePanelApp {
+
+	@Override
+	public String getIcon() {
+		return "braces";
+	}
 
 	@Override
 	public Portlet getPortlet() {
@@ -52,7 +57,7 @@ public class ObjectDefinitionsPanelApp extends BasePanelApp {
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + ObjectPortletKeys.OBJECT_DEFINITIONS + ")"
+		target = "(jakarta.portlet.name=" + ObjectPortletKeys.OBJECT_DEFINITIONS + ")"
 	)
 	private Portlet _portlet;
 

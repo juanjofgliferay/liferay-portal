@@ -2,46 +2,69 @@
 
 exports[`DateInput should render 1`] = `
 <div>
-  <div
-    class="form-date-input-root"
+  <form
+    class="form-root"
   >
     <div
-      aria-haspopup="true"
-      class="input-group date-input-root"
+      class="form-date-input-root"
     >
-      <div
-        class="input-group-item"
+      <label
+        class="form-control-label label-root"
+        for="foo"
       >
-        <input
-          autocomplete="off"
-          class="input-root form-control input-group-inset input-group-inset-after"
-          data-testid="date-input"
-          id="foo"
-          name="foo"
-          placeholder="YYYY-MM-DD"
-          type="text"
-          value=""
-        />
-        <div
-          class="input-group-inset-item input-group-inset-item-after"
+        <span
+          class="content-container"
         >
-          <button
-            aria-label="Choose a date"
-            class="button-root btn btn-unstyled"
-            type="button"
+          Foo Date
+        </span>
+      </label>
+      <div
+        class="dropdown dropdown-range-key-root"
+      >
+        <div
+          aria-expanded="false"
+          aria-haspopup="true"
+          class="dropdown-toggle"
+        >
+          <div
+            class="input-group"
           >
-            <svg
-              class="lexicon-icon lexicon-icon-calendar icon-root"
-              role="presentation"
+            <div
+              class="input-group-item"
             >
-              <use
-                href="#calendar"
+              <input
+                autocomplete="off"
+                class="input-root form-control input-group-inset input-group-inset-after"
+                data-testid="date-input"
+                id="foo"
+                name="foo"
+                placeholder="YYYY-MM-DD"
+                type="text"
+                value=""
               />
-            </svg>
-          </button>
+              <div
+                class="input-group-inset-item input-group-inset-item-after"
+              >
+                <button
+                  aria-label="Choose a date"
+                  class="button-root btn btn-unstyled"
+                  type="button"
+                >
+                  <svg
+                    class="lexicon-icon lexicon-icon-calendar icon-root"
+                    role="presentation"
+                  >
+                    <use
+                      href="#calendar"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-  </div>
+  </form>
 </div>
 `;

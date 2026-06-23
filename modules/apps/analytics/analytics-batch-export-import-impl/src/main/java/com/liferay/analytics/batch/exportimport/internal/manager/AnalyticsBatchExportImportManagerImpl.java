@@ -11,6 +11,7 @@ import com.liferay.analytics.batch.exportimport.manager.AnalyticsBatchExportImpo
 import com.liferay.analytics.message.storage.service.AnalyticsMessageLocalService;
 import com.liferay.analytics.settings.configuration.AnalyticsConfiguration;
 import com.liferay.analytics.settings.configuration.AnalyticsConfigurationRegistry;
+import com.liferay.analytics.settings.rest.manager.AnalyticsSettingsManager;
 import com.liferay.batch.engine.BatchEngineExportTaskExecutor;
 import com.liferay.batch.engine.BatchEngineImportTaskExecutor;
 import com.liferay.batch.engine.BatchEngineTaskContentType;
@@ -21,6 +22,8 @@ import com.liferay.batch.engine.model.BatchEngineExportTask;
 import com.liferay.batch.engine.model.BatchEngineImportTask;
 import com.liferay.batch.engine.service.BatchEngineExportTaskLocalService;
 import com.liferay.batch.engine.service.BatchEngineImportTaskLocalService;
+import com.liferay.oauth2.provider.model.OAuth2Application;
+import com.liferay.oauth2.provider.service.OAuth2ApplicationLocalService;
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.io.StreamUtil;
 import com.liferay.petra.string.StringBundler;
@@ -31,8 +34,10 @@ import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.service.CompanyLocalService;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.servlet.HttpHeaders;
 import com.liferay.portal.kernel.servlet.HttpMethods;
 import com.liferay.portal.kernel.settings.CompanyServiceSettingsLocator;
@@ -40,6 +45,8 @@ import com.liferay.portal.kernel.settings.FallbackKeysSettingsUtil;
 import com.liferay.portal.kernel.settings.Settings;
 import com.liferay.portal.kernel.settings.SettingsDescriptor;
 import com.liferay.portal.kernel.settings.SettingsLocatorHelper;
+import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.Base64;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.FileUtil;
@@ -47,16 +54,17 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.HttpComponentsUtil;
-import com.liferay.portal.kernel.util.PrefsPropsUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.zip.ZipReaderFactory;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
 
 import java.net.HttpURLConnection;
@@ -69,6 +77,7 @@ import java.nio.file.Files;
 import java.text.Format;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Dictionary;
 import java.util.HashMap;
@@ -77,16 +86,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.zip.ZipEntry;
+import java.util.UUID;
+import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
 
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.entity.FileEntity;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -114,12 +125,11 @@ public class AnalyticsBatchExportImportManagerImpl
 
 		File tempFile = FileUtil.createTempFile();
 
-		ZipOutputStream zipOutputStream = new ZipOutputStream(
+		GZIPOutputStream gzipOutputStream = new GZIPOutputStream(
 			new FileOutputStream(tempFile));
 
-		zipOutputStream.putNextEntry(new ZipEntry("export.jsonl"));
-
 		List<BatchEngineExportTask> batchEngineExportTasks = new ArrayList<>();
+		boolean skipUpload = true;
 
 		for (String batchEngineExportTaskItemDelegateName :
 				batchEngineExportTaskItemDelegateNames) {
@@ -161,6 +171,8 @@ public class AnalyticsBatchExportImportManagerImpl
 					continue;
 				}
 
+				skipUpload = false;
+
 				try (ZipInputStream zipInputStream = new ZipInputStream(
 						_batchEngineExportTaskLocalService.
 							openContentInputStream(
@@ -169,7 +181,8 @@ public class AnalyticsBatchExportImportManagerImpl
 
 					zipInputStream.getNextEntry();
 
-					StreamUtil.transfer(zipInputStream, zipOutputStream, false);
+					StreamUtil.transfer(
+						zipInputStream, gzipOutputStream, false);
 				}
 			}
 			else {
@@ -179,36 +192,46 @@ public class AnalyticsBatchExportImportManagerImpl
 			}
 		}
 
-		StreamUtil.cleanUp(zipOutputStream);
+		StreamUtil.cleanUp(gzipOutputStream);
 
-		_notify(
-			"Uploading resources " + resourceName, notificationUnsafeConsumer);
+		try {
+			if (!skipUpload) {
+				_notify(
+					"Uploading resource " + resourceName,
+					notificationUnsafeConsumer);
 
-		try (FileInputStream fileInputStream = new FileInputStream(tempFile)) {
-			_upload(
-				companyId, fileInputStream, resourceLastModifiedDate,
-				resourceName);
-		}
+				_upload(
+					companyId, "gzip", tempFile, resourceLastModifiedDate,
+					resourceName);
 
-		_notify(
-			"Completed uploading resources " + resourceName,
-			notificationUnsafeConsumer);
-
-		for (BatchEngineExportTask batchEngineExportTask :
-				batchEngineExportTasks) {
-
-			_batchEngineExportTaskLocalService.deleteBatchEngineExportTask(
-				batchEngineExportTask);
-		}
-
-		boolean deleted = tempFile.delete();
-
-		if (_log.isDebugEnabled()) {
-			if (deleted) {
-				_log.debug("Deleted temp file: " + tempFile.getName());
+				_notify(
+					"Completed uploading resource " + resourceName,
+					notificationUnsafeConsumer);
 			}
 			else {
-				_log.debug("Unable to delete temp file: " + tempFile.getName());
+				_notify(
+					"Skip uploading resource " + resourceName,
+					notificationUnsafeConsumer);
+			}
+
+			for (BatchEngineExportTask batchEngineExportTask :
+					batchEngineExportTasks) {
+
+				_batchEngineExportTaskLocalService.deleteBatchEngineExportTask(
+					batchEngineExportTask);
+			}
+		}
+		finally {
+			boolean deleted = tempFile.delete();
+
+			if (_log.isDebugEnabled()) {
+				if (deleted) {
+					_log.debug("Deleted temp file " + tempFile.getName());
+				}
+				else {
+					_log.debug(
+						"Unable to delete temp file " + tempFile.getName());
+				}
 			}
 		}
 	}
@@ -216,7 +239,7 @@ public class AnalyticsBatchExportImportManagerImpl
 	@Override
 	public void exportToAnalyticsCloud(
 			String batchEngineExportTaskItemDelegateName, long companyId,
-			List<String> fieldNamesList, String filterString,
+			List<String> fieldNames, String filterString,
 			UnsafeConsumer<String, Exception> notificationUnsafeConsumer,
 			Date resourceLastModifiedDate, String resourceName, long userId)
 		throws Exception {
@@ -255,7 +278,7 @@ public class AnalyticsBatchExportImportManagerImpl
 			_batchEngineExportTaskLocalService.addBatchEngineExportTask(
 				null, companyId, userId, null, resourceName,
 				BatchEngineTaskContentType.JSONL.name(),
-				BatchEngineTaskExecuteStatus.INITIAL.name(), fieldNamesList,
+				BatchEngineTaskExecuteStatus.INITIAL.name(), fieldNames,
 				parameters, batchEngineExportTaskItemDelegateName);
 
 		_batchEngineExportTaskExecutor.execute(batchEngineExportTask);
@@ -284,18 +307,43 @@ public class AnalyticsBatchExportImportManagerImpl
 				"Uploading resource " + resourceName,
 				notificationUnsafeConsumer);
 
-			InputStream contentInputStream =
-				_batchEngineExportTaskLocalService.openContentInputStream(
-					batchEngineExportTask.getBatchEngineExportTaskId());
+			File tempFile = FileUtil.createTempFile();
 
-			_upload(
-				companyId, contentInputStream, resourceLastModifiedDate,
-				resourceName);
+			try {
+				try (GZIPOutputStream gzipOutputStream = new GZIPOutputStream(
+						new FileOutputStream(tempFile));
+					ZipInputStream zipInputStream = new ZipInputStream(
+						_batchEngineExportTaskLocalService.
+							openContentInputStream(
+								batchEngineExportTask.
+									getBatchEngineExportTaskId()))) {
 
-			contentInputStream.close();
+					zipInputStream.getNextEntry();
 
-			_batchEngineExportTaskLocalService.deleteBatchEngineExportTask(
-				batchEngineExportTask);
+					StreamUtil.transfer(
+						zipInputStream, gzipOutputStream, false);
+				}
+
+				_upload(
+					companyId, "gzip", tempFile, resourceLastModifiedDate,
+					resourceName);
+
+				_batchEngineExportTaskLocalService.deleteBatchEngineExportTask(
+					batchEngineExportTask);
+			}
+			finally {
+				boolean deleted = tempFile.delete();
+
+				if (_log.isDebugEnabled()) {
+					if (deleted) {
+						_log.debug("Deleted temp file " + tempFile.getName());
+					}
+					else {
+						_log.debug(
+							"Unable to delete temp file " + tempFile.getName());
+					}
+				}
+			}
 
 			_notify(
 				"Completed uploading resource " + resourceName,
@@ -378,6 +426,7 @@ public class AnalyticsBatchExportImportManagerImpl
 				companyId);
 
 		_checkEndpoints(analyticsConfiguration, companyId);
+		_checkOAuth2Application(analyticsConfiguration, companyId);
 
 		HttpUriRequest httpUriRequest = _buildHttpUriRequest(
 			null, analyticsConfiguration.liferayAnalyticsDataSourceId(),
@@ -464,8 +513,8 @@ public class AnalyticsBatchExportImportManagerImpl
 			analyticsConfiguration.liferayAnalyticsURL() + "/endpoints/" +
 				analyticsConfiguration.liferayAnalyticsProjectId());
 
-		try (CloseableHttpClient closeableHttpClient =
-				_getCloseableHttpClient()) {
+		try (CloseableHttpClient closeableHttpClient = _getCloseableHttpClient(
+				false)) {
 
 			CloseableHttpResponse closeableHttpResponse =
 				closeableHttpClient.execute(httpGet);
@@ -491,11 +540,9 @@ public class AnalyticsBatchExportImportManagerImpl
 				responseJSONObject.getString("liferayAnalyticsFaroBackendURL");
 
 			if (liferayAnalyticsEndpointURL.equals(
-					PrefsPropsUtil.getString(
-						companyId, "liferayAnalyticsEndpointURL")) &&
+					analyticsConfiguration.liferayAnalyticsEndpointURL()) &&
 				liferayAnalyticsFaroBackendURL.equals(
-					PrefsPropsUtil.getString(
-						companyId, "liferayAnalyticsFaroBackendURL"))) {
+					analyticsConfiguration.liferayAnalyticsFaroBackendURL())) {
 
 				return;
 			}
@@ -520,6 +567,62 @@ public class AnalyticsBatchExportImportManagerImpl
 			_configurationProvider.saveCompanyConfiguration(
 				AnalyticsConfiguration.class, companyId,
 				configurationProperties);
+		}
+	}
+
+	private void _checkOAuth2Application(
+			AnalyticsConfiguration analyticsConfiguration, long companyId)
+		throws Exception {
+
+		if (StringUtil.equals(
+				analyticsConfiguration.liferayAnalyticsCredentialType(),
+				"OAuth 2 Authentication")) {
+
+			return;
+		}
+
+		OAuth2Application oAuth2Application =
+			_oAuth2ApplicationLocalService.
+				fetchOAuth2ApplicationByExternalReferenceCode(
+					"ANALYTICS-CLOUD", companyId);
+
+		if (oAuth2Application == null) {
+			throw new Exception(
+				"No OAuth 2 application found for ANALYTICS-CLOUD");
+		}
+
+		Http.Options options = new Http.Options();
+
+		options.addPart("oAuthClientId", oAuth2Application.getClientId());
+		options.addPart(
+			"oAuthClientSecret", oAuth2Application.getClientSecret());
+
+		JSONObject jsonObject = _jsonFactory.createJSONObject(
+			new String(Base64.decode(analyticsConfiguration.token())));
+
+		options.setLocation(
+			StringUtil.replace(
+				jsonObject.getString("url"), "data_source/connect",
+				"data_source/" +
+					analyticsConfiguration.liferayAnalyticsDataSourceId()));
+
+		options.setPost(true);
+
+		_http.URLtoString(options);
+
+		Http.Response response = options.getResponse();
+
+		if (response.getResponseCode() == HttpURLConnection.HTTP_OK) {
+			_analyticsSettingsManager.updateCompanyConfiguration(
+				companyId,
+				Collections.singletonMap(
+					"liferayAnalyticsCredentialType",
+					"OAuth 2 Authentication"));
+		}
+		else {
+			if (_log.isDebugEnabled()) {
+				_log.debug("Unable to update analytics data source");
+			}
 		}
 	}
 
@@ -559,7 +662,7 @@ public class AnalyticsBatchExportImportManagerImpl
 					"DISCONNECTED");
 
 				_processInvalidTokenMessage(
-					companyId, disconnected,
+					analyticsConfiguration, companyId, disconnected,
 					responseJSONObject.getString("message"));
 			}
 			else if (response.getResponseCode() >=
@@ -585,8 +688,8 @@ public class AnalyticsBatchExportImportManagerImpl
 			HttpUriRequest httpUriRequest)
 		throws Exception {
 
-		try (CloseableHttpClient closeableHttpClient =
-				_getCloseableHttpClient()) {
+		try (CloseableHttpClient closeableHttpClient = _getCloseableHttpClient(
+				false)) {
 
 			CloseableHttpResponse closeableHttpResponse =
 				closeableHttpClient.execute(httpUriRequest);
@@ -609,7 +712,7 @@ public class AnalyticsBatchExportImportManagerImpl
 			}
 
 			_processInvalidTokenMessage(
-				companyId, disconnected,
+				analyticsConfiguration, companyId, disconnected,
 				responseJSONObject.getString("message"));
 
 			return closeableHttpResponse;
@@ -621,8 +724,23 @@ public class AnalyticsBatchExportImportManagerImpl
 		}
 	}
 
-	private CloseableHttpClient _getCloseableHttpClient() {
+	private CloseableHttpClient _getCloseableHttpClient(
+		boolean disableAutomaticRetries) {
+
 		HttpClientBuilder httpClientBuilder = HttpClientBuilder.create();
+
+		if (disableAutomaticRetries) {
+			httpClientBuilder.disableAutomaticRetries();
+
+			RequestConfig.Builder requestConfigBuilder = RequestConfig.custom();
+
+			requestConfigBuilder.setConnectionRequestTimeout(60000);
+			requestConfigBuilder.setConnectTimeout(30000);
+			requestConfigBuilder.setSocketTimeout(600000);
+
+			httpClientBuilder.setDefaultRequestConfig(
+				requestConfigBuilder.build());
+		}
 
 		httpClientBuilder.useSystemProperties();
 
@@ -670,11 +788,11 @@ public class AnalyticsBatchExportImportManagerImpl
 	}
 
 	private Http.Options _getOptions(long companyId) {
+		Http.Options options = new Http.Options();
+
 		AnalyticsConfiguration analyticsConfiguration =
 			_analyticsConfigurationRegistry.getAnalyticsConfiguration(
 				companyId);
-
-		Http.Options options = new Http.Options();
 
 		options.addHeader(
 			"OSB-Asah-Data-Source-ID",
@@ -731,7 +849,8 @@ public class AnalyticsBatchExportImportManagerImpl
 	}
 
 	private void _processInvalidTokenMessage(
-		long companyId, boolean disconnected, String message) {
+		AnalyticsConfiguration analyticsConfiguration, long companyId,
+		boolean disconnected, String message) {
 
 		if (!Objects.equals(message, "INVALID_TOKEN") && !disconnected) {
 			return;
@@ -745,6 +864,29 @@ public class AnalyticsBatchExportImportManagerImpl
 		}
 
 		try {
+			String[] groupIds = analyticsConfiguration.syncedGroupIds();
+
+			if (ArrayUtil.isNotEmpty(groupIds)) {
+				for (String groupId : groupIds) {
+					Group group = _groupLocalService.fetchGroup(
+						GetterUtil.getLong(groupId));
+
+					if (group == null) {
+						continue;
+					}
+
+					UnicodeProperties typeSettingsUnicodeProperties =
+						group.getTypeSettingsProperties();
+
+					typeSettingsUnicodeProperties.remove("analyticsChannelId");
+
+					group.setTypeSettingsProperties(
+						typeSettingsUnicodeProperties);
+
+					_groupLocalService.updateGroup(group);
+				}
+			}
+
 			_companyLocalService.updatePreferences(
 				companyId,
 				UnicodePropertiesBuilder.create(
@@ -797,68 +939,227 @@ public class AnalyticsBatchExportImportManagerImpl
 		}
 	}
 
-	private void _upload(
-		long companyId, InputStream resourceInputStream,
-		Date resourceLastModifiedDate, String resourceName) {
+	private int _upload(
+			AnalyticsConfiguration analyticsConfiguration, int attempt,
+			String boundary, long companyId, String contentEncoding,
+			File multipartFile, String resourceName)
+		throws Exception {
 
-		_checkCompany(companyId);
-
-		Http.Options options = _getOptions(companyId);
-
-		options.addHeader(
-			HttpHeaders.CONTENT_TYPE,
-			ContentTypes.MULTIPART_FORM_DATA +
-				"; boundary=__MULTIPART_BOUNDARY__");
-		options.addInputStreamPart(
-			"file", resourceName, resourceInputStream,
-			ContentTypes.MULTIPART_FORM_DATA);
-		options.addPart(
-			"uploadType",
-			(resourceLastModifiedDate != null) ? "INCREMENTAL" : "FULL");
-
-		AnalyticsConfiguration analyticsConfiguration =
-			_analyticsConfigurationRegistry.getAnalyticsConfiguration(
-				companyId);
-
-		options.setLocation(
+		HttpPost httpPost = new HttpPost(
 			analyticsConfiguration.liferayAnalyticsEndpointURL() +
 				"/dxp-batch-entities");
 
-		options.setPost(true);
+		httpPost.setEntity(new FileEntity(multipartFile));
+		httpPost.setHeader(HttpHeaders.CONTENT_ENCODING, contentEncoding);
+		httpPost.setHeader(
+			HttpHeaders.CONTENT_TYPE,
+			ContentTypes.MULTIPART_FORM_DATA + "; boundary=" + boundary);
+		httpPost.setHeader(
+			"OSB-Asah-Data-Source-ID",
+			analyticsConfiguration.liferayAnalyticsDataSourceId());
+		httpPost.setHeader(
+			"OSB-Asah-Faro-Backend-Security-Signature",
+			analyticsConfiguration.
+				liferayAnalyticsFaroBackendSecuritySignature());
+		httpPost.setHeader(
+			"OSB-Asah-Project-ID",
+			analyticsConfiguration.liferayAnalyticsProjectId());
 
-		try (InputStream inputStream = _http.URLtoInputStream(options)) {
-			Http.Response response = options.getResponse();
+		try (CloseableHttpClient closeableHttpClient = _getCloseableHttpClient(
+				true);
 
-			if (response.getResponseCode() ==
-					HttpURLConnection.HTTP_FORBIDDEN) {
+			CloseableHttpResponse closeableHttpResponse =
+				closeableHttpClient.execute(httpPost)) {
 
+			StatusLine statusLine = closeableHttpResponse.getStatusLine();
+
+			int statusCode = statusLine.getStatusCode();
+
+			String responseBody = StringPool.BLANK;
+
+			try {
+				responseBody = EntityUtils.toString(
+					closeableHttpResponse.getEntity(),
+					Charset.defaultCharset());
+			}
+			catch (Exception exception) {
+				_log.error(
+					StringBundler.concat(
+						"Unable to read upload response body for ",
+						resourceName, " (HTTP ", statusCode, ")"),
+					exception);
+			}
+
+			if (statusCode == HttpURLConnection.HTTP_FORBIDDEN) {
 				JSONObject responseJSONObject = _jsonFactory.createJSONObject(
-					StringUtil.read(inputStream));
+					responseBody);
 
 				boolean disconnected = StringUtil.equals(
 					GetterUtil.getString(responseJSONObject.getString("state")),
 					"DISCONNECTED");
 
 				_processInvalidTokenMessage(
-					companyId, disconnected,
+					analyticsConfiguration, companyId, disconnected,
 					responseJSONObject.getString("message"));
 			}
 
-			if ((response.getResponseCode() < 200) ||
-				(response.getResponseCode() >= 300)) {
+			if ((statusCode >= 200) && (statusCode < 300)) {
+				if (_log.isInfoEnabled()) {
+					_log.info(
+						"Upload completed successfully on attempt " +
+							(attempt + 1));
+				}
 
-				throw new Exception(
-					"Upload failed with HTTP response code: " +
-						response.getResponseCode());
+				return statusCode;
 			}
 
-			if (_log.isDebugEnabled()) {
-				_log.debug("Upload completed successfully");
+			if (_log.isInfoEnabled()) {
+				_log.info(
+					StringBundler.concat(
+						"Upload of ", resourceName, " returned HTTP ",
+						statusCode, " on attempt ", attempt + 1, ": ",
+						responseBody));
 			}
+
+			if ((statusCode != 400) && (statusCode != 408) &&
+				(statusCode != 429) && (statusCode < 500)) {
+
+				throw new RuntimeException(
+					"Upload failed with HTTP response code: " + statusCode);
+			}
+
+			return statusCode;
+		}
+	}
+
+	private void _upload(
+		long companyId, String contentEncoding, File file,
+		Date resourceLastModifiedDate, String resourceName) {
+
+		_checkCompany(companyId);
+
+		AnalyticsConfiguration analyticsConfiguration =
+			_analyticsConfigurationRegistry.getAnalyticsConfiguration(
+				companyId);
+
+		int lastStatusCode = -1;
+		int retryCount = 3;
+		long[] retryDelays = {5000, 15000};
+
+		for (int attempt = 0; attempt < retryCount; attempt++) {
+			if (attempt > 0) {
+				if (_log.isInfoEnabled()) {
+					_log.info(
+						StringBundler.concat(
+							"Retrying upload of ", resourceName, " (attempt ",
+							attempt + 1, "/", retryCount, ")"));
+				}
+
+				int retryDelayIndex = Math.min(
+					attempt - 1, retryDelays.length - 1);
+
+				try {
+					Thread.sleep(retryDelays[retryDelayIndex]);
+				}
+				catch (InterruptedException interruptedException) {
+					Thread thread = Thread.currentThread();
+
+					thread.interrupt();
+
+					throw new RuntimeException(
+						"Upload retry interrupted", interruptedException);
+				}
+			}
+
+			File multipartFile = null;
+
+			try {
+				String boundary = StringUtil.removeSubstring(
+					String.valueOf(UUID.randomUUID()), "-");
+
+				multipartFile = _writeMultipartFile(
+					boundary, file, resourceName,
+					(resourceLastModifiedDate != null) ? "INCREMENTAL" :
+						"FULL");
+
+				int statusCode = _upload(
+					analyticsConfiguration, attempt, boundary, companyId,
+					contentEncoding, multipartFile, resourceName);
+
+				if ((statusCode >= 200) && (statusCode < 300)) {
+					return;
+				}
+
+				lastStatusCode = statusCode;
+			}
+			catch (IOException ioException) {
+				if (attempt == (retryCount - 1)) {
+					throw new RuntimeException(
+						"Upload failed after " + retryCount + " attempts",
+						ioException);
+				}
+
+				_log.error(
+					StringBundler.concat(
+						"Transport failure on upload attempt ", attempt + 1,
+						": ", ioException.getMessage()));
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+			finally {
+				if (multipartFile != null) {
+					multipartFile.delete();
+				}
+			}
+		}
+
+		throw new RuntimeException(
+			StringBundler.concat(
+				"Upload failed after ", retryCount,
+				" attempts with HTTP response code: ", lastStatusCode));
+	}
+
+	private File _writeMultipartFile(
+			String boundary, File file, String resourceName, String uploadType)
+		throws Exception {
+
+		File tempFile = FileUtil.createTempFile();
+
+		try (OutputStream outputStream = new FileOutputStream(tempFile)) {
+			String filePartHeader = StringBundler.concat(
+				"--", boundary, "\r\n",
+				"Content-Disposition: form-data; name=\"file\"; filename=\"",
+				resourceName, "\"\r\n", "Content-Type: ",
+				ContentTypes.MULTIPART_FORM_DATA, "\r\n\r\n");
+
+			outputStream.write(
+				filePartHeader.getBytes(StandardCharsets.US_ASCII));
+
+			Files.copy(file.toPath(), outputStream);
+
+			String uploadTypePart = StringBundler.concat(
+				"\r\n--", boundary, "\r\n", "Content-Disposition: form-data; ",
+				"name=\"uploadType\"\r\n\r\n", uploadType);
+
+			outputStream.write(
+				uploadTypePart.getBytes(StandardCharsets.US_ASCII));
+
+			String closingBoundary = "\r\n--" + boundary + "--\r\n";
+
+			outputStream.write(
+				closingBoundary.getBytes(StandardCharsets.US_ASCII));
 		}
 		catch (Exception exception) {
-			throw new RuntimeException(exception);
+			tempFile.delete();
+
+			throw exception;
 		}
+
+		return tempFile;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -873,6 +1174,9 @@ public class AnalyticsBatchExportImportManagerImpl
 
 	@Reference
 	private AnalyticsMessageLocalService _analyticsMessageLocalService;
+
+	@Reference
+	private AnalyticsSettingsManager _analyticsSettingsManager;
 
 	@Reference
 	private BatchEngineExportTaskExecutor _batchEngineExportTaskExecutor;
@@ -898,10 +1202,16 @@ public class AnalyticsBatchExportImportManagerImpl
 	private com.liferay.portal.kernel.util.File _file;
 
 	@Reference
+	private GroupLocalService _groupLocalService;
+
+	@Reference
 	private Http _http;
 
 	@Reference
 	private JSONFactory _jsonFactory;
+
+	@Reference
+	private OAuth2ApplicationLocalService _oAuth2ApplicationLocalService;
 
 	@Reference
 	private SettingsLocatorHelper _settingsLocatorHelper;

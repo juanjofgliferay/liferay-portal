@@ -34,6 +34,11 @@ import org.osgi.service.component.annotations.Reference;
 public class SXPBlueprintAdminPanelApp extends BasePanelApp {
 
 	@Override
+	public String getIcon() {
+		return "blue-print";
+	}
+
+	@Override
 	public Portlet getPortlet() {
 		return _portlet;
 	}
@@ -58,7 +63,7 @@ public class SXPBlueprintAdminPanelApp extends BasePanelApp {
 	protected SearchEngineInformation searchEngineInformation;
 
 	@Reference(
-		target = "(javax.portlet.name=" + SXPPortletKeys.SXP_BLUEPRINT_ADMIN + ")"
+		target = "(jakarta.portlet.name=" + SXPPortletKeys.SXP_BLUEPRINT_ADMIN + ")"
 	)
 	private Portlet _portlet;
 

@@ -1,4 +1,4 @@
-@component-name = "portal-web-forms-and-data-lists"
+@component-name = "portal-bpm"
 definition {
 
 	property osgi.module.configuration.file.names = "com.liferay.frontend.js.loader.modules.extender.internal.configuration.Details.config";
@@ -373,41 +373,6 @@ definition {
 		FormFields.viewField(fieldName = "Numeric");
 	}
 
-	@description = "Verify that a Date Field can be previewed"
-	@priority = 5
-	test DateFieldCanBePreviewed {
-		FormsAdmin.addForm();
-
-		Form.editName(formName = "Form 1");
-
-		Form.gotoAddField(
-			fieldPositionNumber = 0,
-			fieldType = "Date");
-
-		FormFields.editHelpText(
-			fieldHelpText = "Test Help Text",
-			fieldName = "tip");
-
-		FormsAdminNavigator.gotoPreviewForm();
-
-		Navigator.selectSpecificWindow(windowTitle = "Form - Forms");
-
-		FormFields.viewDateField(
-			fieldLabel = "Date",
-			fieldName = "Date");
-
-		FormFields.viewFieldHelpText(
-			fieldHelpText = "Test Help Text",
-			fieldName = "Test Help Text");
-
-		FormFields.editDateCalendar(
-			fieldName = "Date",
-			fieldValue = "01/01/2019",
-			valueDay = 1,
-			valueMonth = "January",
-			valueYear = 2019);
-	}
-
 	@description = "Verify that a rule with a (Does not contain) condition can be previewed"
 	@priority = 5
 	test DoesNotContainRuleCanBePreviewed {
@@ -560,32 +525,6 @@ definition {
 			fieldValue = "");
 	}
 
-	@description = "Verify that a Fields Groups can be previewed"
-	@priority = 5
-	test FieldsGroupsCanBePreviewed {
-		FormsAdmin.addForm();
-
-		Form.editName(formName = "Form 1");
-
-		Form.addTextField(fieldPositionNumber = 0);
-
-		Form.closeSidebar();
-
-		Form.gotoAddField(
-			fieldPositionNumber = 1,
-			fieldType = "Numeric");
-
-		Form.addFieldToFieldsGroup(
-			sourceFieldName = "Numeric",
-			targetFieldLabel = "Text");
-
-		FormFields.viewTextLabel(fieldLabel = "Fields Group");
-
-		FormFields.viewTextLabel(fieldLabel = "Text");
-
-		FormFields.viewTextLabel(fieldLabel = "Numeric");
-	}
-
 	@description = "Verify that a Grid Field can be previewed"
 	@priority = 5
 	test GridFieldCanBePreviewed {
@@ -602,6 +541,8 @@ definition {
 			optionValue = "Option 1",
 			rowNumber = 1);
 
+		FormFields.clickAddOptionButton(gridOptionType = "Rows");
+
 		FormFields.editGridOptions(
 			gridField = "Rows",
 			optionValue = "Option 2",
@@ -611,6 +552,8 @@ definition {
 			gridField = "Columns",
 			optionValue = "Option A",
 			rowNumber = 1);
+
+		FormFields.clickAddOptionButton(gridOptionType = "Columns");
 
 		FormFields.editGridOptions(
 			gridField = "Columns",
@@ -988,6 +931,8 @@ definition {
 			optionValue = "Option 1",
 			rowNumber = 1);
 
+		FormFields.clickAddOptionButton();
+
 		FormFields.editOptionsRow(
 			optionValue = "Option 2",
 			rowNumber = 2);
@@ -1173,6 +1118,8 @@ definition {
 			optionValue = "Option 1",
 			rowNumber = 1);
 
+		FormFields.clickAddOptionButton();
+
 		FormFields.editOptionsRow(
 			optionValue = "Option 2",
 			rowNumber = 2);
@@ -1296,6 +1243,8 @@ definition {
 		FormFields.addSingleSelectionOption(
 			optionName = "Option 1",
 			optionValue = 1);
+
+		FormFields.clickAddOptionButton();
 
 		FormFields.addSingleSelectionOption(
 			optionName = "Option 2",

@@ -188,14 +188,15 @@ public interface WebKeys {
 
 	public static final String FORWARD_URL = "FORWARD_URL";
 
+	public static final String FRIENDLY_URL_GROUP = "FRIENDLY_URL_GROUP";
+
 	public static final String FTL_VARIABLES = "FTL_VARIABLES";
 
 	public static final String GOOGLE_GADGET = "GOOGLE_GADGET";
 
-	public static final String GOOGLE_INCOMPLETE_USER_ID =
-		"GOOGLE_INCOMPLETE_USER_ID";
-
 	public static final String GROUP = "GROUP";
+
+	public static final String GROUP_FRIENDLY_URL = "GROUP_FRIENDLY_URL";
 
 	public static final String HTTPS_INITIAL = "HTTPS_INITIAL";
 
@@ -426,6 +427,8 @@ public interface WebKeys {
 
 	public static final String PAGE_KEYWORDS = "LIFERAY_SHARED_PAGE_KEYWORDS";
 
+	public static final String PAGE_ROBOTS = "LIFERAY_SHARED_PAGE_ROBOTS";
+
 	public static final String PAGE_SUBTITLE = "LIFERAY_SHARED_PAGE_SUBTITLE";
 
 	public static final String PAGE_TITLE = "LIFERAY_SHARED_PAGE_TITLE";
@@ -453,6 +456,9 @@ public interface WebKeys {
 
 	public static final String PORTAL_SERVLET_URL_PATTERNS =
 		"PORTAL_SERVLET_URL_PATTERNS";
+
+	public static final String PORTAL_STATUS_EXCEPTION =
+		"PORTAL_STATUS_EXCEPTION";
 
 	public static final String PORTLET_AJAX_RENDER = "PORTLET_AJAX_RENDER";
 
@@ -493,7 +499,7 @@ public interface WebKeys {
 		"PORTLET_RENDER_PARAMETERS_";
 
 	public static final String PORTLET_RESOURCE_STATIC_URLS =
-		"PORTLET_RESOURCE_STATIC_URLS";
+		"LIFERAY_SHARED_PORTLET_RESOURCE_STATIC_URLS";
 
 	public static final String PORTLET_SESSION = "PORTLET_SESSION";
 
@@ -541,6 +547,9 @@ public interface WebKeys {
 
 	public static final String RENDER_PORTLET_RESOURCE =
 		"RENDER_PORTLET_RESOURCE";
+
+	public static final String RENDERING_MAINTENANCE_UTILITY_PAGE =
+		"RENDERING_MAINTENANCE_UTILITY_PAGE";
 
 	public static final String REQUESTED_LAYOUT = "REQUESTED_LAYOUT";
 
@@ -616,6 +625,9 @@ public interface WebKeys {
 	public static final String SITE_ADMINISTRATION_CATEGORIES_MAP =
 		"SITES_ADMINISTRATION_CATEGORIES_MAP";
 
+	public static final String SITE_VIRTUAL_HOST_RESTRICTED =
+		"SITE_VIRTUAL_HOST_RESTRICTED";
+
 	public static final String SOURCE_NAME = "SOURCE_NAME";
 
 	public static final String SOURCE_VERSION = "SOURCE_VERSION";
@@ -683,6 +695,8 @@ public interface WebKeys {
 
 	public static final String USER = "USER";
 
+	public static final String USER_DIGEST = "USER_DIGEST";
+
 	public static final String USER_GROUP = "USER_GROUP";
 
 	public static final String USER_ID = "USER_ID";
@@ -726,5 +740,8 @@ public interface WebKeys {
 	public static final String WORKFLOW_INSTANCE = "WORKFLOW_INSTANCE";
 
 	public static final String WORKFLOW_TASK = "WORKFLOW_TASK";
+
+	public static final String WORKFLOW_TASK_READ_ONLY =
+		"WORKFLOW_TASK_READ_ONLY";
 
 }

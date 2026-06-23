@@ -5,9 +5,12 @@
 
 package com.liferay.jenkins.results.parser;
 
+import com.liferay.jenkins.results.parser.history.TestClassHistory;
 import com.liferay.jenkins.results.parser.test.clazz.FunctionalTestClass;
 import com.liferay.jenkins.results.parser.test.clazz.TestClass;
 import com.liferay.jenkins.results.parser.test.clazz.group.AxisTestClassGroup;
+
+import java.net.URL;
 
 import java.util.Objects;
 import java.util.regex.Matcher;
@@ -43,32 +46,54 @@ public class PoshiJUnitTestResult extends JUnitTestResult {
 		downstreamBuildListItemElement.add(
 			Dom4JUtil.getNewAnchorElement(testReportURL, getDisplayName()));
 
+		Build build = getBuild();
+
+		String consoleText = build.getConsoleText();
+
+		if (consoleText.contains(getPoshiReportURL())) {
+			Dom4JUtil.addToElement(
+				downstreamBuildListItemElement, " - ",
+				Dom4JUtil.getNewAnchorElement(
+					getPoshiReportURL(), "Poshi Report"));
+		}
+
+		if (consoleText.contains(getPoshiSummaryURL())) {
+			Dom4JUtil.addToElement(
+				downstreamBuildListItemElement, " - ",
+				Dom4JUtil.getNewAnchorElement(
+					getPoshiSummaryURL(), "Poshi Summary"));
+		}
+
+		if (consoleText.contains(getPoshiConsoleURL())) {
+			Dom4JUtil.addToElement(
+				downstreamBuildListItemElement, " - ",
+				Dom4JUtil.getNewAnchorElement(
+					getPoshiConsoleURL(), "Poshi Console"));
+		}
+
 		Dom4JUtil.addToElement(
 			downstreamBuildListItemElement, " - ",
-			Dom4JUtil.getNewAnchorElement(getPoshiReportURL(), "Poshi Report"),
-			" - ",
-			Dom4JUtil.getNewAnchorElement(
-				getPoshiSummaryURL(), "Poshi Summary"),
-			" - ",
-			Dom4JUtil.getNewAnchorElement(
-				getPoshiConsoleURL(), "Poshi Console"),
-			" - ",
 			Dom4JUtil.getNewAnchorElement(
 				getConsoleOutputURL(), "Console Output"));
 
-		TestHistory testHistory = getTestHistory();
+		TestClassHistory testClassHistory = getTestClassHistory();
 
-		if (testHistory != null) {
-			downstreamBuildListItemElement.addText(" - ");
+		if (testClassHistory != null) {
+			URL testrayCaseURL = testClassHistory.getTestrayCaseURL();
 
-			downstreamBuildListItemElement.add(
-				Dom4JUtil.getNewAnchorElement(
-					testHistory.getTestrayCaseResultURL(),
-					JenkinsResultsParserUtil.combine(
-						"Failed ",
-						String.valueOf(testHistory.getFailureCount()),
-						" of last ",
-						String.valueOf(testHistory.getTestCount()))));
+			String summaryContent = JenkinsResultsParserUtil.combine(
+				"Failed ", String.valueOf(testClassHistory.getFailureCount()),
+				" of last ", String.valueOf(testClassHistory.getTestCount()));
+
+			if (testrayCaseURL != null) {
+				Dom4JUtil.addToElement(
+					downstreamBuildListItemElement, " - ",
+					Dom4JUtil.getNewAnchorElement(
+						String.valueOf(testrayCaseURL), summaryContent));
+			}
+			else {
+				downstreamBuildListItemElement.addText(" - " + summaryContent);
+			}
 		}
 
 		String errorDetails = getErrorDetails();

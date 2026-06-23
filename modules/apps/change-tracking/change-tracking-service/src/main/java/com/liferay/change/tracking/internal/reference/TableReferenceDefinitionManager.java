@@ -6,6 +6,7 @@
 package com.liferay.change.tracking.internal.reference;
 
 import com.liferay.change.tracking.spi.reference.TableReferenceDefinition;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.sql.dsl.Column;
 import com.liferay.petra.sql.dsl.Table;
 import com.liferay.petra.string.StringBundler;
@@ -21,7 +22,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.osgi.framework.BundleContext;
@@ -88,8 +88,10 @@ public class TableReferenceDefinitionManager {
 	}
 
 	public Map<Long, TableReferenceInfo<?>> getCombinedTableReferenceInfos(
-		long classNameId,
-		Map<Long, TableReferenceInfo<?>> combinedTableReferenceInfos) {
+		long classNameId) {
+
+		Map<Long, TableReferenceInfo<?>> combinedTableReferenceInfos =
+			new HashMap<>();
 
 		Map<Long, TableReferenceInfo<?>> allCombinedTableReferenceInfos =
 			getCombinedTableReferenceInfos();
@@ -126,20 +128,6 @@ public class TableReferenceDefinitionManager {
 					queue.add(childClassNameId);
 				}
 			}
-		}
-
-		return combinedTableReferenceInfos;
-	}
-
-	public Map<Long, TableReferenceInfo<?>> getCombinedTableReferenceInfos(
-		Set<Long> classNameIds) {
-
-		Map<Long, TableReferenceInfo<?>> combinedTableReferenceInfos =
-			new HashMap<>();
-
-		for (long classNameId : classNameIds) {
-			getCombinedTableReferenceInfos(
-				classNameId, combinedTableReferenceInfos);
 		}
 
 		return combinedTableReferenceInfos;
@@ -273,12 +261,11 @@ public class TableReferenceDefinitionManager {
 						currentTableReferenceDefinition.getTable(),
 						key -> new ArrayList<>());
 
-				for (TableJoinHolder currentParentTableJoinHolder :
-						currentParentTableJoinHolders) {
-
-					combinedChildTableJoinHolders.add(
-						TableJoinHolder.reverse(currentParentTableJoinHolder));
-				}
+				combinedChildTableJoinHolders.addAll(
+					TransformUtil.transform(
+						currentParentTableJoinHolders,
+						currentParentTableJoinHolder -> TableJoinHolder.reverse(
+							currentParentTableJoinHolder)));
 			}
 
 			Map<Table<?>, List<TableJoinHolder>>
@@ -294,12 +281,11 @@ public class TableReferenceDefinitionManager {
 						currentTableReferenceDefinition.getTable(),
 						key -> new ArrayList<>());
 
-				for (TableJoinHolder currentChildTableJoinHolder :
-						currentChildTableJoinHolders) {
-
-					combinedParentTableJoinHolders.add(
-						TableJoinHolder.reverse(currentChildTableJoinHolder));
-				}
+				combinedParentTableJoinHolders.addAll(
+					TransformUtil.transform(
+						currentChildTableJoinHolders,
+						currentChildTableJoinHolder -> TableJoinHolder.reverse(
+							currentChildTableJoinHolder)));
 			}
 		}
 

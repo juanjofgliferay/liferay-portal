@@ -21,6 +21,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.TimeoutException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -30,6 +33,38 @@ import org.json.JSONObject;
  * @author Peter Yoo
  */
 public class PortalGitWorkingDirectory extends GitWorkingDirectory {
+
+	@Override
+	public File archive(String fileName) {
+		File archiveFile = super.archive(fileName);
+
+		String upstreamBranchName = getUpstreamBranchName();
+
+		if (!JenkinsResultsParserUtil.isCloudCINode() ||
+			upstreamBranchName.startsWith("ee-")) {
+
+			return archiveFile;
+		}
+
+		setUpYarn();
+
+		GitUtil.ExecutionResult executionResult = executeBashCommands(
+			3, GitUtil.MILLIS_RETRY_DELAY, 1000 * 60 * 10,
+			JenkinsResultsParserUtil.combine(
+				"zip -r -y ", fileName,
+				" $(git ls-files --directory --no-empty-directory --others | ",
+				"grep -v \\\\.gradle/) modules/yarn.lock"));
+
+		if (executionResult.getExitValue() != 0) {
+			throw new GitWorkingDirectoryRuntimeException(
+				this,
+				JenkinsResultsParserUtil.combine(
+					"Failed to add build/node to ", fileName, "\n",
+					executionResult.getStandardError()));
+		}
+
+		return archiveFile;
+	}
 
 	public Properties getAppServerProperties() {
 		if (_appServerProperties != null) {
@@ -42,13 +77,30 @@ public class PortalGitWorkingDirectory extends GitWorkingDirectory {
 		return _appServerProperties;
 	}
 
+	public List<File> getJSUnitFiles() {
+		if (_jsUnitFiles != null) {
+			return _jsUnitFiles;
+		}
+
+		_jsUnitFiles = new ArrayList<>(
+			findFiles(null, "describe\\( -- '*.js' '*.jsx' '*.ts' '*.tsx'"));
+
+		return _jsUnitFiles;
+	}
+
 	public String getMajorPortalVersion() {
 		return JenkinsResultsParserUtil.getProperty(
 			getReleaseProperties(), "lp.version.major");
 	}
 
 	public List<File> getModifiedModuleDirsList() throws IOException {
-		return getModifiedModuleDirsList(null, null);
+		if (_modifiedModuleDirs != null) {
+			return _modifiedModuleDirs;
+		}
+
+		_modifiedModuleDirs = getModifiedModuleDirsList(null, null);
+
+		return _modifiedModuleDirs;
 	}
 
 	public List<File> getModifiedModuleDirsList(
@@ -56,9 +108,22 @@ public class PortalGitWorkingDirectory extends GitWorkingDirectory {
 			List<PathMatcher> includesPathMatchers)
 		throws IOException {
 
-		return JenkinsResultsParserUtil.getDirectoriesContainingFiles(
-			getModuleDirsList(excludesPathMatchers, includesPathMatchers),
-			getModifiedFilesList());
+		if ((excludesPathMatchers == null) && (includesPathMatchers == null) &&
+			(_modifiedModuleDirs != null)) {
+
+			return _modifiedModuleDirs;
+		}
+
+		List<File> modifiedModuleDirsList =
+			JenkinsResultsParserUtil.getDirectoriesContainingFiles(
+				getModuleDirsList(excludesPathMatchers, includesPathMatchers),
+				getModifiedFilesList());
+
+		if ((excludesPathMatchers == null) && (includesPathMatchers == null)) {
+			_modifiedModuleDirs = modifiedModuleDirsList;
+		}
+
+		return modifiedModuleDirsList;
 	}
 
 	public List<File> getModifiedNonposhiModules() throws IOException {
@@ -269,12 +334,21 @@ public class PortalGitWorkingDirectory extends GitWorkingDirectory {
 	}
 
 	public PluginsGitWorkingDirectory getPluginsGitWorkingDirectory() {
-		String lpPluginsDir = JenkinsResultsParserUtil.getProperty(
-			getReleaseProperties(), "lp.plugins.dir");
+		Properties buildProperties = null;
+
+		try {
+			buildProperties = JenkinsResultsParserUtil.getBuildProperties();
+		}
+		catch (IOException ioException) {
+			throw new RuntimeException(ioException);
+		}
+
+		String pluginsDir = JenkinsResultsParserUtil.getProperty(
+			buildProperties, "plugins.dir", getUpstreamBranchName());
 
 		GitWorkingDirectory pluginsGitWorkingDirectory =
 			GitWorkingDirectoryFactory.newGitWorkingDirectory(
-				getUpstreamBranchName(), new File(lpPluginsDir),
+				getUpstreamBranchName(), new File(pluginsDir),
 				"liferay-plugins-ee");
 
 		if (pluginsGitWorkingDirectory instanceof PluginsGitWorkingDirectory) {
@@ -312,6 +386,175 @@ public class PortalGitWorkingDirectory extends GitWorkingDirectory {
 			testPropertiesFile);
 
 		return _testProperties;
+	}
+
+	public void setUpYarn() {
+		File workingDirectory = getWorkingDirectory();
+
+		try {
+			Map<String, String> filteredEnv = new HashMap<>();
+
+			Map<String, String> env = Environment.getAll();
+
+			for (Map.Entry<String, String> entry : env.entrySet()) {
+				String key = entry.getKey();
+
+				if (!key.startsWith("ANT_") && !key.startsWith("JAVA_") &&
+					!key.startsWith("JENKINS_HOME")) {
+
+					continue;
+				}
+
+				filteredEnv.put(key, entry.getValue());
+			}
+
+			String antOptsDefault = JenkinsResultsParserUtil.getBuildProperty(
+				"ant.opts.default", getUpstreamBranchName());
+
+			if (!JenkinsResultsParserUtil.isNullOrEmpty(antOptsDefault)) {
+				filteredEnv.put("ANT_OPTS", antOptsDefault);
+				filteredEnv.put("JAVA_OPTS", antOptsDefault);
+			}
+
+			String javaJDKDefaultRuntime =
+				JenkinsResultsParserUtil.getBuildProperty(
+					"java.jdk.default.runtime", getUpstreamBranchName());
+
+			if (!JenkinsResultsParserUtil.isNullOrEmpty(
+					javaJDKDefaultRuntime)) {
+
+				filteredEnv.put("JAVA_HOME", javaJDKDefaultRuntime);
+			}
+
+			Properties properties = new Properties();
+
+			String[] propertyNames = {
+				"build.binaries.cache.dir",
+				"build.binaries.cache.repository.name",
+				"nodejs.npm.ci.registry", "nodejs.node.env", "nodejs.npm.args",
+				"nodejs.npm.ci.sass.binary.site"
+			};
+
+			for (String propertyName : propertyNames) {
+				properties.put(
+					propertyName,
+					JenkinsResultsParserUtil.getBuildProperty(
+						"portal.build.properties[" + propertyName + "]"));
+			}
+
+			JenkinsResultsParserUtil.writePropertiesFile(
+				new File(
+					getWorkingDirectory(),
+					JenkinsResultsParserUtil.combine(
+						"build.", Environment.get("HOSTNAME"), ".properties")),
+				properties, true);
+
+			AntUtil.callTarget(
+				workingDirectory, "build.xml", "setup-sdk setup-yarn", null,
+				filteredEnv);
+
+			File nodeModulesCacheDir = new File(
+				workingDirectory, "modules/node_modules_cache");
+
+			if (!nodeModulesCacheDir.exists()) {
+				return;
+			}
+
+			for (File file :
+					nodeModulesCacheDir.listFiles(
+						JenkinsResultsParserUtil.newFilenameFilter(
+							"@esbuild-linux-.*(arm64|x64).*"))) {
+
+				Matcher matcher = _esBuildFileNamePattern.matcher(
+					file.getName());
+
+				if (matcher.find()) {
+					File esBuildDir = new File(
+						getWorkingDirectory(),
+						"modules/node_modules/@esbuild/" + matcher.group(1));
+
+					if (esBuildDir.exists()) {
+						continue;
+					}
+
+					File tmpDir = new File(getWorkingDirectory(), "tmp");
+
+					JenkinsResultsParserUtil.unTarGzip(file, tmpDir);
+
+					JenkinsResultsParserUtil.move(
+						new File(tmpDir, "package"), esBuildDir);
+
+					File esBuildBinFile = new File(esBuildDir, "bin/esbuild");
+
+					JenkinsResultsParserUtil.executeBashCommands(
+						"chmod +x " + esBuildBinFile);
+
+					JenkinsResultsParserUtil.delete(tmpDir);
+				}
+			}
+		}
+		catch (AntException | IOException | TimeoutException exception) {
+			throw new GitWorkingDirectoryRuntimeException(
+				this, "Failed to run setup-yarn in " + workingDirectory);
+		}
+	}
+
+	public static class Module {
+
+		public static Module getModule(Path path) {
+			File file = path.toFile();
+
+			if (!file.isDirectory()) {
+				return null;
+			}
+
+			for (int i = 0; i < _markerFileNames.size(); i++) {
+				for (String markerFileName : _markerFileNames.get(i)) {
+					File markerFile = new File(file, markerFileName);
+
+					if (markerFile.exists()) {
+						return new Module(file, i);
+					}
+				}
+			}
+
+			return null;
+		}
+
+		public File getFile() {
+			return _file;
+		}
+
+		public int getPriority() {
+			return _priority;
+		}
+
+		@Override
+		public String toString() {
+			return JenkinsResultsParserUtil.combine(
+				String.valueOf(_priority), " ", _file.toString());
+		}
+
+		private Module(File file, int priority) {
+			_file = file;
+			_priority = priority;
+		}
+
+		private static Map<Integer, String[]> _markerFileNames =
+			new HashMap<Integer, String[]>() {
+				{
+					put(0, new String[] {".lfrbuild-release-src", ".gitrepo"});
+					put(1, new String[] {"app.bnd"});
+					put(2, new String[] {"bnd.bnd"});
+					put(
+						3,
+						new String[] {"build.gradle", "build.xml", "pom.xml"});
+				}
+			};
+
+		private final File _file;
+		private final int _priority;
+
 	}
 
 	protected PortalGitWorkingDirectory(
@@ -369,66 +612,13 @@ public class PortalGitWorkingDirectory extends GitWorkingDirectory {
 		return false;
 	}
 
+	private static final Pattern _esBuildFileNamePattern = Pattern.compile(
+		"@esbuild-(linux-.*?)-.*");
+
 	private Properties _appServerProperties;
+	private List<File> _jsUnitFiles;
+	private List<File> _modifiedModuleDirs;
 	private Properties _releaseProperties;
 	private Properties _testProperties;
-
-	private static class Module {
-
-		public static Module getModule(Path path) {
-			File file = path.toFile();
-
-			if (!file.isDirectory()) {
-				return null;
-			}
-
-			for (int i = 0; i < _markerFileNames.size(); i++) {
-				for (String markerFileName : _markerFileNames.get(i)) {
-					File markerFile = new File(file, markerFileName);
-
-					if (markerFile.exists()) {
-						return new Module(file, i);
-					}
-				}
-			}
-
-			return null;
-		}
-
-		public File getFile() {
-			return _file;
-		}
-
-		public int getPriority() {
-			return _priority;
-		}
-
-		@Override
-		public String toString() {
-			return JenkinsResultsParserUtil.combine(
-				String.valueOf(_priority), " ", _file.toString());
-		}
-
-		private Module(File file, int priority) {
-			_file = file;
-			_priority = priority;
-		}
-
-		private static Map<Integer, String[]> _markerFileNames =
-			new HashMap<Integer, String[]>() {
-				{
-					put(0, new String[] {".lfrbuild-release-src", ".gitrepo"});
-					put(1, new String[] {"app.bnd"});
-					put(2, new String[] {"bnd.bnd"});
-					put(
-						3,
-						new String[] {"build.gradle", "build.xml", "pom.xml"});
-				}
-			};
-
-		private final File _file;
-		private final int _priority;
-
-	}
 
 }

@@ -20,6 +20,7 @@ import com.liferay.portal.kernel.model.ModelHintsUtil;
 import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.portletfilerepository.PortletFileRepository;
 import com.liferay.portal.kernel.portletfilerepository.PortletFileRepositoryUtil;
 import com.liferay.portal.kernel.service.ResourceLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -48,10 +49,10 @@ public class FragmentCompositionLocalServiceImpl
 
 	@Override
 	public FragmentComposition addFragmentComposition(
-			long userId, long groupId, long fragmentCollectionId,
-			String fragmentCompositionKey, String name, String description,
-			String data, long previewFileEntryId, int status,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long groupId,
+			long fragmentCollectionId, String fragmentCompositionKey,
+			String name, String description, String data,
+			long previewFileEntryId, int status, ServiceContext serviceContext)
 		throws PortalException {
 
 		// Fragment composition
@@ -77,6 +78,7 @@ public class FragmentCompositionLocalServiceImpl
 			fragmentCompositionPersistence.create(fragmentCompositionId);
 
 		fragmentComposition.setUuid(serviceContext.getUuid());
+		fragmentComposition.setExternalReferenceCode(externalReferenceCode);
 		fragmentComposition.setGroupId(groupId);
 		fragmentComposition.setCompanyId(user.getCompanyId());
 		fragmentComposition.setUserId(user.getUserId());
@@ -134,6 +136,16 @@ public class FragmentCompositionLocalServiceImpl
 
 		return fragmentCompositionLocalService.deleteFragmentComposition(
 			getFragmentComposition(fragmentCompositionId));
+	}
+
+	@Override
+	public FragmentComposition deleteFragmentComposition(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return fragmentCompositionLocalService.deleteFragmentComposition(
+			getFragmentCompositionByExternalReferenceCode(
+				externalReferenceCode, groupId));
 	}
 
 	@Override
@@ -298,9 +310,21 @@ public class FragmentCompositionLocalServiceImpl
 				fragmentCompositionId);
 
 		fragmentComposition.setModifiedDate(new Date());
+
+		long previousPreviewFileEntryId =
+			fragmentComposition.getPreviewFileEntryId();
+
 		fragmentComposition.setPreviewFileEntryId(previewFileEntryId);
 
-		return fragmentCompositionPersistence.update(fragmentComposition);
+		fragmentComposition = fragmentCompositionPersistence.update(
+			fragmentComposition);
+
+		if ((previewFileEntryId == 0) && (previousPreviewFileEntryId > 0)) {
+			_portletFileRepository.deletePortletFileEntry(
+				previousPreviewFileEntryId);
+		}
+
+		return fragmentComposition;
 	}
 
 	@Override
@@ -414,6 +438,9 @@ public class FragmentCompositionLocalServiceImpl
 
 	@Reference
 	private CustomSQL _customSQL;
+
+	@Reference
+	private PortletFileRepository _portletFileRepository;
 
 	@Reference
 	private ResourceLocalService _resourceLocalService;

@@ -398,6 +398,9 @@ public interface CommerceShipmentItemLocalService
 	public PersistedModel getPersistedModel(Serializable primaryKeyObj)
 		throws PortalException;
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getValidCommerceShipmentItemsCount(long commerceShipmentId);
+
 	/**
 	 * Updates the commerce shipment item in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
@@ -424,3 +427,4 @@ public interface CommerceShipmentItemLocalService
 		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-714002526

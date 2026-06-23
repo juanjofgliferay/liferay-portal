@@ -9,18 +9,12 @@ import com.liferay.counter.kernel.service.CounterLocalServiceUtil;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.bean.AutoEscape;
-import com.liferay.portal.kernel.cache.thread.local.Lifecycle;
-import com.liferay.portal.kernel.cache.thread.local.ThreadLocalCache;
-import com.liferay.portal.kernel.cache.thread.local.ThreadLocalCacheManager;
 import com.liferay.portal.kernel.encryptor.EncryptorUtil;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.model.CompanyInfo;
 import com.liferay.portal.kernel.model.Group;
-import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.VirtualHost;
 import com.liferay.portal.kernel.model.cache.CacheField;
@@ -29,22 +23,17 @@ import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.LayoutSetLocalServiceUtil;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.service.VirtualHostLocalServiceUtil;
-import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.PrefsPropsUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.util.PropsUtil;
-import com.liferay.portal.util.PropsValues;
-
-import java.io.Serializable;
 
 import java.security.Key;
 
 import java.util.Locale;
 import java.util.TimeZone;
-import java.util.TreeMap;
 
 /**
  * @author Brian Wing Shun Chan
@@ -75,9 +64,9 @@ public class CompanyImpl extends CompanyBaseImpl {
 
 	@Override
 	public String getAuthType() {
-		CompanySecurityBag companySecurityBag = getCompanySecurityBag();
-
-		return companySecurityBag._authType;
+		return PrefsPropsUtil.getString(
+			getCompanyId(), PropsKeys.COMPANY_SECURITY_AUTH_TYPE,
+			PropsValues.COMPANY_SECURITY_AUTH_TYPE);
 	}
 
 	@Override
@@ -97,15 +86,6 @@ public class CompanyImpl extends CompanyBaseImpl {
 		}
 
 		return _companyInfo;
-	}
-
-	@Override
-	public CompanySecurityBag getCompanySecurityBag() {
-		if (_companySecurityBag == null) {
-			_companySecurityBag = new CompanySecurityBag(this);
-		}
-
-		return _companySecurityBag;
 	}
 
 	/**
@@ -133,32 +113,29 @@ public class CompanyImpl extends CompanyBaseImpl {
 	@Override
 	public Group getGroup() throws PortalException {
 		if (getCompanyId() > CompanyConstants.SYSTEM) {
-			ThreadLocalCache<Group> threadLocalCache =
-				ThreadLocalCacheManager.getThreadLocalCache(
-					Lifecycle.REQUEST, Company.class.getName());
-
-			String cacheKey = StringUtil.toHexString(getCompanyId());
-
-			Group companyGroup = threadLocalCache.get(cacheKey);
-
-			if (companyGroup == null) {
-				companyGroup = GroupLocalServiceUtil.getCompanyGroup(
-					getCompanyId());
-
-				threadLocalCache.put(cacheKey, companyGroup);
+			if (_group == null) {
+				_group = GroupLocalServiceUtil.fetchGroup(getGroupId());
 			}
 
-			return companyGroup;
+			return _group;
 		}
 
 		return new GroupImpl();
 	}
 
 	@Override
-	public long getGroupId() throws PortalException {
-		Group group = getGroup();
+	public long getGroupId() {
+		if (_groupId == -1) {
+			_group = GroupLocalServiceUtil.fetchCompanyGroup(getCompanyId());
 
-		return group.getGroupId();
+			if (_group != null) {
+				_groupId = _group.getGroupId();
+
+				groupIdUpdateEntityCacheBiConsumer.accept(this, _groupId);
+			}
+		}
+
+		return _groupId;
 	}
 
 	@Override
@@ -211,27 +188,25 @@ public class CompanyImpl extends CompanyBaseImpl {
 		Group group = GroupLocalServiceUtil.getGroup(groupId);
 
 		if (group.hasPublicLayouts()) {
-			LayoutSet layoutSet = LayoutSetLocalServiceUtil.getLayoutSet(
-				groupId, false);
+			String defaultVirtualHostname =
+				PortalUtil.getDefaultVirtualHostname(
+					false,
+					LayoutSetLocalServiceUtil.getLayoutSet(groupId, false));
 
-			TreeMap<String, String> virtualHostnames =
-				layoutSet.getVirtualHostnames();
-
-			if (!virtualHostnames.isEmpty()) {
+			if (Validator.isNotNull(defaultVirtualHostname)) {
 				portalURL = PortalUtil.getPortalURL(
-					virtualHostnames.firstKey(), portalServerPort, false);
+					defaultVirtualHostname, portalServerPort, false);
 			}
 		}
 		else if (group.hasPrivateLayouts()) {
-			LayoutSet layoutSet = LayoutSetLocalServiceUtil.getLayoutSet(
-				groupId, true);
+			String defaultVirtualHostname =
+				PortalUtil.getDefaultVirtualHostname(
+					false,
+					LayoutSetLocalServiceUtil.getLayoutSet(groupId, true));
 
-			TreeMap<String, String> virtualHostnames =
-				layoutSet.getVirtualHostnames();
-
-			if (!virtualHostnames.isEmpty()) {
+			if (Validator.isNotNull(defaultVirtualHostname)) {
 				portalURL = PortalUtil.getPortalURL(
-					virtualHostnames.firstKey(), portalServerPort, false);
+					defaultVirtualHostname, portalServerPort, false);
 			}
 		}
 
@@ -251,15 +226,13 @@ public class CompanyImpl extends CompanyBaseImpl {
 			return portalURL;
 		}
 
-		LayoutSet layoutSet = LayoutSetLocalServiceUtil.getLayoutSet(
-			groupId, privateLayout);
+		String defaultVirtualHostname = PortalUtil.getDefaultVirtualHostname(
+			false,
+			LayoutSetLocalServiceUtil.getLayoutSet(groupId, privateLayout));
 
-		TreeMap<String, String> virtualHostnames =
-			layoutSet.getVirtualHostnames();
-
-		if (!virtualHostnames.isEmpty()) {
+		if (Validator.isNotNull(defaultVirtualHostname)) {
 			portalURL = PortalUtil.getPortalURL(
-				virtualHostnames.firstKey(), portalServerPort, false);
+				defaultVirtualHostname, portalServerPort, false);
 		}
 
 		return portalURL;
@@ -285,23 +258,18 @@ public class CompanyImpl extends CompanyBaseImpl {
 			return _virtualHostname;
 		}
 
-		VirtualHost virtualHost = null;
-
-		try {
-			virtualHost = VirtualHostLocalServiceUtil.fetchVirtualHost(
-				getCompanyId(), 0);
-		}
-		catch (Exception exception) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(exception);
-			}
-		}
+		VirtualHost virtualHost =
+			VirtualHostLocalServiceUtil.fetchCompanyDefaultVirtualHost(
+				getCompanyId());
 
 		if (virtualHost == null) {
 			return StringPool.BLANK;
 		}
 
 		_virtualHostname = virtualHost.getHostname();
+
+		virtualHostnameUpdateEntityCacheBiConsumer.accept(
+			this, _virtualHostname);
 
 		return _virtualHostname;
 	}
@@ -337,9 +305,9 @@ public class CompanyImpl extends CompanyBaseImpl {
 
 	@Override
 	public boolean isAutoLogin() {
-		CompanySecurityBag companySecurityBag = getCompanySecurityBag();
-
-		return companySecurityBag._autoLogin;
+		return PrefsPropsUtil.getBoolean(
+			getCompanyId(), PropsKeys.COMPANY_SECURITY_AUTO_LOGIN,
+			PropsValues.COMPANY_SECURITY_AUTO_LOGIN);
 	}
 
 	@Override
@@ -351,41 +319,42 @@ public class CompanyImpl extends CompanyBaseImpl {
 
 	@Override
 	public boolean isSiteLogo() {
-		CompanySecurityBag companySecurityBag = getCompanySecurityBag();
-
-		return companySecurityBag._siteLogo;
+		return PrefsPropsUtil.getBoolean(
+			getCompanyId(), PropsKeys.COMPANY_SECURITY_SITE_LOGO,
+			PropsValues.COMPANY_SECURITY_SITE_LOGO);
 	}
 
 	@Override
 	public boolean isStrangers() {
-		CompanySecurityBag companySecurityBag = getCompanySecurityBag();
-
-		return companySecurityBag._strangers;
+		return PrefsPropsUtil.getBoolean(
+			getCompanyId(), PropsKeys.COMPANY_SECURITY_STRANGERS,
+			PropsValues.COMPANY_SECURITY_STRANGERS);
 	}
 
 	@Override
 	public boolean isStrangersVerify() {
-		CompanySecurityBag companySecurityBag = getCompanySecurityBag();
-
-		return companySecurityBag._strangersVerify;
+		return PrefsPropsUtil.getBoolean(
+			getCompanyId(), PropsKeys.COMPANY_SECURITY_STRANGERS_VERIFY,
+			PropsValues.COMPANY_SECURITY_STRANGERS_VERIFY);
 	}
 
 	@Override
 	public boolean isStrangersWithMx() {
-		CompanySecurityBag companySecurityBag = getCompanySecurityBag();
-
-		return companySecurityBag._strangersWithMx;
+		return PrefsPropsUtil.getBoolean(
+			getCompanyId(), PropsKeys.COMPANY_SECURITY_STRANGERS_WITH_MX,
+			PropsValues.COMPANY_SECURITY_STRANGERS_WITH_MX);
 	}
 
 	@Override
 	public boolean isUpdatePasswordRequired() {
-		CompanySecurityBag companySecurityBag = getCompanySecurityBag();
-
-		return companySecurityBag._updatePasswordRequired;
+		return PrefsPropsUtil.getBoolean(
+			getCompanyId(), PropsKeys.COMPANY_SECURITY_UPDATE_PASSWORD_REQUIRED,
+			PropsValues.COMPANY_SECURITY_UPDATE_PASSWORD_REQUIRED);
 	}
 
-	public void setCompanySecurityBag(Object companySecurityBag) {
-		_companySecurityBag = (CompanySecurityBag)companySecurityBag;
+	@Override
+	public void setGroupId(long groupId) {
+		_groupId = groupId;
 	}
 
 	@Override
@@ -407,74 +376,11 @@ public class CompanyImpl extends CompanyBaseImpl {
 		_virtualHostname = virtualHostname;
 	}
 
-	public static class CompanySecurityBag implements Serializable {
-
-		private CompanySecurityBag(Company company) {
-			_authType = _getPrefsPropsString(
-				company, PropsKeys.COMPANY_SECURITY_AUTH_TYPE,
-				PropsValues.COMPANY_SECURITY_AUTH_TYPE);
-			_autoLogin = _getPrefsPropsBoolean(
-				company, PropsKeys.COMPANY_SECURITY_AUTO_LOGIN,
-				PropsValues.COMPANY_SECURITY_AUTO_LOGIN);
-			_siteLogo = _getPrefsPropsBoolean(
-				company, PropsKeys.COMPANY_SECURITY_SITE_LOGO,
-				PropsValues.COMPANY_SECURITY_SITE_LOGO);
-			_strangers = _getPrefsPropsBoolean(
-				company, PropsKeys.COMPANY_SECURITY_STRANGERS,
-				PropsValues.COMPANY_SECURITY_STRANGERS);
-			_strangersVerify = _getPrefsPropsBoolean(
-				company, PropsKeys.COMPANY_SECURITY_STRANGERS_VERIFY,
-				PropsValues.COMPANY_SECURITY_STRANGERS_VERIFY);
-			_strangersWithMx = _getPrefsPropsBoolean(
-				company, PropsKeys.COMPANY_SECURITY_STRANGERS_WITH_MX,
-				PropsValues.COMPANY_SECURITY_STRANGERS_WITH_MX);
-			_updatePasswordRequired = _getPrefsPropsBoolean(
-				company, PropsKeys.COMPANY_SECURITY_UPDATE_PASSWORD_REQUIRED,
-				PropsValues.COMPANY_SECURITY_UPDATE_PASSWORD_REQUIRED);
-		}
-
-		private final String _authType;
-		private final boolean _autoLogin;
-		private final boolean _siteLogo;
-		private final boolean _strangers;
-		private final boolean _strangersVerify;
-		private final boolean _strangersWithMx;
-		private final boolean _updatePasswordRequired;
-
-	}
-
-	private static boolean _getPrefsPropsBoolean(
-		Company company, String name, boolean defaultValue) {
-
-		String value = PrefsPropsUtil.getString(
-			company.getCompanyId(), name, PropsUtil.get(company, name));
-
-		if (value != null) {
-			return GetterUtil.getBoolean(value);
-		}
-
-		return defaultValue;
-	}
-
-	private static String _getPrefsPropsString(
-		Company company, String name, String defaultValue) {
-
-		String value = PrefsPropsUtil.getString(
-			company.getCompanyId(), name, PropsUtil.get(company, name));
-
-		if (value != null) {
-			return value;
-		}
-
-		return defaultValue;
-	}
-
-	private static final Log _log = LogFactoryUtil.getLog(CompanyImpl.class);
-
 	private CompanyInfo _companyInfo;
+	private Group _group;
 
-	@CacheField
-	private CompanySecurityBag _companySecurityBag;
+	@CacheField(permanent = true, propagateToInterface = true)
+	private long _groupId = -1;
 
 	private Key _keyObj;
 

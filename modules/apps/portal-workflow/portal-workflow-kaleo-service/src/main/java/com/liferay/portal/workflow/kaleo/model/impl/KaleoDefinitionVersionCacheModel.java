@@ -6,6 +6,7 @@
 package com.liferay.portal.workflow.kaleo.model.impl;
 
 import com.liferay.petra.lang.HashUtil;
+import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.model.CacheModel;
 import com.liferay.portal.kernel.model.MVCCModel;
@@ -16,7 +17,11 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+
 import java.util.Date;
+import java.util.Map;
 
 /**
  * The cache model class for representing KaleoDefinitionVersion in entity cache.
@@ -207,7 +212,28 @@ public class KaleoDefinitionVersionCacheModel
 
 		kaleoDefinitionVersionImpl.resetOriginalValues();
 
-		kaleoDefinitionVersionImpl.setContentAsXML(_contentAsXML);
+		try {
+			_blockingKaleoTimerExistsMethodHandle.invokeExact(
+				kaleoDefinitionVersionImpl, blockingKaleoTimerExists);
+
+			_contentAsXMLMethodHandle.invokeExact(
+				kaleoDefinitionVersionImpl, contentAsXML);
+
+			_kaleoNodeKaleoActionsMapMethodHandle.invokeExact(
+				kaleoDefinitionVersionImpl, kaleoNodeKaleoActionsMap);
+
+			_kaleoNodeKaleoNotificationsMapMethodHandle.invokeExact(
+				kaleoDefinitionVersionImpl, kaleoNodeKaleoNotificationsMap);
+
+			_kaleoNodeKaleoTransitionsMapMethodHandle.invokeExact(
+				kaleoDefinitionVersionImpl, kaleoNodeKaleoTransitionsMap);
+
+			_kaleoTimerExistsMethodHandle.invokeExact(
+				kaleoDefinitionVersionImpl, kaleoTimerExists);
+		}
+		catch (Throwable throwable) {
+			ReflectionUtil.throwException(throwable);
+		}
 
 		return kaleoDefinitionVersionImpl;
 	}
@@ -246,7 +272,17 @@ public class KaleoDefinitionVersionCacheModel
 		statusByUserName = objectInput.readUTF();
 		statusDate = objectInput.readLong();
 
-		_contentAsXML = (String)objectInput.readObject();
+		blockingKaleoTimerExists = (Boolean)objectInput.readObject();
+
+		contentAsXML = (String)objectInput.readObject();
+
+		kaleoNodeKaleoActionsMap = (Map)objectInput.readObject();
+
+		kaleoNodeKaleoNotificationsMap = (Map)objectInput.readObject();
+
+		kaleoNodeKaleoTransitionsMap = (Map)objectInput.readObject();
+
+		kaleoTimerExists = (Boolean)objectInput.readObject();
 	}
 
 	@Override
@@ -325,7 +361,17 @@ public class KaleoDefinitionVersionCacheModel
 
 		objectOutput.writeLong(statusDate);
 
-		objectOutput.writeObject(_contentAsXML);
+		objectOutput.writeObject(blockingKaleoTimerExists);
+
+		objectOutput.writeObject(contentAsXML);
+
+		objectOutput.writeObject(kaleoNodeKaleoActionsMap);
+
+		objectOutput.writeObject(kaleoNodeKaleoNotificationsMap);
+
+		objectOutput.writeObject(kaleoNodeKaleoTransitionsMap);
+
+		objectOutput.writeObject(kaleoTimerExists);
 	}
 
 	public long mvccVersion;
@@ -348,6 +394,53 @@ public class KaleoDefinitionVersionCacheModel
 	public long statusByUserId;
 	public String statusByUserName;
 	public long statusDate;
-	public String _contentAsXML;
+	public volatile Boolean blockingKaleoTimerExists;
+	public volatile String contentAsXML;
+	public volatile Map kaleoNodeKaleoActionsMap;
+	public volatile Map kaleoNodeKaleoNotificationsMap;
+	public volatile Map kaleoNodeKaleoTransitionsMap;
+	public volatile Boolean kaleoTimerExists;
+
+	private static final MethodHandle _blockingKaleoTimerExistsMethodHandle;
+	private static final MethodHandle _contentAsXMLMethodHandle;
+	private static final MethodHandle _kaleoNodeKaleoActionsMapMethodHandle;
+	private static final MethodHandle
+		_kaleoNodeKaleoNotificationsMapMethodHandle;
+	private static final MethodHandle _kaleoNodeKaleoTransitionsMapMethodHandle;
+	private static final MethodHandle _kaleoTimerExistsMethodHandle;
+
+	static {
+		MethodHandles.Lookup lookup = ReflectionUtil.getImplLookup();
+
+		try {
+			_blockingKaleoTimerExistsMethodHandle = lookup.findSetter(
+				KaleoDefinitionVersionImpl.class, "_blockingKaleoTimerExists",
+				Boolean.class);
+
+			_contentAsXMLMethodHandle = lookup.findSetter(
+				KaleoDefinitionVersionImpl.class, "_contentAsXML",
+				String.class);
+
+			_kaleoNodeKaleoActionsMapMethodHandle = lookup.findSetter(
+				KaleoDefinitionVersionImpl.class, "_kaleoNodeKaleoActionsMap",
+				Map.class);
+
+			_kaleoNodeKaleoNotificationsMapMethodHandle = lookup.findSetter(
+				KaleoDefinitionVersionImpl.class,
+				"_kaleoNodeKaleoNotificationsMap", Map.class);
+
+			_kaleoNodeKaleoTransitionsMapMethodHandle = lookup.findSetter(
+				KaleoDefinitionVersionImpl.class,
+				"_kaleoNodeKaleoTransitionsMap", Map.class);
+
+			_kaleoTimerExistsMethodHandle = lookup.findSetter(
+				KaleoDefinitionVersionImpl.class, "_kaleoTimerExists",
+				Boolean.class);
+		}
+		catch (ReflectiveOperationException reflectiveOperationException) {
+			throw new ExceptionInInitializerError(reflectiveOperationException);
+		}
+	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-810601951

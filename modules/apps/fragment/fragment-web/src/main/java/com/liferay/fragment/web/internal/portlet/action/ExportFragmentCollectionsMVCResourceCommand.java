@@ -5,25 +5,29 @@
 
 package com.liferay.fragment.web.internal.portlet.action;
 
+import com.liferay.fragment.constants.FragmentActionKeys;
+import com.liferay.fragment.constants.FragmentConstants;
 import com.liferay.fragment.constants.FragmentPortletKeys;
 import com.liferay.fragment.model.FragmentCollection;
-import com.liferay.fragment.service.FragmentCollectionService;
+import com.liferay.fragment.service.FragmentCollectionLocalService;
 import com.liferay.portal.kernel.portlet.PortletResponseUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
+import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.zip.ZipWriter;
 import com.liferay.portal.kernel.zip.ZipWriterFactory;
 
+import jakarta.portlet.PortletException;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+
 import java.io.FileInputStream;
 
-import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.PortletException;
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -33,7 +37,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + FragmentPortletKeys.FRAGMENT,
+		"jakarta.portlet.name=" + FragmentPortletKeys.FRAGMENT,
 		"mvc.command.name=/fragment/export_fragment_collections"
 	},
 	service = MVCResourceCommand.class
@@ -60,20 +64,30 @@ public class ExportFragmentCollectionsMVCResourceCommand
 		}
 
 		try {
-			List<FragmentCollection> fragmentCollections = new ArrayList<>();
+			ThemeDisplay themeDisplay =
+				(ThemeDisplay)resourceRequest.getAttribute(
+					WebKeys.THEME_DISPLAY);
 
-			for (long exportFragmentCollectionId :
-					exportFragmentCollectionIds) {
+			_portletResourcePermission.check(
+				themeDisplay.getPermissionChecker(),
+				themeDisplay.getScopeGroup(),
+				FragmentActionKeys.MANAGE_FRAGMENT_ENTRIES);
 
-				fragmentCollections.add(
-					_fragmentCollectionService.fetchFragmentCollection(
-						exportFragmentCollectionId));
-			}
+			List<FragmentCollection> fragmentCollections =
+				_fragmentCollectionLocalService.
+					getExportableFragmentCollections(
+						exportFragmentCollectionIds);
 
 			ZipWriter zipWriter = _zipWriterFactory.getZipWriter();
 
 			for (FragmentCollection fragmentCollection : fragmentCollections) {
-				fragmentCollection.populateZipWriter(zipWriter);
+				if ((fragmentCollection.getGroupId() ==
+						themeDisplay.getCompanyGroupId()) ||
+					(fragmentCollection.getGroupId() ==
+						themeDisplay.getScopeGroupId())) {
+
+					fragmentCollection.populateZipWriter(zipWriter);
+				}
 			}
 
 			PortletResponseUtil.sendFile(
@@ -90,7 +104,12 @@ public class ExportFragmentCollectionsMVCResourceCommand
 	}
 
 	@Reference
-	private FragmentCollectionService _fragmentCollectionService;
+	private FragmentCollectionLocalService _fragmentCollectionLocalService;
+
+	@Reference(
+		target = "(resource.name=" + FragmentConstants.RESOURCE_NAME + ")"
+	)
+	private PortletResourcePermission _portletResourcePermission;
 
 	@Reference
 	private ZipWriterFactory _zipWriterFactory;

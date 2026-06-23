@@ -10,6 +10,7 @@ import com.liferay.asset.kernel.model.AssetCategoryConstants;
 import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.model.AssetTag;
 import com.liferay.asset.kernel.model.AssetVocabulary;
+import com.liferay.asset.kernel.model.AssetVocabularyConstants;
 import com.liferay.asset.kernel.service.AssetCategoryLocalServiceUtil;
 import com.liferay.asset.kernel.service.AssetEntryLocalServiceUtil;
 import com.liferay.asset.kernel.service.AssetTagLocalServiceUtil;
@@ -53,8 +54,8 @@ public class AssetTestUtil {
 		AssetEntry assetEntry = AssetEntryLocalServiceUtil.createAssetEntry(
 			assetEntryId);
 
-		assetEntry.setClassName(className);
 		assetEntry.setGroupId(groupId);
+		assetEntry.setClassName(className);
 		assetEntry.setClassPK(RandomTestUtil.randomLong());
 		assetEntry.setVisible(true);
 		assetEntry.setPublishDate(publishDate);
@@ -96,6 +97,30 @@ public class AssetTestUtil {
 			serviceContext);
 	}
 
+	public static AssetCategory addCategory(
+			String externalReferenceCode, long groupId, long vocabularyId)
+		throws PortalException {
+
+		Locale locale = LocaleUtil.getSiteDefault();
+
+		Map<Locale, String> titleMap = HashMapBuilder.put(
+			locale, RandomTestUtil.randomString()
+		).build();
+
+		Map<Locale, String> descriptionMap = HashMapBuilder.put(
+			locale, RandomTestUtil.randomString()
+		).build();
+
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(
+				groupId, TestPropsValues.getUserId());
+
+		return AssetCategoryLocalServiceUtil.addCategory(
+			externalReferenceCode, TestPropsValues.getUserId(), groupId,
+			AssetCategoryConstants.DEFAULT_PARENT_CATEGORY_ID, titleMap,
+			descriptionMap, vocabularyId, null, serviceContext);
+	}
+
 	public static AssetTag addTag(long groupId) throws Exception {
 		return addTag(groupId, RandomTestUtil.randomString());
 	}
@@ -103,10 +128,17 @@ public class AssetTestUtil {
 	public static AssetTag addTag(long groupId, String assetTagName)
 		throws PortalException {
 
+		return addTag(null, groupId, assetTagName);
+	}
+
+	public static AssetTag addTag(
+			String externalReferenceCode, long groupId, String assetTagName)
+		throws PortalException {
+
 		long userId = TestPropsValues.getUserId();
 
 		return AssetTagLocalServiceUtil.addTag(
-			userId, groupId, assetTagName,
+			externalReferenceCode, userId, groupId, assetTagName,
 			ServiceContextTestUtil.getServiceContext(groupId, userId));
 	}
 
@@ -120,6 +152,15 @@ public class AssetTestUtil {
 
 	public static AssetVocabulary addVocabulary(
 			long groupId, long classNameId, long classTypePK, boolean required)
+		throws Exception {
+
+		return addVocabulary(
+			groupId, classNameId, classTypePK, false, required);
+	}
+
+	public static AssetVocabulary addVocabulary(
+			long groupId, long classNameId, long classTypePK,
+			boolean depotRequired, boolean required)
 		throws Exception {
 
 		Locale locale = LocaleUtil.getSiteDefault();
@@ -137,7 +178,7 @@ public class AssetTestUtil {
 
 		vocabularySettingsHelper.setClassNameIdsAndClassTypePKs(
 			new long[] {classNameId}, new long[] {classTypePK},
-			new boolean[] {required});
+			new boolean[] {depotRequired}, new boolean[] {required});
 		vocabularySettingsHelper.setMultiValued(true);
 
 		ServiceContext serviceContext =
@@ -161,6 +202,22 @@ public class AssetTestUtil {
 			userId, groupId, name, name,
 			Collections.singletonMap(LocaleUtil.getDefault(), name),
 			Collections.emptyMap(), StringPool.BLANK, serviceContext);
+	}
+
+	public static AssetVocabulary addVocabulary(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		long userId = TestPropsValues.getUserId();
+
+		String name = RandomTestUtil.randomString();
+
+		return AssetVocabularyLocalServiceUtil.addVocabulary(
+			externalReferenceCode, userId, groupId, name, name,
+			Collections.singletonMap(LocaleUtil.getDefault(), name),
+			Collections.emptyMap(), StringPool.BLANK,
+			AssetVocabularyConstants.VISIBILITY_TYPE_PUBLIC,
+			ServiceContextTestUtil.getServiceContext(groupId, userId));
 	}
 
 }

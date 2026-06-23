@@ -152,6 +152,7 @@ public class ProjectTemplates {
 
 					try (InputStream inputStream = jarFile.getInputStream(
 							jarEntry);
+
 						JarInputStream jarInputStream = new JarInputStream(
 							inputStream)) {
 
@@ -179,6 +180,7 @@ public class ProjectTemplates {
 				try (InputStream inputStream =
 						ProjectTemplates.class.getResourceAsStream(
 							projectTemplateJarName);
+
 					JarInputStream jarInputStream = new JarInputStream(
 						inputStream)) {
 
@@ -542,7 +544,6 @@ public class ProjectTemplates {
 		}
 		else if ((template.equals("freemarker-portlet") ||
 				  template.equals("mvc-portlet") ||
-				  template.equals("npm-angular-portlet") ||
 				  template.equals("npm-react-portlet") ||
 				  template.equals("npm-vuejs-portlet") ||
 				  template.equals("spring-mvc-portlet") ||

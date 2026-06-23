@@ -58,7 +58,7 @@ public class CalendarResourceUpgradeProcess extends UpgradeProcess {
 
 		long[] userIds = UserLocalServiceUtil.getRoleUserIds(role.getRoleId());
 
-		if (!ArrayUtil.isEmpty(userIds)) {
+		if (ArrayUtil.isNotEmpty(userIds)) {
 			return userIds[0];
 		}
 
@@ -70,7 +70,7 @@ public class CalendarResourceUpgradeProcess extends UpgradeProcess {
 				userIds = OrganizationLocalServiceUtil.getUserPrimaryKeys(
 					group.getClassPK());
 
-				if (!ArrayUtil.isEmpty(userIds)) {
+				if (ArrayUtil.isNotEmpty(userIds)) {
 					return userIds[0];
 				}
 			}
@@ -78,7 +78,7 @@ public class CalendarResourceUpgradeProcess extends UpgradeProcess {
 				userIds = GroupLocalServiceUtil.getUserPrimaryKeys(
 					group.getGroupId());
 
-				if (!ArrayUtil.isEmpty(userIds)) {
+				if (ArrayUtil.isNotEmpty(userIds)) {
 					return userIds[0];
 				}
 			}
@@ -86,7 +86,7 @@ public class CalendarResourceUpgradeProcess extends UpgradeProcess {
 				userIds = UserGroupLocalServiceUtil.getUserPrimaryKeys(
 					group.getClassPK());
 
-				if (!ArrayUtil.isEmpty(userIds)) {
+				if (ArrayUtil.isNotEmpty(userIds)) {
 					return userIds[0];
 				}
 			}
@@ -119,15 +119,15 @@ public class CalendarResourceUpgradeProcess extends UpgradeProcess {
 					"select Calendar.calendarId from Calendar join ",
 					"CalendarResource on Calendar.calendarResourceId = ",
 					"CalendarResource.calendarResourceId where ",
-					"CalendarResource.classNameId = ? and ",
-					"CalendarResource.userId = ?"))) {
+					"CalendarResource.classNameId = ? and CalendarResource.",
+					"userId = ?"))) {
 
 			preparedStatement.setLong(1, groupClassNameId);
 			preparedStatement.setLong(2, guestUserId);
 
 			try (ResultSet resultSet = preparedStatement.executeQuery()) {
 				while (resultSet.next()) {
-					long calendarId = resultSet.getLong(1);
+					long calendarId = resultSet.getLong("calendarId");
 
 					_updateCalendarUserId(calendarId, adminUserId);
 				}

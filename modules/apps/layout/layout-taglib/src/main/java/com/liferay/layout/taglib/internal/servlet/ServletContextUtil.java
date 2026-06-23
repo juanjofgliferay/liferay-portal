@@ -6,6 +6,7 @@
 package com.liferay.layout.taglib.internal.servlet;
 
 import com.liferay.fragment.entry.processor.helper.FragmentEntryProcessorHelper;
+import com.liferay.fragment.entry.processor.helper.LayoutReferenceResolver;
 import com.liferay.fragment.helper.FragmentEntryLinkHelper;
 import com.liferay.fragment.renderer.FragmentRendererController;
 import com.liferay.fragment.util.configuration.FragmentEntryConfigurationParser;
@@ -14,6 +15,7 @@ import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.list.renderer.InfoListRendererRegistry;
 import com.liferay.layout.adaptive.media.LayoutAdaptiveMediaProcessor;
 import com.liferay.layout.display.page.LayoutDisplayPageProviderRegistry;
+import com.liferay.layout.helper.structure.LayoutStructureRulesHelper;
 import com.liferay.layout.list.permission.provider.LayoutListPermissionProviderRegistry;
 import com.liferay.layout.list.retriever.LayoutListRetrieverRegistry;
 import com.liferay.layout.list.retriever.ListObjectReferenceFactoryRegistry;
@@ -25,7 +27,7 @@ import com.liferay.segments.SegmentsEntryRetriever;
 import com.liferay.segments.context.RequestContextMapper;
 import com.liferay.segments.service.SegmentsExperienceLocalService;
 
-import javax.servlet.ServletContext;
+import jakarta.servlet.ServletContext;
 
 /**
  * @author Chema Balsas
@@ -94,12 +96,20 @@ public class ServletContextUtil {
 		return _layoutListRetrieverRegistrySnapshot.get();
 	}
 
+	public static LayoutReferenceResolver getLayoutReferenceResolverRegistry() {
+		return _layoutReferenceResolverRegistrySnapshot.get();
+	}
+
 	public static LayoutsTree getLayoutsTree() {
 		return _layoutsTreeSnapshot.get();
 	}
 
 	public static LayoutStructureProvider getLayoutStructureHelper() {
 		return _layoutStructureProviderSnapshot.get();
+	}
+
+	public static LayoutStructureRulesHelper getLayoutStructureRulesHelper() {
+		return _layoutStructureRulesHelperSnapshot.get();
 	}
 
 	public static ListObjectReferenceFactoryRegistry
@@ -163,11 +173,17 @@ public class ServletContextUtil {
 	private static final Snapshot<LayoutListRetrieverRegistry>
 		_layoutListRetrieverRegistrySnapshot = new Snapshot<>(
 			ServletContextUtil.class, LayoutListRetrieverRegistry.class);
+	private static final Snapshot<LayoutReferenceResolver>
+		_layoutReferenceResolverRegistrySnapshot = new Snapshot<>(
+			ServletContextUtil.class, LayoutReferenceResolver.class);
 	private static final Snapshot<LayoutsTree> _layoutsTreeSnapshot =
 		new Snapshot<>(ServletContextUtil.class, LayoutsTree.class);
 	private static final Snapshot<LayoutStructureProvider>
 		_layoutStructureProviderSnapshot = new Snapshot<>(
 			ServletContextUtil.class, LayoutStructureProvider.class);
+	private static final Snapshot<LayoutStructureRulesHelper>
+		_layoutStructureRulesHelperSnapshot = new Snapshot<>(
+			ServletContextUtil.class, LayoutStructureRulesHelper.class);
 	private static final Snapshot<ListObjectReferenceFactoryRegistry>
 		_listObjectReferenceFactoryRegistrySnapshot = new Snapshot<>(
 			ServletContextUtil.class, ListObjectReferenceFactoryRegistry.class);

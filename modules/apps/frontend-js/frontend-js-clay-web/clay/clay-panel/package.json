@@ -1,0 +1,38 @@
+{
+	"browserslist": [
+		"extends browserslist-config-clay"
+	],
+	"dependencies": {
+		"@clayui/button": "^3.165.0",
+		"@clayui/icon": "^3.165.0",
+		"@clayui/provider": "^3.165.0",
+		"@clayui/shared": "^3.165.0",
+		"classnames": "2.3.1",
+		"react-transition-group": "^4.4.1"
+	},
+	"description": "ClayPanel component",
+	"files": [
+		"lib"
+	],
+	"keywords": [
+		"clay",
+		"react"
+	],
+	"license": "BSD-3-Clause",
+	"main": "src/index.tsx",
+	"name": "@clayui/panel",
+	"peerDependencies": {
+		"@clayui/css": "^3.165.0",
+		"react": "^16.0.0 || ^17.0.0 || ^18.0.0",
+		"react-dom": "^16.0.0 || ^17.0.0 || ^18.0.0"
+	},
+	"repository": "https://github.com/liferay/clay",
+	"scripts": {
+		"build": "yarn build:cjs && yarn build:esm",
+		"build:cjs": "cross-env NODE_ENV=production node ../build-package-esbuild.js --format=cjs --outdir=lib/cjs",
+		"build:esm": "cross-env NODE_ENV=production node ../build-package-esbuild.js --format=esm --outdir=lib/esm",
+		"buildTypes": "cross-env NODE_ENV=production tsc --project ./tsconfig.declarations.json",
+		"test": "jest --config ../../jest.config.js"
+	},
+	"version": "3.165.0"
+}

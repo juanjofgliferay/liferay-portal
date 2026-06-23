@@ -17,9 +17,9 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.users.admin.constants.UsersAdminPortletKeys;
 
-import javax.portlet.RenderResponse;
+import jakarta.portlet.RenderResponse;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Samuel Trong Tran
@@ -94,6 +94,8 @@ public class EditContactInformationDisplayContext {
 					_httpServletRequest, "edit-user-x", contact.getFullName(),
 					false);
 			}
+
+			portletDisplay.setURLBackTitle(portletTitle);
 
 			_renderResponse.setTitle(portletTitle);
 		}

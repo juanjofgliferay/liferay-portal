@@ -12,7 +12,9 @@ import com.liferay.document.library.kernel.model.DLFileEntryConstants;
 import com.liferay.document.library.kernel.model.DLFileEntryMetadata;
 import com.liferay.document.library.kernel.model.DLFileEntryType;
 import com.liferay.document.library.kernel.model.DLFileEntryTypeConstants;
+import com.liferay.document.library.kernel.model.DLFileVersion;
 import com.liferay.document.library.kernel.service.DLFileEntryMetadataLocalServiceUtil;
+import com.liferay.document.library.kernel.service.DLFileVersionLocalServiceUtil;
 import com.liferay.document.library.kernel.versioning.VersioningStrategy;
 import com.liferay.document.library.preview.DLPreviewRenderer;
 import com.liferay.document.library.preview.DLPreviewRendererProvider;
@@ -45,6 +47,11 @@ import com.liferay.portal.kernel.repository.model.FileShortcut;
 import com.liferay.portal.kernel.repository.model.FileVersion;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
@@ -52,10 +59,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Adolfo Pérez
@@ -129,6 +132,12 @@ public class DefaultDLViewFileVersionDisplayContext
 						_uiItemsBuilder::isCheckinActionAvailable,
 						_uiItemsBuilder.createCheckinDropdownItem()
 					).add(
+						_uiItemsBuilder::isSubscribeActionAvailable,
+						_uiItemsBuilder.createSubscribeDropdownItem()
+					).add(
+						_uiItemsBuilder::isUnsubscribeActionAvailable,
+						_uiItemsBuilder.createUnsubscribeDropdownItem()
+					).add(
 						_uiItemsBuilder::
 							isCollectDigitalSignatureActionAvailable,
 						_uiItemsBuilder.
@@ -137,6 +146,15 @@ public class DefaultDLViewFileVersionDisplayContext
 						_uiItemsBuilder::isHistoryActionAvailable,
 						_uiItemsBuilder.createHistoryDropdownItem()
 					).add(
+						_uiItemsBuilder::isViewUsagesActionAvailable,
+						_uiItemsBuilder.createViewUsagesDropdownItem()
+					).build());
+				dropdownGroupItem.setSeparator(true);
+			}
+		).addGroup(
+			dropdownGroupItem -> {
+				dropdownGroupItem.setDropdownItems(
+					DropdownItemListBuilder.add(
 						_uiItemsBuilder::isMoveActionAvailable,
 						_uiItemsBuilder.createMoveDropdownItem()
 					).add(
@@ -251,6 +269,20 @@ public class DefaultDLViewFileVersionDisplayContext
 	}
 
 	@Override
+	public boolean hasApprovedVersion() {
+		DLFileVersion dlFileVersion =
+			DLFileVersionLocalServiceUtil.fetchLatestFileVersion(
+				_fileVersion.getFileEntryId(), false,
+				WorkflowConstants.STATUS_APPROVED);
+
+		if (dlFileVersion == null) {
+			return false;
+		}
+
+		return true;
+	}
+
+	@Override
 	public boolean hasCustomThumbnail() {
 		if (_dlPreviewRendererProvider != null) {
 			DLPreviewRenderer dlPreviewRenderer =
@@ -286,11 +318,7 @@ public class DefaultDLViewFileVersionDisplayContext
 
 	@Override
 	public boolean isActionsVisible() {
-		if (_dlPortletInstanceSettingsHelper.isShowActions()) {
-			return true;
-		}
-
-		return false;
+		return _dlPortletInstanceSettingsHelper.isShowActions();
 	}
 
 	@Override
@@ -311,11 +339,7 @@ public class DefaultDLViewFileVersionDisplayContext
 
 	@Override
 	public boolean isVersionInfoVisible() {
-		if (_isSystemDLFileEntryType()) {
-			return false;
-		}
-
-		return true;
+		return !_isSystemDLFileEntryType();
 	}
 
 	@Override

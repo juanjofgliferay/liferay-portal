@@ -9,6 +9,11 @@ exports[`DateTimeInput renders date with no change in the input 1`] = `
       class="date-picker"
     >
       <div
+        aria-atomic="true"
+        aria-live="polite"
+        class="sr-only"
+      />
+      <div
         class="input-group"
       >
         <div
@@ -35,6 +40,7 @@ exports[`DateTimeInput renders date with no change in the input 1`] = `
               aria-haspopup="dialog"
               aria-label="Test label: select-date"
               class="date-picker-dropdown-toggle btn btn-unstyled"
+              data-testid="date-button"
               type="button"
             >
               <svg
@@ -63,6 +69,11 @@ exports[`DateTimeInput renders date-time with no change in the input 1`] = `
       class="date-picker"
     >
       <div
+        aria-atomic="true"
+        aria-live="polite"
+        class="sr-only"
+      />
+      <div
         class="input-group"
       >
         <div
@@ -89,6 +100,7 @@ exports[`DateTimeInput renders date-time with no change in the input 1`] = `
               aria-haspopup="dialog"
               aria-label="Test label: select-date"
               class="date-picker-dropdown-toggle btn btn-unstyled"
+              data-testid="date-button"
               type="button"
             >
               <svg
@@ -117,6 +129,11 @@ exports[`DateTimeInput renders previous date with wrong date 1`] = `
       class="date-picker"
     >
       <div
+        aria-atomic="true"
+        aria-live="polite"
+        class="sr-only"
+      />
+      <div
         class="input-group"
       >
         <div
@@ -143,6 +160,7 @@ exports[`DateTimeInput renders previous date with wrong date 1`] = `
               aria-haspopup="dialog"
               aria-label="Test label: select-date"
               class="date-picker-dropdown-toggle btn btn-unstyled"
+              data-testid="date-button"
               type="button"
             >
               <svg
@@ -171,6 +189,11 @@ exports[`DateTimeInput renders previous date with wrong date-time 1`] = `
       class="date-picker"
     >
       <div
+        aria-atomic="true"
+        aria-live="polite"
+        class="sr-only"
+      />
+      <div
         class="input-group"
       >
         <div
@@ -197,6 +220,7 @@ exports[`DateTimeInput renders previous date with wrong date-time 1`] = `
               aria-haspopup="dialog"
               aria-label="Test label: select-date"
               class="date-picker-dropdown-toggle btn btn-unstyled"
+              data-testid="date-button"
               type="button"
             >
               <svg
@@ -225,6 +249,11 @@ exports[`DateTimeInput renders type date 1`] = `
       class="date-picker"
     >
       <div
+        aria-atomic="true"
+        aria-live="polite"
+        class="sr-only"
+      />
+      <div
         class="input-group"
       >
         <div
@@ -251,6 +280,7 @@ exports[`DateTimeInput renders type date 1`] = `
               aria-haspopup="dialog"
               aria-label="Test label: select-date"
               class="date-picker-dropdown-toggle btn btn-unstyled"
+              data-testid="date-button"
               type="button"
             >
               <svg
@@ -279,6 +309,11 @@ exports[`DateTimeInput renders type date-time 1`] = `
       class="date-picker"
     >
       <div
+        aria-atomic="true"
+        aria-live="polite"
+        class="sr-only"
+      />
+      <div
         class="input-group"
       >
         <div
@@ -305,6 +340,7 @@ exports[`DateTimeInput renders type date-time 1`] = `
               aria-haspopup="dialog"
               aria-label="Test label: select-date"
               class="date-picker-dropdown-toggle btn btn-unstyled"
+              data-testid="date-button"
               type="button"
             >
               <svg

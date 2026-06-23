@@ -69,18 +69,6 @@ public interface SiteNavigationMenuItemLocalService
 			String type, String typeSettings, ServiceContext serviceContext)
 		throws Exception;
 
-	public SiteNavigationMenuItem addSiteNavigationMenuItem(
-			long userId, long groupId, long siteNavigationMenuId,
-			long parentSiteNavigationMenuItemId, String type, int order,
-			String typeSettings, ServiceContext serviceContext)
-		throws PortalException;
-
-	public SiteNavigationMenuItem addSiteNavigationMenuItem(
-			long userId, long groupId, long siteNavigationMenuId,
-			long parentSiteNavigationMenuItemId, String type,
-			String typeSettings, ServiceContext serviceContext)
-		throws PortalException;
-
 	/**
 	 * Adds the site navigation menu item to the database. Also notifies the appropriate model listeners.
 	 *
@@ -94,6 +82,19 @@ public interface SiteNavigationMenuItemLocalService
 	@Indexable(type = IndexableType.REINDEX)
 	public SiteNavigationMenuItem addSiteNavigationMenuItem(
 		SiteNavigationMenuItem siteNavigationMenuItem);
+
+	public SiteNavigationMenuItem addSiteNavigationMenuItem(
+			String externalReferenceCode, long userId, long groupId,
+			long siteNavigationMenuId, long parentSiteNavigationMenuItemId,
+			String type, int order, String typeSettings,
+			ServiceContext serviceContext)
+		throws PortalException;
+
+	public SiteNavigationMenuItem addSiteNavigationMenuItem(
+			String externalReferenceCode, long userId, long groupId,
+			long siteNavigationMenuId, long parentSiteNavigationMenuItemId,
+			String type, String typeSettings, ServiceContext serviceContext)
+		throws PortalException;
 
 	/**
 	 * @throws PortalException
@@ -152,6 +153,10 @@ public interface SiteNavigationMenuItemLocalService
 	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
 	public SiteNavigationMenuItem deleteSiteNavigationMenuItem(
 		SiteNavigationMenuItem siteNavigationMenuItem);
+
+	public SiteNavigationMenuItem deleteSiteNavigationMenuItem(
+			String externalReferenceCode, long groupId)
+		throws PortalException;
 
 	public void deleteSiteNavigationMenuItems(long siteNavigationMenuId);
 
@@ -337,6 +342,9 @@ public interface SiteNavigationMenuItemLocalService
 		long siteNavigationMenuId,
 		OrderByComparator<SiteNavigationMenuItem> orderByComparator);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<SiteNavigationMenuItem> getSiteNavigationMenuItems(String type);
+
 	/**
 	 * Returns all the site navigation menu items matching the UUID and company.
 	 *
@@ -422,3 +430,4 @@ public interface SiteNavigationMenuItemLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1817255941

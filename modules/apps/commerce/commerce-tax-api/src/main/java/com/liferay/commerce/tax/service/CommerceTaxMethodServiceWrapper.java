@@ -129,6 +129,17 @@ public class CommerceTaxMethodServiceWrapper
 	@Override
 	public com.liferay.commerce.tax.model.CommerceTaxMethod
 			updateCommerceTaxMethod(
+				com.liferay.commerce.tax.model.CommerceTaxMethod
+					commerceTaxMethod)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commerceTaxMethodService.updateCommerceTaxMethod(
+			commerceTaxMethod);
+	}
+
+	@Override
+	public com.liferay.commerce.tax.model.CommerceTaxMethod
+			updateCommerceTaxMethod(
 				long commerceTaxMethodId,
 				java.util.Map<java.util.Locale, String> nameMap,
 				java.util.Map<java.util.Locale, String> descriptionMap,
@@ -154,3 +165,4 @@ public class CommerceTaxMethodServiceWrapper
 	private CommerceTaxMethodService _commerceTaxMethodService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:408105284

@@ -14,6 +14,14 @@ public class GroupConstants {
 
 	public static final String APP = "App";
 
+	public static final String CALENDAR = "Calendar";
+
+	public static final String CALENDAR_FRIENDLY_URL = "/calendar";
+
+	public static final String CMS = "CMS";
+
+	public static final String CMS_FRIENDLY_URL = "/cms";
+
 	public static final String CONTROL_PANEL = "Control Panel";
 
 	public static final String CONTROL_PANEL_FRIENDLY_URL = "/control_panel";
@@ -26,6 +34,8 @@ public class GroupConstants {
 
 	public static final long DEFAULT_PARENT_GROUP_ID = 0;
 
+	public static final String DSR = "DSR";
+
 	public static final String FORMS = "Forms";
 
 	public static final String FORMS_FRIENDLY_URL = "/forms";
@@ -34,12 +44,21 @@ public class GroupConstants {
 
 	public static final String GLOBAL_FRIENDLY_URL = "/global";
 
+	public static final long GROUP_ID_ALL = -1L;
+
 	public static final String GUEST = "Guest";
+
+	public static final String GUEST_FRIENDLY_URL = "/guest";
 
 	public static final int MEMBERSHIP_RESTRICTION_TO_PARENT_SITE_MEMBERS = 1;
 
+	public static final String SEO_STUDIO = "SEO Studio";
+
+	public static final String SEO_STUDIO_FRIENDLY_URL = "/seo-studio";
+
 	public static final String[] SYSTEM_GROUPS = {
-		CONTROL_PANEL, FORMS, GUEST, GroupConstants.USER_PERSONAL_SITE
+		CALENDAR, CMS, CONTROL_PANEL, FORMS, GUEST,
+		GroupConstants.USER_PERSONAL_SITE
 	};
 
 	public static final int TYPE_DEPOT = 5;
@@ -49,6 +68,9 @@ public class GroupConstants {
 
 	public static final String TYPE_SETTINGS_KEY_LIFERAY_ANALYTICS_KEY =
 		"liferayAnalyticsKey";
+
+	public static final String TYPE_SETTINGS_KEY_MAINTENANCE_MODE =
+		"maintenanceMode";
 
 	public static final int TYPE_SITE_OPEN = 1;
 

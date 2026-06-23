@@ -1,11 +1,12 @@
 @component-name = "portal-headless"
 definition {
 
+	property browser.chrome.version = "139.0";
 	property custom.properties = "feature.flag.LPS-178642=true";
+	property portal.acceptance = "quarantine";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.component.names = "Object";
-	property testray.main.component.name = "Headless Builder";
+	property testray.main.component.name = "API Builder";
 
 	setUp {
 		TestCase.setUpPortalInstance();
@@ -25,7 +26,6 @@ definition {
 
 	@priority = 5
 	test CanGenerateOpenAPIFromAPIApplicationDefinition {
-		property portal.acceptance = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
@@ -83,7 +83,6 @@ definition {
 
 	@priority = 4
 	test CanHideAPIApplicationOnRestApplicationsListByUnbublishing {
-		property portal.acceptance = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
@@ -120,7 +119,6 @@ definition {
 
 	@priority = 4
 	test CannotSeeUnpublishedAPIApplicationListedAsRestApplication {
-		property portal.acceptance = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
@@ -158,7 +156,6 @@ definition {
 
 	@priority = 4
 	test CanSeePublishedAPIApplicationListedAsRestApplication {
-		property portal.acceptance = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 

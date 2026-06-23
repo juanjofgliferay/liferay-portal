@@ -11,6 +11,7 @@ import com.liferay.change.tracking.exception.CTCollectionStatusException;
 import com.liferay.change.tracking.model.CTAutoResolutionInfo;
 import com.liferay.change.tracking.model.CTCollection;
 import com.liferay.change.tracking.model.CTCollectionTable;
+import com.liferay.change.tracking.model.CTEntry;
 import com.liferay.change.tracking.service.CTProcessLocalService;
 import com.liferay.change.tracking.service.base.CTCollectionServiceBaseImpl;
 import com.liferay.change.tracking.service.persistence.CTAutoResolutionInfoPersistence;
@@ -23,6 +24,7 @@ import com.liferay.portal.dao.orm.custom.sql.CustomSQL;
 import com.liferay.portal.kernel.dao.orm.WildcardMode;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.GroupTable;
+import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.UserGroupRoleTable;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.InlineSQLHelper;
@@ -54,16 +56,18 @@ public class CTCollectionServiceImpl extends CTCollectionServiceBaseImpl {
 
 	@Override
 	public CTCollection addCTCollection(
-			String externalReferenceCode, long companyId, long userId,
-			long ctRemoteId, String name, String description)
+			String externalReferenceCode, long ctRemoteId, String name,
+			String description)
 		throws PortalException {
 
 		_portletResourcePermission.check(
 			getPermissionChecker(), null, CTActionKeys.ADD_PUBLICATION);
 
+		User user = getUser();
+
 		return ctCollectionLocalService.addCTCollection(
-			externalReferenceCode, companyId, userId, ctRemoteId, name,
-			description);
+			externalReferenceCode, user.getCompanyId(), user.getUserId(),
+			ctRemoteId, name, description);
 	}
 
 	@Override
@@ -97,6 +101,20 @@ public class CTCollectionServiceImpl extends CTCollectionServiceBaseImpl {
 	}
 
 	@Override
+	public void discardCTEntry(long ctCollectionId, List<CTEntry> ctEntries)
+		throws PortalException {
+
+		CTCollection ctCollection = ctCollectionPersistence.findByPrimaryKey(
+			ctCollectionId);
+
+		_ctCollectionModelResourcePermission.check(
+			getPermissionChecker(), ctCollection, ActionKeys.UPDATE);
+
+		ctCollectionLocalService.discardCTEntry(
+			ctCollectionId, ctEntries, false);
+	}
+
+	@Override
 	public void discardCTEntry(
 			long ctCollectionId, long modelClassNameId, long modelClassPK)
 		throws PortalException {
@@ -113,29 +131,33 @@ public class CTCollectionServiceImpl extends CTCollectionServiceBaseImpl {
 
 	@Override
 	public List<CTCollection> getCTCollections(
-		long companyId, int[] statuses, int start, int end,
-		OrderByComparator<CTCollection> orderByComparator) {
+			int[] statuses, int start, int end,
+			OrderByComparator<CTCollection> orderByComparator)
+		throws PortalException {
+
+		User user = getUser();
 
 		if (statuses == null) {
 			return ctCollectionPersistence.filterFindByCompanyId(
-				companyId, start, end, orderByComparator);
+				user.getCompanyId(), start, end, orderByComparator);
 		}
 
 		return ctCollectionPersistence.filterFindByC_S(
-			companyId, statuses, start, end, orderByComparator);
+			user.getCompanyId(), statuses, start, end, orderByComparator);
 	}
 
 	@Override
 	public List<CTCollection> getCTCollections(
-		long companyId, int[] statuses, String keywords, int start, int end,
-		OrderByComparator<CTCollection> orderByComparator) {
+			int[] statuses, String keywords, int start, int end,
+			OrderByComparator<CTCollection> orderByComparator)
+		throws PortalException {
 
 		DSLQuery dslQuery = DSLQueryFactoryUtil.select(
 			CTCollectionTable.INSTANCE
 		).from(
 			CTCollectionTable.INSTANCE
 		).where(
-			_getPredicate(companyId, statuses, keywords)
+			_getPredicate(statuses, keywords)
 		).orderBy(
 			CTCollectionTable.INSTANCE, orderByComparator
 		).limit(
@@ -146,17 +168,32 @@ public class CTCollectionServiceImpl extends CTCollectionServiceBaseImpl {
 	}
 
 	@Override
-	public int getCTCollectionsCount(
-		long companyId, int[] statuses, String keywords) {
+	public int getCTCollectionsCount(int[] statuses, String keywords)
+		throws PortalException {
 
 		DSLQuery dslQuery = DSLQueryFactoryUtil.count(
 		).from(
 			CTCollectionTable.INSTANCE
 		).where(
-			_getPredicate(companyId, statuses, keywords)
+			_getPredicate(statuses, keywords)
 		);
 
 		return ctCollectionPersistence.dslQueryCount(dslQuery);
+	}
+
+	@Override
+	public void moveCTEntries(
+			long fromCTCollectionId, long toCTCollectionId,
+			List<CTEntry> ctEntries)
+		throws PortalException {
+
+		_ctCollectionModelResourcePermission.check(
+			getPermissionChecker(), fromCTCollectionId, ActionKeys.UPDATE);
+		_ctCollectionModelResourcePermission.check(
+			getPermissionChecker(), toCTCollectionId, ActionKeys.UPDATE);
+
+		ctCollectionLocalService.moveCTEntries(
+			fromCTCollectionId, toCTCollectionId, ctEntries);
 	}
 
 	@Override
@@ -187,7 +224,12 @@ public class CTCollectionServiceImpl extends CTCollectionServiceBaseImpl {
 
 		if (ctCollection.getStatus() == WorkflowConstants.STATUS_APPROVED) {
 			throw new CTCollectionStatusException(
-				"CTCollection is already published");
+				"Change tracking collection is already published");
+		}
+
+		if (!ctCollection.isInProgress()) {
+			throw new CTCollectionStatusException(
+				"Change tracking collection is not a draft");
 		}
 
 		_ctProcessLocalService.addCTProcess(userId, ctCollectionId);
@@ -222,19 +264,21 @@ public class CTCollectionServiceImpl extends CTCollectionServiceBaseImpl {
 			userId, ctCollectionId, name, description);
 	}
 
-	private Predicate _getPredicate(
-		long companyId, int[] statuses, String keywords) {
+	private Predicate _getPredicate(int[] statuses, String keywords)
+		throws PortalException {
+
+		User user = getUser();
 
 		Predicate predicate = CTCollectionTable.INSTANCE.companyId.eq(
-			companyId
+			user.getCompanyId()
 		).and(
 			() -> {
-				if (!ArrayUtil.isEmpty(statuses)) {
-					return CTCollectionTable.INSTANCE.status.in(
-						ArrayUtil.toArray(statuses));
+				if (ArrayUtil.isEmpty(statuses)) {
+					return null;
 				}
 
-				return null;
+				return CTCollectionTable.INSTANCE.status.in(
+					ArrayUtil.toArray(statuses));
 			}
 		);
 

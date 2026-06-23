@@ -4,17 +4,22 @@ exports[`ActiveIndividualsCard should render 1`] = `
 <div>
   <div
     class="card card-root"
-    id="activeIndividualsCardRoot"
+    id="container.report.activeIndividualsCard"
     style="min-height: 536px;"
   >
     <div
       class="card-header align-items-center d-flex justify-content-between"
     >
-      <h5
-        class="card-title"
-      >
-        Active Individuals
-      </h5>
+      <div>
+        <div
+          class="card-title"
+        >
+          Active Individuals
+        </div>
+        <span
+          class="text-4 text-secondary"
+        />
+      </div>
       <div
         class="d-flex"
       >

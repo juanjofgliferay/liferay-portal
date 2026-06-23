@@ -18,15 +18,19 @@ import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.test.AssertUtils;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.util.IntegerWrapper;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
 import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.security.permission.SimplePermissionChecker;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PersistenceTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
@@ -112,11 +116,7 @@ public class JournalArticlePersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		JournalArticle newJournalArticle = _persistence.create(pk);
-
-		newJournalArticle.setMvccVersion(RandomTestUtil.nextLong());
+		JournalArticle newJournalArticle = addJournalArticle();
 
 		newJournalArticle.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -477,24 +477,6 @@ public class JournalArticlePersistenceTest {
 	}
 
 	@Test
-	public void testCountByG_NotL() throws Exception {
-		_persistence.countByG_NotL(RandomTestUtil.nextLong(), "");
-
-		_persistence.countByG_NotL(0L, "null");
-
-		_persistence.countByG_NotL(0L, (String)null);
-	}
-
-	@Test
-	public void testCountByG_NotLArrayable() throws Exception {
-		_persistence.countByG_NotL(
-			RandomTestUtil.nextLong(),
-			new String[] {
-				RandomTestUtil.randomString(), "", "null", null, null
-			});
-	}
-
-	@Test
 	public void testCountByG_ST() throws Exception {
 		_persistence.countByG_ST(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
@@ -570,6 +552,23 @@ public class JournalArticlePersistenceTest {
 	}
 
 	@Test
+	public void testCountByG_ERC_ST() throws Exception {
+		_persistence.countByG_ERC_ST(
+			RandomTestUtil.nextLong(), "", RandomTestUtil.nextInt());
+
+		_persistence.countByG_ERC_ST(0L, "null", 0);
+
+		_persistence.countByG_ERC_ST(0L, (String)null, 0);
+	}
+
+	@Test
+	public void testCountByG_ERC_STArrayable() throws Exception {
+		_persistence.countByG_ERC_ST(
+			RandomTestUtil.nextLong(), RandomTestUtil.randomString(),
+			new int[] {RandomTestUtil.nextInt(), 0});
+	}
+
+	@Test
 	public void testCountByG_F_ST() throws Exception {
 		_persistence.countByG_F_ST(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
@@ -621,6 +620,25 @@ public class JournalArticlePersistenceTest {
 		_persistence.countByG_C_L(0L, 0L, "null");
 
 		_persistence.countByG_C_L(0L, 0L, (String)null);
+	}
+
+	@Test
+	public void testCountByG_C_NotL() throws Exception {
+		_persistence.countByG_C_NotL(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(), "");
+
+		_persistence.countByG_C_NotL(0L, 0L, "null");
+
+		_persistence.countByG_C_NotL(0L, 0L, (String)null);
+	}
+
+	@Test
+	public void testCountByG_C_NotLArrayable() throws Exception {
+		_persistence.countByG_C_NotL(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
+			new String[] {
+				RandomTestUtil.randomString(), "", "null", null, null
+			});
 	}
 
 	@Test
@@ -713,6 +731,24 @@ public class JournalArticlePersistenceTest {
 
 	@Test
 	public void testFilterFindByGroupId() throws Exception {
+		PermissionThreadLocal.setPermissionChecker(
+			new SimplePermissionChecker() {
+				{
+					init(TestPropsValues.getUser());
+				}
+
+				@Override
+				public boolean isCompanyAdmin(long companyId) {
+					return false;
+				}
+
+			});
+
+		Assert.assertTrue(InlineSQLHelperUtil.isEnabled(0));
+
+		_persistence.filterFindByGroupId(
+			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+
 		_persistence.filterFindByGroupId(
 			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
 	}
@@ -1057,8 +1093,6 @@ public class JournalArticlePersistenceTest {
 
 		JournalArticle journalArticle = _persistence.create(pk);
 
-		journalArticle.setMvccVersion(RandomTestUtil.nextLong());
-
 		journalArticle.setCtCollectionId(RandomTestUtil.nextLong());
 
 		journalArticle.setUuid(RandomTestUtil.randomString());
@@ -1138,3 +1172,4 @@ public class JournalArticlePersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1731830790

@@ -265,14 +265,6 @@ public class CommerceCatalogLocalServiceWrapper
 	}
 
 	@Override
-	public CommerceCatalog fetchByExternalReferenceCode(
-		String externalReferenceCode, long companyId) {
-
-		return _commerceCatalogLocalService.fetchByExternalReferenceCode(
-			externalReferenceCode, companyId);
-	}
-
-	@Override
 	public CommerceCatalog fetchCommerceCatalog(long commerceCatalogId) {
 		return _commerceCatalogLocalService.fetchCommerceCatalog(
 			commerceCatalogId);
@@ -391,6 +383,11 @@ public class CommerceCatalogLocalServiceWrapper
 		int start, int end) {
 
 		return _commerceCatalogLocalService.getCommerceCatalogs(start, end);
+	}
+
+	@Override
+	public java.util.List<CommerceCatalog> getCommerceCatalogs(long companyId) {
+		return _commerceCatalogLocalService.getCommerceCatalogs(companyId);
 	}
 
 	@Override
@@ -562,3 +559,4 @@ public class CommerceCatalogLocalServiceWrapper
 	private CommerceCatalogLocalService _commerceCatalogLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-927196325

@@ -1,6 +1,6 @@
 import * as API from 'shared/api';
 import * as breadcrumbs from 'shared/util/breadcrumbs';
-import BasePage from 'settings/components/BasePage';
+import BasePage from 'settings/components/base-page/BasePage';
 import DeleteDataSource from 'settings/components/DeleteDataSource';
 import getCN from 'classnames';
 import React from 'react';
@@ -24,7 +24,7 @@ const WrappedDeleteDataSource = compose<any>(
 	withSheet(),
 	withRequest(
 		API.dataSource.fetchDeletePreview,
-		data => ({entitiesCount: data}),
+		(data: any) => ({entitiesCount: data}),
 		{
 			page: false
 		}
@@ -63,7 +63,7 @@ export const ClearData: React.FC<IClearDataProps> = ({
 					id
 				}),
 				id,
-				label: dataSource.name
+				label: dataSource.name ?? ''
 			}),
 			{
 				active: true,
@@ -76,7 +76,6 @@ export const ClearData: React.FC<IClearDataProps> = ({
 				dataSource.name
 			]) as string
 		}
-		groupId={groupId}
 		pageDescription={Liferay.Language.get(
 			'the-following-data-will-be-impacted-and-can-yield-unexpected-results.-this-action-will-not-remove-the-data-source'
 		)}
@@ -120,14 +119,8 @@ export const ClearData: React.FC<IClearDataProps> = ({
 						})
 				}
 				dataSource={dataSource}
-				deleteMessage={sub(
-					Liferay.Language.get(
-						'to-complete,-copy-the-following-sentence-to-confirm-your-intention-and-click-x.-once-you-have-x,-you-can-not-undo-this-operation'
-					),
-					[
-						Liferay.Language.get('clear-data').toLowerCase(),
-						Liferay.Language.get('deleted-this-data-fragment')
-					]
+				deleteMessage={Liferay.Language.get(
+					'to-complete-copy-the-following-sentence-to-confirm-your-action-and-click-clear-data-once-you-delete-this-data-you-cannot-undo-this-operation'
 				)}
 				deletePhrase={Liferay.Language.get('clear-x-data')}
 				entitiesCount={entitiesCount}

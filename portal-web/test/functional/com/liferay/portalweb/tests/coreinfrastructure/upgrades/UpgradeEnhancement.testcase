@@ -1,7 +1,8 @@
-@component-name = "portal-database-upgrade-framework"
+@component-name = "portal-db-infrastructure"
 definition {
 
 	property app.server.types = "tomcat";
+	property browser.chrome.version = "139.0";
 	property ci.retries.disabled = "true";
 	property database.types = "mysql";
 	property portal.release = "true";

@@ -8,12 +8,12 @@
 <%@ include file="/init.jsp" %>
 
 <%
-EditStyleBookEntryDisplayContext editStyleBookEntryDisplayContext = new EditStyleBookEntryDisplayContext(request, renderRequest, renderResponse);
+EditStyleBookEntryDisplayContext editStyleBookEntryDisplayContext = (EditStyleBookEntryDisplayContext)request.getAttribute(EditStyleBookEntryDisplayContext.class.getName());
 %>
 
 <div>
 	<react:component
-		module="js/style-book-editor/StyleBookEditor"
+		module="{StyleBookEditor} from style-book-web"
 		props="<%= editStyleBookEntryDisplayContext.getStyleBookEditorData() %>"
 	/>
 </div>

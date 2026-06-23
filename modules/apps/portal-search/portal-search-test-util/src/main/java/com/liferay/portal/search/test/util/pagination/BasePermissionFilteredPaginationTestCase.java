@@ -5,6 +5,7 @@
 
 package com.liferay.portal.search.test.util.pagination;
 
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
 import com.liferay.petra.string.CharPool;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.search.Document;
@@ -17,9 +18,8 @@ import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.SearchResultPermissionFilter;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.Props;
-import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.search.configuration.DefaultSearchResultPermissionFilterConfiguration;
 import com.liferay.portal.search.internal.facet.FacetPostProcessorImpl;
@@ -274,7 +274,6 @@ public abstract class BasePermissionFilteredPaginationTestCase
 		IndexerRegistry indexerRegistry = Mockito.mock(IndexerRegistry.class);
 		PermissionChecker permissionChecker = Mockito.mock(
 			PermissionChecker.class);
-		Props props = Mockito.mock(Props.class);
 		RelatedEntryIndexerRegistry relatedEntryIndexerRegistry = Mockito.mock(
 			RelatedEntryIndexerRegistry.class);
 
@@ -283,17 +282,19 @@ public abstract class BasePermissionFilteredPaginationTestCase
 				DefaultSearchResultPermissionFilterConfiguration.class);
 
 		setUpSearchResultPermissionFilterMocks(
-			indexerRegistry, permissionChecker, props,
+			indexerRegistry, permissionChecker,
 			defaultSearchResultPermissionFilterConfiguration);
 
 		SearchRequestBuilderFactory searchRequestBuilderFactory =
 			_getSearchRequestBuilderFactory();
+		ServiceTrackerMap<String, ModelResourcePermission<?>>
+			serviceTrackerMap = Mockito.mock(ServiceTrackerMap.class);
 
 		return new DefaultSearchResultPermissionFilter(
+			defaultSearchResultPermissionFilterConfiguration,
 			new FacetPostProcessorImpl(), indexerRegistry, permissionChecker,
-			props, relatedEntryIndexerRegistry, this::doSearch,
-			searchRequestBuilderFactory,
-			defaultSearchResultPermissionFilterConfiguration);
+			relatedEntryIndexerRegistry, this::doSearch,
+			searchRequestBuilderFactory, serviceTrackerMap);
 	}
 
 	protected void doAssertPagination(
@@ -428,7 +429,7 @@ public abstract class BasePermissionFilteredPaginationTestCase
 
 	protected void setUpSearchResultPermissionFilterMocks(
 			IndexerRegistry indexerRegistry,
-			PermissionChecker permissionChecker, Props props,
+			PermissionChecker permissionChecker,
 			DefaultSearchResultPermissionFilterConfiguration
 				defaultSearchResultPermissionFilterConfiguration)
 		throws Exception {
@@ -468,13 +469,6 @@ public abstract class BasePermissionFilteredPaginationTestCase
 			permissionChecker.getCompanyId()
 		).thenReturn(
 			getCompanyId()
-		);
-
-		Mockito.when(
-			props.get(
-				PropsKeys.INDEX_PERMISSION_FILTER_SEARCH_AMPLIFICATION_FACTOR)
-		).thenReturn(
-			"1.5"
 		);
 
 		Mockito.when(

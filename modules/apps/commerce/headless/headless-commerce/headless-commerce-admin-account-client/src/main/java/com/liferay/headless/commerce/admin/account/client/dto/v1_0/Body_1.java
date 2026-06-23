@@ -8,11 +8,11 @@ package com.liferay.headless.commerce.admin.account.client.dto.v1_0;
 import com.liferay.headless.commerce.admin.account.client.function.UnsafeSupplier;
 import com.liferay.headless.commerce.admin.account.client.serdes.v1_0.Body_1SerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Alessio Antonio Rendina
@@ -76,3 +76,4 @@ public class Body_1 implements Cloneable, Serializable {
 	}
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1546905366

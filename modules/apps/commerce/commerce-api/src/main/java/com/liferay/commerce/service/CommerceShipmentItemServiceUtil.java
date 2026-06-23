@@ -7,6 +7,7 @@ package com.liferay.commerce.service;
 
 import com.liferay.commerce.model.CommerceShipmentItem;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
@@ -58,16 +59,6 @@ public class CommerceShipmentItemServiceUtil {
 			validateInventory, serviceContext);
 	}
 
-	/**
-	 * @deprecated As of Mueller (7.2.x), pass boolean for restoring stock
-	 */
-	@Deprecated
-	public static void deleteCommerceShipmentItem(long commerceShipmentItemId)
-		throws PortalException {
-
-		getService().deleteCommerceShipmentItem(commerceShipmentItemId);
-	}
-
 	public static void deleteCommerceShipmentItem(
 			long commerceShipmentItemId, boolean restoreStockQuantity)
 		throws PortalException {
@@ -108,17 +99,6 @@ public class CommerceShipmentItemServiceUtil {
 		throws PortalException {
 
 		return getService().getCommerceShipmentItem(commerceShipmentItemId);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x)
-	 */
-	@Deprecated
-	public static List<CommerceShipmentItem> getCommerceShipmentItems(
-			long commerceOrderItemId)
-		throws PortalException {
-
-		return getService().getCommerceShipmentItems(commerceOrderItemId);
 	}
 
 	public static List<CommerceShipmentItem> getCommerceShipmentItems(
@@ -171,31 +151,33 @@ public class CommerceShipmentItemServiceUtil {
 	}
 
 	public static CommerceShipmentItem updateCommerceShipmentItem(
-			long commerceShipmentItemId, long commerceInventoryWarehouseId,
-			java.math.BigDecimal quantity, boolean validateInventory)
+			long commerceShipmentId, long commerceShipmentItemId,
+			long commerceInventoryWarehouseId, java.math.BigDecimal quantity,
+			boolean validateInventory)
 		throws PortalException {
 
 		return getService().updateCommerceShipmentItem(
-			commerceShipmentItemId, commerceInventoryWarehouseId, quantity,
-			validateInventory);
+			commerceShipmentId, commerceShipmentItemId,
+			commerceInventoryWarehouseId, quantity, validateInventory);
 	}
 
 	public static CommerceShipmentItem updateExternalReferenceCode(
-			long commerceShipmentItemId, String externalReferenceCode)
+			long commerceShipmentId, long commerceShipmentItemId,
+			String externalReferenceCode)
 		throws PortalException {
 
 		return getService().updateExternalReferenceCode(
-			commerceShipmentItemId, externalReferenceCode);
+			commerceShipmentId, commerceShipmentItemId, externalReferenceCode);
 	}
 
 	public static CommerceShipmentItemService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(CommerceShipmentItemService service) {
-		_service = service;
-	}
-
-	private static volatile CommerceShipmentItemService _service;
+	private static final Snapshot<CommerceShipmentItemService>
+		_serviceSnapshot = new Snapshot<>(
+			CommerceShipmentItemServiceUtil.class,
+			CommerceShipmentItemService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1417626033

@@ -26,15 +26,7 @@ const InviteUsersModal: React.FC<IInviteUsersModalProps> = ({
 			(emails.length && !inputValue) ||
 			(inputValue && validateEmail(inputValue))
 		) {
-			onSubmit(emails).then(users => {
-				analytics.track(
-					'Invited Users',
-					{
-						userIds: users.map(({id}) => id)
-					},
-					{ip: '0'}
-				);
-			});
+			onSubmit(emails);
 		}
 	};
 
@@ -69,7 +61,9 @@ const InviteUsersModal: React.FC<IInviteUsersModalProps> = ({
 							'enter-email-address'
 						)}
 						validateOnBlur
-						validationFn={validateEmail}
+						validationFn={(value?: string) =>
+							!!value && validateEmail(value)
+						}
 					/>
 				</Input.Group>
 			</Modal.Body>

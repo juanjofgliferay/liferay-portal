@@ -1,11 +1,11 @@
-import BasePage from 'settings/components/BasePage';
+import BasePage from 'settings/components/base-page/BasePage';
 import Card from 'shared/components/Card';
 import ClayLink from '@clayui/link';
 import ClayList from '@clayui/list';
 import React from 'react';
 import {ACCOUNTS, Routes, toRoute} from 'shared/util/router';
-import {DEVELOPER_MODE, ENABLE_BLOCKLIST_KEYWORDS} from 'shared/util/constants';
-import {withCurrentUser} from 'shared/hoc';
+import {DEVELOPER_MODE} from 'shared/util/constants';
+import {ENABLE_BLOCKLIST_KEYWORDS} from 'shared/util/feature-flags';
 
 interface IOverviewProps {
 	groupId: string;
@@ -22,7 +22,7 @@ type ListItem = {
 };
 
 // TODO: LRAC-4511 Remove developer only mode and add devItems back into items
-const items = (devMode: boolean = false): ListItem[] => [
+const items = (devMode: boolean = false): (ListItem | null)[] => [
 	{
 		header: Liferay.Language.get('people'),
 		items: [
@@ -33,26 +33,34 @@ const items = (devMode: boolean = false): ListItem[] => [
 				route: Routes.SETTINGS_DEFINITIONS_INDIVIDUAL_ATTRIBUTES,
 				title: Liferay.Language.get('individuals')
 			},
-			devMode && {
-				description: Liferay.Language.get(
-					'view-and-manage-the-data-model-of-your-accounts.-this-data-is-automatically-mapped-from-a-salesforce-datasource'
-				),
-				route: Routes.CONTACTS_LIST_ENTITY,
-				routeParams: {type: ACCOUNTS},
-				title: Liferay.Language.get('accounts')
-			}
+			...(devMode
+				? [
+						{
+							description: Liferay.Language.get(
+								'view-and-manage-the-data-model-of-your-accounts.-this-data-is-automatically-mapped-from-a-salesforce-datasource'
+							),
+							route: Routes.CONTACTS_LIST_ENTITY,
+							routeParams: {type: ACCOUNTS},
+							title: Liferay.Language.get('accounts')
+						}
+				  ]
+				: [])
 		]
 	},
 	{
 		header: Liferay.Language.get('behaviors'),
 		items: [
-			devMode && {
-				description: Liferay.Language.get(
-					'view-and-manage-the-tracked-behaviors-in-analytics-cloud.-you-will-also-find-instructions-for-tagging-non-liferay-assets-to-track-them-in-analytics-cloud'
-				),
-				route: Routes.SETTINGS_DEFINITIONS_BEHAVIORS,
-				title: Liferay.Language.get('behaviors')
-			},
+			...(devMode
+				? [
+						{
+							description: Liferay.Language.get(
+								'view-and-manage-the-tracked-behaviors-in-analytics-cloud.-you-will-also-find-instructions-for-tagging-non-liferay-assets-to-track-them-in-analytics-cloud'
+							),
+							route: Routes.SETTINGS_DEFINITIONS_BEHAVIORS,
+							title: Liferay.Language.get('behaviors')
+						}
+				  ]
+				: []),
 			{
 				description: Liferay.Language.get(
 					'view-and-manage-your-default-events-custom-events-and-event-attributes'
@@ -96,7 +104,6 @@ const items = (devMode: boolean = false): ListItem[] => [
 export const Overview: React.FC<IOverviewProps> = ({groupId}) => (
 	<BasePage
 		className='definitions-overview-root'
-		groupId={groupId}
 		pageDescription={Liferay.Language.get(
 			'select-the-entity-to-view-its-data-model'
 		)}
@@ -107,7 +114,7 @@ export const Overview: React.FC<IOverviewProps> = ({groupId}) => (
 				<Card>
 					<ClayList>
 						{items(DEVELOPER_MODE)
-							.filter(Boolean)
+							.filter((item): item is ListItem => Boolean(item))
 							.map(({header, items}) => (
 								<React.Fragment key={header}>
 									{header && (
@@ -156,4 +163,4 @@ export const Overview: React.FC<IOverviewProps> = ({groupId}) => (
 	</BasePage>
 );
 
-export default withCurrentUser(Overview);
+export default Overview;

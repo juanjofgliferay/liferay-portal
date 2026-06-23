@@ -89,6 +89,8 @@ public class RatingsStatsModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table RatingsStats";
 
+	public static final String ENTITY_ALIAS = "ratingsStats";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY ratingsStats.statsId ASC";
 
@@ -139,7 +141,7 @@ public class RatingsStatsModelImpl
 	public static final long STATSID_COLUMN_BITMASK = 4L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.ratings.kernel.model.RatingsStats"));
 
 	public RatingsStatsModelImpl() {
@@ -884,3 +886,4 @@ public class RatingsStatsModelImpl
 	private RatingsStats _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1879769539

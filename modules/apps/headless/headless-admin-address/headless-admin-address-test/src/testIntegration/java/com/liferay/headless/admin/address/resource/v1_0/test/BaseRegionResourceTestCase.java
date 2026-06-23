@@ -19,34 +19,65 @@ import com.liferay.headless.admin.address.client.pagination.Page;
 import com.liferay.headless.admin.address.client.pagination.Pagination;
 import com.liferay.headless.admin.address.client.resource.v1_0.RegionResource;
 import com.liferay.headless.admin.address.client.serdes.v1_0.RegionSerDes;
+import com.liferay.headless.batch.engine.client.dto.v1_0.ImportTask;
+import com.liferay.headless.batch.engine.client.http.HttpInvoker.HttpResponse;
+import com.liferay.headless.batch.engine.client.resource.v1_0.ImportTaskResource;
+import com.liferay.oauth2.provider.scope.ScopeChecker;
 import com.liferay.petra.function.UnsafeTriConsumer;
 import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.json.JSONArray;
+import com.liferay.portal.kernel.json.JSONDeserializer;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.ResourceActionLocalService;
+import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
+import com.liferay.portal.kernel.service.RoleLocalService;
+import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.DateUtil;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
+import com.liferay.portal.vulcan.crud.VulcanCRUDItemDelegate;
+import com.liferay.portal.vulcan.crud.VulcanCRUDItemDelegateBuilderRegistry;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
+
+import jakarta.annotation.Generated;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.PathSegment;
+import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriInfo;
 
 import java.lang.reflect.Method;
 
-import java.text.DateFormat;
+import java.net.URI;
+
+import java.text.Format;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -55,15 +86,11 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.lang.time.DateUtils;
+import java.util.TimeZone;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -72,6 +99,9 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 
 /**
  * @author Drew Brokke
@@ -82,12 +112,14 @@ public abstract class BaseRegionResourceTestCase {
 
 	@ClassRule
 	@Rule
-	public static final LiferayIntegrationTestRule liferayIntegrationTestRule =
-		new LiferayIntegrationTestRule();
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			new LiferayIntegrationTestRule(),
+			PermissionCheckerMethodTestRule.INSTANCE);
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
-		_dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
+		_format = FastDateFormatFactoryUtil.getSimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 	}
 
@@ -101,10 +133,27 @@ public abstract class BaseRegionResourceTestCase {
 
 		_regionResource.setContextCompany(testCompany);
 
-		RegionResource.Builder builder = RegionResource.builder();
+		_testCompanyAdminUser = UserTestUtil.getAdminUser(
+			testCompany.getCompanyId());
 
-		regionResource = builder.authentication(
-			"test@liferay.com", "test"
+		regionResource = RegionResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(),
+			PortalUtil.getPortalServerPort(false), "http"
+		).locale(
+			LocaleUtil.getDefault()
+		).build();
+
+		importTaskResource = ImportTaskResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(),
+			PortalUtil.getPortalServerPort(false), "http"
 		).locale(
 			LocaleUtil.getDefault()
 		).build();
@@ -118,7 +167,32 @@ public abstract class BaseRegionResourceTestCase {
 
 	@Test
 	public void testClientSerDesToDTO() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		Region region1 = randomRegion();
+
+		String json = objectMapper.writeValueAsString(region1);
+
+		Region region2 = RegionSerDes.toDTO(json);
+
+		Assert.assertTrue(equals(region1, region2));
+	}
+
+	@Test
+	public void testClientSerDesToJSON() throws Exception {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		Region region = randomRegion();
+
+		String json1 = objectMapper.writeValueAsString(region);
+		String json2 = RegionSerDes.toJSON(region);
+
+		Assert.assertEquals(
+			objectMapper.readTree(json1), objectMapper.readTree(json2));
+	}
+
+	protected ObjectMapper getClientSerDesObjectMapper() {
+		return new ObjectMapper() {
 			{
 				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
 				configure(
@@ -133,40 +207,6 @@ public abstract class BaseRegionResourceTestCase {
 					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
 			}
 		};
-
-		Region region1 = randomRegion();
-
-		String json = objectMapper.writeValueAsString(region1);
-
-		Region region2 = RegionSerDes.toDTO(json);
-
-		Assert.assertTrue(equals(region1, region2));
-	}
-
-	@Test
-	public void testClientSerDesToJSON() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
-			{
-				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-				configure(
-					SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
-				setDateFormat(new ISO8601DateFormat());
-				setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-				setSerializationInclusion(JsonInclude.Include.NON_NULL);
-				setVisibility(
-					PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-				setVisibility(
-					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
-			}
-		};
-
-		Region region = randomRegion();
-
-		String json1 = objectMapper.writeValueAsString(region);
-		String json2 = RegionSerDes.toJSON(region);
-
-		Assert.assertEquals(
-			objectMapper.readTree(json1), objectMapper.readTree(json2));
 	}
 
 	@Test
@@ -175,6 +215,7 @@ public abstract class BaseRegionResourceTestCase {
 
 		Region region = randomRegion();
 
+		region.setExternalReferenceCode(regex);
 		region.setName(regex);
 		region.setRegionCode(regex);
 
@@ -184,8 +225,429 @@ public abstract class BaseRegionResourceTestCase {
 
 		region = RegionSerDes.toDTO(json);
 
+		Assert.assertEquals(regex, region.getExternalReferenceCode());
 		Assert.assertEquals(regex, region.getName());
 		Assert.assertEquals(regex, region.getRegionCode());
+	}
+
+	@Test
+	public void testDeleteRegion() throws Exception {
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		Region region = testDeleteRegion_addRegion();
+
+		assertHttpResponseStatusCode(
+			204, regionResource.deleteRegionHttpResponse(region.getId()));
+
+		assertHttpResponseStatusCode(
+			404, regionResource.getRegionHttpResponse(region.getId()));
+		assertHttpResponseStatusCode(
+			404, regionResource.getRegionHttpResponse(0L));
+	}
+
+	protected Region testDeleteRegion_addRegion() throws Exception {
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLDeleteRegion() throws Exception {
+
+		// No namespace
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		Region region1 = testGraphQLDeleteRegion_addRegion();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"deleteRegion",
+						new HashMap<String, Object>() {
+							{
+								put("regionId", region1.getId());
+							}
+						})),
+				"JSONObject/data", "Object/deleteRegion"));
+
+		JSONArray errorsJSONArray1 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"region",
+					new HashMap<String, Object>() {
+						{
+							put("regionId", region1.getId());
+						}
+					},
+					getGraphQLFields())),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray1.length() > 0);
+
+		// Using the namespace headlessAdminAddress_v1_0
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		Region region2 = testGraphQLDeleteRegion_addRegion();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessAdminAddress_v1_0",
+						new GraphQLField(
+							"deleteRegion",
+							new HashMap<String, Object>() {
+								{
+									put("regionId", region2.getId());
+								}
+							}))),
+				"JSONObject/data", "JSONObject/headlessAdminAddress_v1_0",
+				"Object/deleteRegion"));
+
+		JSONArray errorsJSONArray2 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessAdminAddress_v1_0",
+					new GraphQLField(
+						"region",
+						new HashMap<String, Object>() {
+							{
+								put("regionId", region2.getId());
+							}
+						},
+						getGraphQLFields()))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray2.length() > 0);
+	}
+
+	protected Region testGraphQLDeleteRegion_addRegion() throws Exception {
+		return testGraphQLRegion_addRegion();
+	}
+
+	@Test
+	public void testDeleteRegionBatch() throws Exception {
+		Region region1 = testDeleteRegionBatch_addRegion();
+
+		testDeleteRegionBatch_deleteRegion(
+			202, region1.getExternalReferenceCode(), null);
+
+		assertHttpResponseStatusCode(
+			404, regionResource.getRegionHttpResponse(region1.getId()));
+
+		region1 = testDeleteRegionBatch_addRegion();
+
+		testDeleteRegionBatch_deleteRegion(202, null, region1.getId());
+
+		assertHttpResponseStatusCode(
+			404, regionResource.getRegionHttpResponse(region1.getId()));
+
+		region1 = testDeleteRegionBatch_addRegion();
+		Region region2 = testDeleteRegionBatch_addRegion();
+
+		testDeleteRegionBatch_deleteRegion(
+			202, region2.getExternalReferenceCode(), region1.getId());
+
+		assertHttpResponseStatusCode(
+			404, regionResource.getRegionHttpResponse(region1.getId()));
+		assertHttpResponseStatusCode(
+			200, regionResource.getRegionHttpResponse(region2.getId()));
+
+		testDeleteRegionBatch_deleteRegion(
+			202, region2.getExternalReferenceCode(), region1.getId());
+
+		assertHttpResponseStatusCode(
+			404, regionResource.getRegionHttpResponse(region2.getId()));
+	}
+
+	protected Region testDeleteRegionBatch_addRegion() throws Exception {
+		return testDeleteRegion_addRegion();
+	}
+
+	protected void testDeleteRegionBatch_deleteRegion(
+			int expectedStatusCode, String externalReferenceCode, Long id)
+		throws Exception {
+
+		HttpInvoker.HttpResponse httpResponse =
+			regionResource.deleteRegionBatchHttpResponse(
+				null,
+				JSONUtil.putAll(
+					JSONUtil.put(
+						"externalReferenceCode", () -> externalReferenceCode
+					).put(
+						"id", () -> id
+					)));
+
+		Assert.assertEquals(expectedStatusCode, httpResponse.getStatusCode());
+
+		waitForFinish(
+			"COMPLETED",
+			JSONFactoryUtil.createJSONObject(httpResponse.getContent()));
+	}
+
+	@Test
+	public void testDeleteRegionByExternalReferenceCode() throws Exception {
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		Region region = testDeleteRegionByExternalReferenceCode_addRegion();
+
+		assertHttpResponseStatusCode(
+			204,
+			regionResource.deleteRegionByExternalReferenceCodeHttpResponse(
+				region.getExternalReferenceCode()));
+
+		assertHttpResponseStatusCode(
+			404,
+			regionResource.getRegionByExternalReferenceCodeHttpResponse(
+				region.getExternalReferenceCode()));
+		assertHttpResponseStatusCode(
+			404,
+			regionResource.getRegionByExternalReferenceCodeHttpResponse("-"));
+	}
+
+	protected Region testDeleteRegionByExternalReferenceCode_addRegion()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLDeleteRegionByExternalReferenceCode()
+		throws Exception {
+
+		// No namespace
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		Region region1 =
+			testGraphQLDeleteRegionByExternalReferenceCode_addRegion();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"deleteRegionByExternalReferenceCode",
+						new HashMap<String, Object>() {
+							{
+								put(
+									"externalReferenceCode",
+									"\"" + region1.getExternalReferenceCode() +
+										"\"");
+							}
+						})),
+				"JSONObject/data",
+				"Object/deleteRegionByExternalReferenceCode"));
+
+		JSONArray errorsJSONArray1 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"regionByExternalReferenceCode",
+					new HashMap<String, Object>() {
+						{
+							put(
+								"externalReferenceCode",
+								"\"" + region1.getExternalReferenceCode() +
+									"\"");
+						}
+					},
+					getGraphQLFields())),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray1.length() > 0);
+
+		// Using the namespace headlessAdminAddress_v1_0
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		Region region2 =
+			testGraphQLDeleteRegionByExternalReferenceCode_addRegion();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessAdminAddress_v1_0",
+						new GraphQLField(
+							"deleteRegionByExternalReferenceCode",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"externalReferenceCode",
+										"\"" +
+											region2.getExternalReferenceCode() +
+												"\"");
+								}
+							}))),
+				"JSONObject/data", "JSONObject/headlessAdminAddress_v1_0",
+				"Object/deleteRegionByExternalReferenceCode"));
+
+		JSONArray errorsJSONArray2 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessAdminAddress_v1_0",
+					new GraphQLField(
+						"regionByExternalReferenceCode",
+						new HashMap<String, Object>() {
+							{
+								put(
+									"externalReferenceCode",
+									"\"" + region2.getExternalReferenceCode() +
+										"\"");
+							}
+						},
+						getGraphQLFields()))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray2.length() > 0);
+	}
+
+	protected Region testGraphQLDeleteRegionByExternalReferenceCode_addRegion()
+		throws Exception {
+
+		return testGraphQLRegion_addRegion();
+	}
+
+	@Test
+	public void testGetCountryRegionByRegionCode() throws Exception {
+		Region postRegion = testGetCountryRegionByRegionCode_addRegion();
+
+		Region getRegion = regionResource.getCountryRegionByRegionCode(
+			testGetCountryRegionByRegionCode_getCountryId(postRegion),
+			postRegion.getRegionCode());
+
+		assertEquals(postRegion, getRegion);
+		assertValid(getRegion);
+	}
+
+	protected Region testGetCountryRegionByRegionCode_addRegion()
+		throws Exception {
+
+		return testPostCountryRegion_addRegion(randomRegion());
+	}
+
+	protected Long testGetCountryRegionByRegionCode_getCountryId(Region region)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLGetCountryRegionByRegionCode() throws Exception {
+		Region region = testGraphQLGetCountryRegionByRegionCode_addRegion();
+
+		// No namespace
+
+		Assert.assertTrue(
+			equals(
+				region,
+				RegionSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"countryRegionByRegionCode",
+								new HashMap<String, Object>() {
+									{
+										put(
+											"countryId",
+											testGraphQLGetCountryRegionByRegionCode_getCountryId(
+												region));
+										put(
+											"regionCode",
+											"\"" + region.getRegionCode() +
+												"\"");
+									}
+								},
+								getGraphQLFields())),
+						"JSONObject/data",
+						"Object/countryRegionByRegionCode"))));
+
+		// Using the namespace headlessAdminAddress_v1_0
+
+		Assert.assertTrue(
+			equals(
+				region,
+				RegionSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessAdminAddress_v1_0",
+								new GraphQLField(
+									"countryRegionByRegionCode",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"countryId",
+												testGraphQLGetCountryRegionByRegionCode_getCountryId(
+													region));
+											put(
+												"regionCode",
+												"\"" + region.getRegionCode() +
+													"\"");
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessAdminAddress_v1_0",
+						"Object/countryRegionByRegionCode"))));
+	}
+
+	protected Long testGraphQLGetCountryRegionByRegionCode_getCountryId(
+			Region region)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLGetCountryRegionByRegionCodeNotFound()
+		throws Exception {
+
+		Long irrelevantCountryId = RandomTestUtil.randomLong();
+		String irrelevantRegionCode =
+			"\"" + RandomTestUtil.randomString() + "\"";
+
+		// No namespace
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"countryRegionByRegionCode",
+						new HashMap<String, Object>() {
+							{
+								put("countryId", irrelevantCountryId);
+								put("regionCode", irrelevantRegionCode);
+							}
+						},
+						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessAdminAddress_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessAdminAddress_v1_0",
+						new GraphQLField(
+							"countryRegionByRegionCode",
+							new HashMap<String, Object>() {
+								{
+									put("countryId", irrelevantCountryId);
+									put("regionCode", irrelevantRegionCode);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+	}
+
+	protected Region testGraphQLGetCountryRegionByRegionCode_addRegion()
+		throws Exception {
+
+		return testGraphQLRegion_addRegion();
 	}
 
 	@Test
@@ -247,8 +709,9 @@ public abstract class BaseRegionResourceTestCase {
 		createBatchAction.put("method", "POST");
 		createBatchAction.put(
 			"href",
-			"http://localhost:8080/o/headless-admin-address/v1.0/countries/{countryId}/regions/batch".
-				replace("{countryId}", String.valueOf(countryId)));
+			("http://localhost:" + PortalUtil.getPortalServerPort(false) +
+				"/o/headless-admin-address/v1.0/countries/{countryId}/regions/batch").
+					replace("{countryId}", String.valueOf(countryId)));
 
 		expectedActions.put("createBatch", createBatchAction);
 
@@ -259,10 +722,10 @@ public abstract class BaseRegionResourceTestCase {
 	public void testGetCountryRegionsPageWithPagination() throws Exception {
 		Long countryId = testGetCountryRegionsPage_getCountryId();
 
-		Page<Region> regionPage = regionResource.getCountryRegionsPage(
+		Page<Region> regionsPage = regionResource.getCountryRegionsPage(
 			countryId, null, null, null, null);
 
-		int totalCount = GetterUtil.getInteger(regionPage.getTotalCount());
+		int totalCount = GetterUtil.getInteger(regionsPage.getTotalCount());
 
 		Region region1 = testGetCountryRegionsPage_addRegion(
 			countryId, randomRegion());
@@ -273,29 +736,66 @@ public abstract class BaseRegionResourceTestCase {
 		Region region3 = testGetCountryRegionsPage_addRegion(
 			countryId, randomRegion());
 
-		Page<Region> page1 = regionResource.getCountryRegionsPage(
-			countryId, null, null, Pagination.of(1, totalCount + 2), null);
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<Region> regions1 = (List<Region>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			regions1.toString(), totalCount + 2, regions1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<Region> page1 = regionResource.getCountryRegionsPage(
+				countryId, null, null,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+					pageSizeLimit),
+				null);
 
-		Page<Region> page2 = regionResource.getCountryRegionsPage(
-			countryId, null, null, Pagination.of(2, totalCount + 2), null);
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(region1, (List<Region>)page1.getItems());
 
-		List<Region> regions2 = (List<Region>)page2.getItems();
+			Page<Region> page2 = regionResource.getCountryRegionsPage(
+				countryId, null, null,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+					pageSizeLimit),
+				null);
 
-		Assert.assertEquals(regions2.toString(), 1, regions2.size());
+			assertContains(region2, (List<Region>)page2.getItems());
 
-		Page<Region> page3 = regionResource.getCountryRegionsPage(
-			countryId, null, null, Pagination.of(1, (int)totalCount + 3), null);
+			Page<Region> page3 = regionResource.getCountryRegionsPage(
+				countryId, null, null,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+					pageSizeLimit),
+				null);
 
-		assertContains(region1, (List<Region>)page3.getItems());
-		assertContains(region2, (List<Region>)page3.getItems());
-		assertContains(region3, (List<Region>)page3.getItems());
+			assertContains(region3, (List<Region>)page3.getItems());
+		}
+		else {
+			Page<Region> page1 = regionResource.getCountryRegionsPage(
+				countryId, null, null, Pagination.of(1, totalCount + 2), null);
+
+			List<Region> regions1 = (List<Region>)page1.getItems();
+
+			Assert.assertEquals(
+				regions1.toString(), totalCount + 2, regions1.size());
+
+			Page<Region> page2 = regionResource.getCountryRegionsPage(
+				countryId, null, null, Pagination.of(2, totalCount + 2), null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<Region> regions2 = (List<Region>)page2.getItems();
+
+			Assert.assertEquals(regions2.toString(), 1, regions2.size());
+
+			Page<Region> page3 = regionResource.getCountryRegionsPage(
+				countryId, null, null, Pagination.of(1, (int)totalCount + 3),
+				null);
+
+			assertContains(region1, (List<Region>)page3.getItems());
+			assertContains(region2, (List<Region>)page3.getItems());
+			assertContains(region3, (List<Region>)page3.getItems());
+		}
 	}
 
 	@Test
@@ -305,7 +805,7 @@ public abstract class BaseRegionResourceTestCase {
 			(entityField, region1, region2) -> {
 				BeanTestUtil.setProperty(
 					region1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
 			});
 	}
 
@@ -446,50 +946,291 @@ public abstract class BaseRegionResourceTestCase {
 	}
 
 	@Test
-	public void testPostCountryRegion() throws Exception {
-		Region randomRegion = randomRegion();
+	public void testGraphQLGetCountryRegionsPage() throws Exception {
+		Long countryId = testGetCountryRegionsPage_getCountryId();
 
-		Region postRegion = testPostCountryRegion_addRegion(randomRegion);
+		GraphQLField graphQLField = new GraphQLField(
+			"countryRegions",
+			new HashMap<String, Object>() {
+				{
+					put("countryId", countryId);
+					put("search", null);
+					put("page", 1);
+					put("pageSize", 10);
+				}
+			},
+			new GraphQLField("items", getGraphQLFields()),
+			new GraphQLField("page"), new GraphQLField("totalCount"));
 
-		assertEquals(randomRegion, postRegion);
-		assertValid(postRegion);
-	}
+		// No namespace
 
-	protected Region testPostCountryRegion_addRegion(Region region)
-		throws Exception {
+		JSONObject countryRegionsJSONObject = JSONUtil.getValueAsJSONObject(
+			invokeGraphQLQuery(graphQLField), "JSONObject/data",
+			"JSONObject/countryRegions");
 
-		return regionResource.postCountryRegion(
-			testGetCountryRegionsPage_getCountryId(), region);
+		long totalCount = countryRegionsJSONObject.getLong("totalCount");
+
+		Region region1 = testGraphQLCountryRegion_addRegion(
+			countryId, randomRegion());
+
+		Region region2 = testGraphQLCountryRegion_addRegion(
+			countryId, randomRegion());
+
+		countryRegionsJSONObject = JSONUtil.getValueAsJSONObject(
+			invokeGraphQLQuery(graphQLField), "JSONObject/data",
+			"JSONObject/countryRegions");
+
+		Assert.assertEquals(
+			totalCount + 2, countryRegionsJSONObject.getLong("totalCount"));
+
+		assertContains(
+			region1,
+			Arrays.asList(
+				RegionSerDes.toDTOs(
+					countryRegionsJSONObject.getString("items"))));
+		assertContains(
+			region2,
+			Arrays.asList(
+				RegionSerDes.toDTOs(
+					countryRegionsJSONObject.getString("items"))));
+
+		// Using the namespace headlessAdminAddress_v1_0
+
+		countryRegionsJSONObject = JSONUtil.getValueAsJSONObject(
+			invokeGraphQLQuery(
+				new GraphQLField("headlessAdminAddress_v1_0", graphQLField)),
+			"JSONObject/data", "JSONObject/headlessAdminAddress_v1_0",
+			"JSONObject/countryRegions");
+
+		Assert.assertEquals(
+			totalCount + 2, countryRegionsJSONObject.getLong("totalCount"));
+
+		assertContains(
+			region1,
+			Arrays.asList(
+				RegionSerDes.toDTOs(
+					countryRegionsJSONObject.getString("items"))));
+		assertContains(
+			region2,
+			Arrays.asList(
+				RegionSerDes.toDTOs(
+					countryRegionsJSONObject.getString("items"))));
 	}
 
 	@Test
-	public void testGetCountryRegionByRegionCode() throws Exception {
-		Region postRegion = testGetCountryRegionByRegionCode_addRegion();
+	public void testGetRegion() throws Exception {
+		Region postRegion = testGetRegion_addRegion();
 
-		Region getRegion = regionResource.getCountryRegionByRegionCode(
-			testGetCountryRegionByRegionCode_getCountryId(postRegion),
-			postRegion.getRegionCode());
+		Region getRegion = regionResource.getRegion(postRegion.getId());
 
 		assertEquals(postRegion, getRegion);
 		assertValid(getRegion);
 	}
 
-	protected Long testGetCountryRegionByRegionCode_getCountryId(Region region)
-		throws Exception {
+	@Test
+	public void testVulcanCRUDItemDelegateGetItem() throws Exception {
+		Region postRegion = testGetRegion_addRegion();
 
-		return region.getCountryId();
+		Region getRegion = regionResource.getRegion(postRegion.getId());
+
+		VulcanCRUDItemDelegate vulcanCRUDItemDelegate =
+			_vulcanCRUDItemDelegateBuilderRegistry.builder(
+				testCompany,
+				"com.liferay.headless.admin.address.dto.v1_0.Region"
+			).acceptLanguage(
+				new AcceptLanguage() {
+
+					@Override
+					public List<Locale> getLocales() {
+						return Arrays.asList(LocaleUtil.getDefault());
+					}
+
+					@Override
+					public String getPreferredLanguageId() {
+						return LocaleUtil.toLanguageId(LocaleUtil.getDefault());
+					}
+
+					@Override
+					public Locale getPreferredLocale() {
+						return LocaleUtil.getDefault();
+					}
+
+				}
+			).groupLocalService(
+				_groupLocalService
+			).httpServletRequest(
+				testVulcanCRUDItemDelegate_getHttpServletRequest()
+			).httpServletResponse(
+				new MockHttpServletResponse()
+			).resourceActionLocalService(
+				_resourceActionLocalService
+			).resourcePermissionLocalService(
+				_resourcePermissionLocalService
+			).roleLocalService(
+				_roleLocalService
+			).scopeChecker(
+				_scopeChecker
+			).uriInfo(
+				testVulcanCRUDItemDelegate_getUriInfo()
+			).user(
+				testVulcanCRUDItemDelegate_getUser()
+			).build();
+
+		Object item = vulcanCRUDItemDelegate.getItem(postRegion.getId());
+
+		assertEquals(getRegion, RegionSerDes.toDTO(item.toString()));
 	}
 
-	protected Region testGetCountryRegionByRegionCode_addRegion()
-		throws Exception {
+	protected HttpServletRequest
+		testVulcanCRUDItemDelegate_getHttpServletRequest() {
 
+		return new MockHttpServletRequest() {
+
+			@Override
+			public StringBuffer getRequestURL() {
+				return new StringBuffer(
+					StringBundler.concat(
+						"http://localhost:",
+						String.valueOf(PortalUtil.getPortalServerPort(false)),
+						"/o/v1.0/", RandomTestUtil.randomString(), "/",
+						RandomTestUtil.randomString()));
+			}
+
+		};
+	}
+
+	protected UriInfo testVulcanCRUDItemDelegate_getUriInfo() {
+		String applicationPath = RandomTestUtil.randomString() + "/";
+		String resourcePath = RandomTestUtil.randomString();
+
+		return new UriInfo() {
+
+			@Override
+			public String getPath() {
+				return resourcePath;
+			}
+
+			@Override
+			public String getPath(boolean decode) {
+				return getPath();
+			}
+
+			@Override
+			public List<PathSegment> getPathSegments() {
+				return Collections.emptyList();
+			}
+
+			@Override
+			public List<PathSegment> getPathSegments(boolean decode) {
+				return getPathSegments();
+			}
+
+			@Override
+			public URI getRequestUri() {
+				return URI.create(
+					StringBundler.concat(
+						"http://localhost:",
+						PortalUtil.getPortalServerPort(false), "/o/",
+						applicationPath, resourcePath));
+			}
+
+			@Override
+			public UriBuilder getRequestUriBuilder() {
+				return UriBuilder.fromUri(getRequestUri());
+			}
+
+			@Override
+			public URI getAbsolutePath() {
+				return getRequestUri();
+			}
+
+			@Override
+			public UriBuilder getAbsolutePathBuilder() {
+				return getRequestUriBuilder();
+			}
+
+			@Override
+			public URI getBaseUri() {
+				return URI.create(
+					StringBundler.concat(
+						"http://localhost:",
+						PortalUtil.getPortalServerPort(false), "/o/",
+						applicationPath));
+			}
+
+			@Override
+			public UriBuilder getBaseUriBuilder() {
+				return UriBuilder.fromUri(getBaseUri());
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getPathParameters() {
+				return new MultivaluedHashMap<>();
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getPathParameters(
+				boolean decode) {
+
+				return getPathParameters();
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getQueryParameters() {
+				return new MultivaluedHashMap<>();
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getQueryParameters(
+				boolean decode) {
+
+				return getQueryParameters();
+			}
+
+			@Override
+			public List<String> getMatchedURIs() {
+				return Collections.emptyList();
+			}
+
+			@Override
+			public List<String> getMatchedURIs(boolean decode) {
+				return getMatchedURIs();
+			}
+
+			@Override
+			public List<Object> getMatchedResources() {
+				return Collections.emptyList();
+			}
+
+			@Override
+			public URI resolve(URI requestUri) {
+				return getBaseUri().resolve(requestUri);
+			}
+
+			@Override
+			public URI relativize(URI uri) {
+				return getBaseUri().relativize(uri);
+			}
+
+		};
+	}
+
+	protected com.liferay.portal.kernel.model.User
+		testVulcanCRUDItemDelegate_getUser() {
+
+		return _testCompanyAdminUser;
+	}
+
+	protected Region testGetRegion_addRegion() throws Exception {
 		throw new UnsupportedOperationException(
 			"This method needs to be implemented");
 	}
 
 	@Test
-	public void testGraphQLGetCountryRegionByRegionCode() throws Exception {
-		Region region = testGraphQLGetCountryRegionByRegionCode_addRegion();
+	public void testGraphQLGetRegion() throws Exception {
+		Region region = testGraphQLGetRegion_addRegion();
+
+		// No namespace
 
 		Assert.assertTrue(
 			equals(
@@ -498,58 +1239,206 @@ public abstract class BaseRegionResourceTestCase {
 					JSONUtil.getValueAsString(
 						invokeGraphQLQuery(
 							new GraphQLField(
-								"countryRegionByRegionCode",
+								"region",
 								new HashMap<String, Object>() {
 									{
-										put(
-											"countryId",
-											testGraphQLGetCountryRegionByRegionCode_getCountryId(
-												region));
-
-										put(
-											"regionCode",
-											"\"" + region.getRegionCode() +
-												"\"");
+										put("regionId", region.getId());
 									}
 								},
 								getGraphQLFields())),
+						"JSONObject/data", "Object/region"))));
+
+		// Using the namespace headlessAdminAddress_v1_0
+
+		Assert.assertTrue(
+			equals(
+				region,
+				RegionSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessAdminAddress_v1_0",
+								new GraphQLField(
+									"region",
+									new HashMap<String, Object>() {
+										{
+											put("regionId", region.getId());
+										}
+									},
+									getGraphQLFields()))),
 						"JSONObject/data",
-						"Object/countryRegionByRegionCode"))));
-	}
-
-	protected Long testGraphQLGetCountryRegionByRegionCode_getCountryId(
-			Region region)
-		throws Exception {
-
-		return region.getCountryId();
+						"JSONObject/headlessAdminAddress_v1_0",
+						"Object/region"))));
 	}
 
 	@Test
-	public void testGraphQLGetCountryRegionByRegionCodeNotFound()
-		throws Exception {
+	public void testGraphQLGetRegionNotFound() throws Exception {
+		Long irrelevantRegionId = RandomTestUtil.randomLong();
 
-		Long irrelevantCountryId = RandomTestUtil.randomLong();
-		String irrelevantRegionCode =
-			"\"" + RandomTestUtil.randomString() + "\"";
+		// No namespace
 
 		Assert.assertEquals(
 			"Not Found",
 			JSONUtil.getValueAsString(
 				invokeGraphQLQuery(
 					new GraphQLField(
-						"countryRegionByRegionCode",
+						"region",
 						new HashMap<String, Object>() {
 							{
-								put("countryId", irrelevantCountryId);
-								put("regionCode", irrelevantRegionCode);
+								put("regionId", irrelevantRegionId);
 							}
 						},
 						getGraphQLFields())),
 				"JSONArray/errors", "Object/0", "JSONObject/extensions",
 				"Object/code"));
+
+		// Using the namespace headlessAdminAddress_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessAdminAddress_v1_0",
+						new GraphQLField(
+							"region",
+							new HashMap<String, Object>() {
+								{
+									put("regionId", irrelevantRegionId);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
 	}
 
-	protected Region testGraphQLGetCountryRegionByRegionCode_addRegion()
+	protected Region testGraphQLGetRegion_addRegion() throws Exception {
+		return testGraphQLRegion_addRegion();
+	}
+
+	@Test
+	public void testGetRegionByExternalReferenceCode() throws Exception {
+		Region postRegion = testGetRegionByExternalReferenceCode_addRegion();
+
+		Region getRegion = regionResource.getRegionByExternalReferenceCode(
+			postRegion.getExternalReferenceCode());
+
+		assertEquals(postRegion, getRegion);
+		assertValid(getRegion);
+	}
+
+	protected Region testGetRegionByExternalReferenceCode_addRegion()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLGetRegionByExternalReferenceCode() throws Exception {
+		Region region = testGraphQLGetRegionByExternalReferenceCode_addRegion();
+
+		// No namespace
+
+		Assert.assertTrue(
+			equals(
+				region,
+				RegionSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"regionByExternalReferenceCode",
+								new HashMap<String, Object>() {
+									{
+										put(
+											"externalReferenceCode",
+											"\"" +
+												region.
+													getExternalReferenceCode() +
+														"\"");
+									}
+								},
+								getGraphQLFields())),
+						"JSONObject/data",
+						"Object/regionByExternalReferenceCode"))));
+
+		// Using the namespace headlessAdminAddress_v1_0
+
+		Assert.assertTrue(
+			equals(
+				region,
+				RegionSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessAdminAddress_v1_0",
+								new GraphQLField(
+									"regionByExternalReferenceCode",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"externalReferenceCode",
+												"\"" +
+													region.
+														getExternalReferenceCode() +
+															"\"");
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessAdminAddress_v1_0",
+						"Object/regionByExternalReferenceCode"))));
+	}
+
+	@Test
+	public void testGraphQLGetRegionByExternalReferenceCodeNotFound()
+		throws Exception {
+
+		String irrelevantExternalReferenceCode =
+			"\"" + RandomTestUtil.randomString() + "\"";
+
+		// No namespace
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"regionByExternalReferenceCode",
+						new HashMap<String, Object>() {
+							{
+								put(
+									"externalReferenceCode",
+									irrelevantExternalReferenceCode);
+							}
+						},
+						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessAdminAddress_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessAdminAddress_v1_0",
+						new GraphQLField(
+							"regionByExternalReferenceCode",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"externalReferenceCode",
+										irrelevantExternalReferenceCode);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+	}
+
+	protected Region testGraphQLGetRegionByExternalReferenceCode_addRegion()
 		throws Exception {
 
 		return testGraphQLRegion_addRegion();
@@ -558,7 +1447,7 @@ public abstract class BaseRegionResourceTestCase {
 	@Test
 	public void testGetRegionsPage() throws Exception {
 		Page<Region> page = regionResource.getRegionsPage(
-			null, null, Pagination.of(1, 10), null);
+			null, null, null, Pagination.of(1, 10), null);
 
 		long totalCount = page.getTotalCount();
 
@@ -567,7 +1456,7 @@ public abstract class BaseRegionResourceTestCase {
 		Region region2 = testGetRegionsPage_addRegion(randomRegion());
 
 		page = regionResource.getRegionsPage(
-			null, null, Pagination.of(1, 10), null);
+			null, null, null, Pagination.of(1, 10), null);
 
 		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
@@ -590,11 +1479,83 @@ public abstract class BaseRegionResourceTestCase {
 	}
 
 	@Test
-	public void testGetRegionsPageWithPagination() throws Exception {
-		Page<Region> regionPage = regionResource.getRegionsPage(
-			null, null, null, null);
+	public void testGetRegionsPageWithFilterDateTimeEquals() throws Exception {
+		List<EntityField> entityFields = getEntityFields(
+			EntityField.Type.DATE_TIME);
 
-		int totalCount = GetterUtil.getInteger(regionPage.getTotalCount());
+		if (entityFields.isEmpty()) {
+			return;
+		}
+
+		Region region1 = randomRegion();
+
+		region1 = testGetRegionsPage_addRegion(region1);
+
+		for (EntityField entityField : entityFields) {
+			Page<Region> page = regionResource.getRegionsPage(
+				null, null, getFilterString(entityField, "between", region1),
+				Pagination.of(1, 2), null);
+
+			assertEquals(
+				Collections.singletonList(region1),
+				(List<Region>)page.getItems());
+		}
+	}
+
+	@Test
+	public void testGetRegionsPageWithFilterDoubleEquals() throws Exception {
+		testGetRegionsPageWithFilter("eq", EntityField.Type.DOUBLE);
+	}
+
+	@Test
+	public void testGetRegionsPageWithFilterStringContains() throws Exception {
+		testGetRegionsPageWithFilter("contains", EntityField.Type.STRING);
+	}
+
+	@Test
+	public void testGetRegionsPageWithFilterStringEquals() throws Exception {
+		testGetRegionsPageWithFilter("eq", EntityField.Type.STRING);
+	}
+
+	@Test
+	public void testGetRegionsPageWithFilterStringStartsWith()
+		throws Exception {
+
+		testGetRegionsPageWithFilter("startswith", EntityField.Type.STRING);
+	}
+
+	protected void testGetRegionsPageWithFilter(
+			String operator, EntityField.Type type)
+		throws Exception {
+
+		List<EntityField> entityFields = getEntityFields(type);
+
+		if (entityFields.isEmpty()) {
+			return;
+		}
+
+		Region region1 = testGetRegionsPage_addRegion(randomRegion());
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		Region region2 = testGetRegionsPage_addRegion(randomRegion());
+
+		for (EntityField entityField : entityFields) {
+			Page<Region> page = regionResource.getRegionsPage(
+				null, null, getFilterString(entityField, operator, region1),
+				Pagination.of(1, 2), null);
+
+			assertEquals(
+				Collections.singletonList(region1),
+				(List<Region>)page.getItems());
+		}
+	}
+
+	@Test
+	public void testGetRegionsPageWithPagination() throws Exception {
+		Page<Region> regionsPage = regionResource.getRegionsPage(
+			null, null, null, null, null);
+
+		int totalCount = GetterUtil.getInteger(regionsPage.getTotalCount());
 
 		Region region1 = testGetRegionsPage_addRegion(randomRegion());
 
@@ -602,29 +1563,65 @@ public abstract class BaseRegionResourceTestCase {
 
 		Region region3 = testGetRegionsPage_addRegion(randomRegion());
 
-		Page<Region> page1 = regionResource.getRegionsPage(
-			null, null, Pagination.of(1, totalCount + 2), null);
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<Region> regions1 = (List<Region>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			regions1.toString(), totalCount + 2, regions1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<Region> page1 = regionResource.getRegionsPage(
+				null, null, null,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+					pageSizeLimit),
+				null);
 
-		Page<Region> page2 = regionResource.getRegionsPage(
-			null, null, Pagination.of(2, totalCount + 2), null);
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(region1, (List<Region>)page1.getItems());
 
-		List<Region> regions2 = (List<Region>)page2.getItems();
+			Page<Region> page2 = regionResource.getRegionsPage(
+				null, null, null,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+					pageSizeLimit),
+				null);
 
-		Assert.assertEquals(regions2.toString(), 1, regions2.size());
+			assertContains(region2, (List<Region>)page2.getItems());
 
-		Page<Region> page3 = regionResource.getRegionsPage(
-			null, null, Pagination.of(1, (int)totalCount + 3), null);
+			Page<Region> page3 = regionResource.getRegionsPage(
+				null, null, null,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+					pageSizeLimit),
+				null);
 
-		assertContains(region1, (List<Region>)page3.getItems());
-		assertContains(region2, (List<Region>)page3.getItems());
-		assertContains(region3, (List<Region>)page3.getItems());
+			assertContains(region3, (List<Region>)page3.getItems());
+		}
+		else {
+			Page<Region> page1 = regionResource.getRegionsPage(
+				null, null, null, Pagination.of(1, totalCount + 2), null);
+
+			List<Region> regions1 = (List<Region>)page1.getItems();
+
+			Assert.assertEquals(
+				regions1.toString(), totalCount + 2, regions1.size());
+
+			Page<Region> page2 = regionResource.getRegionsPage(
+				null, null, null, Pagination.of(2, totalCount + 2), null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<Region> regions2 = (List<Region>)page2.getItems();
+
+			Assert.assertEquals(regions2.toString(), 1, regions2.size());
+
+			Page<Region> page3 = regionResource.getRegionsPage(
+				null, null, null, Pagination.of(1, (int)totalCount + 3), null);
+
+			assertContains(region1, (List<Region>)page3.getItems());
+			assertContains(region2, (List<Region>)page3.getItems());
+			assertContains(region3, (List<Region>)page3.getItems());
+		}
 	}
 
 	@Test
@@ -634,7 +1631,7 @@ public abstract class BaseRegionResourceTestCase {
 			(entityField, region1, region2) -> {
 				BeanTestUtil.setProperty(
 					region1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
 			});
 	}
 
@@ -733,18 +1730,20 @@ public abstract class BaseRegionResourceTestCase {
 		region2 = testGetRegionsPage_addRegion(region2);
 
 		Page<Region> page = regionResource.getRegionsPage(
-			null, null, null, null);
+			null, null, null, null, null);
 
 		for (EntityField entityField : entityFields) {
 			Page<Region> ascPage = regionResource.getRegionsPage(
-				null, null, Pagination.of(1, (int)page.getTotalCount() + 1),
+				null, null, null,
+				Pagination.of(1, (int)page.getTotalCount() + 1),
 				entityField.getName() + ":asc");
 
 			assertContains(region1, (List<Region>)ascPage.getItems());
 			assertContains(region2, (List<Region>)ascPage.getItems());
 
 			Page<Region> descPage = regionResource.getRegionsPage(
-				null, null, Pagination.of(1, (int)page.getTotalCount() + 1),
+				null, null, null,
+				Pagination.of(1, (int)page.getTotalCount() + 1),
 				entityField.getName() + ":desc");
 
 			assertContains(region2, (List<Region>)descPage.getItems());
@@ -757,163 +1756,6 @@ public abstract class BaseRegionResourceTestCase {
 
 		throw new UnsupportedOperationException(
 			"This method needs to be implemented");
-	}
-
-	@Test
-	public void testGraphQLGetRegionsPage() throws Exception {
-		GraphQLField graphQLField = new GraphQLField(
-			"regions",
-			new HashMap<String, Object>() {
-				{
-					put("page", 1);
-					put("pageSize", 10);
-				}
-			},
-			new GraphQLField("items", getGraphQLFields()),
-			new GraphQLField("page"), new GraphQLField("totalCount"));
-
-		JSONObject regionsJSONObject = JSONUtil.getValueAsJSONObject(
-			invokeGraphQLQuery(graphQLField), "JSONObject/data",
-			"JSONObject/regions");
-
-		long totalCount = regionsJSONObject.getLong("totalCount");
-
-		Region region1 = testGraphQLGetRegionsPage_addRegion();
-		Region region2 = testGraphQLGetRegionsPage_addRegion();
-
-		regionsJSONObject = JSONUtil.getValueAsJSONObject(
-			invokeGraphQLQuery(graphQLField), "JSONObject/data",
-			"JSONObject/regions");
-
-		Assert.assertEquals(
-			totalCount + 2, regionsJSONObject.getLong("totalCount"));
-
-		assertContains(
-			region1,
-			Arrays.asList(
-				RegionSerDes.toDTOs(regionsJSONObject.getString("items"))));
-		assertContains(
-			region2,
-			Arrays.asList(
-				RegionSerDes.toDTOs(regionsJSONObject.getString("items"))));
-	}
-
-	protected Region testGraphQLGetRegionsPage_addRegion() throws Exception {
-		return testGraphQLRegion_addRegion();
-	}
-
-	@Test
-	public void testDeleteRegion() throws Exception {
-		@SuppressWarnings("PMD.UnusedLocalVariable")
-		Region region = testDeleteRegion_addRegion();
-
-		assertHttpResponseStatusCode(
-			204, regionResource.deleteRegionHttpResponse(region.getId()));
-
-		assertHttpResponseStatusCode(
-			404, regionResource.getRegionHttpResponse(region.getId()));
-
-		assertHttpResponseStatusCode(
-			404, regionResource.getRegionHttpResponse(0L));
-	}
-
-	protected Region testDeleteRegion_addRegion() throws Exception {
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	@Test
-	public void testGraphQLDeleteRegion() throws Exception {
-		Region region = testGraphQLDeleteRegion_addRegion();
-
-		Assert.assertTrue(
-			JSONUtil.getValueAsBoolean(
-				invokeGraphQLMutation(
-					new GraphQLField(
-						"deleteRegion",
-						new HashMap<String, Object>() {
-							{
-								put("regionId", region.getId());
-							}
-						})),
-				"JSONObject/data", "Object/deleteRegion"));
-		JSONArray errorsJSONArray = JSONUtil.getValueAsJSONArray(
-			invokeGraphQLQuery(
-				new GraphQLField(
-					"region",
-					new HashMap<String, Object>() {
-						{
-							put("regionId", region.getId());
-						}
-					},
-					new GraphQLField("id"))),
-			"JSONArray/errors");
-
-		Assert.assertTrue(errorsJSONArray.length() > 0);
-	}
-
-	protected Region testGraphQLDeleteRegion_addRegion() throws Exception {
-		return testGraphQLRegion_addRegion();
-	}
-
-	@Test
-	public void testGetRegion() throws Exception {
-		Region postRegion = testGetRegion_addRegion();
-
-		Region getRegion = regionResource.getRegion(postRegion.getId());
-
-		assertEquals(postRegion, getRegion);
-		assertValid(getRegion);
-	}
-
-	protected Region testGetRegion_addRegion() throws Exception {
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	@Test
-	public void testGraphQLGetRegion() throws Exception {
-		Region region = testGraphQLGetRegion_addRegion();
-
-		Assert.assertTrue(
-			equals(
-				region,
-				RegionSerDes.toDTO(
-					JSONUtil.getValueAsString(
-						invokeGraphQLQuery(
-							new GraphQLField(
-								"region",
-								new HashMap<String, Object>() {
-									{
-										put("regionId", region.getId());
-									}
-								},
-								getGraphQLFields())),
-						"JSONObject/data", "Object/region"))));
-	}
-
-	@Test
-	public void testGraphQLGetRegionNotFound() throws Exception {
-		Long irrelevantRegionId = RandomTestUtil.randomLong();
-
-		Assert.assertEquals(
-			"Not Found",
-			JSONUtil.getValueAsString(
-				invokeGraphQLQuery(
-					new GraphQLField(
-						"region",
-						new HashMap<String, Object>() {
-							{
-								put("regionId", irrelevantRegionId);
-							}
-						},
-						getGraphQLFields())),
-				"JSONArray/errors", "Object/0", "JSONObject/extensions",
-				"Object/code"));
-	}
-
-	protected Region testGraphQLGetRegion_addRegion() throws Exception {
-		return testGraphQLRegion_addRegion();
 	}
 
 	@Test
@@ -942,6 +1784,69 @@ public abstract class BaseRegionResourceTestCase {
 	}
 
 	@Test
+	public void testPatchRegionByExternalReferenceCode() throws Exception {
+		Region postRegion = testPatchRegionByExternalReferenceCode_addRegion();
+
+		Region randomPatchRegion = randomPatchRegion();
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		Region patchRegion = regionResource.patchRegionByExternalReferenceCode(
+			postRegion.getExternalReferenceCode(), randomPatchRegion);
+
+		Region expectedPatchRegion = postRegion.clone();
+
+		BeanTestUtil.copyProperties(randomPatchRegion, expectedPatchRegion);
+
+		Region getRegion = regionResource.getRegionByExternalReferenceCode(
+			patchRegion.getExternalReferenceCode());
+
+		assertEquals(expectedPatchRegion, getRegion);
+		assertValid(getRegion);
+	}
+
+	protected Region testPatchRegionByExternalReferenceCode_addRegion()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPostCountryRegion() throws Exception {
+		Region randomRegion = randomRegion();
+
+		Region postRegion = testPostCountryRegion_addRegion(randomRegion);
+
+		assertEquals(randomRegion, postRegion);
+		assertValid(postRegion);
+	}
+
+	protected Region testPostCountryRegion_addRegion(Region region)
+		throws Exception {
+
+		return regionResource.postCountryRegion(
+			testGetCountryRegionsPage_getCountryId(), region);
+	}
+
+	@Test
+	public void testGraphQLPostCountryRegion() throws Exception {
+		Region randomRegion = randomRegion();
+
+		Region region = testGraphQLCountryRegion_addRegion(
+			testGraphQLPostCountryRegion_getCountryId(randomRegion),
+			randomRegion);
+
+		Assert.assertTrue(equals(randomRegion, region));
+	}
+
+	protected Long testGraphQLPostCountryRegion_getCountryId(Region region)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
 	public void testPutRegion() throws Exception {
 		Region postRegion = testPutRegion_addRegion();
 
@@ -964,9 +1869,265 @@ public abstract class BaseRegionResourceTestCase {
 			"This method needs to be implemented");
 	}
 
+	@Test
+	public void testPutRegionByExternalReferenceCode() throws Exception {
+		Region postRegion = testPutRegionByExternalReferenceCode_addRegion();
+
+		Region randomRegion = randomRegion();
+
+		Region putRegion = regionResource.putRegionByExternalReferenceCode(
+			postRegion.getExternalReferenceCode(), randomRegion);
+
+		assertEquals(randomRegion, putRegion);
+		assertValid(putRegion);
+
+		Region getRegion = regionResource.getRegionByExternalReferenceCode(
+			putRegion.getExternalReferenceCode());
+
+		assertEquals(randomRegion, getRegion);
+		assertValid(getRegion);
+
+		Region newRegion = testPutRegionByExternalReferenceCode_createRegion();
+
+		putRegion = regionResource.putRegionByExternalReferenceCode(
+			newRegion.getExternalReferenceCode(), newRegion);
+
+		assertEquals(newRegion, putRegion);
+		assertValid(putRegion);
+
+		getRegion = regionResource.getRegionByExternalReferenceCode(
+			putRegion.getExternalReferenceCode());
+
+		assertEquals(newRegion, getRegion);
+
+		Assert.assertEquals(
+			newRegion.getExternalReferenceCode(),
+			putRegion.getExternalReferenceCode());
+	}
+
+	protected Region testPutRegionByExternalReferenceCode_addRegion()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected Region testPutRegionByExternalReferenceCode_createRegion()
+		throws Exception {
+
+		return randomRegion();
+	}
+
+	@Test
+	public void testBatchEngineDeleteImportTask() throws Exception {
+		Region region1 = testBatchEngineDeleteImportTask_addRegion();
+
+		testBatchEngineDeleteImportTask_deleteRegion(
+			200, region1.getExternalReferenceCode(), null);
+
+		assertHttpResponseStatusCode(
+			404, regionResource.getRegionHttpResponse(region1.getId()));
+
+		region1 = testBatchEngineDeleteImportTask_addRegion();
+
+		testBatchEngineDeleteImportTask_deleteRegion(
+			200, null, region1.getId());
+
+		assertHttpResponseStatusCode(
+			404, regionResource.getRegionHttpResponse(region1.getId()));
+
+		region1 = testBatchEngineDeleteImportTask_addRegion();
+		Region region2 = testBatchEngineDeleteImportTask_addRegion();
+
+		testBatchEngineDeleteImportTask_deleteRegion(
+			200, region2.getExternalReferenceCode(), region1.getId());
+
+		assertHttpResponseStatusCode(
+			404, regionResource.getRegionHttpResponse(region1.getId()));
+		assertHttpResponseStatusCode(
+			200, regionResource.getRegionHttpResponse(region2.getId()));
+
+		testBatchEngineDeleteImportTask_deleteRegion(
+			200, region2.getExternalReferenceCode(), region1.getId());
+
+		assertHttpResponseStatusCode(
+			404, regionResource.getRegionHttpResponse(region2.getId()));
+	}
+
+	protected Region testBatchEngineDeleteImportTask_addRegion()
+		throws Exception {
+
+		return testDeleteRegion_addRegion();
+	}
+
+	protected void testBatchEngineDeleteImportTask_deleteRegion(
+			int expectedStatusCode, String externalReferenceCode, Long id,
+			String... parameters)
+		throws Exception {
+
+		ImportTaskResource importTaskResource = ImportTaskResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(),
+			PortalUtil.getPortalServerPort(false), "http"
+		).parameters(
+			parameters
+		).build();
+
+		HttpResponse httpResponse =
+			importTaskResource.deleteImportTaskHttpResponse(
+				"com.liferay.headless.admin.address.dto.v1_0.Region", null,
+				null, null, null,
+				JSONUtil.putAll(
+					JSONUtil.put(
+						"externalReferenceCode", () -> externalReferenceCode
+					).put(
+						"id", () -> id
+					)));
+
+		Assert.assertEquals(expectedStatusCode, httpResponse.getStatusCode());
+
+		if (expectedStatusCode == 200) {
+			waitForFinish(
+				"COMPLETED",
+				JSONFactoryUtil.createJSONObject(httpResponse.getContent()));
+		}
+	}
+
+	@Rule
+	public SearchTestRule searchTestRule = new SearchTestRule();
+
 	protected Region testGraphQLRegion_addRegion() throws Exception {
 		throw new UnsupportedOperationException(
 			"This method needs to be implemented");
+	}
+
+	protected Region testGraphQLCountryRegion_addRegion() throws Exception {
+		return testGraphQLCountryRegion_addRegion(
+			testGraphQLCountryRegion_getCountryId(), randomRegion());
+	}
+
+	protected Long testGraphQLCountryRegion_getCountryId() throws Exception {
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected Region testGraphQLCountryRegion_addRegion(
+			Long countryId, Region region)
+		throws Exception {
+
+		JSONDeserializer<Region> jsonDeserializer =
+			JSONFactoryUtil.createJSONDeserializer();
+
+		StringBuilder sb = new StringBuilder("{");
+
+		for (java.lang.reflect.Field field : getDeclaredFields(Region.class)) {
+			if (getGraphQLValue(field.get(region)) != null) {
+				if (sb.length() > 1) {
+					sb.append(", ");
+				}
+
+				sb.append(field.getName());
+				sb.append(": ");
+				sb.append(getGraphQLValue(field.get(region)));
+			}
+		}
+
+		sb.append("}");
+
+		List<GraphQLField> graphQLFields = getGraphQLFields();
+
+		return jsonDeserializer.deserialize(
+			JSONUtil.getValueAsString(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"createCountryRegion",
+						new HashMap<String, Object>() {
+							{
+								put("countryId", countryId);
+								put("region", sb.toString());
+							}
+						},
+						graphQLFields)),
+				"JSONObject/data", "JSONObject/createCountryRegion"),
+			Region.class);
+	}
+
+	protected String getGraphQLValue(Object value) throws Exception {
+		if (value == null) {
+			return null;
+		}
+		else if (value instanceof Boolean || value instanceof Number) {
+			return value.toString();
+		}
+		else if (value instanceof Date) {
+			Date date = (Date)value;
+
+			return "\"" +
+				DateUtil.getDate(
+					date, "yyyy-MM-dd'T'HH:mm:ss'Z'", LocaleUtil.getDefault(),
+					TimeZone.getTimeZone("UTC")) + "\"";
+		}
+		else if (value instanceof Enum) {
+			Enum<?> enm = (Enum<?>)value;
+
+			return enm.name();
+		}
+		else if (value instanceof Map) {
+			Map<?, ?> map = (Map<?, ?>)value;
+
+			List<String> entries = new ArrayList<>();
+
+			for (Map.Entry<?, ?> entry : map.entrySet()) {
+				String graphQLValue = getGraphQLValue(entry.getValue());
+
+				if (graphQLValue != null) {
+					entries.add(entry.getKey() + ": " + graphQLValue);
+				}
+			}
+
+			return "{" + String.join(", ", entries) + "}";
+		}
+		else if (value instanceof Object[]) {
+			Object[] array = (Object[])value;
+
+			List<String> entries = new ArrayList<>();
+
+			for (Object entry : array) {
+				String graphQLValue = getGraphQLValue(entry);
+
+				if (graphQLValue != null) {
+					entries.add(graphQLValue);
+				}
+			}
+
+			return "[" + String.join(", ", entries) + "]";
+		}
+		else if (value instanceof String) {
+			return "\"" + value + "\"";
+		}
+		else {
+			List<String> entries = new ArrayList<>();
+
+			Class<?> clazz = value.getClass();
+			java.lang.reflect.Field[] declaredFields = getDeclaredFields(clazz);
+
+			if (declaredFields.length == 0) {
+				declaredFields = getDeclaredFields(clazz.getSuperclass());
+			}
+
+			for (java.lang.reflect.Field field : declaredFields) {
+				String graphQLValue = getGraphQLValue(field.get(value));
+
+				if (graphQLValue != null) {
+					entries.add(field.getName() + ": " + graphQLValue);
+				}
+			}
+
+			return "{" + String.join(", ", entries) + "}";
+		}
 	}
 
 	protected void assertContains(Region region, List<Region> regions) {
@@ -1031,6 +2192,14 @@ public abstract class BaseRegionResourceTestCase {
 	protected void assertValid(Region region) throws Exception {
 		boolean valid = true;
 
+		if (region.getDateCreated() == null) {
+			valid = false;
+		}
+
+		if (region.getDateModified() == null) {
+			valid = false;
+		}
+
 		if (region.getId() == null) {
 			valid = false;
 		}
@@ -1048,6 +2217,24 @@ public abstract class BaseRegionResourceTestCase {
 
 			if (Objects.equals("countryId", additionalAssertFieldName)) {
 				if (region.getCountryId() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("creator", additionalAssertFieldName)) {
+				if (region.getCreator() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals(
+					"externalReferenceCode", additionalAssertFieldName)) {
+
+				if (region.getExternalReferenceCode() == null) {
 					valid = false;
 				}
 
@@ -1143,6 +2330,10 @@ public abstract class BaseRegionResourceTestCase {
 	protected List<GraphQLField> getGraphQLFields() throws Exception {
 		List<GraphQLField> graphQLFields = new ArrayList<>();
 
+		graphQLFields.add(new GraphQLField("externalReferenceCode"));
+
+		graphQLFields.add(new GraphQLField("id"));
+
 		for (java.lang.reflect.Field field :
 				getDeclaredFields(
 					com.liferay.headless.admin.address.dto.v1_0.Region.class)) {
@@ -1214,6 +2405,49 @@ public abstract class BaseRegionResourceTestCase {
 			if (Objects.equals("countryId", additionalAssertFieldName)) {
 				if (!Objects.deepEquals(
 						region1.getCountryId(), region2.getCountryId())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("creator", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						region1.getCreator(), region2.getCreator())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("dateCreated", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						region1.getDateCreated(), region2.getDateCreated())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("dateModified", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						region1.getDateModified(), region2.getDateModified())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals(
+					"externalReferenceCode", additionalAssertFieldName)) {
+
+				if (!Objects.deepEquals(
+						region1.getExternalReferenceCode(),
+						region2.getExternalReferenceCode())) {
 
 					return false;
 				}
@@ -1305,6 +2539,10 @@ public abstract class BaseRegionResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
+
 		return TransformUtil.transform(
 			ReflectionUtil.getDeclaredFields(clazz),
 			field -> {
@@ -1379,6 +2617,115 @@ public abstract class BaseRegionResourceTestCase {
 		if (entityFieldName.equals("countryId")) {
 			throw new IllegalArgumentException(
 				"Invalid entity field " + entityFieldName);
+		}
+
+		if (entityFieldName.equals("creator")) {
+			throw new IllegalArgumentException(
+				"Invalid entity field " + entityFieldName);
+		}
+
+		if (entityFieldName.equals("dateCreated")) {
+			if (operator.equals("between")) {
+				Date date = region.getDateCreated();
+
+				sb = new StringBundler();
+
+				sb.append("(");
+				sb.append(entityFieldName);
+				sb.append(" gt ");
+				sb.append(_format.format(date.getTime() - (2 * Time.SECOND)));
+				sb.append(" and ");
+				sb.append(entityFieldName);
+				sb.append(" lt ");
+				sb.append(_format.format(date.getTime() + (2 * Time.SECOND)));
+				sb.append(")");
+			}
+			else {
+				sb.append(entityFieldName);
+
+				sb.append(" ");
+				sb.append(operator);
+				sb.append(" ");
+
+				sb.append(_format.format(region.getDateCreated()));
+			}
+
+			return sb.toString();
+		}
+
+		if (entityFieldName.equals("dateModified")) {
+			if (operator.equals("between")) {
+				Date date = region.getDateModified();
+
+				sb = new StringBundler();
+
+				sb.append("(");
+				sb.append(entityFieldName);
+				sb.append(" gt ");
+				sb.append(_format.format(date.getTime() - (2 * Time.SECOND)));
+				sb.append(" and ");
+				sb.append(entityFieldName);
+				sb.append(" lt ");
+				sb.append(_format.format(date.getTime() + (2 * Time.SECOND)));
+				sb.append(")");
+			}
+			else {
+				sb.append(entityFieldName);
+
+				sb.append(" ");
+				sb.append(operator);
+				sb.append(" ");
+
+				sb.append(_format.format(region.getDateModified()));
+			}
+
+			return sb.toString();
+		}
+
+		if (entityFieldName.equals("externalReferenceCode")) {
+			Object object = region.getExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
+
+			return sb.toString();
 		}
 
 		if (entityFieldName.equals("id")) {
@@ -1502,8 +2849,11 @@ public abstract class BaseRegionResourceTestCase {
 			).toString(),
 			"application/json");
 		httpInvoker.httpMethod(HttpInvoker.HttpMethod.POST);
-		httpInvoker.path("http://localhost:8080/o/graphql");
-		httpInvoker.userNameAndPassword("test@liferay.com:test");
+		httpInvoker.path(
+			"http://localhost:" + PortalUtil.getPortalServerPort(false) +
+				"/o/graphql");
+		httpInvoker.userNameAndPassword(
+			"test@liferay.com:" + PropsValues.DEFAULT_ADMIN_PASSWORD);
 
 		HttpInvoker.HttpResponse httpResponse = httpInvoker.invoke();
 
@@ -1535,6 +2885,10 @@ public abstract class BaseRegionResourceTestCase {
 			{
 				active = RandomTestUtil.randomBoolean();
 				countryId = RandomTestUtil.randomLong();
+				dateCreated = RandomTestUtil.nextDate();
+				dateModified = RandomTestUtil.nextDate();
+				externalReferenceCode = StringUtil.toLowerCase(
+					RandomTestUtil.randomString());
 				id = RandomTestUtil.randomLong();
 				name = StringUtil.toLowerCase(RandomTestUtil.randomString());
 				position = RandomTestUtil.randomDouble();
@@ -1554,22 +2908,45 @@ public abstract class BaseRegionResourceTestCase {
 		return randomRegion();
 	}
 
+	protected final JSONObject waitForFinish(
+			String expectedExecuteStatus, JSONObject jsonObject)
+		throws Exception {
+
+		while (true) {
+			ImportTask importTask = importTaskResource.getImportTask(
+				jsonObject.getLong("id"));
+
+			ImportTask.ExecuteStatus executeStatus =
+				importTask.getExecuteStatus();
+
+			if (StringUtil.equals(executeStatus.getValue(), "COMPLETED") ||
+				StringUtil.equals(executeStatus.getValue(), "FAILED")) {
+
+				Assert.assertEquals(
+					expectedExecuteStatus, executeStatus.getValue());
+
+				return jsonObject;
+			}
+		}
+	}
+
 	protected RegionResource regionResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected ImportTaskResource importTaskResource;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
 
 	protected static class BeanTestUtil {
 
 		public static void copyProperties(Object source, Object target)
 			throws Exception {
 
-			Class<?> sourceClass = _getSuperClass(source.getClass());
+			Class<?> sourceClass = source.getClass();
 
 			Class<?> targetClass = target.getClass();
 
 			for (java.lang.reflect.Field field :
-					sourceClass.getDeclaredFields()) {
+					_getAllDeclaredFields(sourceClass)) {
 
 				if (field.isSynthetic()) {
 					continue;
@@ -1578,11 +2955,16 @@ public abstract class BaseRegionResourceTestCase {
 				Method getMethod = _getMethod(
 					sourceClass, field.getName(), "get");
 
-				Method setMethod = _getMethod(
-					targetClass, field.getName(), "set",
-					getMethod.getReturnType());
+				try {
+					Method setMethod = _getMethod(
+						targetClass, field.getName(), "set",
+						getMethod.getReturnType());
 
-				setMethod.invoke(target, getMethod.invoke(source));
+					setMethod.invoke(target, getMethod.invoke(source));
+				}
+				catch (Exception e) {
+					continue;
+				}
 			}
 		}
 
@@ -1614,6 +2996,24 @@ public abstract class BaseRegionResourceTestCase {
 			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
 		}
 
+		private static List<java.lang.reflect.Field> _getAllDeclaredFields(
+			Class<?> clazz) {
+
+			List<java.lang.reflect.Field> fields = new ArrayList<>();
+
+			while ((clazz != null) && (clazz != Object.class)) {
+				for (java.lang.reflect.Field field :
+						clazz.getDeclaredFields()) {
+
+					fields.add(field);
+				}
+
+				clazz = clazz.getSuperclass();
+			}
+
+			return fields;
+		}
+
 		private static Method _getMethod(Class<?> clazz, String name) {
 			for (Method method : clazz.getMethods()) {
 				if (name.equals(method.getName()) &&
@@ -1635,16 +3035,6 @@ public abstract class BaseRegionResourceTestCase {
 			return clazz.getMethod(
 				prefix + StringUtil.upperCaseFirstLetter(fieldName),
 				parameterTypes);
-		}
-
-		private static Class<?> _getSuperClass(Class<?> clazz) {
-			Class<?> superClass = clazz.getSuperclass();
-
-			if ((superClass == null) || (superClass == Object.class)) {
-				return clazz;
-			}
-
-			return superClass;
 		}
 
 		private static Object _translateValue(
@@ -1742,10 +3132,35 @@ public abstract class BaseRegionResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BaseRegionResourceTestCase.class);
 
-	private static DateFormat _dateFormat;
+	private static Format _format;
+
+	private com.liferay.portal.kernel.model.User _testCompanyAdminUser;
 
 	@Inject
 	private com.liferay.headless.admin.address.resource.v1_0.RegionResource
 		_regionResource;
 
+	@Inject
+	private GroupLocalService _groupLocalService;
+
+	@Inject
+	private ResourceActionLocalService _resourceActionLocalService;
+
+	@Inject
+	private ResourcePermissionLocalService _resourcePermissionLocalService;
+
+	@Inject
+	private RoleLocalService _roleLocalService;
+
+	@Inject
+	private ScopeChecker _scopeChecker;
+
+	@Inject
+	private UserLocalService _userLocalService;
+
+	@Inject
+	private VulcanCRUDItemDelegateBuilderRegistry
+		_vulcanCRUDItemDelegateBuilderRegistry;
+
 }
+// LIFERAY-REST-BUILDER-HASH:1021205880

@@ -5,11 +5,46 @@
 
 package com.liferay.commerce.internal.search;
 
+import com.liferay.commerce.model.CommerceOrder;
+import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
+import com.liferay.portal.kernel.dao.orm.Property;
+import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
+import com.liferay.portal.search.indexer.IndexerDocumentBuilder;
+import com.liferay.portal.search.indexer.IndexerWriter;
+
 /**
  * @author Danny Situ
  */
-public interface CommerceOrderBatchReindexer {
+public class CommerceOrderBatchReindexer {
 
-	public void reindex(long commerceAccountId, long companyId);
+	public CommerceOrderBatchReindexer(
+		IndexerDocumentBuilder indexerDocumentBuilder,
+		IndexerWriter<CommerceOrder> indexerWriter) {
+
+		_indexerDocumentBuilder = indexerDocumentBuilder;
+		_indexerWriter = indexerWriter;
+	}
+
+	public void reindex(long commerceAccountId, long companyId) {
+		IndexableActionableDynamicQuery indexableActionableDynamicQuery =
+			_indexerWriter.getIndexableActionableDynamicQuery();
+
+		indexableActionableDynamicQuery.setAddCriteriaMethod(
+			dynamicQuery -> {
+				Property commerceAccountIdProperty =
+					PropertyFactoryUtil.forName("commerceAccountId");
+
+				dynamicQuery.add(
+					commerceAccountIdProperty.eq(commerceAccountId));
+			});
+		indexableActionableDynamicQuery.setCompanyId(companyId);
+		indexableActionableDynamicQuery.setPerformActionMethod(
+			_indexerDocumentBuilder::getDocument);
+
+		indexableActionableDynamicQuery.performActions();
+	}
+
+	private final IndexerDocumentBuilder _indexerDocumentBuilder;
+	private final IndexerWriter<CommerceOrder> _indexerWriter;
 
 }

@@ -1,7 +1,6 @@
 import AppliedFilters from 'shared/components/filter/AppliedFilters';
 import ClayButton from '@clayui/button';
 import ClayIcon from '@clayui/icon';
-import dom from 'metal-dom';
 import DropdownMenu from 'shared/components/filter/DropdownMenu';
 import React, {useEffect, useRef, useState} from 'react';
 import remove from 'lodash/remove';
@@ -14,7 +13,7 @@ interface IFilterProps {
 type Item = {
 	category: string;
 	checked?: boolean;
-	items: Item[];
+	items: Item[] | null;
 	hasSearch: boolean;
 	inputType: string;
 	label: string;
@@ -32,15 +31,13 @@ const Filter: React.FC<IFilterProps> = ({
 
 	const [items, setItems] = useState(initialItems);
 
-	const _elementRef = useRef(null);
+	const _elementRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
-		const documentClickHandler = dom.on(document, 'click', handleDocClick);
+		document.addEventListener('click', handleDocClick);
 
 		return () => {
-			if (documentClickHandler) {
-				documentClickHandler.removeListener();
-			}
+			document.removeEventListener('click', handleDocClick);
 		};
 	}, []);
 
@@ -69,15 +66,11 @@ const Filter: React.FC<IFilterProps> = ({
 			return {...item, items: childItems};
 		});
 
-	const updateRadioItems = ({category, label}: Partial<Item>): void => {
+	const updateRadioItems = ({category, label}: Item): void => {
 		handleUpdateFilters({...selectedItems, [category]: [label]});
 	};
 
-	const updateCheckboxItems = ({
-		category,
-		checked,
-		label
-	}: Partial<Item>): void => {
+	const updateCheckboxItems = ({category, checked, label}: Item): void => {
 		const categoryItems = selectedItems[category] || [];
 
 		if (checked) {
@@ -108,17 +101,19 @@ const Filter: React.FC<IFilterProps> = ({
 	};
 
 	const handleDocClick = ({target}: Event): void => {
+		if (!_elementRef.current) return;
+
 		const dropdown = _elementRef.current.querySelector(
 			'.analytics-dropdown'
 		);
-		const dropdownMenu = Object.assign(
+		const dropdownMenu: Element[] = Object.assign(
 			[],
 			document.querySelectorAll('.analytics-dropdown-menu')
 		);
 
 		if (
-			dropdown.contains(target) ||
-			dropdownMenu.find(menu => menu.contains(target))
+			(dropdown && dropdown.contains(target as Node)) ||
+			dropdownMenu.find(menu => menu.contains(target as Node))
 		)
 			return;
 

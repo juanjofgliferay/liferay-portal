@@ -33,8 +33,8 @@ import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.search.test.util.FieldValuesAssert;
-import com.liferay.portal.search.test.util.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.users.admin.test.util.search.GroupBlueprint;
@@ -316,30 +316,31 @@ public class JournalArticleMultiLanguageSearchGroupIdsTest {
 	}
 
 	@Inject
-	private static DDMStructureLocalService _ddmStructureLocalService;
-
-	@Inject
-	private static GroupService _groupService;
-
-	@Inject
-	private static IndexerRegistry _indexerRegistry;
-
-	@Inject
-	private static JournalArticleLocalService _journalArticleLocalService;
-
-	@Inject
-	private static Portal _portal;
+	private DDMStructureLocalService _ddmStructureLocalService;
 
 	@DeleteAfterTestRun
 	private List<Group> _groups;
 
+	@Inject
+	private GroupService _groupService;
+
 	private Indexer<JournalArticle> _indexer;
+
+	@Inject
+	private IndexerRegistry _indexerRegistry;
+
+	@Inject
+	private JournalArticleLocalService _journalArticleLocalService;
 
 	@DeleteAfterTestRun
 	private List<JournalArticle> _journalArticles;
 
 	private JournalArticleSearchFixture _journalArticleSearchFixture;
 	private Group _jpGroup;
+
+	@Inject
+	private Portal _portal;
+
 	private UserSearchFixture _userSearchFixture;
 	private Group _usGroup;
 

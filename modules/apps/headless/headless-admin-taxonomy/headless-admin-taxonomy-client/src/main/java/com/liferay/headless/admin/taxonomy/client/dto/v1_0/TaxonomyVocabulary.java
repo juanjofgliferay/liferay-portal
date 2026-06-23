@@ -8,13 +8,13 @@ package com.liferay.headless.admin.taxonomy.client.dto.v1_0;
 import com.liferay.headless.admin.taxonomy.client.function.UnsafeSupplier;
 import com.liferay.headless.admin.taxonomy.client.serdes.v1_0.TaxonomyVocabularySerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Javier Gamarra
@@ -48,6 +48,28 @@ public class TaxonomyVocabulary implements Cloneable, Serializable {
 	}
 
 	protected Map<String, Map<String, String>> actions;
+
+	public AssetLibrary[] getAssetLibraries() {
+		return assetLibraries;
+	}
+
+	public void setAssetLibraries(AssetLibrary[] assetLibraries) {
+		this.assetLibraries = assetLibraries;
+	}
+
+	public void setAssetLibraries(
+		UnsafeSupplier<AssetLibrary[], Exception>
+			assetLibrariesUnsafeSupplier) {
+
+		try {
+			assetLibraries = assetLibrariesUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected AssetLibrary[] assetLibraries;
 
 	public String getAssetLibraryKey() {
 		return assetLibraryKey;
@@ -258,6 +280,27 @@ public class TaxonomyVocabulary implements Cloneable, Serializable {
 
 	protected Long id;
 
+	public Boolean getMultiValued() {
+		return multiValued;
+	}
+
+	public void setMultiValued(Boolean multiValued) {
+		this.multiValued = multiValued;
+	}
+
+	public void setMultiValued(
+		UnsafeSupplier<Boolean, Exception> multiValuedUnsafeSupplier) {
+
+		try {
+			multiValued = multiValuedUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Boolean multiValued;
+
 	public String getName() {
 		return name;
 	}
@@ -324,6 +367,58 @@ public class TaxonomyVocabulary implements Cloneable, Serializable {
 
 	protected Integer numberOfTaxonomyCategories;
 
+	public com.liferay.headless.admin.taxonomy.client.permission.Permission[]
+		getPermissions() {
+
+		return permissions;
+	}
+
+	public void setPermissions(
+		com.liferay.headless.admin.taxonomy.client.permission.Permission[]
+			permissions) {
+
+		this.permissions = permissions;
+	}
+
+	public void setPermissions(
+		UnsafeSupplier
+			<com.liferay.headless.admin.taxonomy.client.permission.Permission[],
+			 Exception> permissionsUnsafeSupplier) {
+
+		try {
+			permissions = permissionsUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected com.liferay.headless.admin.taxonomy.client.permission.Permission[]
+		permissions;
+
+	public String getSiteExternalReferenceCode() {
+		return siteExternalReferenceCode;
+	}
+
+	public void setSiteExternalReferenceCode(String siteExternalReferenceCode) {
+		this.siteExternalReferenceCode = siteExternalReferenceCode;
+	}
+
+	public void setSiteExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			siteExternalReferenceCodeUnsafeSupplier) {
+
+		try {
+			siteExternalReferenceCode =
+				siteExternalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String siteExternalReferenceCode;
+
 	public Long getSiteId() {
 		return siteId;
 	}
@@ -344,6 +439,25 @@ public class TaxonomyVocabulary implements Cloneable, Serializable {
 	}
 
 	protected Long siteId;
+
+	public String getUuid() {
+		return uuid;
+	}
+
+	public void setUuid(String uuid) {
+		this.uuid = uuid;
+	}
+
+	public void setUuid(UnsafeSupplier<String, Exception> uuidUnsafeSupplier) {
+		try {
+			uuid = uuidUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String uuid;
 
 	public ViewableBy getViewableBy() {
 		return viewableBy;
@@ -373,6 +487,36 @@ public class TaxonomyVocabulary implements Cloneable, Serializable {
 	}
 
 	protected ViewableBy viewableBy;
+
+	public VisibilityType getVisibilityType() {
+		return visibilityType;
+	}
+
+	public String getVisibilityTypeAsString() {
+		if (visibilityType == null) {
+			return null;
+		}
+
+		return visibilityType.toString();
+	}
+
+	public void setVisibilityType(VisibilityType visibilityType) {
+		this.visibilityType = visibilityType;
+	}
+
+	public void setVisibilityType(
+		UnsafeSupplier<VisibilityType, Exception>
+			visibilityTypeUnsafeSupplier) {
+
+		try {
+			visibilityType = visibilityTypeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected VisibilityType visibilityType;
 
 	@Override
 	public TaxonomyVocabulary clone() throws CloneNotSupportedException {
@@ -438,4 +582,38 @@ public class TaxonomyVocabulary implements Cloneable, Serializable {
 
 	}
 
+	public static enum VisibilityType {
+
+		EMPTY("EMPTY"), INTERNAL("INTERNAL"), PUBLIC("PUBLIC");
+
+		public static VisibilityType create(String value) {
+			for (VisibilityType visibilityType : values()) {
+				if (Objects.equals(visibilityType.getValue(), value) ||
+					Objects.equals(visibilityType.name(), value)) {
+
+					return visibilityType;
+				}
+			}
+
+			return null;
+		}
+
+		public String getValue() {
+			return _value;
+		}
+
+		@Override
+		public String toString() {
+			return _value;
+		}
+
+		private VisibilityType(String value) {
+			_value = value;
+		}
+
+		private final String _value;
+
+	}
+
 }
+// LIFERAY-REST-BUILDER-HASH:421988602

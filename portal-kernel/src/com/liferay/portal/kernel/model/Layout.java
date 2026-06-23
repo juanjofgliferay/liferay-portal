@@ -225,6 +225,8 @@ public interface Layout extends LayoutModel, PersistedModel {
 	 */
 	public boolean getIconImage();
 
+	public String getLayoutPrototypeUuid();
+
 	/**
 	 * Returns the current layout's {@link LayoutSet}.
 	 *
@@ -249,16 +251,18 @@ public interface Layout extends LayoutModel, PersistedModel {
 	 */
 	public Layout getLinkedToLayout();
 
+	public long getMasterLayoutPlid();
+
 	public String getRegularURL(
-			javax.servlet.http.HttpServletRequest httpServletRequest)
+			jakarta.servlet.http.HttpServletRequest httpServletRequest)
 		throws com.liferay.portal.kernel.exception.PortalException;
 
 	public String getResetLayoutURL(
-			javax.servlet.http.HttpServletRequest httpServletRequest)
+			jakarta.servlet.http.HttpServletRequest httpServletRequest)
 		throws com.liferay.portal.kernel.exception.PortalException;
 
 	public String getResetMaxStateURL(
-			javax.servlet.http.HttpServletRequest httpServletRequest)
+			jakarta.servlet.http.HttpServletRequest httpServletRequest)
 		throws com.liferay.portal.kernel.exception.PortalException;
 
 	public Group getScopeGroup()
@@ -315,8 +319,8 @@ public interface Layout extends LayoutModel, PersistedModel {
 	public boolean hasSetModifiedDate();
 
 	public boolean includeLayoutContent(
-			javax.servlet.http.HttpServletRequest httpServletRequest,
-			javax.servlet.http.HttpServletResponse httpServletResponse)
+			jakarta.servlet.http.HttpServletRequest httpServletRequest,
+			jakarta.servlet.http.HttpServletResponse httpServletResponse)
 		throws Exception;
 
 	public boolean isChildSelected(boolean selectable, Layout layout)
@@ -390,6 +394,8 @@ public interface Layout extends LayoutModel, PersistedModel {
 
 	public boolean isPortletEmbedded(String portletId, long groupId);
 
+	public boolean isPortletLayoutPageTemplateEntryLinkActive();
+
 	/**
 	 * Returns <code>true</code> if the current layout is part of the public
 	 * {@link LayoutSet}.
@@ -428,13 +434,13 @@ public interface Layout extends LayoutModel, PersistedModel {
 
 	public boolean isTypeAssetDisplay();
 
-	public boolean isTypeCollection();
-
 	public boolean isTypeContent();
 
 	public boolean isTypeControlPanel();
 
 	public boolean isTypeEmbedded();
+
+	public boolean isTypeEmpty();
 
 	public boolean isTypeLinkToLayout();
 
@@ -444,10 +450,12 @@ public interface Layout extends LayoutModel, PersistedModel {
 
 	public boolean isTypeURL();
 
+	public boolean isTypeUtility();
+
 	public boolean isUnlocked(String mode, long userId);
 
 	public boolean matches(
-		javax.servlet.http.HttpServletRequest httpServletRequest,
+		jakarta.servlet.http.HttpServletRequest httpServletRequest,
 		String friendlyURL);
 
 	public void setLayoutSet(LayoutSet layoutSet);
@@ -457,3 +465,4 @@ public interface Layout extends LayoutModel, PersistedModel {
 			typeSettingsUnicodeProperties);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1586302573

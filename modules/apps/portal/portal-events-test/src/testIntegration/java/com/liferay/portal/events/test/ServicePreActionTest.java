@@ -7,7 +7,12 @@ package com.liferay.portal.events.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.layout.test.util.LayoutTestUtil;
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.events.ServicePreAction;
+import com.liferay.portal.kernel.events.ActionException;
+import com.liferay.portal.kernel.events.LifecycleAction;
+import com.liferay.portal.kernel.events.LifecycleEvent;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
@@ -31,20 +36,26 @@ import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.CompanyTestUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
+import com.liferay.portal.kernel.test.util.PropsValuesTestUtil;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.InstancePool;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PrefsPropsUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.test.log.LogCapture;
+import com.liferay.portal.test.log.LogEntry;
+import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
-import com.liferay.portal.util.PropsUtil;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -73,17 +84,16 @@ public class ServicePreActionTest {
 	public static void setUpClass() throws Exception {
 		_company = CompanyTestUtil.addCompany();
 
-		_companyThreadLocalCompanyId = CompanyThreadLocal.getCompanyId();
-
-		CompanyThreadLocal.setCompanyId(_company.getCompanyId());
+		_safeCloseable = CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+			_company.getCompanyId());
 	}
 
 	@AfterClass
 	public static void tearDownClass() throws Exception {
-		CompanyThreadLocal.setCompanyId(_companyThreadLocalCompanyId);
+		_safeCloseable.close();
 
 		UserTestUtil.setUser(
-			UserTestUtil.getAdminUser(_companyThreadLocalCompanyId));
+			UserTestUtil.getAdminUser(CompanyThreadLocal.getCompanyId()));
 
 		CompanyLocalServiceUtil.deleteCompany(_company.getCompanyId());
 	}
@@ -97,11 +107,92 @@ public class ServicePreActionTest {
 		LayoutTestUtil.addTypePortletLayout(
 			_group.getGroupId(), "Page not visible", false, null, false, true);
 
+		_mockHttpServletRequest.addHeader(
+			"Host", _company.getVirtualHostname());
 		_mockHttpServletRequest.setAttribute(WebKeys.COMPANY, _company);
 		_mockHttpServletRequest.setAttribute(
 			WebKeys.VIRTUAL_HOST_LAYOUT_SET, _group.getPublicLayoutSet());
 		_mockHttpServletRequest.setRequestURI(
 			_portal.getPathMain() + "/portal/login");
+		_mockHttpServletRequest.setServerName(_company.getVirtualHostname());
+	}
+
+	@Test
+	public void testCustomErrorPage() throws Exception {
+		try (SafeCloseable safeCloseable1 =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"SERVLET_SERVICE_EVENTS_PRE",
+					new String[] {TestLifecycleAction.class.getName()});
+			SafeCloseable safeCloseable2 =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"SERVLET_SERVICE_EVENTS_PRE_ERROR_PAGE",
+					"/portal/portlet_error.jsp")) {
+
+			_testErrorPage(
+				true, false, false,
+				"http://localhost:" + _portal.getPortalServerPort(false));
+			_testErrorPage(
+				true, false, false,
+				"http://localhost:" + _portal.getPortalServerPort(false) +
+					"/c");
+		}
+	}
+
+	@Test
+	public void testCustomErrorPageFallback() throws Exception {
+		try (SafeCloseable safeCloseable1 =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"SERVLET_SERVICE_EVENTS_PRE",
+					new String[] {TestLifecycleAction.class.getName()});
+			SafeCloseable safeCloseable2 =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"SERVLET_SERVICE_EVENTS_PRE_ERROR_PAGE",
+					"/portal/portlet_error.jsp")) {
+
+			_testErrorPage(
+				false, true, false,
+				"http://localhost:" + _portal.getPortalServerPort(false));
+			_testErrorPage(
+				false, true, false,
+				"http://localhost:" + _portal.getPortalServerPort(false) +
+					"/c");
+		}
+	}
+
+	@Test
+	public void testErrorPage() throws Exception {
+		try (SafeCloseable safeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"SERVLET_SERVICE_EVENTS_PRE",
+					new String[] {TestLifecycleAction.class.getName()})) {
+
+			_testErrorPage(
+				false, false, false,
+				"http://localhost:" + _portal.getPortalServerPort(false));
+			_testErrorPage(
+				false, false, false,
+				"http://localhost:" + _portal.getPortalServerPort(false) +
+					"/c");
+		}
+	}
+
+	@Test
+	public void testErrorPageWithServletJSPExceptionsIncluded()
+		throws Exception {
+
+		try (SafeCloseable safeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"SERVLET_SERVICE_EVENTS_PRE",
+					new String[] {TestLifecycleAction.class.getName()})) {
+
+			_testErrorPage(
+				false, false, true,
+				"http://localhost:" + _portal.getPortalServerPort(false));
+			_testErrorPage(
+				false, false, true,
+				"http://localhost:" + _portal.getPortalServerPort(false) +
+					"/c");
+		}
 	}
 
 	@Test
@@ -259,6 +350,14 @@ public class ServicePreActionTest {
 		Assert.assertEquals(layout.getPlid(), plid);
 	}
 
+	@Test
+	public void testInitThemeDisplayPortalImpersonationEnable()
+		throws Exception {
+
+		_testInitThemeDisplayPortalImpersonationEnable(false);
+		_testInitThemeDisplayPortalImpersonationEnable(true);
+	}
+
 	private Layout _getLayout(Object layoutComposite) {
 		return ReflectionTestUtil.invoke(
 			layoutComposite, "getLayout", null, null);
@@ -320,11 +419,122 @@ public class ServicePreActionTest {
 		return themeDisplay.getPlid();
 	}
 
+	private void _testCustomErrorPage(String expectedMessage, String location)
+		throws Exception {
+
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				"com.liferay.portal.internal.servlet.MainServlet",
+				LoggerTestUtil.ERROR)) {
+
+			String content = _http.URLtoString(location);
+
+			Assert.assertTrue(
+				content.contains("Portlet is temporarily unavailable."));
+
+			List<LogEntry> logEntries = logCapture.getLogEntries();
+
+			LogEntry logEntry = logEntries.get(0);
+
+			Throwable throwable = logEntry.getThrowable();
+
+			Assert.assertEquals(expectedMessage, throwable.getMessage());
+		}
+	}
+
+	private void _testErrorPage(
+			boolean expectCustomErrorPage, boolean includeInvalidRenderPortlet,
+			boolean includeServletJspExceptions, String location)
+		throws Exception {
+
+		InstancePool.put(
+			TestLifecycleAction.class.getName(),
+			new TestLifecycleAction(
+				includeInvalidRenderPortlet, includeServletJspExceptions));
+
+		String expectedMessage = ServicePreActionTest.class.getName();
+
+		if (expectCustomErrorPage) {
+			_testCustomErrorPage(expectedMessage, location);
+		}
+		else {
+			_testErrorPage(expectedMessage, location);
+		}
+	}
+
+	private void _testErrorPage(String expectedMessage, String location)
+		throws Exception {
+
+		try (LogCapture logCapture1 = LoggerTestUtil.configureLog4JLogger(
+				"com.liferay.portal.internal.servlet.MainServlet",
+				LoggerTestUtil.ERROR);
+			LogCapture logCapture2 = LoggerTestUtil.configureLog4JLogger(
+				"portal_web.docroot.html.common.error_jsp",
+				LoggerTestUtil.ERROR)) {
+
+			String content = _http.URLtoString(location);
+
+			Assert.assertTrue(content.contains(expectedMessage));
+			Assert.assertTrue(
+				content.contains("An unexpected system error occurred."));
+
+			List<LogEntry> logEntries = logCapture1.getLogEntries();
+
+			LogEntry logEntry = logEntries.get(0);
+
+			Throwable throwable = logEntry.getThrowable();
+
+			Assert.assertEquals(expectedMessage, throwable.getMessage());
+
+			logEntries = logCapture2.getLogEntries();
+
+			logEntry = logEntries.get(0);
+
+			throwable = logEntry.getThrowable();
+
+			Assert.assertEquals(expectedMessage, throwable.getMessage());
+		}
+	}
+
+	private void _testInitThemeDisplayPortalImpersonationEnable(boolean value)
+		throws Exception {
+
+		try (SafeCloseable safeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"PORTAL_IMPERSONATION_ENABLE", value)) {
+
+			_mockHttpServletRequest.setParameter("doAsUserId", _DO_AS_USER_ID);
+
+			_servicePreAction.servicePre(
+				_mockHttpServletRequest, _mockHttpServletResponse, false);
+
+			ThemeDisplay themeDisplay =
+				(ThemeDisplay)_mockHttpServletRequest.getAttribute(
+					WebKeys.THEME_DISPLAY);
+
+			Assert.assertNotNull(themeDisplay);
+
+			if (value) {
+				Assert.assertEquals(
+					_DO_AS_USER_ID, themeDisplay.getDoAsUserId());
+			}
+			else {
+				Assert.assertEquals(
+					StringPool.BLANK, themeDisplay.getDoAsUserId());
+			}
+		}
+	}
+
+	private static final String _DO_AS_USER_ID =
+		"41b432f1b2872de6d1d7488d511e5da2b1";
+
 	private static Company _company;
-	private static long _companyThreadLocalCompanyId;
+	private static SafeCloseable _safeCloseable;
 
 	@DeleteAfterTestRun
 	private Group _group;
+
+	@Inject
+	private Http _http;
 
 	@Inject
 	private LayoutLocalService _layoutLocalService;
@@ -354,5 +564,44 @@ public class ServicePreActionTest {
 
 	@Inject
 	private UserLocalService _userLocalService;
+
+	private class TestLifecycleAction implements LifecycleAction {
+
+		public TestLifecycleAction(
+			boolean includeInvalidRenderPortlet,
+			boolean includeServletJspExceptions) {
+
+			_includeInvalidRenderPortlet = includeInvalidRenderPortlet;
+			_includeServletJspExceptions = includeServletJspExceptions;
+		}
+
+		@Override
+		public void processLifecycleEvent(LifecycleEvent lifecycleEvent)
+			throws ActionException {
+
+			HttpServletRequest httpServletRequest = lifecycleEvent.getRequest();
+
+			if (_includeInvalidRenderPortlet) {
+				httpServletRequest.setAttribute(
+					WebKeys.RENDER_PORTLET, ServicePreActionTest.class);
+			}
+
+			if (_includeServletJspExceptions) {
+				Exception exception = new ActionException(
+					ServicePreActionTest.class.getName() + "_JspException");
+
+				httpServletRequest.setAttribute(
+					"jakarta.servlet.error.exception", exception);
+				httpServletRequest.setAttribute(
+					"jakarta.servlet.jsp.jspException", exception);
+			}
+
+			throw new ActionException(ServicePreActionTest.class.getName());
+		}
+
+		private final boolean _includeInvalidRenderPortlet;
+		private final boolean _includeServletJspExceptions;
+
+	}
 
 }

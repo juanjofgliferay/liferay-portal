@@ -1,7 +1,25 @@
+create table SExperienceAudienceEntryRel (
+	mvccVersion LONG default 0 not null,
+	ctCollectionId LONG default 0 not null,
+	uuid_ VARCHAR(75) null,
+	sExperienceAudienceEntryRelId LONG not null,
+	groupId LONG,
+	companyId LONG,
+	userId LONG,
+	userName VARCHAR(75) null,
+	createDate DATE null,
+	modifiedDate DATE null,
+	audienceEntryERC VARCHAR(75) null,
+	priority INTEGER,
+	segmentsExperienceERC VARCHAR(75) null,
+	primary key (sExperienceAudienceEntryRelId, ctCollectionId)
+);
+
 create table SegmentsEntry (
 	mvccVersion LONG default 0 not null,
 	ctCollectionId LONG default 0 not null,
 	uuid_ VARCHAR(75) null,
+	externalReferenceCode VARCHAR(75) null,
 	segmentsEntryId LONG not null,
 	groupId LONG,
 	companyId LONG,
@@ -15,7 +33,6 @@ create table SegmentsEntry (
 	active_ BOOLEAN,
 	criteria TEXT null,
 	source VARCHAR(75) null,
-	type_ VARCHAR(75) null,
 	lastPublishDate DATE null,
 	primary key (segmentsEntryId, ctCollectionId)
 );
@@ -54,6 +71,7 @@ create table SegmentsExperience (
 	mvccVersion LONG default 0 not null,
 	ctCollectionId LONG default 0 not null,
 	uuid_ VARCHAR(75) null,
+	externalReferenceCode VARCHAR(75) null,
 	segmentsExperienceId LONG not null,
 	groupId LONG,
 	companyId LONG,
@@ -61,7 +79,8 @@ create table SegmentsExperience (
 	userName VARCHAR(75) null,
 	createDate DATE null,
 	modifiedDate DATE null,
-	segmentsEntryId LONG,
+	segmentsEntryERC VARCHAR(75) null,
+	segmentsEntryScopeERC VARCHAR(75) null,
 	segmentsExperienceKey VARCHAR(75) null,
 	plid LONG,
 	name STRING null,

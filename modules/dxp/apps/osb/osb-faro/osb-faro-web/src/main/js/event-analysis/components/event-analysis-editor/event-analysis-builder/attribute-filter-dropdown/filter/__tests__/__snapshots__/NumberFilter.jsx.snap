@@ -76,10 +76,9 @@ exports[`NumberFilter should render 1`] = `
     >
       <button
         class="button-root btn btn-block btn-primary"
-        disabled=""
         type="submit"
       >
-        Done
+        Apply
       </button>
     </div>
   </form>

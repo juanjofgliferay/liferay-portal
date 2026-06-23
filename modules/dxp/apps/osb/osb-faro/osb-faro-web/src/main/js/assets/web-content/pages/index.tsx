@@ -2,23 +2,21 @@ import * as breadcrumbs from 'shared/util/breadcrumbs';
 import BasePage from 'shared/components/base-page';
 import BundleRouter from 'route-middleware/BundleRouter';
 import DownloadCSVReport from 'shared/components/download-report/DownloadCSVReport';
-import DownloadPDFReport, {
-	Containers
-} from 'shared/components/download-report/DownloadPDFReport';
-import Filter from '../hocs/Filter';
+import DownloadPDFReport from 'shared/components/download-report/DownloadPDFReport';
 import getCN from 'classnames';
 import Loading from 'shared/components/Loading';
 import React, {lazy, Suspense, useState} from 'react';
 import RouteNotFound from 'shared/components/RouteNotFound';
-import {ENABLE_GLOBAL_FILTER} from 'shared/util/constants';
+import {CSVType} from 'shared/components/download-report/utils';
 import {getMatchedRoute, Routes} from 'shared/util/router';
-import {getRangeSelectorsFromQuery} from 'shared/util/util';
+import {getSafeDecodedURIComponent} from 'shared/util/util';
 import {pickBy} from 'lodash';
 import {Router} from 'shared/types';
 import {sub} from 'shared/util/lang';
 import {Switch} from 'react-router-dom';
 import {useChannelContext} from 'shared/context/channel';
-import {useDataSource} from 'shared/hooks/useDataSource';
+import {useDataSources} from 'shared/context/dataSources';
+import {useQueryRangeSelectors} from 'shared/hooks/useQueryRangeSelectors';
 
 const Overview = lazy(
 	() => import(/* webpackChunkName: "WebContentOverview" */ './Overview')
@@ -48,17 +46,24 @@ const WebContent: React.FC<{
 	router: Router;
 }> = ({className, router}) => {
 	const {
-		params: {assetId, channelId, groupId, title, touchpoint},
-		query
+		params: {
+			assetId,
+			channelId = '',
+			groupId = '',
+			title = '',
+			touchpoint,
+			type = ''
+		}
 	} = router;
 
-	const [filters, setFilters] = useState({});
+	const [filters] = useState({});
 
-	const dataSourceStates = useDataSource();
+	const dataSourceStates = useDataSources();
 
-	const decodedTitle = decodeURIComponent(title);
+	const decodedTitle = getSafeDecodedURIComponent(title);
+	const decodedType = getSafeDecodedURIComponent(type);
 
-	const rangeSelectorsFromQuery = getRangeSelectorsFromQuery(query);
+	const rangeSelectorsFromQuery = useQueryRangeSelectors();
 
 	const {selectedChannel} = useChannelContext();
 
@@ -75,12 +80,17 @@ const WebContent: React.FC<{
 						label: selectedChannel?.name
 					}),
 					breadcrumbs.getAssets({channelId, groupId}),
-					breadcrumbs.getWebContent({channelId, groupId}),
 					breadcrumbs.getEntityName({label: decodedTitle})
 				]}
 				groupId={groupId}
 			>
-				<BasePage.Header.TitleSection title={decodedTitle} />
+				{type && (
+					<BasePage.Header.TitleSection
+						label
+						subtitle={decodedType}
+						title={decodedTitle}
+					/>
+				)}
 
 				<BasePage.Header.NavBar
 					items={NAV_ITEMS}
@@ -89,7 +99,8 @@ const WebContent: React.FC<{
 						channelId,
 						groupId,
 						title,
-						touchpoint
+						touchpoint,
+						type
 					}}
 					routeQueries={pickBy(rangeSelectorsFromQuery)}
 				/>
@@ -100,14 +111,7 @@ const WebContent: React.FC<{
 				<BasePage.SubHeader>
 					<div className='d-flex justify-content-end w-100'>
 						<DownloadPDFReport
-							containers={[
-								Containers.VisitorsBehaviorCard,
-								Containers.AudienceCard,
-								Containers.ViewsByLocationCard,
-								Containers.ViewsByTechnologyCard,
-								Containers.AssetAppearsOnCard
-							]}
-							disabled={dataSourceStates.empty}
+							disabled={!!dataSourceStates.empty}
 							subtitle={selectedChannel?.name}
 							title={
 								sub(Liferay.Language.get('x-dashboard'), [
@@ -126,28 +130,15 @@ const WebContent: React.FC<{
 						<DownloadCSVReport
 							assetId={assetId}
 							assetType='journal'
-							disabled={dataSourceStates.empty}
-							infoMessage={
-								sub(
-									Liferay.Language.get(
-										'the-x-list-will-be-downloaded-respecting-the-current-ordering,-filter,-and-search-results.-please-verify-if-the-desired-changes-are-applied'
-									),
-									[Liferay.Language.get('individuals')]
-								) as string
-							}
-							type='individual'
+							disabled={!!dataSourceStates.empty}
+							type={CSVType.Individual}
+							typeLang={Liferay.Language.get('known-individuals')}
 						/>
 					</div>
 				</BasePage.SubHeader>
 			)}
 
 			<BasePage.Context.Provider value={{filters, router}}>
-				{ENABLE_GLOBAL_FILTER && (
-					<BasePage.SubHeader>
-						<Filter onChange={setFilters} />
-					</BasePage.SubHeader>
-				)}
-
 				<BasePage.Body>
 					<Suspense fallback={<Loading />}>
 						<Switch>

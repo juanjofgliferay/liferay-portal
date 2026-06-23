@@ -62,10 +62,10 @@ import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 import com.liferay.portal.upgrade.registry.UpgradeStepRegistrator;
 import com.liferay.portal.upgrade.test.util.UpgradeTestUtil;
 
+import jakarta.portlet.PortletPreferences;
+
 import java.util.Collections;
 import java.util.List;
-
-import javax.portlet.PortletPreferences;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -151,7 +151,7 @@ public class JournalArticleLayoutClassedModelUsageUpgradeProcessTest {
 	}
 
 	@Test
-	public void testUpgradeProcess() throws Exception {
+	public void testUpgrade() throws Exception {
 		_assertAssetEntryLayoutClassedModelUsages();
 
 		Group stagingGroup = _liveGroup.getStagingGroup();
@@ -181,7 +181,7 @@ public class JournalArticleLayoutClassedModelUsageUpgradeProcessTest {
 	}
 
 	@Test
-	public void testUpgradeProcessExistingLayoutClassedModelUsagesByPlid()
+	public void testUpgradeExistingLayoutClassedModelUsagesByPlid()
 		throws Exception {
 
 		_assertAssetEntryLayoutClassedModelUsages();
@@ -228,9 +228,9 @@ public class JournalArticleLayoutClassedModelUsageUpgradeProcessTest {
 
 		_layoutClassedModelUsageLocalService.addLayoutClassedModelUsage(
 			layoutClassedModelUsage.getGroupId(),
+			layoutClassedModelUsage.getClassExternalReferenceCode(),
 			layoutClassedModelUsage.getClassNameId(),
 			layoutClassedModelUsage.getClassPK(),
-			layoutClassedModelUsage.getClassedModelExternalReferenceCode(),
 			layoutClassedModelUsage.getContainerKey(),
 			layoutClassedModelUsage.getContainerType(),
 			layoutRevision.getLayoutRevisionId(),
@@ -449,11 +449,6 @@ public class JournalArticleLayoutClassedModelUsageUpgradeProcessTest {
 		"com.liferay.journal.internal.upgrade.v5_2_1." +
 			"JournalArticleLayoutClassedModelUsageUpgradeProcess";
 
-	@Inject(
-		filter = "(&(component.name=com.liferay.journal.internal.upgrade.registry.JournalServiceUpgradeStepRegistrator))"
-	)
-	private static UpgradeStepRegistrator _upgradeStepRegistrator;
-
 	private AssetEntry _assetEntry;
 
 	@Inject
@@ -511,6 +506,11 @@ public class JournalArticleLayoutClassedModelUsageUpgradeProcessTest {
 
 	@Inject
 	private StagingLocalService _stagingLocalService;
+
+	@Inject(
+		filter = "(&(component.name=com.liferay.journal.internal.upgrade.registry.JournalServiceUpgradeStepRegistrator))"
+	)
+	private UpgradeStepRegistrator _upgradeStepRegistrator;
 
 	private User _user;
 

@@ -17,12 +17,14 @@ import com.liferay.layout.page.template.internal.upgrade.v3_1_4.ResourcePermissi
 import com.liferay.layout.page.template.internal.upgrade.v3_3_0.LayoutPageTemplateStructureRelUpgradeProcess;
 import com.liferay.layout.page.template.internal.upgrade.v3_4_1.FragmentEntryLinkEditableValuesUpgradeProcess;
 import com.liferay.layout.page.template.internal.upgrade.v5_3_0.LayoutPageTemplateCollectionUpgradeProcess;
+import com.liferay.layout.page.template.internal.upgrade.v6_1_0.util.LayoutPageTemplateStructureRelElementVariationTable;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.LayoutPrototypeLocalService;
 import com.liferay.portal.kernel.service.PortletPreferencesLocalService;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.upgrade.BaseExternalReferenceCodeUpgradeProcess;
 import com.liferay.portal.kernel.upgrade.BaseSQLServerDatetimeUpgradeProcess;
 import com.liferay.portal.kernel.upgrade.CTModelUpgradeProcess;
 import com.liferay.portal.kernel.upgrade.DummyUpgradeProcess;
@@ -111,9 +113,12 @@ public class LayoutPageTemplateServiceUpgradeStepRegistrator
 			"3.1.3", "3.1.4", new ResourcePermissionUpgradeProcess());
 
 		registry.register(
-			"3.1.4", "3.2.0",
+			"3.1.4", "3.1.5",
 			new com.liferay.layout.page.template.internal.upgrade.v3_2_0.
-				LayoutPageTemplateCollectionUpgradeProcess(),
+				LayoutPageTemplateCollectionUpgradeProcess());
+
+		registry.register(
+			"3.1.5", "3.2.0",
 			new com.liferay.layout.page.template.internal.upgrade.v3_2_0.
 				LayoutPageTemplateEntryUpgradeProcess());
 
@@ -137,15 +142,21 @@ public class LayoutPageTemplateServiceUpgradeStepRegistrator
 				"LayoutPageTemplateStructureRel"));
 
 		registry.register(
-			"3.4.0", "3.4.1",
+			"3.4.0", "3.4.0.step-1",
 			new com.liferay.layout.page.template.internal.upgrade.v3_4_1.
-				LayoutPageTemplateEntryUpgradeProcess(_portal),
+				LayoutPageTemplateEntryUpgradeProcess(_portal));
+
+		registry.register(
+			"3.4.0.step-1", "3.4.1",
 			new FragmentEntryLinkEditableValuesUpgradeProcess());
 
 		registry.register(
-			"3.4.1", "3.4.2",
+			"3.4.1", "3.4.1.step-1",
 			new com.liferay.layout.page.template.internal.upgrade.v3_4_2.
-				FragmentEntryLinkEditableValuesUpgradeProcess(),
+				FragmentEntryLinkEditableValuesUpgradeProcess());
+
+		registry.register(
+			"3.4.1.step-1", "3.4.2",
 			new com.liferay.layout.page.template.internal.upgrade.v3_4_2.
 				LayoutPageTemplateStructureRelUpgradeProcess(
 					_fragmentEntryConfigurationParser));
@@ -174,7 +185,14 @@ public class LayoutPageTemplateServiceUpgradeStepRegistrator
 				LayoutPageTemplateStructureUpgradeProcess());
 
 		registry.register(
-			"5.0.0", "5.1.0",
+			"5.0.0", "5.0.1",
+			new com.liferay.layout.page.template.internal.upgrade.v5_0_1.
+				LayoutPageTemplateStructureUpgradeProcess(
+					_fragmentEntryLinkLocalService,
+					_segmentsExperienceLocalService));
+
+		registry.register(
+			"5.0.1", "5.1.0",
 			new com.liferay.layout.page.template.internal.upgrade.v5_1_0.
 				LayoutPageTemplateStructureUpgradeProcess(
 					_layoutLocalService, _segmentsExperienceLocalService,
@@ -183,7 +201,8 @@ public class LayoutPageTemplateServiceUpgradeStepRegistrator
 		registry.register(
 			"5.1.0", "5.1.1",
 			new com.liferay.layout.page.template.internal.upgrade.v5_1_1.
-				LayoutPageTemplateStructureUpgradeProcess(_layoutLocalService));
+				LayoutPageTemplateStructureUpgradeProcess(
+					_layoutLocalService, _userLocalService));
 
 		registry.register(
 			"5.1.1", "5.2.0",
@@ -203,6 +222,47 @@ public class LayoutPageTemplateServiceUpgradeStepRegistrator
 
 		registry.register(
 			"5.4.0", "5.5.0", new LayoutPageTemplateCollectionUpgradeProcess());
+
+		registry.register(
+			"5.5.0", "5.6.0",
+			new BaseExternalReferenceCodeUpgradeProcess() {
+
+				@Override
+				protected String[] getTableNames() {
+					return new String[] {"LayoutPageTemplateCollection"};
+				}
+
+			});
+
+		registry.register(
+			"5.6.0", "5.7.0",
+			new BaseExternalReferenceCodeUpgradeProcess() {
+
+				@Override
+				protected String[] getTableNames() {
+					return new String[] {"LayoutPageTemplateEntry"};
+				}
+
+			});
+
+		registry.register(
+			"5.7.0", "5.7.1",
+			new com.liferay.layout.page.template.internal.upgrade.v5_7_1.
+				LayoutPageTemplateStructureRelUpgradeProcess());
+
+		registry.register(
+			"5.7.1", "5.8.0",
+			UpgradeProcessFactory.addColumns(
+				"LayoutPageTemplateEntry", "classTypeKey VARCHAR(75) null"));
+
+		registry.register(
+			"5.8.0", "6.0.0",
+			new com.liferay.layout.page.template.internal.upgrade.v6_0_0.
+				LayoutPageTemplateStructureRelUpgradeProcess());
+
+		registry.register(
+			"6.0.0", "6.1.0",
+			LayoutPageTemplateStructureRelElementVariationTable.create());
 	}
 
 	@Reference

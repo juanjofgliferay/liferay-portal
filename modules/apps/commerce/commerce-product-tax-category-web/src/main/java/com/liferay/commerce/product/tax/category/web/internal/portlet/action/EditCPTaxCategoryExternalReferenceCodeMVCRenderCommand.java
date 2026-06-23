@@ -7,16 +7,17 @@ package com.liferay.commerce.product.tax.category.web.internal.portlet.action;
 
 import com.liferay.commerce.product.constants.CPConstants;
 import com.liferay.commerce.product.constants.CPPortletKeys;
+import com.liferay.commerce.product.model.CPTaxCategory;
 import com.liferay.commerce.product.service.CPTaxCategoryService;
 import com.liferay.commerce.product.tax.category.web.internal.display.context.CPTaxCategoryDisplayContext;
-import com.liferay.commerce.tax.service.CommerceTaxMethodService;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCRenderCommand;
+import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -26,7 +27,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + CPPortletKeys.CP_TAX_CATEGORY,
+		"jakarta.portlet.name=" + CPPortletKeys.CP_TAX_CATEGORY,
 		"mvc.command.name=/cp_tax_category/edit_cp_tax_category_external_reference_code"
 	},
 	service = MVCRenderCommand.class
@@ -42,7 +43,7 @@ public class EditCPTaxCategoryExternalReferenceCodeMVCRenderCommand
 		try {
 			CPTaxCategoryDisplayContext cpTaxCategoryDisplayContext =
 				new CPTaxCategoryDisplayContext(
-					_commerceTaxMethodService, _cpTaxCategoryService,
+					_cpTaxCategoryService, _modelResourcePermission,
 					_portletResourcePermission, renderRequest, renderResponse);
 
 			renderRequest.setAttribute(
@@ -57,10 +58,12 @@ public class EditCPTaxCategoryExternalReferenceCodeMVCRenderCommand
 	}
 
 	@Reference
-	private CommerceTaxMethodService _commerceTaxMethodService;
-
-	@Reference
 	private CPTaxCategoryService _cpTaxCategoryService;
+
+	@Reference(
+		target = "(model.class.name=com.liferay.commerce.product.model.CPTaxCategory)"
+	)
+	private ModelResourcePermission<CPTaxCategory> _modelResourcePermission;
 
 	@Reference(target = "(resource.name=" + CPConstants.RESOURCE_NAME_TAX + ")")
 	private PortletResourcePermission _portletResourcePermission;

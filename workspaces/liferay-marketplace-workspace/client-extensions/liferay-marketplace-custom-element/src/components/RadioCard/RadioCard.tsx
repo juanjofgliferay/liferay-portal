@@ -6,17 +6,23 @@
 import {ClayToggle} from '@clayui/form';
 import classNames from 'classnames';
 
-import radioChecked from '../../assets/icons/radio_button_checked_icon.svg';
+import radioChecked from '../../assets/icons/radio_button_checked_2_icon.svg';
 import radioUnchecked from '../../assets/icons/radio_button_unchecked_icon.svg';
-import paypal from '../../assets/images/paypal.png';
 
 import './RadioCard.scss';
+
+import ClayIcon from '@clayui/icon';
+import {ReactElement} from 'react';
+
 import {Tooltip} from '../Tooltip/Tooltip';
 
 interface RadioCardProps {
+	className?: string;
+	content?: ReactElement | string;
 	description?: string;
 	disabled?: boolean;
 	icon?: string;
+	image?: ReactElement;
 	onChange: (value?: boolean) => void;
 	position?: string;
 	selected: boolean;
@@ -27,9 +33,12 @@ interface RadioCardProps {
 }
 
 export function RadioCard({
+	className = '',
+	content,
 	description,
 	disabled = false,
 	icon,
+	image,
 	onChange,
 	position = 'left',
 	selected,
@@ -39,20 +48,25 @@ export function RadioCard({
 	tooltip,
 }: RadioCardProps) {
 	return (
-		<div
-			className={classNames('radio-card-container', {
-				'radio-card-container-disabled': disabled,
-				'radio-card-container-selected': selected,
-				'radio-card-container-small': small,
-			})}
+		<label
+			className={classNames(
+				'radio-card radio-card-container',
+				className,
+				{
+					'radio-card-container-disabled': disabled,
+					'radio-card-container-selected': selected,
+					'radio-card-container-small': small,
+				}
+			)}
+			htmlFor={title}
 		>
 			<div className="radio-card-main-info">
 				<div className="radio-card-title">
 					{position === 'right' && icon && (
-						<img
-							alt="Icon"
+						<ClayIcon
+							aria-label="Icon"
 							className="radio-card-title-icon-rounded"
-							src={icon}
+							symbol={icon}
 						/>
 					)}
 
@@ -69,6 +83,7 @@ export function RadioCard({
 								className={classNames('radio-card-button', {
 									'radio-card-button-disabled': disabled,
 								})}
+								id={title}
 								onClick={() => !disabled && onChange()}
 							>
 								<img
@@ -77,7 +92,7 @@ export function RadioCard({
 											? 'Radio Checked'
 											: 'Radio unchecked'
 									}
-									className="radio-card-button-icon"
+									className="mb-0 radio-card-button-icon"
 									src={
 										selected ? radioChecked : radioUnchecked
 									}
@@ -87,13 +102,19 @@ export function RadioCard({
 
 					{small ? (
 						<div className="radio-card-main-info-small">
-							<div className="radio-card-main-info-small-background">
-								<img alt="paypal" src={paypal} />
-							</div>
+							{image && (
+								<div className="radio-card-main-info-small-background">
+									{image}
+								</div>
+							)}
 
-							<span className="radio-card-main-info-small-text-small">
-								{title}
-							</span>
+							{title && (
+								<span className="radio-card-main-info-small-text-small">
+									{title}
+								</span>
+							)}
+
+							{content && <span className="">{content}</span>}
 						</div>
 					) : (
 						title && (
@@ -108,12 +129,12 @@ export function RadioCard({
 					)}
 
 					{position === 'left' && icon && (
-						<img
-							alt="Icon"
+						<ClayIcon
+							aria-label="Icon"
 							className={classNames('radio-card-title-icon', {
 								'radio-card-title-icon-selected': selected,
 							})}
-							src={icon}
+							symbol={icon}
 						/>
 					)}
 				</div>
@@ -127,6 +148,7 @@ export function RadioCard({
 				{position === 'right' &&
 					(toggle ? (
 						<ClayToggle
+							id={title}
 							onToggle={(toggleValue) => onChange(toggleValue)}
 							toggled={selected}
 						/>
@@ -144,13 +166,13 @@ export function RadioCard({
 										: 'Radio unchecked'
 								}
 								className="radio-card-button-icon"
-								src={selected ? radioChecked : radioUnchecked}
+								src={selected ? 'live' : 'radio-button'}
 							/>
 						</button>
 					))}
 			</div>
 
 			<span className="radio-card-description">{description}</span>
-		</div>
+		</label>
 	);
 }

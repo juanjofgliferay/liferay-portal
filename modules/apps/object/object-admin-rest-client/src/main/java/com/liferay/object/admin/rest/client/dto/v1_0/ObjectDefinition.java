@@ -8,13 +8,13 @@ package com.liferay.object.admin.rest.client.dto.v1_0;
 import com.liferay.object.admin.rest.client.function.UnsafeSupplier;
 import com.liferay.object.admin.rest.client.serdes.v1_0.ObjectDefinitionSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Javier Gamarra
@@ -117,6 +117,48 @@ public class ObjectDefinition implements Cloneable, Serializable {
 	}
 
 	protected Boolean active;
+
+	public String getClassName() {
+		return className;
+	}
+
+	public void setClassName(String className) {
+		this.className = className;
+	}
+
+	public void setClassName(
+		UnsafeSupplier<String, Exception> classNameUnsafeSupplier) {
+
+		try {
+			className = classNameUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String className;
+
+	public Creator getCreator() {
+		return creator;
+	}
+
+	public void setCreator(Creator creator) {
+		this.creator = creator;
+	}
+
+	public void setCreator(
+		UnsafeSupplier<Creator, Exception> creatorUnsafeSupplier) {
+
+		try {
+			creator = creatorUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Creator creator;
 
 	public Date getDateCreated() {
 		return dateCreated;
@@ -223,6 +265,73 @@ public class ObjectDefinition implements Cloneable, Serializable {
 
 	protected Boolean enableComments;
 
+	public Boolean getEnableFormContainer() {
+		return enableFormContainer;
+	}
+
+	public void setEnableFormContainer(Boolean enableFormContainer) {
+		this.enableFormContainer = enableFormContainer;
+	}
+
+	public void setEnableFormContainer(
+		UnsafeSupplier<Boolean, Exception> enableFormContainerUnsafeSupplier) {
+
+		try {
+			enableFormContainer = enableFormContainerUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Boolean enableFormContainer;
+
+	public Boolean getEnableFriendlyURLCustomization() {
+		return enableFriendlyURLCustomization;
+	}
+
+	public void setEnableFriendlyURLCustomization(
+		Boolean enableFriendlyURLCustomization) {
+
+		this.enableFriendlyURLCustomization = enableFriendlyURLCustomization;
+	}
+
+	public void setEnableFriendlyURLCustomization(
+		UnsafeSupplier<Boolean, Exception>
+			enableFriendlyURLCustomizationUnsafeSupplier) {
+
+		try {
+			enableFriendlyURLCustomization =
+				enableFriendlyURLCustomizationUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Boolean enableFriendlyURLCustomization;
+
+	public Boolean getEnableIndexSearch() {
+		return enableIndexSearch;
+	}
+
+	public void setEnableIndexSearch(Boolean enableIndexSearch) {
+		this.enableIndexSearch = enableIndexSearch;
+	}
+
+	public void setEnableIndexSearch(
+		UnsafeSupplier<Boolean, Exception> enableIndexSearchUnsafeSupplier) {
+
+		try {
+			enableIndexSearch = enableIndexSearchUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Boolean enableIndexSearch;
+
 	public Boolean getEnableLocalization() {
 		return enableLocalization;
 	}
@@ -289,6 +398,81 @@ public class ObjectDefinition implements Cloneable, Serializable {
 
 	protected Boolean enableObjectEntryHistory;
 
+	public Boolean getEnableObjectEntrySchedule() {
+		return enableObjectEntrySchedule;
+	}
+
+	public void setEnableObjectEntrySchedule(
+		Boolean enableObjectEntrySchedule) {
+
+		this.enableObjectEntrySchedule = enableObjectEntrySchedule;
+	}
+
+	public void setEnableObjectEntrySchedule(
+		UnsafeSupplier<Boolean, Exception>
+			enableObjectEntryScheduleUnsafeSupplier) {
+
+		try {
+			enableObjectEntrySchedule =
+				enableObjectEntryScheduleUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Boolean enableObjectEntrySchedule;
+
+	public Boolean getEnableObjectEntrySubscription() {
+		return enableObjectEntrySubscription;
+	}
+
+	public void setEnableObjectEntrySubscription(
+		Boolean enableObjectEntrySubscription) {
+
+		this.enableObjectEntrySubscription = enableObjectEntrySubscription;
+	}
+
+	public void setEnableObjectEntrySubscription(
+		UnsafeSupplier<Boolean, Exception>
+			enableObjectEntrySubscriptionUnsafeSupplier) {
+
+		try {
+			enableObjectEntrySubscription =
+				enableObjectEntrySubscriptionUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Boolean enableObjectEntrySubscription;
+
+	public Boolean getEnableObjectEntryVersioning() {
+		return enableObjectEntryVersioning;
+	}
+
+	public void setEnableObjectEntryVersioning(
+		Boolean enableObjectEntryVersioning) {
+
+		this.enableObjectEntryVersioning = enableObjectEntryVersioning;
+	}
+
+	public void setEnableObjectEntryVersioning(
+		UnsafeSupplier<Boolean, Exception>
+			enableObjectEntryVersioningUnsafeSupplier) {
+
+		try {
+			enableObjectEntryVersioning =
+				enableObjectEntryVersioningUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Boolean enableObjectEntryVersioning;
+
 	public String getExternalReferenceCode() {
 		return externalReferenceCode;
 	}
@@ -309,6 +493,27 @@ public class ObjectDefinition implements Cloneable, Serializable {
 	}
 
 	protected String externalReferenceCode;
+
+	public String getFriendlyURLSeparator() {
+		return friendlyURLSeparator;
+	}
+
+	public void setFriendlyURLSeparator(String friendlyURLSeparator) {
+		this.friendlyURLSeparator = friendlyURLSeparator;
+	}
+
+	public void setFriendlyURLSeparator(
+		UnsafeSupplier<String, Exception> friendlyURLSeparatorUnsafeSupplier) {
+
+		try {
+			friendlyURLSeparator = friendlyURLSeparatorUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String friendlyURLSeparator;
 
 	public Long getId() {
 		return id;
@@ -410,6 +615,31 @@ public class ObjectDefinition implements Cloneable, Serializable {
 	}
 
 	protected ObjectAction[] objectActions;
+
+	public ObjectDefinitionSetting[] getObjectDefinitionSettings() {
+		return objectDefinitionSettings;
+	}
+
+	public void setObjectDefinitionSettings(
+		ObjectDefinitionSetting[] objectDefinitionSettings) {
+
+		this.objectDefinitionSettings = objectDefinitionSettings;
+	}
+
+	public void setObjectDefinitionSettings(
+		UnsafeSupplier<ObjectDefinitionSetting[], Exception>
+			objectDefinitionSettingsUnsafeSupplier) {
+
+		try {
+			objectDefinitionSettings =
+				objectDefinitionSettingsUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected ObjectDefinitionSetting[] objectDefinitionSettings;
 
 	public ObjectField[] getObjectFields() {
 		return objectFields;
@@ -611,6 +841,35 @@ public class ObjectDefinition implements Cloneable, Serializable {
 
 	protected Boolean parameterRequired;
 
+	public com.liferay.object.admin.rest.client.permission.Permission[]
+		getPermissions() {
+
+		return permissions;
+	}
+
+	public void setPermissions(
+		com.liferay.object.admin.rest.client.permission.Permission[]
+			permissions) {
+
+		this.permissions = permissions;
+	}
+
+	public void setPermissions(
+		UnsafeSupplier
+			<com.liferay.object.admin.rest.client.permission.Permission[],
+			 Exception> permissionsUnsafeSupplier) {
+
+		try {
+			permissions = permissionsUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected com.liferay.object.admin.rest.client.permission.Permission[]
+		permissions;
+
 	public Map<String, String> getPluralLabel() {
 		return pluralLabel;
 	}
@@ -806,6 +1065,31 @@ public class ObjectDefinition implements Cloneable, Serializable {
 
 	protected String titleObjectFieldName;
 
+	public WorkflowDefinitionLink[] getWorkflowDefinitionLinks() {
+		return workflowDefinitionLinks;
+	}
+
+	public void setWorkflowDefinitionLinks(
+		WorkflowDefinitionLink[] workflowDefinitionLinks) {
+
+		this.workflowDefinitionLinks = workflowDefinitionLinks;
+	}
+
+	public void setWorkflowDefinitionLinks(
+		UnsafeSupplier<WorkflowDefinitionLink[], Exception>
+			workflowDefinitionLinksUnsafeSupplier) {
+
+		try {
+			workflowDefinitionLinks =
+				workflowDefinitionLinksUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected WorkflowDefinitionLink[] workflowDefinitionLinks;
+
 	@Override
 	public ObjectDefinition clone() throws CloneNotSupportedException {
 		return (ObjectDefinition)super.clone();
@@ -838,3 +1122,4 @@ public class ObjectDefinition implements Cloneable, Serializable {
 	}
 
 }
+// LIFERAY-REST-BUILDER-HASH:-746860302

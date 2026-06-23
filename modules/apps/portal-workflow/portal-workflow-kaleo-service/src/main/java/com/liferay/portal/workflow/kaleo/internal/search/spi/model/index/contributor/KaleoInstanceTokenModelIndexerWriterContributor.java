@@ -10,51 +10,26 @@ import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistryUtil;
 import com.liferay.portal.kernel.search.SearchException;
-import com.liferay.portal.search.batch.BatchIndexingActionable;
-import com.liferay.portal.search.batch.DynamicQueryBatchIndexingActionableFactory;
 import com.liferay.portal.search.spi.model.index.contributor.ModelIndexerWriterContributor;
-import com.liferay.portal.search.spi.model.index.contributor.helper.ModelIndexerWriterDocumentHelper;
 import com.liferay.portal.workflow.kaleo.model.KaleoInstance;
 import com.liferay.portal.workflow.kaleo.model.KaleoInstanceToken;
 import com.liferay.portal.workflow.kaleo.service.KaleoInstanceLocalService;
 import com.liferay.portal.workflow.kaleo.service.KaleoInstanceTokenLocalService;
 
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
-
 /**
  * @author István András Dézsi
  */
-@Component(
-	property = "indexer.class.name=com.liferay.portal.workflow.kaleo.model.KaleoInstanceToken",
-	service = ModelIndexerWriterContributor.class
-)
 public class KaleoInstanceTokenModelIndexerWriterContributor
-	implements ModelIndexerWriterContributor<KaleoInstanceToken> {
+	extends ModelIndexerWriterContributor<KaleoInstanceToken> {
 
-	@Override
-	public void customize(
-		BatchIndexingActionable batchIndexingActionable,
-		ModelIndexerWriterDocumentHelper modelIndexerWriterDocumentHelper) {
+	public KaleoInstanceTokenModelIndexerWriterContributor(
+		KaleoInstanceLocalService kaleoInstanceLocalService,
+		KaleoInstanceTokenLocalService kaleoInstanceTokenLocalService) {
 
-		batchIndexingActionable.setPerformActionMethod(
-			(KaleoInstanceToken kaleoInstanceToken) ->
-				batchIndexingActionable.addDocuments(
-					modelIndexerWriterDocumentHelper.getDocument(
-						kaleoInstanceToken)));
-	}
+		super(
+			kaleoInstanceTokenLocalService::getIndexableActionableDynamicQuery);
 
-	@Override
-	public BatchIndexingActionable getBatchIndexingActionable() {
-		return dynamicQueryBatchIndexingActionableFactory.
-			getBatchIndexingActionable(
-				kaleoInstanceTokenLocalService.
-					getIndexableActionableDynamicQuery());
-	}
-
-	@Override
-	public long getCompanyId(KaleoInstanceToken kaleoInstanceToken) {
-		return kaleoInstanceToken.getCompanyId();
+		_kaleoInstanceLocalService = kaleoInstanceLocalService;
 	}
 
 	@Override
@@ -64,7 +39,7 @@ public class KaleoInstanceTokenModelIndexerWriterContributor
 
 		try {
 			indexer.reindex(
-				kaleoInstanceLocalService.getKaleoInstance(
+				_kaleoInstanceLocalService.getKaleoInstance(
 					kaleoInstanceToken.getKaleoInstanceId()));
 		}
 		catch (SearchException searchException) {
@@ -75,14 +50,6 @@ public class KaleoInstanceTokenModelIndexerWriterContributor
 		}
 	}
 
-	@Reference
-	protected DynamicQueryBatchIndexingActionableFactory
-		dynamicQueryBatchIndexingActionableFactory;
-
-	@Reference
-	protected KaleoInstanceLocalService kaleoInstanceLocalService;
-
-	@Reference
-	protected KaleoInstanceTokenLocalService kaleoInstanceTokenLocalService;
+	private final KaleoInstanceLocalService _kaleoInstanceLocalService;
 
 }

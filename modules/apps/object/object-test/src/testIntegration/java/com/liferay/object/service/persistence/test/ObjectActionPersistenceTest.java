@@ -111,11 +111,7 @@ public class ObjectActionPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		ObjectAction newObjectAction = _persistence.create(pk);
-
-		newObjectAction.setMvccVersion(RandomTestUtil.nextLong());
+		ObjectAction newObjectAction = addObjectAction();
 
 		newObjectAction.setUuid(RandomTestUtil.randomString());
 
@@ -254,6 +250,16 @@ public class ObjectActionPersistenceTest {
 	}
 
 	@Test
+	public void testCountByA_OAEK() throws Exception {
+		_persistence.countByA_OAEK(RandomTestUtil.randomBoolean(), "");
+
+		_persistence.countByA_OAEK(RandomTestUtil.randomBoolean(), "null");
+
+		_persistence.countByA_OAEK(
+			RandomTestUtil.randomBoolean(), (String)null);
+	}
+
+	@Test
 	public void testCountByERC_C_ODI() throws Exception {
 		_persistence.countByERC_C_ODI(
 			"", RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
@@ -261,6 +267,18 @@ public class ObjectActionPersistenceTest {
 		_persistence.countByERC_C_ODI("null", 0L, 0L);
 
 		_persistence.countByERC_C_ODI((String)null, 0L, 0L);
+	}
+
+	@Test
+	public void testCountByC_A_OATK() throws Exception {
+		_persistence.countByC_A_OATK(
+			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean(), "");
+
+		_persistence.countByC_A_OATK(
+			0L, RandomTestUtil.randomBoolean(), "null");
+
+		_persistence.countByC_A_OATK(
+			0L, RandomTestUtil.randomBoolean(), (String)null);
 	}
 
 	@Test
@@ -639,8 +657,6 @@ public class ObjectActionPersistenceTest {
 
 		ObjectAction objectAction = _persistence.create(pk);
 
-		objectAction.setMvccVersion(RandomTestUtil.nextLong());
-
 		objectAction.setUuid(RandomTestUtil.randomString());
 
 		objectAction.setExternalReferenceCode(RandomTestUtil.randomString());
@@ -689,3 +705,4 @@ public class ObjectActionPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-230034920

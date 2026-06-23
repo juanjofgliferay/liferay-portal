@@ -99,11 +99,18 @@ public class RedirectEntryModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table RedirectEntry";
 
+	public static final String ENTITY_ALIAS = "redirectEntry";
+
+	public static final String FILTER_PK_COLUMN_NAME = "redirectEntryId";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY redirectEntry.redirectEntryId ASC";
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY RedirectEntry.redirectEntryId ASC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY redirectEntry.redirectEntryId ASC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -1111,3 +1118,4 @@ public class RedirectEntryModelImpl
 	private RedirectEntry _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:344050355

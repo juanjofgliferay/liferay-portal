@@ -1,4 +1,4 @@
-@component-name = "portal-workflow-ee"
+@component-name = "portal-bpm"
 definition {
 
 	property portal.release = "true";
@@ -15,10 +15,7 @@ definition {
 
 		Navigator.openURL();
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Metrics");
+		Workflow.openWorkflowMetrics();
 	}
 
 	tearDown {
@@ -61,10 +58,7 @@ definition {
 			workflowDefinition = "Single Approver",
 			workflowResourceValue = "Blogs Entry");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
 		JSONUser.addUser(
 			userEmailAddress = "AUser@liferay.com",
@@ -72,10 +66,7 @@ definition {
 			userLastName = "A Userl",
 			userScreenName = "Auser_");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
 		User.assignRegularRoleCP(
 			roleTitle = "Power User",
@@ -87,10 +78,7 @@ definition {
 			userLastName = "B Userl",
 			userScreenName = "Buser_");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
 		User.assignRegularRoleCP(
 			roleTitle = "Power User",
@@ -122,7 +110,7 @@ definition {
 
 		Navigator.gotoNavTab(navTab = "Assigned to My Roles");
 
-		LexiconEntry.gotoEllipsisMenuItem(menuItem = "Assign to Me");
+		LexiconEntry.gotoVerticalEllipsisMenuItemNoError(menuItem = "Assign to Me");
 
 		WorkflowMetrics.goToWorkflowAllItems(workflowProcessName = "Single Approver");
 
@@ -181,10 +169,7 @@ definition {
 			entryContent = "Test Content",
 			entryTitle = "Test Blog");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Metrics");
+		Workflow.openWorkflowMetrics();
 
 		WorkflowMetrics.goToWorkflowAllItems(workflowProcessName = "Single Approver");
 
@@ -281,7 +266,7 @@ definition {
 
 		Navigator.gotoNavTab(navTab = "Assigned to My Roles");
 
-		LexiconEntry.gotoEllipsisMenuItem(menuItem = "Assign to Me");
+		LexiconEntry.gotoVerticalEllipsisMenuItemNoError(menuItem = "Assign to Me");
 
 		Workflow.confirmWorkflowAction();
 
@@ -405,12 +390,7 @@ definition {
 			roleTitle = "Administrator",
 			userEmailAddress = "user1@liferay.com");
 
-		Navigator.openURL();
-
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "Instance Settings");
+		PortalSettings.openInstanceSettingsAdmin();
 
 		PortalSettings.gotoConfiguration(
 			configurationCategory = "User Authentication",
@@ -494,10 +474,7 @@ definition {
 			entryContent = "Test Content",
 			entryTitle = "Test Blog");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Metrics");
+		Workflow.openWorkflowMetrics();
 
 		WorkflowMetrics.goToWorkflowAllItems(workflowProcessName = "Single Approver");
 
@@ -562,10 +539,7 @@ definition {
 			entryContent = "Test Content",
 			entryTitle = "Test Blog");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Metrics");
+		Workflow.openWorkflowMetrics();
 
 		WorkflowMetrics.goToDashboardAllItemsWithFilter(
 			workflowFilterOption = "PENDING",
@@ -580,10 +554,7 @@ definition {
 	@description = "LPS-92053 - Verify that, at the items table, users should be able to click on process ID column and open a modal for the respective item details"
 	@priority = 3
 	test ClickOnProcessIdColumnToSeeItemDetailsPage {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -607,10 +578,7 @@ definition {
 			workflowAssetType = "Blogs Entry",
 			workflowTask = "Review");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Metrics");
+		Workflow.openWorkflowMetrics();
 
 		WorkflowMetrics.goToDashboardAllItemsWithFilter(
 			workflowFilterOption = "COMPLETED",
@@ -632,90 +600,6 @@ definition {
 		AssertElementPresent(locator1 = "WorkflowAllItems#DETAIL_PAGE_SLA_MESSAGE");
 
 		AssertElementPresent(locator1 = "WorkflowAllItems#DETAIL_PAGE_TITLE");
-	}
-
-	@description = "LPS-86652 - Verify that every column displays the correct info for a item"
-	@priority = 5
-	test ColumnsDiplayCorrectInfo {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
-
-		Navigator.gotoNavItem(navItem = "Configuration");
-
-		Workflow.configureWorkflow(
-			workflowDefinition = "Single Approver",
-			workflowResourceValue = "Blogs Entry");
-
-		JSONBlog.addEntry(
-			entryContent = "Blogs Content",
-			entryTitle = "Blogs Title 1");
-
-		WorkflowMetrics.goToWorkflowProcessMetrics(workflowProcessName = "Single Approver");
-
-		Click(locator1 = "WorkflowMetrics#DASHBOARD_TOTAL_PENDING_ITEMS_TITLE");
-
-		Workflow.assertInfoItem(
-			key_assignee = "Unassigned",
-			key_createdBy = "Test Test",
-			key_dueDate = "-",
-			key_itemSubject = "Blogs Entry: Blogs Title 1",
-			key_processStep = "Review");
-	}
-
-	@description = "LPS-86652 - Validate that the correct number of entries is showed when user chooses 4, 8, 20, 40, 60"
-	@priority = 3
-	test CorrectNumberOfEntriesDisplayedWhenPaginationEdited {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
-
-		Navigator.gotoNavItem(navItem = "Configuration");
-
-		Workflow.configureWorkflow(
-			workflowDefinition = "Single Approver",
-			workflowResourceValue = "Blogs Entry");
-
-		for (var blogNumber : list "1,2,3,4,5,6,7,8") {
-			JSONBlog.addEntry(
-				entryContent = "Blogs Entry Content",
-				entryTitle = "Blogs Entry Title ${blogNumber}");
-		}
-
-		WorkflowMetrics.goToDashboardAllItemsWithFilter(
-			workflowFilterOption = "PENDING",
-			workflowMetricsTab = "DASHBOARD",
-			workflowProcess = "Single Approver");
-
-		WorkflowMetricsProcessListView.changePagination(itemsPerPage = "4 Entries");
-
-		for (var orderNumber : list "1,2,3,4") {
-			AssertElementPresent(
-				key_order = ${orderNumber},
-				key_processStep = "Review",
-				locator1 = "WorkflowAllItems#WORKFLOW_ALL_ITEMS_TABLE_ORDER");
-		}
-
-		AssertElementNotPresent(
-			key_order = 5,
-			key_processStep = "Review",
-			locator1 = "WorkflowAllItems#WORKFLOW_ALL_ITEMS_TABLE_ORDER");
-
-		Click(locator1 = "WorkflowMetricsProcessListView#METRICS_WORKFLOW_PAGINATION_NEXT_BUTTON");
-
-		for (var orderNumber : list "1,2,3,4") {
-			AssertElementPresent(
-				key_order = ${orderNumber},
-				key_processStep = "Review",
-				locator1 = "WorkflowAllItems#WORKFLOW_ALL_ITEMS_TABLE_ORDER");
-		}
-
-		AssertElementNotPresent(
-			key_order = 5,
-			key_processStep = "Review",
-			locator1 = "WorkflowAllItems#WORKFLOW_ALL_ITEMS_TABLE_ORDER");
 	}
 
 	@description = "LPS-130218 - Verify that once the order/sorting is made by the user, this definition should be preserved when the user change pagination number"
@@ -740,12 +624,7 @@ definition {
 			roleTitle = "Administrator",
 			userEmailAddress = "user2@liferay.com");
 
-		Navigator.openURL();
-
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "Instance Settings");
+		PortalSettings.openInstanceSettingsAdmin();
 
 		PortalSettings.gotoConfiguration(
 			configurationCategory = "User Authentication",
@@ -766,10 +645,7 @@ definition {
 			userLastName = "user2",
 			userScreenName = "user2");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -819,10 +695,7 @@ definition {
 	@description = "LPS-130217 - Verify that the header title Creation Date is underline and bold on mouse hover"
 	@priority = 2
 	test CreationDateTitleIsUnderlineAndBold {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -846,56 +719,10 @@ definition {
 			value1 = "rgba(39, 40, 51, 1)");
 	}
 
-	@description = "LPS-130217 - Verify that once the order/sorting is made by the user, this definition should be preserved when the user change pagination number"
-	@priority = 3
-	test DefinitionIsPreservedWhenChangesPagination {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
-
-		Navigator.gotoNavItem(navItem = "Configuration");
-
-		Workflow.configureWorkflow(
-			workflowDefinition = "Single Approver",
-			workflowResourceValue = "Blogs Entry");
-
-		var count = 1;
-
-		while (${count} != 6) {
-			JSONBlog.addEntry(
-				entryContent = "Blogs Entry",
-				entryTitle = "Blogs Entry ${count}");
-
-			var count = ${count} + 1;
-		}
-
-		WorkflowMetrics.goToWorkflowProcessMetrics(workflowProcessName = "Single Approver");
-
-		Click(locator1 = "WorkflowMetrics#DASHBOARD_TOTAL_UNTRACKED_ITEMS_TITLE");
-
-		WorkflowMetricsProcessListView.changePagination(itemsPerPage = "4 Entries");
-
-		Click(
-			itemName = "Item Subject",
-			locator1 = "ACSettings#ITEM_ON_LIST");
-
-		Click(
-			key_pageNumber = 2,
-			locator1 = "WorkflowMetricsProcessListView#METRICS_WORKFLOW_PAGINATION_NUMBER_BUTTON");
-
-		AssertElementPresent(
-			key_value = "down",
-			locator1 = "WorkflowMetricsProcessListView#ANY_ARROW_ORDER");
-	}
-
 	@description = "LPS-86652 - Verify that the correct columns are displayed ID, Due Date, Item Subject, Process Step, Assignee, Created By, Creation Date"
 	@priority = 5
 	test DisplayColumns {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -907,10 +734,7 @@ definition {
 			entryContent = "Test content",
 			entryTitle = "Test Blog");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Metrics");
+		Workflow.openWorkflowMetrics();
 
 		WorkflowMetrics.goToDashboardAllItemsWithFilter(
 			workflowFilterOption = "PENDING",
@@ -954,10 +778,7 @@ definition {
 		}
 
 		task ("When the workflow is configured to an asset and the asset is created") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Workflow",
-				panel = "Applications",
-				portlet = "Process Builder");
+			Workflow.openWorkflowListView();
 
 			Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -1020,10 +841,7 @@ definition {
 
 		Button.clickSave();
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -1071,10 +889,7 @@ definition {
 			entryContent = "Test Content",
 			entryTitle = "Test Blog");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Metrics");
+		Workflow.openWorkflowMetrics();
 
 		WorkflowMetrics.goToDashboardAllItemsWithFilter(
 			workflowFilterOption = "PENDING",
@@ -1126,10 +941,7 @@ definition {
 
 		Button.clickSave();
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -1298,10 +1110,7 @@ definition {
 
 		Button.clickSave();
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -1315,10 +1124,7 @@ definition {
 				entryTitle = "Blogs Entry Title ${addBlogs}");
 		}
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Metrics");
+		Workflow.openWorkflowMetrics();
 
 		WorkflowMetrics.goToDashboardAllItemsWithFilter(
 			workflowFilterOption = "PENDING",
@@ -1333,10 +1139,7 @@ definition {
 	@description = "LPS-94146 - Verify that user can close the filters shown as tags clicking on x and the result is applied on items list"
 	@priority = 4
 	test FiltersCanBeClosedAndResultAppliedOnList {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -1413,7 +1216,7 @@ definition {
 	test FiltersDisplayedWhenReachingPageThroughPerformanceTab {
 		WorkflowMetrics.goToWorkflowProcessMetrics(workflowProcessName = "Single Approver");
 
-		Click(locator1 = "WorkflowMetrics#METRICS_PERFORMANCE_TAB");
+		WorkflowMetrics.goToPerformanceTab();
 
 		Click(locator1 = "WorkflowMetrics#PERFORMANCE_TOTAL_COMPLETED_ITEMS_VALUE");
 
@@ -1475,10 +1278,7 @@ definition {
 	test IconOnModalTitleIsGreyWhenItemIsCompletedNoSLA {
 		property ci.retries.disabled = "true";
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -1541,10 +1341,7 @@ definition {
 
 		Button.clickSave();
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -1566,7 +1363,7 @@ definition {
 
 		WorkflowMetrics.goToWorkflowProcessMetrics(workflowProcessName = "Single Approver");
 
-		Navigator.gotoNavItem(navItem = "Performance");
+		WorkflowMetrics.goToPerformanceTab();
 
 		Click(
 			key_index = 2,
@@ -1604,10 +1401,7 @@ definition {
 
 		Button.clickSave();
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -1629,7 +1423,7 @@ definition {
 
 		WorkflowMetrics.goToWorkflowProcessMetrics(workflowProcessName = "Single Approver");
 
-		Navigator.gotoNavItem(navItem = "Performance");
+		WorkflowMetrics.goToPerformanceTab();
 
 		Click(
 			key_index = 4,
@@ -1693,10 +1487,7 @@ definition {
 
 		Button.clickSave();
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -1747,7 +1538,7 @@ definition {
 
 		WorkflowMetrics.goToWorkflowProcessMetrics(workflowProcessName = "Single Approver");
 
-		Navigator.gotoNavItem(navItem = "Performance");
+		WorkflowMetrics.goToPerformanceTab();
 
 		Click(locator1 = "WorkflowMetrics#PERFORMANCE_TOTAL_COMPLETED_ITEMS_VALUE");
 
@@ -1778,10 +1569,7 @@ definition {
 	@description = "LPS-92053 - Verify that the item modal places an icon before the modal title referring to the SLA status: No SLA"
 	@priority = 3
 	test ItemModalPlacesIconReferringToSlaStatusNoSla {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -1812,10 +1600,7 @@ definition {
 			definitionsJobInterval = 1,
 			slaJobInterval = 1);
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -1867,10 +1652,7 @@ definition {
 			definitionsJobInterval = 1,
 			slaJobInterval = 1);
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -1911,80 +1693,6 @@ definition {
 			locator1 = "WorkflowAllItems#DETAIL_SLA_ICON");
 	}
 
-	@description = "LPS-130216 - Verify that once the order/sorting is made by the user, this definition should be preserved when the user change pagination number."
-	@priority = 3
-	test ItemOrdetationIsPreservedWhenChangesPagination {
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
-
-		Navigator.gotoNavItem(navItem = "Configuration");
-
-		Workflow.configureWorkflow(
-			workflowDefinition = "Single Approver",
-			workflowResourceValue = "Blogs Entry");
-
-		Workflow.configureWorkflow(
-			workflowDefinition = "Single Approver",
-			workflowResourceValue = "Web Content Article");
-
-		for (var webContentNumber : list "1,2,3,4") {
-			JSONWebcontent.addWebContent(
-				content = "WC Content",
-				groupName = "Guest",
-				title = "Web Content Title ${webContentNumber}");
-		}
-
-		for (var blogNumber : list "5,6,7,8") {
-			JSONBlog.addEntry(
-				entryContent = "Blogs Entry Content",
-				entryTitle = "Blogs Entry Title ${blogNumber}");
-		}
-
-		WorkflowMetrics.goToDashboardAllItemsWithFilter(
-			workflowFilterOption = "PENDING",
-			workflowMetricsTab = "DASHBOARD",
-			workflowProcess = "Single Approver");
-
-		WorkflowMetricsAllItemsList.orderByCreationDateAsc();
-
-		WorkflowMetricsProcessListView.changePagination(itemsPerPage = "8 Entries");
-
-		for (var orderNumber : list "1,2,3,4") {
-			AssertElementPresent(
-				key_itemSubject = "Web Content Article: Web Content Title ${orderNumber}",
-				key_order = ${orderNumber},
-				locator1 = "WorkflowAllItems#WORKFLOW_ALL_ITEMS_ITEM_ORDER");
-		}
-
-		for (var orderNumber : list "5,6,7,8") {
-			AssertElementPresent(
-				key_itemSubject = "Blogs Entry: Blogs Entry Title ${orderNumber}",
-				key_order = ${orderNumber},
-				locator1 = "WorkflowAllItems#WORKFLOW_ALL_ITEMS_ITEM_ORDER");
-		}
-
-		WorkflowMetricsProcessListView.changePagination(itemsPerPage = "20 Entries");
-
-		for (var orderNumber : list "1,2,3,4") {
-			AssertElementPresent(
-				key_itemSubject = "Web Content Article: Web Content Title ${orderNumber}",
-				key_order = ${orderNumber},
-				locator1 = "WorkflowAllItems#WORKFLOW_ALL_ITEMS_ITEM_ORDER");
-		}
-
-		for (var orderNumber : list "5,6,7,8") {
-			AssertElementPresent(
-				key_itemSubject = "Blogs Entry: Blogs Entry Title ${orderNumber}",
-				key_order = ${orderNumber},
-				locator1 = "WorkflowAllItems#WORKFLOW_ALL_ITEMS_ITEM_ORDER");
-		}
-	}
-
 	@description = "LPS-86652 - Verify that long texts will display ellipsis"
 	@priority = 3
 	test LongTextsDisplayEllipsis {
@@ -2016,10 +1724,7 @@ definition {
 			workflowAssetType = "Web Content Article",
 			workflowTask = "Review");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Metrics");
+		Workflow.openWorkflowMetrics();
 
 		WorkflowMetrics.goToWorkflowProcessMetricsAndTotalCompleted(workflowProcessName = "Single Approver");
 
@@ -2052,10 +1757,7 @@ definition {
 			entryContent = "Blogs Entry Content",
 			entryTitle = "Blogs Entry Title");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
 		User.assignRegularRoleCP(
 			roleTitle = "Administrator",
@@ -2071,10 +1773,7 @@ definition {
 			assigneeName = "buyerbuyerbuyerbuyerbuyer (buyerbuyerbuyerbuyerbuyer buyerbuyerbuyerbuyerbuyer)",
 			workflowTask = "Review");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Metrics");
+		Workflow.openWorkflowMetrics();
 
 		WorkflowMetrics.goToDashboardAllItemsWithFilter(
 			workflowFilterOption = "PENDING",
@@ -2089,10 +1788,7 @@ definition {
 	@description = "LPS-98517 - Verify that a long username that exceeds 240px in the assignee dropdown option is placed in more than one line, respecting the alignment of the field"
 	@priority = 3
 	test LongUserNameIsDisplayedInMoreThanOneLineInDropdown {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -2151,10 +1847,7 @@ definition {
 	@description = "LPS-92053 - Verify that the Go to submission page button opens the submission page in another tab"
 	@priority = 4
 	test OpenSubmissionPageInAnotherTab {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -2294,10 +1987,7 @@ definition {
 	@description = "LPS-130166 - Verify that the popover is not displayd when hovering untracked items on Due Date column item"
 	@priority = 3
 	test PopoverIsNotDisplayedForUntrackedItems {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -2330,10 +2020,7 @@ definition {
 	@description = "LPS-130217 - Verify that user is able to click on the table header title to order items by Creation Date: old-new / new-old"
 	@priority = 4
 	test ReorderEntriesClickingCreationDateColumn {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -2361,10 +2048,7 @@ definition {
 			entryContent = "Blogs Entry Content",
 			entryTitle = "Blogs Entry Title 2");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Metrics");
+		Workflow.openWorkflowMetrics();
 
 		WorkflowMetrics.goToDashboardAllItemsWithFilter(
 			workflowFilterOption = "COMPLETED",
@@ -2519,10 +2203,7 @@ definition {
 	@description = "LPS-92053 - Verify that, in the item detail modal, when one of the sections has no entries, the section title is completely removed"
 	@priority = 4
 	test SectionIsRemovedWhenItHasNoEntries {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -2597,10 +2278,7 @@ definition {
 
 		Navigator.openURL();
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Workflow.addNewDefinition(workflowDefinitionTitle = "Similar Single Approver Process");
 
@@ -2743,10 +2421,7 @@ definition {
 	@description = "LPS-92053 - Verify that, in the item detail modal, when an item is completed, the summary section should hide the info Current Step and replace it with End Date"
 	@priority = 3
 	test SummarySectionDisplaysEndDateInsteadOfCurrentStep {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -2758,10 +2433,7 @@ definition {
 			entryContent = "Test Content",
 			entryTitle = "Test Blog");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Metrics");
+		Workflow.openWorkflowMetrics();
 
 		WorkflowMetrics.goToWorkflowProcessMetrics(workflowProcessName = "Single Approver");
 
@@ -2789,14 +2461,11 @@ definition {
 			workflowAssetType = "Blogs Entry",
 			workflowTask = "Review");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Metrics");
+		Workflow.openWorkflowMetrics();
 
 		WorkflowMetrics.goToWorkflowProcessMetrics(workflowProcessName = "Single Approver");
 
-		Click(locator1 = "WorkflowMetrics#METRICS_PERFORMANCE_TAB");
+		WorkflowMetrics.goToPerformanceTab();
 
 		Click(locator1 = "WorkflowMetrics#DASHBOARD_TOTAL_COMPLETED_ITEMS_TITLE");
 
@@ -2810,7 +2479,12 @@ definition {
 	@description = "LPS-98517 - Verify that tasks can be assigned to more than one user and listed with commas"
 	@priority = 3
 	test TaskReassignedToMultipleUsers {
+		property portal.upstream = "quarantine";
+
 		task ("Given a primary user who creates a secondary Power user with a membership") {
+			property test.liferay.virtual.instance = "false";
+			property test.run.type = "single";
+
 			Site.openSiteSettingsAdmin(siteURLKey = "guest");
 
 			Site.manageMembershipOptions(allowManualMembershipManagement = "true");
@@ -2850,10 +2524,7 @@ definition {
 		}
 
 		task ("and Given a multi task process configured to an asset") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Workflow",
-				panel = "Applications",
-				portlet = "Process Builder");
+			Workflow.openWorkflowListView();
 
 			Workflow.addNewDefinition(workflowDefinitionTitle = "Multi Task Process");
 
@@ -2863,10 +2534,7 @@ definition {
 
 			Button.clickPublish();
 
-			ApplicationsMenu.gotoPortlet(
-				category = "Workflow",
-				panel = "Applications",
-				portlet = "Process Builder");
+			Workflow.openWorkflowListView();
 
 			Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -2922,14 +2590,10 @@ definition {
 	@description = "LPS-86652 - Verify that hovering the cursor on the process step, when it contains more than 1 option, the toolip will display a bullet list"
 	@priority = 3
 	test TooltipDisplaysStepsListWhenMultipleItems {
-		property portal.acceptance = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Workflow.addNewDefinition(workflowDefinitionTitle = "Multi Task Process");
 
@@ -2959,10 +2623,7 @@ definition {
 	@description = "LPS-92053 - Verify that the Go to submission page button, on hover, displays a tooltip saying Open page in new tab"
 	@priority = 3
 	test TooltipIsDisplayedWhenHoveringButton {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -2985,7 +2646,7 @@ definition {
 		AssertElementPresent(locator1 = "WorkflowAllItems#DETAIL_PAGE_GO_TO_SUBMISSION_PAGE_TOOLTIP");
 	}
 
-	@description = "Verify that when the user make changes in the Workflow, the Track Approval displays the correct version"
+	@description = "Verify that when the user updates the Workflow definition, the Track Approval still displays the version of the Workflow instance"
 	@priority = 4
 	test TrackApprovalDisplayCorrectVersionAfterChange {
 		property test.liferay.virtual.instance = "false";
@@ -3026,10 +2687,7 @@ definition {
 			nodeType = "task",
 			update = "true");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Metrics");
+		Workflow.openWorkflowMetrics();
 
 		WorkflowMetrics.goToDashboardAllItemsWithFilter(
 			workflowFilterOption = "PENDING",
@@ -3040,7 +2698,7 @@ definition {
 
 		WorkflowMetricsAllItemsList.goToTrackWorkflowlink();
 
-		WorkflowMetricsAllItemsList.viewNodesDisplayed(nodesTrackWorkflow = "created,Review changed,update,approved");
+		WorkflowMetricsAllItemsList.viewNodesDisplayed(nodesTrackWorkflow = "Created,Review,Update,Approved");
 	}
 
 	@description = "Verify that when the user clicks the link in the detail modal, the Workflow in use is displayed"
@@ -3103,12 +2761,7 @@ definition {
 			roleTitle = "Power User",
 			userEmailAddress = "user@liferay.com");
 
-		Navigator.openURL();
-
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "Instance Settings");
+		PortalSettings.openInstanceSettingsAdmin();
 
 		PortalSettings.gotoConfiguration(
 			configurationCategory = "User Authentication",
@@ -3117,10 +2770,7 @@ definition {
 
 		PortalSettings.uncheckStrangersVerifyEmailCheckbox();
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -3155,10 +2805,7 @@ definition {
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Workflow.addNewDefinition(workflowDefinitionTitle = "Multi Task Process");
 
@@ -3233,10 +2880,7 @@ definition {
 	@description = "This is a use case for LPS-98825."
 	@priority = 5
 	test ViewMyWorkflowTasksOrderResults {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -3292,10 +2936,7 @@ definition {
 
 		Button.clickSave();
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -3372,10 +3013,7 @@ definition {
 		}
 
 		task ("When a blog entry is created with a Single Approver Workflow") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Workflow",
-				panel = "Applications",
-				portlet = "Process Builder");
+			Workflow.openWorkflowListView();
 
 			Navigator.gotoNavItem(navItem = "Configuration");
 

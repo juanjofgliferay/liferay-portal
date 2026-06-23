@@ -9,13 +9,13 @@ import com.liferay.asset.kernel.model.AssetTag;
 import com.liferay.asset.kernel.service.AssetTagLocalService;
 import com.liferay.asset.util.AssetHelper;
 import com.liferay.document.library.kernel.util.DLValidatorUtil;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.io.unsync.UnsyncBufferedReader;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
-import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Company;
@@ -66,19 +66,31 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.osgi.service.component.annotations.Activate;
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
-
 /**
  * @author Alvaro del Castillo
  * @author Jorge Ferrer
  */
-@Component(
-	configurationPid = "com.liferay.wiki.configuration.WikiGroupServiceConfiguration",
-	service = MediaWikiImporter.class
-)
 public class MediaWikiImporter {
+
+	public MediaWikiImporter(
+		AssetTagLocalService assetTagLocalService,
+		CompanyLocalService companyLocalService,
+		PortletFileRepository portletFileRepository,
+		UserLocalService userLocalService,
+		WikiGroupServiceConfiguration wikiGroupServiceConfiguration,
+		WikiPageLocalService wikiPageLocalService,
+		WikiPageTitleValidator wikiPageTitleValidator,
+		ZipReaderFactory zipReaderFactory) {
+
+		_assetTagLocalService = assetTagLocalService;
+		_companyLocalService = companyLocalService;
+		_portletFileRepository = portletFileRepository;
+		_userLocalService = userLocalService;
+		_wikiGroupServiceConfiguration = wikiGroupServiceConfiguration;
+		_wikiPageLocalService = wikiPageLocalService;
+		_wikiPageTitleValidator = wikiPageTitleValidator;
+		_zipReaderFactory = zipReaderFactory;
+	}
 
 	public void importPages(
 			long userId, WikiNode node, InputStream[] inputStreams,
@@ -136,12 +148,6 @@ public class MediaWikiImporter {
 		catch (Exception exception) {
 			throw new PortalException(exception);
 		}
-	}
-
-	@Activate
-	protected void activate(Map<String, Object> properties) {
-		_wikiGroupServiceConfiguration = ConfigurableUtil.createConfigurable(
-			WikiGroupServiceConfiguration.class, properties);
 	}
 
 	private String _getCreoleRedirectContent(String redirectTitle) {
@@ -326,118 +332,120 @@ public class MediaWikiImporter {
 			return;
 		}
 
-		ZipReader zipReader = _zipReaderFactory.getZipReader(imagesInputStream);
+		try (ZipReader zipReader = _zipReaderFactory.getZipReader(
+				imagesInputStream)) {
 
-		List<String> entries = zipReader.getEntries();
+			List<String> entries = zipReader.getEntries();
 
-		if (entries == null) {
-			throw new ImportFilesException();
-		}
-
-		ProgressTracker progressTracker =
-			ProgressTrackerThreadLocal.getProgressTracker();
-
-		int count = 0;
-
-		int total = entries.size();
-
-		if (total > 0) {
-			try {
-				_wikiPageLocalService.getPage(
-					node.getNodeId(), WikiPageConstants.SHARED_IMAGES_TITLE);
+			if (entries == null) {
+				throw new ImportFilesException();
 			}
-			catch (NoSuchPageException noSuchPageException) {
-				if (_log.isDebugEnabled()) {
-					_log.debug(noSuchPageException);
+
+			ProgressTracker progressTracker =
+				ProgressTrackerThreadLocal.getProgressTracker();
+
+			int count = 0;
+
+			int total = entries.size();
+
+			if (total > 0) {
+				try {
+					_wikiPageLocalService.getPage(
+						node.getNodeId(),
+						WikiPageConstants.SHARED_IMAGES_TITLE);
 				}
-
-				ServiceContext serviceContext = new ServiceContext();
-
-				serviceContext.setAddGroupPermissions(true);
-				serviceContext.setAddGuestPermissions(true);
-
-				_wikiPageLocalService.addPage(
-					userId, node.getNodeId(),
-					WikiPageConstants.SHARED_IMAGES_TITLE, "See attachments",
-					null, true, serviceContext);
-			}
-		}
-
-		List<ObjectValuePair<String, InputStream>> inputStreamOVPs =
-			new ArrayList<>();
-
-		try {
-			int percentage = 50;
-
-			for (int i = 0; i < entries.size(); i++) {
-				String entry = entries.get(i);
-
-				String key = entry;
-
-				InputStream inputStream = zipReader.getEntryAsInputStream(
-					entry);
-
-				String[] paths = StringUtil.split(key, CharPool.SLASH);
-
-				if (!_isValidImage(paths, inputStream)) {
-					if (_log.isInfoEnabled()) {
-						_log.info("Ignoring " + key);
+				catch (NoSuchPageException noSuchPageException) {
+					if (_log.isDebugEnabled()) {
+						_log.debug(noSuchPageException);
 					}
 
-					continue;
+					ServiceContext serviceContext = new ServiceContext();
+
+					serviceContext.setAddGroupPermissions(true);
+					serviceContext.setAddGuestPermissions(true);
+
+					_wikiPageLocalService.addPage(
+						userId, node.getNodeId(),
+						WikiPageConstants.SHARED_IMAGES_TITLE,
+						"See attachments", null, true, serviceContext);
+				}
+			}
+
+			List<ObjectValuePair<String, InputStream>> inputStreamOVPs =
+				new ArrayList<>();
+
+			try {
+				int percentage = 50;
+
+				for (int i = 0; i < entries.size(); i++) {
+					String entry = entries.get(i);
+
+					String key = entry;
+
+					InputStream inputStream = zipReader.getEntryAsInputStream(
+						entry);
+
+					String[] paths = StringUtil.split(key, CharPool.SLASH);
+
+					if (!_isValidImage(paths, inputStream)) {
+						if (_log.isInfoEnabled()) {
+							_log.info("Ignoring " + key);
+						}
+
+						continue;
+					}
+
+					String fileName = StringUtil.toLowerCase(
+						paths[paths.length - 1]);
+
+					ObjectValuePair<String, InputStream> inputStreamOVP =
+						new ObjectValuePair<>(fileName, inputStream);
+
+					inputStreamOVPs.add(inputStreamOVP);
+
+					count++;
+
+					if ((i % 5) == 0) {
+						_wikiPageLocalService.addPageAttachments(
+							userId, node.getNodeId(),
+							WikiPageConstants.SHARED_IMAGES_TITLE,
+							inputStreamOVPs);
+
+						inputStreamOVPs.clear();
+
+						if (progressTracker != null) {
+							percentage = Math.min(50 + ((i * 50) / total), 99);
+
+							progressTracker.setPercent(percentage);
+						}
+					}
 				}
 
-				String fileName = StringUtil.toLowerCase(
-					paths[paths.length - 1]);
-
-				ObjectValuePair<String, InputStream> inputStreamOVP =
-					new ObjectValuePair<>(fileName, inputStream);
-
-				inputStreamOVPs.add(inputStreamOVP);
-
-				count++;
-
-				if ((i % 5) == 0) {
+				if (!inputStreamOVPs.isEmpty()) {
 					_wikiPageLocalService.addPageAttachments(
 						userId, node.getNodeId(),
 						WikiPageConstants.SHARED_IMAGES_TITLE, inputStreamOVPs);
+				}
+			}
+			finally {
+				for (ObjectValuePair<String, InputStream> inputStreamOVP :
+						inputStreamOVPs) {
 
-					inputStreamOVPs.clear();
-
-					if (progressTracker != null) {
-						percentage = Math.min(50 + ((i * 50) / total), 99);
-
-						progressTracker.setPercent(percentage);
+					try (InputStream inputStream = inputStreamOVP.getValue()) {
+					}
+					catch (IOException ioException) {
+						if (_log.isWarnEnabled()) {
+							_log.warn(ioException);
+						}
 					}
 				}
 			}
 
-			if (!inputStreamOVPs.isEmpty()) {
-				_wikiPageLocalService.addPageAttachments(
-					userId, node.getNodeId(),
-					WikiPageConstants.SHARED_IMAGES_TITLE, inputStreamOVPs);
+			if (_log.isInfoEnabled()) {
+				_log.info(
+					StringBundler.concat(
+						"Imported ", count, " images into ", node.getName()));
 			}
-		}
-		finally {
-			for (ObjectValuePair<String, InputStream> inputStreamOVP :
-					inputStreamOVPs) {
-
-				try (InputStream inputStream = inputStreamOVP.getValue()) {
-				}
-				catch (IOException ioException) {
-					if (_log.isWarnEnabled()) {
-						_log.warn(ioException);
-					}
-				}
-			}
-		}
-
-		zipReader.close();
-
-		if (_log.isInfoEnabled()) {
-			_log.info(
-				StringBundler.concat(
-					"Imported ", count, " images into ", node.getName()));
 		}
 	}
 
@@ -630,24 +638,21 @@ public class MediaWikiImporter {
 			throw new ImportFilesException("Invalid pages XML file");
 		}
 
-		List<String> namespaces = new ArrayList<>();
-
 		Element namespacesElement = siteinfoElement.element("namespaces");
 
-		List<Element> namespaceElements = namespacesElement.elements(
-			"namespace");
+		return TransformUtil.transform(
+			namespacesElement.elements("namespace"),
+			namespaceElement -> {
+				Attribute attribute = namespaceElement.attribute("key");
 
-		for (Element namespaceElement : namespaceElements) {
-			Attribute attribute = namespaceElement.attribute("key");
+				String value = attribute.getValue();
 
-			String value = attribute.getValue();
+				if (value.equals("0")) {
+					return null;
+				}
 
-			if (!value.equals("0")) {
-				namespaces.add(namespaceElement.getText());
-			}
-		}
-
-		return namespaces;
+				return namespaceElement.getText();
+			});
 	}
 
 	private Map<String, String> _readUsersFile(InputStream usersInputStream)
@@ -791,30 +796,16 @@ public class MediaWikiImporter {
 	private static final Set<String> _specialMediaWikiDirs = SetUtil.fromArray(
 		"archive", "temp", "thumb");
 
-	@Reference
-	private AssetTagLocalService _assetTagLocalService;
-
-	@Reference
-	private CompanyLocalService _companyLocalService;
-
-	@Reference
-	private PortletFileRepository _portletFileRepository;
-
+	private final AssetTagLocalService _assetTagLocalService;
+	private final CompanyLocalService _companyLocalService;
+	private final PortletFileRepository _portletFileRepository;
 	private final MediaWikiToCreoleTranslator _translator =
 		new MediaWikiToCreoleTranslator();
-
-	@Reference
-	private UserLocalService _userLocalService;
-
-	private WikiGroupServiceConfiguration _wikiGroupServiceConfiguration;
-
-	@Reference
-	private WikiPageLocalService _wikiPageLocalService;
-
-	@Reference
-	private WikiPageTitleValidator _wikiPageTitleValidator;
-
-	@Reference
-	private ZipReaderFactory _zipReaderFactory;
+	private final UserLocalService _userLocalService;
+	private volatile WikiGroupServiceConfiguration
+		_wikiGroupServiceConfiguration;
+	private final WikiPageLocalService _wikiPageLocalService;
+	private final WikiPageTitleValidator _wikiPageTitleValidator;
+	private final ZipReaderFactory _zipReaderFactory;
 
 }

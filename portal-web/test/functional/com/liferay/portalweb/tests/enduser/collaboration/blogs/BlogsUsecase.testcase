@@ -1,4 +1,4 @@
-@component-name = "portal-lima"
+@component-name = "portal-content-management"
 definition {
 
 	property portal.acceptance = "true";
@@ -84,8 +84,6 @@ definition {
 	@priority = 4
 	@refactordone
 	test CanImportEntryWithComment {
-		property testray.component.names = "Comment";
-
 		BlogsNavigator.openBlogsAdmin(siteURLKey = "guest");
 
 		LAR.importPortlet(

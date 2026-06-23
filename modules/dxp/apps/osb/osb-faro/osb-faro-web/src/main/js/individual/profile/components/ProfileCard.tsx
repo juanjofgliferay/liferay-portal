@@ -1,12 +1,13 @@
 import ActivitiesChart from 'contacts/components/ActivitiesChart';
 import Card from 'shared/components/Card';
 import ClayButton from '@clayui/button';
-import DropdownRangeKey from 'shared/hoc/DropdownRangeKey';
+import ClayLink from '@clayui/link';
 import EventMetricQuery, {
 	EventMetricsData,
 	EventMetricsVariables
 } from 'shared/queries/EventMetricQuery';
 import IntervalSelector from 'shared/components/IntervalSelector';
+import Loading from 'shared/components/Loading';
 import moment from 'moment';
 import NoResultsDisplay from 'shared/components/NoResultsDisplay';
 import React, {useState} from 'react';
@@ -17,7 +18,6 @@ import UserSessionQuery, {
 	UserSessionData,
 	UserSessionVariables
 } from 'shared/queries/UserSessionQuery';
-import useSelectedPoint from 'shared/hooks/useSelectedPoint';
 import VerticalTimeline from 'shared/components/VerticalTimeline';
 import {compose, withPaginationBar} from 'shared/hoc';
 import {
@@ -27,6 +27,7 @@ import {
 	getDateRangeLabelFromDate,
 	getEndDate
 } from 'shared/util/date';
+import {DropdownRangeKey} from 'shared/components/dropdown-range-key/DropdownRangeKey';
 import {fetchPolicyDefinition} from 'shared/util/graphql';
 import {formatSessions, getActivityLabel} from 'shared/util/activities';
 import {getSafeRangeSelectors} from 'shared/util/util';
@@ -35,14 +36,17 @@ import {Interval, RangeSelectors, SafeRangeSelectors} from 'shared/types';
 import {isHourlyRangeKey} from 'shared/util/time';
 import {isNil} from 'lodash';
 import {mapListResultsToProps} from 'shared/util/mappers';
-import {RangeKeyTimeRanges, SessionEntityTypes} from 'shared/util/constants';
+import {
+	RangeKeyTimeRanges,
+	SessionEntityTypes,
+	Sizes
+} from 'shared/util/constants';
 import {sub} from 'shared/util/lang';
-import {useQuery} from '@apollo/react-hooks';
-import {useStatefulPagination} from 'shared/hooks';
+import {useLDPEnabled} from 'shared/hooks/useLDPEnabled';
+import {useQuery} from '@apollo/client';
+import {useSelectedPoint} from 'shared/hooks/useSelectedPoint';
 import {withEmpty} from 'cerebro-shared/hocs/utils';
 import {withError, withLoading, WrapSafeResults} from 'shared/hoc/util';
-
-const DEFAULT_SESSIONS_DELTA = 50;
 
 const formatTimestamp = (timestamp: number) => {
 	const date = new Date(timestamp);
@@ -62,38 +66,44 @@ const PaginatedVerticalTimeline = compose<any>(
 
 interface IProfileCardProps extends React.HTMLAttributes<HTMLElement> {
 	channelId: string;
+	delta: number;
 	entity: Individual;
 	interval: Interval;
+	groupId: string;
 	onChangeInterval: (interval: Interval) => void;
+	onDeltaChange: (delta: number) => void;
+	onPageChange: (page: number) => void;
 	onRangeSelectorsChange: (rangeSelectors: RangeSelectors) => void;
+	onQueryChange: (query: string) => void;
+	page: number;
+	query: string;
 	rangeSelectors: RangeSelectors;
+	resetPage: () => void;
 	tabId: string;
-	timeZoneId: string;
+	timeZoneId?: string;
 }
 
 const ProfileCard: React.FC<IProfileCardProps> = ({
 	channelId,
+	delta,
 	entity: {id: entityId},
+	groupId,
 	interval,
 	onChangeInterval,
+	onDeltaChange,
+	onPageChange,
+	onQueryChange,
 	onRangeSelectorsChange,
+	page,
+	query,
 	rangeSelectors,
+	resetPage,
 	timeZoneId
 }) => {
-	const {
-		delta,
-		onDeltaChange,
-		onPageChange,
-		onQueryChange,
-		page,
-		query,
-		resetPage
-	} = useStatefulPagination(null, {
-		initialDelta: DEFAULT_SESSIONS_DELTA
-	});
-
 	const {hasSelectedPoint, onPointSelect, selectedPoint} = useSelectedPoint();
 	const [searchValue, setSearchValue] = useState<string>('');
+
+	const LDPEnabled = useLDPEnabled({groupId});
 
 	const activityResponse = useQuery<EventMetricsData, EventMetricsVariables>(
 		EventMetricQuery,
@@ -134,7 +144,9 @@ const ProfileCard: React.FC<IProfileCardProps> = ({
 		{rangeEnd, rangeKey, rangeStart}: RangeSelectors,
 		interval: Interval
 	): SafeRangeSelectors => {
-		const {intervalInitDate} = activityHistory[selectedPoint] || {};
+		const {intervalInitDate} =
+			(selectedPoint !== undefined && activityHistory[selectedPoint]) ||
+			{};
 		const endDate = getEndDate(intervalInitDate, interval);
 
 		const hasSelectedDate = !isNil(endDate) && !isNil(intervalInitDate);
@@ -197,7 +209,7 @@ const ProfileCard: React.FC<IProfileCardProps> = ({
 
 	const handleChangeSelection = (index: number | null) => {
 		resetPage();
-		onPointSelect(index);
+		onPointSelect(index ?? undefined);
 	};
 
 	const handleQuery = (query: string) => {
@@ -208,11 +220,79 @@ const ProfileCard: React.FC<IProfileCardProps> = ({
 	const selected = hasSelectedPoint || selectedPoint;
 
 	const {intervalInitDate, totalEvents = 0} =
-		activityHistory[selectedPoint] || {};
+		(selectedPoint !== undefined && activityHistory[selectedPoint]) || {};
 
 	const date = selected
 		? getDateRangeLabelFromDate(intervalInitDate, interval)
 		: getDateRangeLabel(activityHistory, interval, 'intervalInitDate');
+
+	const renderNoResults = () => {
+		if (sessionsMappedResults?.loading) {
+			return (
+				<NoResultsDisplay>
+					<Loading key='LOADING' />
+				</NoResultsDisplay>
+			);
+		}
+
+		if (!sessionsMappedResults?.items?.length) {
+			if (query) {
+				return (
+					<NoResultsDisplay
+						description={Liferay.Language.get(
+							'review-your-search-and-try-again'
+						)}
+						icon={{
+							border: false,
+							size: Sizes.XXXLarge,
+							symbol: 'ac_no_results_found'
+						}}
+						spacer
+						title={Liferay.Language.get(
+							'there-are-no-results-found'
+						)}
+					>
+						<ClayButton
+							className='button-root'
+							displayType='secondary'
+							onClick={() => {
+								onQueryChange('');
+								setSearchValue('');
+							}}
+						>
+							{Liferay.Language.get('clear-search')}
+						</ClayButton>
+					</NoResultsDisplay>
+				);
+			}
+
+			return (
+				<NoResultsDisplay
+					description={
+						<>
+							<span className='mr-1'>
+								{Liferay.Language.get(
+									'check-back-later-to-verify-if-data-has-been-received-from-your-data-sources'
+								)}
+							</span>
+
+							<ClayLink
+								href={URLConstants.IndividualProfilesDocument}
+								key='DOCUMENTATION'
+								target='_blank'
+							>
+								{Liferay.Language.get(
+									'learn-more-about-individuals'
+								)}
+							</ClayLink>
+						</>
+					}
+					spacer
+					title={Liferay.Language.get('there-are-no-events-found')}
+				/>
+			);
+		}
+	};
 
 	return (
 		<WrapSafeResults
@@ -250,7 +330,7 @@ const ProfileCard: React.FC<IProfileCardProps> = ({
 
 					<DropdownRangeKey
 						legacy={false}
-						onChange={(rangeSelectors: RangeSelectors) => {
+						onRangeSelectorChange={rangeSelectors => {
 							onRangeSelectorsChange(rangeSelectors);
 
 							handleChangeSelection(null);
@@ -262,9 +342,9 @@ const ProfileCard: React.FC<IProfileCardProps> = ({
 				<div className='individuals-activities-chart'>
 					<ActivitiesChart
 						alwaysShowSelectedTooltip
-						hasSelectedPoint={hasSelectedPoint}
 						history={activityHistory}
 						interval={interval}
+						LDPEnabled={LDPEnabled}
 						onPointSelect={handleChangeSelection}
 						rangeSelectors={rangeSelectors}
 						selectedPoint={selectedPoint}
@@ -272,18 +352,19 @@ const ProfileCard: React.FC<IProfileCardProps> = ({
 
 					<div className='selected-info'>
 						<div className='activities-date d-flex align-items-baseline'>
-							<h4>
+							<div className='h4'>
 								{activityHistory?.length
 									? sub(
 											Liferay.Language.get(
 												'individuals-events-x'
 											),
+
 											[date]
 									  )
 									: Liferay.Language.get(
 											'individuals-events'
 									  )}
-							</h4>
+							</div>
 
 							{selected && (
 								<ClayButton
@@ -301,10 +382,7 @@ const ProfileCard: React.FC<IProfileCardProps> = ({
 
 						<div className='details'>
 							{getActivityLabel(
-								(selected
-									? totalEvents
-									: activityTotal
-								)?.toLocaleString()
+								(selected ? totalEvents : activityTotal) ?? 0
 							)}
 						</div>
 					</div>
@@ -318,42 +396,14 @@ const ProfileCard: React.FC<IProfileCardProps> = ({
 				searchValue={searchValue}
 				showCheckbox={false}
 				showSearch={false}
-				total={sessionsMappedResults.total}
+				total={sessionsMappedResults.total as number}
 			/>
 
 			<PaginatedVerticalTimeline
 				{...sessionsMappedResults}
 				delta={delta}
 				initialExpanded={false}
-				noResultsRenderer={
-					<NoResultsDisplay
-						description={
-							<>
-								<span className='mr-1'>
-									{Liferay.Language.get(
-										'check-back-later-to-verify-if-data-has-been-received-from-your-data-sources'
-									)}
-								</span>
-
-								<a
-									href={
-										URLConstants.IndividualProfilesDocument
-									}
-									key='DOCUMENTATION'
-									target='_blank'
-								>
-									{Liferay.Language.get(
-										'learn-more-about-individuals'
-									)}
-								</a>
-							</>
-						}
-						spacer
-						title={Liferay.Language.get(
-							'there-are-no-events-found'
-						)}
-					/>
-				}
+				noResultsRenderer={renderNoResults()}
 				onDeltaChange={onDeltaChange}
 				onPageChange={onPageChange}
 				page={page}

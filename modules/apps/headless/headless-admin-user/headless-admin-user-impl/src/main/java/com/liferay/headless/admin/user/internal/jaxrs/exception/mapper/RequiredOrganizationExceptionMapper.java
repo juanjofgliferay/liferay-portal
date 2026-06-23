@@ -9,8 +9,8 @@ import com.liferay.portal.kernel.exception.RequiredOrganizationException;
 import com.liferay.portal.vulcan.jaxrs.exception.mapper.BaseExceptionMapper;
 import com.liferay.portal.vulcan.jaxrs.exception.mapper.Problem;
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -35,7 +35,7 @@ public class RequiredOrganizationExceptionMapper
 		return new Problem(
 			Response.Status.FORBIDDEN,
 			"Remove all child organizations and users before deleting this " +
-				"organization.");
+				"organization");
 	}
 
 }

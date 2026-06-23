@@ -16,9 +16,9 @@ import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.workflow.WorkflowTask;
 import com.liferay.portal.kernel.workflow.WorkflowTaskManager;
+import com.liferay.portal.kernel.workflow.WorkflowTransition;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
@@ -54,11 +54,11 @@ public class WorkflowTaskTransitionsResourceImpl
 
 							workflowTaskTransitions.add(
 								_createWorkflowTaskTransition(
-									_workflowTaskManager.getNextTransitionNames(
-										contextUser.getUserId(),
-										workflowTaskId),
 									_workflowTaskManager.getWorkflowTask(
-										workflowTaskId)));
+										workflowTaskId),
+									_workflowTaskManager.
+										getNextWorkflowTransitions(
+											workflowTaskId)));
 						}
 
 						return workflowTaskTransitions.toArray(
@@ -69,26 +69,28 @@ public class WorkflowTaskTransitionsResourceImpl
 	}
 
 	private WorkflowTaskTransition _createWorkflowTaskTransition(
-		Collection<String> transitionNames, WorkflowTask workflowTask) {
+		WorkflowTask workflowTask,
+		List<WorkflowTransition> workflowTransitions) {
 
 		WorkflowTaskTransition workflowTaskTransition =
 			new WorkflowTaskTransition();
 
 		workflowTaskTransition.setTransitions(
-			transformToArray(
-				transitionNames,
-				transitionName -> TransitionUtil.toTransition(
-					contextAcceptLanguage.getPreferredLocale(), transitionName),
+			() -> transformToArray(
+				workflowTransitions,
+				workflowTransition -> TransitionUtil.toTransition(
+					contextAcceptLanguage.getPreferredLocale(),
+					workflowTransition),
 				Transition.class));
 		workflowTaskTransition.setWorkflowDefinitionVersion(
-			String.valueOf(workflowTask.getWorkflowDefinitionVersion()));
+			() -> String.valueOf(workflowTask.getWorkflowDefinitionVersion()));
 		workflowTaskTransition.setWorkflowTaskLabel(
-			_language.get(
+			() -> _language.get(
 				ResourceBundleUtil.getModuleAndPortalResourceBundle(
 					contextAcceptLanguage.getPreferredLocale(),
 					WorkflowTaskTransitionsResourceImpl.class),
 				workflowTask.getName()));
-		workflowTaskTransition.setWorkflowTaskName(workflowTask.getName());
+		workflowTaskTransition.setWorkflowTaskName(workflowTask::getName);
 
 		return workflowTaskTransition;
 	}

@@ -1,4 +1,4 @@
-@component-name = "portal-document-management-ee"
+@component-name = "portal-content-management"
 definition {
 
 	property custom.properties = "dl.actions.visible=true";
@@ -7,16 +7,12 @@ definition {
 	property portal.ssl.enabled = "true";
 	property portal.upstream = "true";
 	property test.run.environment = "EE";
-	property testray.main.component.name = "Sharepoint";
+	property testray.main.component.name = "External Document Repositories";
 
-	var authorizationGrantEndpoint = PropsUtil.get("sharepoint.oauth.authorization.grant.endpoint");
-	var authorizationTokenEndpoint = PropsUtil.get("sharepoint.oauth.authorization.token.endpoint");
 	var clientId = PropsUtil.get("sharepoint.oauth.client.id");
 	var clientSecret = PropsUtil.get("sharepoint.oauth.client.secret");
 	var configurationName = PropsUtil.get("sharepoint.oauth.configuration.name");
-	var configurationResource = PropsUtil.get("sharepoint.oauth.configuration.resource");
 	var configurationScope = PropsUtil.get("sharepoint.oauth.configuration.scope");
-	var siteDomain = PropsUtil.get("sharepoint.oauth.site.domain");
 	var tenantId = PropsUtil.get("sharepoint.oauth.tenant.id");
 	var userName = PropsUtil.get("sharepoint.oauth.user.name");
 	var userPassword = PropsUtil.get("sharepoint.oauth.user.password");
@@ -41,16 +37,6 @@ definition {
 			value1 = ${configurationName});
 
 		Type(
-			key_text = "authorizationGrantEndpoint",
-			locator1 = "TextArea#ANY",
-			value1 = ${authorizationGrantEndpoint});
-
-		Type(
-			key_text = "authorizationTokenEndpoint",
-			locator1 = "TextArea#ANY",
-			value1 = ${authorizationTokenEndpoint});
-
-		Type(
 			key_text = "clientId",
 			locator1 = "TextArea#ANY",
 			value1 = ${clientId});
@@ -69,16 +55,6 @@ definition {
 			key_text = "tenantId",
 			locator1 = "TextArea#ANY",
 			value1 = ${tenantId});
-
-		Type(
-			key_text = "siteDomain",
-			locator1 = "TextArea#ANY",
-			value1 = ${siteDomain});
-
-		Type(
-			key_text = "resource",
-			locator1 = "TextArea#ANY",
-			value1 = ${configurationResource});
 
 		PortletEntry.save();
 
@@ -101,8 +77,6 @@ definition {
 			roleTitle = "Guest");
 
 		PortletEntry.save();
-
-		Navigator.openSpecificURL(url = "https://localhost:8443/group/guest/~/control_panel/manage?p_p_id=com_liferay_document_library_web_portlet_DLAdminPortlet");
 
 		LexiconEntry.changeDisplayStyle(displayStyle = "list");
 
@@ -288,7 +262,7 @@ definition {
 		DMNavigator.gotoDocumentCP(dmDocumentTitle = "Document_3.doc");
 
 		DMDocument.viewCP(
-			dmDocumentSize = "39 KB",
+			dmDocumentSize = "36 KB",
 			dmDocumentTitle = "Document_3.doc");
 
 		DMNavigator.openToFolderInAdmin(
@@ -330,7 +304,7 @@ definition {
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
-		Navigator.openSpecificURL(url = "https://localhost:8443/group/guest/~/control_panel/manage?p_p_id=com_liferay_document_library_web_portlet_DLAdminPortlet");
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
 
 		DMRepository.gotoCP(dmRepositoryName = "Collaboration Test Application");
 
@@ -371,7 +345,7 @@ definition {
 
 		PortletEntry.save();
 
-		Navigator.openSpecificURL(url = "https://localhost:8443/group/guest/~/control_panel/manage?p_p_id=com_liferay_document_library_web_portlet_DLAdminPortlet");
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
 
 		DMRepository.gotoCP(dmRepositoryName = "Collaboration Test Application 2");
 
@@ -446,6 +420,7 @@ definition {
 	@priority = 4
 	@refactordone
 	test CanMoveDocumentToHome {
+		property portal.release = "quarantine";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
@@ -459,13 +434,13 @@ definition {
 			dmDocumentTitle = "Document_1.odt",
 			dmFolderName = "Home");
 
-		Navigator.openSpecificURL(url = "https://localhost:8443/group/guest/~/control_panel/manage?p_p_id=com_liferay_document_library_web_portlet_DLAdminPortlet");
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
 
 		DMNavigator.gotoDocumentCP(dmDocumentTitle = "Document_1.odt");
 
 		DMDocument.viewCP(dmDocumentTitle = "Document_1.odt");
 
-		Navigator.openSpecificURL(url = "https://localhost:8443/group/guest/~/control_panel/manage?p_p_id=com_liferay_document_library_web_portlet_DLAdminPortlet");
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
 
 		DMRepository.gotoCP(dmRepositoryName = "Collaboration Test Application");
 
@@ -507,7 +482,9 @@ definition {
 			dmDocumentFile = "Document_4.txt",
 			dmDocumentTitle = "Document_4.txt");
 
-		Navigator.openSpecificURL(url = "https://localhost:8443/group/guest/~/control_panel/manage?p_p_id=com_liferay_document_library_web_portlet_DLAdminPortlet");
+		DMNavigator.gotoDocumentCP(dmDocumentTitle = "Document_4.txt");
+
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
 
 		Search.searchCP(searchTerm = "Document_4.txt");
 
@@ -519,7 +496,7 @@ definition {
 			dmDocumentTitle = "Document_4.txt",
 			dmRepositoryName = "Collaboration Test Application");
 
-		ManagementBar.setFilterAndOrder(menuItem = "Mine");
+		ManagementBar.setFilterAndOrder(filterBy = "Mine");
 
 		// The alert message will update until LPS-188910 fixed
 
@@ -584,7 +561,7 @@ definition {
 		User.logoutPG();
 
 		User.firstLoginUI(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			specificURL = "http://localhost:9080",
 			userEmailAddress = "test@liferay.com");
 
@@ -601,16 +578,6 @@ definition {
 			key_text = "name",
 			locator1 = "TextArea#ANY",
 			value1 = ${configurationName});
-
-		Type(
-			key_text = "authorizationGrantEndpoint",
-			locator1 = "TextArea#ANY",
-			value1 = ${authorizationGrantEndpoint});
-
-		Type(
-			key_text = "authorizationTokenEndpoint",
-			locator1 = "TextArea#ANY",
-			value1 = ${authorizationTokenEndpoint});
 
 		Type(
 			key_text = "clientId",
@@ -632,21 +599,11 @@ definition {
 			locator1 = "TextArea#ANY",
 			value1 = ${tenantId});
 
-		Type(
-			key_text = "siteDomain",
-			locator1 = "TextArea#ANY",
-			value1 = ${siteDomain});
-
-		Type(
-			key_text = "resource",
-			locator1 = "TextArea#ANY",
-			value1 = ${configurationResource});
-
 		PortletEntry.save();
 
 		User.loginPG(
 			nodePort = 8080,
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@liferay.com");
 
 		JSONDepot.addDepot(
@@ -685,7 +642,7 @@ definition {
 		User.logoutPG();
 
 		User.firstLoginUI(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			specificURL = "http://localhost:9080",
 			userEmailAddress = "test@liferay.com");
 
@@ -710,7 +667,9 @@ definition {
 			dmDocumentFile = "Document_3.odt",
 			dmDocumentTitle = "Document_3.odt");
 
-		Navigator.openSpecificURL(url = "https://localhost:8443/group/guest/~/control_panel/manage?p_p_id=com_liferay_document_library_web_portlet_DLAdminPortlet");
+		DMNavigator.gotoDocumentCP(dmDocumentTitle = "Document_3.odt");
+
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
 
 		Search.searchCP(searchTerm = "Document_3.odt");
 
@@ -775,7 +734,7 @@ definition {
 			locator1 = "DocumentsAndMedia#DESCRIPTIVE_LIST_DOCUMENT_TITLE");
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@liferay.com");
 
 		DMRepository.cleanRepository(dmDocumentTitle = "Document_1.doc");

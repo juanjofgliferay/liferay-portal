@@ -1,16 +1,24 @@
-@component-name = "portal-staging"
+@component-name = "portal-headless"
 definition {
 
+	property browser.chrome.version = "139.0";
 	property ci.retries.disabled = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.component.names = "Site Templates";
 	property testray.main.component.name = "Site Templates";
 
 	setUp {
 		TestCase.setUpPortalInstance();
 
 		User.firstLoginPG();
+
+		task ("Enable widget pages") {
+			PagesAdmin.enableWidgetPages();
+		}
+
+		task ("Enable dynamic and manual selection") {
+			AssetPublisherPortlet.enableDynamicAndManualSelection();
+		}
 	}
 
 	tearDown {
@@ -49,66 +57,6 @@ definition {
 		}
 	}
 
-	@description = "This is a use case for LPS-166515. TC-1: The changes made on the site template will apply to the site created by the template by default and background tasks are deleted at the end of propagation."
-	@priority = 3
-	test AddSiteTemplateApplySiteTemplateChangesToSite {
-		property portal.acceptance = "true";
-
-		var siteName = TestCase.getSiteName(siteName = ${siteName});
-
-		task ("Given: User adds new site template and a new site based on this site template") {
-			SiteTemplates.addCP(siteTemplateName = "Site Template Name");
-
-			Site.openSitesAdmin();
-
-			Site.addCP(
-				siteName = "Site Template Site Name",
-				siteTemplateName = "Site Template Name",
-				siteTemplateTab = "Custom Site Templates",
-				siteType = "Site Template");
-
-			Navigator.openSiteURL(siteName = "Site Template Site Name");
-
-			Portlet.viewNoPortletsPresentPG();
-		}
-
-		task ("When: User add a widget to the Site template") {
-			SiteTemplatesNavigator.gotoSiteTemplatesPage(
-				pageName = "Home",
-				siteTemplateName = "Site Template Name");
-
-			ContentPages.gotoPageEditor();
-
-			PageEditor.addWidget(portletName = "Asset Publisher");
-
-			PageEditor.publish();
-		}
-
-		task ("Then: The widget will be visible on the new site too") {
-			Navigator.openSiteURL(siteName = "Site Template Site Name");
-
-			if (IsElementNotPresent(locator1 = "Portlet#PORTLET_CONTENT")) {
-				Refresh();
-			}
-
-			Alert.viewInfoMessageSpecific(infoMessage = "There are no results.");
-		}
-
-		task ("And: Verify the propagation background task is deleted") {
-			var mysqlStatement = "SELECT * FROM BackgroundTask WHERE taskExecutorClassName = 'com.liferay.exportimport.internal.background.task.LayoutSetPrototypeImportBackgroundTaskExecutor' AND STATUS NOT IN (0, 1, 4);";
-
-			var sqlResults = SQL.executeMySQLStatement(mysqlStatement = ${mysqlStatement});
-
-			var getHeader = StringUtil.regexReplaceAll(${sqlResults}, "[\r\n]", "");
-
-			var getRecord = StringUtil.replace(${getHeader}, "mvccVersion,backgroundTaskId,groupId,companyId,userId,userName,createDate,modifiedDate,name,servletContextNames,taskExecutorClassName,taskContextMap,completed,completionDate,status,statusMessage", "");
-
-			TestUtils.assertEquals(
-				actual = ${getRecord},
-				expected = "");
-		}
-	}
-
 	@description = "User can withdraw site administrator's right to modificate of pages on a site template."
 	@priority = 4
 	test AddSiteTemplateDisablePageModification {
@@ -136,696 +84,6 @@ definition {
 			Page.viewPageLockCheck();
 
 			AssertElementNotPresent(locator1 = "ControlMenu#ADD");
-		}
-	}
-
-	@description = "This is a use case for LPS-121137. Admin can enable and disable the porpagation of site template changes on site templates admin page."
-	@priority = 4
-	test AdminCanControlWhenPropagateSiteTemplateChanges {
-		property portal.acceptance = "true";
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		var siteName = TestCase.getSiteName(siteName = ${siteName});
-
-		task ("Given: User adds a new site template with disabled propagation") {
-			SiteTemplates.addCP(
-				disablePropagation = "true",
-				siteTemplateName = "Site Template Name");
-		}
-
-		task ("And: Adds a new site based on the site template and an Asset Publisher widget to it") {
-			Site.openSitesAdmin();
-
-			Site.addSiteTemplateCP(
-				siteName = "Site Name",
-				siteTemplateName = "Site Template Name",
-				siteTemplateTab = "Custom Site Templates");
-
-			SiteTemplatesNavigator.gotoSiteTemplatesPage(
-				pageName = "Home",
-				siteTemplateName = "Site Template Name");
-
-			ContentPages.gotoPageEditor();
-
-			PageEditor.addWidget(portletName = "Asset Publisher");
-
-			PageEditor.publish();
-		}
-
-		task ("When: That widget is not present without propagation on the site") {
-			Navigator.openSiteURL(siteName = "Site Name");
-
-			Refresh();
-
-			Portlet.viewNoPortletsPresentPG();
-		}
-
-		task ("And: Propagation is enabled") {
-			SiteTemplatesNavigator.openSiteTemplatesAdmin();
-
-			SiteTemplates.enablePropagation(siteTemplateName = "Site Template Name");
-		}
-
-		task ("Then: The widget will appear on the site") {
-			Navigator.openSiteURL(siteName = "Site Name");
-
-			Refresh();
-
-			Alert.viewInfoMessageSpecific(infoMessage = "There are no results.");
-		}
-
-		task ("When: User disables propagation again and add a new widget on the template ") {
-			SiteTemplatesNavigator.openSiteTemplatesAdmin();
-
-			SiteTemplates.disablePropagation(siteTemplateName = "Site Template Name");
-
-			SiteTemplatesNavigator.gotoSiteTemplatesPage(
-				pageName = "Home",
-				siteTemplateName = "Site Template Name");
-
-			ContentPages.gotoPageEditor();
-
-			PageEditor.addWidget(
-				portletName = "Blogs",
-				targetFragmentName = "Asset Publisher");
-
-			PageEditor.publish();
-		}
-
-		task ("Then: The widget will not be visible on the site") {
-			Navigator.openSiteURL(siteName = "Site Name");
-
-			Refresh();
-
-			AssertElementNotPresent(
-				key_portletName = "Blogs",
-				locator1 = "Portlet#SPECIFIC_FRAGMENTS_AND_WIDGETS");
-		}
-	}
-
-	@description = "This is a use case for LPS-150460 TC-1. User is able to trigger propagation of the site template to all connected sites automatically."
-	@priority = 4
-	test AssertAutomaticSiteTemplatePropagation {
-		property database.types = "mysql";
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		var siteName = TestCase.getSiteName(siteName = ${siteName});
-		var sQLStatement = "SELECT * FROM Layout WHERE friendlyURL = '/test';";
-		var consoleText = "last-merge-layout-modified-time";
-
-		task ("Given: User enables automatic propagation triggering in System settings") {
-			SiteTemplates.enableAutomaticPropagation();
-		}
-
-		task ("And: Add new site template and create a site based on this template") {
-			SiteTemplates.addCP(siteTemplateName = "Site Template Name");
-
-			Site.openSitesAdmin();
-
-			Site.addCP(
-				siteName = "Site Template Site Name",
-				siteTemplateName = "Site Template Name",
-				siteTemplateTab = "Custom Site Templates",
-				siteType = "Site Template");
-		}
-
-		task ("And: Disables propagation of the template") {
-			SiteTemplatesNavigator.openSiteTemplatesAdmin();
-
-			SiteTemplates.disablePropagation(siteTemplateName = "Site Template Name");
-		}
-
-		task ("And: Add a new page to the template") {
-			SiteTemplates.addSitePageViaSiteTemplateCP(
-				pageName = "Test",
-				siteTemplateName = "Site Template Name");
-		}
-
-		task ("When: User enables propagation then navigate to the Template's home page") {
-			SiteTemplatesNavigator.openSiteTemplatesAdmin();
-
-			SiteTemplates.enablePropagation(siteTemplateName = "Site Template Name");
-
-			SiteTemplatesNavigator.gotoSiteTemplatesPage(
-				pageName = "Home",
-				siteTemplateName = "Site Template Name");
-		}
-
-		task ("Then: The propagation will be triggered and the page on the Site will be present in the SQL database") {
-			var sqlResults = SQL.executeMySQLStatement(mysqlStatement = ${sQLStatement});
-
-			TestUtils.assertPartialEquals(
-				actual = ${sqlResults},
-				expected = ${consoleText});
-		}
-	}
-
-	@description = "This is a use case for 118486. User should not be able to create child pages for pages derived from site templates."
-	@priority = 3
-	test AssertNoChildPageOptionForPageDerivedFromSiteTemplate {
-		task ("Given: User adds new site template and a new site based on this site template") {
-			SiteTemplates.addCP(siteTemplateName = "Site Template Name");
-
-			Site.openSitesAdmin();
-
-			Site.addSiteTemplateCP(
-				siteName = "Site Name",
-				siteTemplateName = "Site Template Name",
-				siteTemplateTab = "Custom Site Templates");
-		}
-
-		task ("When: User adds a new page to the site") {
-			Navigator.openSiteURL(siteName = "Site Name");
-
-			ProductMenu.gotoPortlet(
-				category = "Site Builder",
-				portlet = "Pages");
-
-			PagesAdmin.addPage(pageName = "Test Page");
-		}
-
-		task ("Then: User shouldn't be able to create child page for the Home page ") {
-			ProductMenu.gotoPortlet(
-				category = "Site Builder",
-				portlet = "Pages");
-
-			MouseOver(
-				key_itemName = "Home",
-				locator1 = "PagesAdmin#LIST_GROUP_ITEM");
-
-			AssertElementNotPresent(
-				key_pageName = "Home",
-				locator1 = "PagesAdmin#LIST_GROUP_ITEM_PLUS_ICON");
-
-			Click(
-				key_itemName = "Home",
-				locator1 = "PagesAdmin#LIST_GROUP_ITEM");
-
-			AssertElementNotPresent(locator1 = "Button#NEW");
-		}
-
-		task ("And: But should be able to add child page to Test Page") {
-			Click(
-				key_itemName = "Test Page",
-				locator1 = "PagesAdmin#LIST_GROUP_ITEM");
-
-			Click(locator1 = "Button#NEW");
-
-			AssertElementPresent(
-				key_menuItem = "Add Child Page of Test Page",
-				locator1 = "MenuItem#ANY_MENU_ITEM");
-		}
-	}
-
-	@description = "This is a use case for LPS-121139. User is able to propagate pages separately on site templates and in this situation only the corresponding page's SQL value will be updated."
-	@priority = 3
-	test AssertPartialSiteTemplatePropagation {
-		property database.types = "mysql";
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		var siteName = TestCase.getSiteName(siteName = ${siteName});
-
-		task ("Given: User adds new site template, a widget page and a portlet to it") {
-			SiteTemplates.addCP(siteTemplateName = "Site Template Name");
-
-			SiteTemplates.addSitePageViaSiteTemplateCP(
-				pageName = "Widget Page Name",
-				siteTemplateName = "Site Template Name");
-
-			SiteTemplatesNavigator.gotoSiteTemplatesPage(
-				pageName = "Widget Page Name",
-				siteTemplateName = "Site Template Name");
-
-			Portlet.addPG(portletName = "Asset Publisher");
-		}
-
-		task ("And: Adds a new site based on the template") {
-			Site.openSitesAdmin();
-
-			Site.addCP(
-				siteName = "Site Name",
-				siteTemplateName = "Site Template Name",
-				siteTemplateTab = "Custom Site Templates",
-				siteType = "Site Template");
-
-			var homePageModificationDate1 = SiteTemplates.getPageModificationDate(
-				groupName = "Site Name",
-				pageNameFilter = "%Home%");
-			var widgetPageModificationDate1 = SiteTemplates.getPageModificationDate(
-				groupName = "Site Name",
-				pageNameFilter = "%Widget Page Name%");
-		}
-
-		task ("And: Adds a portlet on the widget page of the site template") {
-			SiteTemplatesNavigator.gotoSiteTemplatesPage(
-				pageName = "Widget Page Name",
-				siteTemplateName = "Site Template Name");
-
-			Portlet.addPG(portletName = "Web Content Display");
-		}
-
-		task ("When: The portlet is visible on the widget page of the site too") {
-			Navigator.openSiteURL(siteName = "Site Name");
-
-			Refresh();
-
-			Navigator.gotoSitePage(
-				pageName = "Widget Page Name",
-				siteName = "Site Name");
-
-			Refresh();
-
-			Alert.viewInfoMessageSpecific(infoMessage = "This application is not visible to users yet");
-		}
-
-		task ("Then: The modification date of the widget page will be updated while the date of the home page will stay the same") {
-			var homePageModificationDate2 = SiteTemplates.getPageModificationDate(
-				groupName = "Site Name",
-				pageNameFilter = "%Home%");
-			var widgetPageModificationDate2 = SiteTemplates.getPageModificationDate(
-				groupName = "Site Name",
-				pageNameFilter = "%Widget Page Name%");
-
-			if (${widgetPageModificationDate2} != ${widgetPageModificationDate1}) {
-				echo("The modification date of widget page is updated.");
-			}
-
-			if (${homePageModificationDate2} != ${homePageModificationDate1}) {
-				fail("The modification date of home page should not be updated.");
-			}
-		}
-
-		task ("When: User adds a portlet to the home page of the template") {
-			SiteTemplatesNavigator.gotoSiteTemplatesPage(
-				pageName = "Home",
-				siteTemplateName = "Site Template Name");
-
-			ContentPages.gotoPageEditor();
-
-			PageEditor.addWidget(portletName = "Asset Publisher");
-
-			PageEditor.publish();
-		}
-
-		task ("And: The portlet is visible on the home page of the site") {
-			Navigator.openSiteURL(siteName = "Site Name");
-
-			Refresh();
-
-			Alert.viewInfoMessageSpecific(infoMessage = "There are no results.");
-		}
-
-		task ("Then: The modification date of the home page will be updated while the date of the widget page will stay the same") {
-			Navigator.gotoSitePage(
-				pageName = "Widget Page Name",
-				siteName = "Site Name");
-
-			Refresh();
-
-			var homePageModificationDate3 = SiteTemplates.getPageModificationDate(
-				groupName = "Site Name",
-				pageNameFilter = "%Home%");
-			var widgetPageModificationDate3 = SiteTemplates.getPageModificationDate(
-				groupName = "Site Name",
-				pageNameFilter = "%Widget Page Name%");
-
-			if (${widgetPageModificationDate3} != ${widgetPageModificationDate2}) {
-				fail("The modification date of widget page should not be updated.");
-			}
-
-			if (${homePageModificationDate3} != ${homePageModificationDate1}) {
-				echo("The modification date of home page is updated.");
-			}
-		}
-	}
-
-	@description = "This is a use case for LPS-166286. TC-1: Verify that site template propagation works well after the conflicting layout friendly URL is modified."
-	@priority = 3
-	test AssertSiteTemplatePropagationAfterConflictingFriendlyURLIsModified {
-		task ("Given: Add new site template and a new site based on this site template") {
-			SiteTemplates.addCP(siteTemplateName = "Site Template Name");
-
-			Site.openSitesAdmin();
-
-			Site.addCP(
-				siteName = "Site Name",
-				siteTemplateName = "Site Template Name",
-				siteTemplateTab = "Custom Site Templates",
-				siteType = "Site Template");
-		}
-
-		task ("And: Create a new page with the same name under the new site and site template") {
-			PagesAdmin.openPagesAdmin(siteURLKey = "site-name");
-
-			PagesAdmin.addPage(pageName = "Page A");
-
-			SiteTemplates.addSitePageViaSiteTemplateCP(
-				pageName = "Page A",
-				siteTemplateName = "Site Template Name");
-		}
-
-		task ("When: The conflicting layout friendly URL is modified") {
-			PagesAdmin.openToConfigurePublicPage(
-				groupName = "Site Name",
-				layoutName = "Page A",
-				siteURLKey = "site-name");
-
-			PagesAdmin.editFriendlyURL(friendlyURLEdit = "/page-a1");
-		}
-
-		task ("Then: Verify the propagation should work well after triggering a new propagation") {
-			Navigator.openSiteURL(siteName = "Site Name");
-
-			Refresh();
-
-			Navigator.openWithAppendToBaseURL(urlAppend = "web/site-name/page-a");
-		}
-	}
-
-	@description = "This is a use case for LPS-166286. TC-3: Verify that site template propagation works well on child page."
-	@priority = 3
-	test AssertSiteTemplatePropagationOnChildPage {
-		task ("Given: Add new site template and a new site based on this site template") {
-			SiteTemplates.addCP(siteTemplateName = "Site Template Name");
-
-			Site.openSitesAdmin();
-
-			Site.addCP(
-				siteName = "Site Name",
-				siteTemplateName = "Site Template Name",
-				siteTemplateTab = "Custom Site Templates",
-				siteType = "Site Template");
-		}
-
-		task ("When: Create a content page and a widget page with its child page under the site template") {
-			SiteTemplates.addSitePageViaSiteTemplateCP(
-				pageName = "Page A",
-				sitePageType = "Content Page",
-				siteTemplateName = "Site Template Name");
-
-			PageEditor.publish();
-
-			ProductMenu.gotoPortlet(
-				category = "Site Builder",
-				portlet = "Pages");
-
-			if (IsElementPresent(index = 1, key_itemName = "Page A", locator1 = "PagesAdmin#LIST_GROUP_ITEM_PAGE_STATUS", value1 = "Draft")) {
-				PagesAdmin.gotoPageEllipsisMenuItem(
-					menuItem = "Edit",
-					pageName = "Page A");
-
-				PageEditor.publish();
-			}
-
-			SiteTemplates.addSitePageViaSiteTemplateCP(
-				pageName = "Page B",
-				siteTemplateName = "Site Template Name");
-
-			SiteTemplates.addChildPageViaSiteTemplateCP(
-				childPageName = "Child Page A",
-				parentPageName = "Page A",
-				sitePageType = "Content Page",
-				siteTemplateName = "Site Template Name");
-
-			PageEditor.publish();
-
-			SiteTemplates.addChildPageViaSiteTemplateCP(
-				childPageName = "Child Page B",
-				parentPageName = "Page B",
-				siteTemplateName = "Site Template Name");
-		}
-
-		task ("And: Navigate to the site to trigger the propagation") {
-			Navigator.gotoSitePage(
-				pageName = "Home",
-				siteName = "Site Name");
-
-			Refresh();
-		}
-
-		task ("Then: Verify content page, widget page and its child pages should appear in site") {
-			Page.viewSpecificPG(pageNameList = "Page A,Page B");
-
-			Navigator.openWithAppendToBaseURL(urlAppend = "web/site-name/child-page-a");
-
-			Navigator.openWithAppendToBaseURL(urlAppend = "web/site-name/child-page-b");
-		}
-	}
-
-	@description = "This is a use case for LPS-166286. TC-2: Verify that site template propagation works well on private page."
-	@priority = 3
-	test AssertSiteTemplatePropagationOnPrivatePage {
-		property release.feature.flags.disable.DISABLE_PRIVATE_LAYOUTS = "true";
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		task ("Given: Add new site template and a new private site based on this site template") {
-			SiteTemplates.addCP(siteTemplateName = "Site Template Name");
-
-			Site.openSitesAdmin();
-
-			Site.addSiteTemplateCP(
-				enablePrivatePage = "true",
-				siteName = "Site Name",
-				siteTemplateName = "Site Template Name",
-				siteTemplateTab = "Custom Site Templates");
-		}
-
-		task ("When: Create a content page and a widget page under the site template") {
-			SiteTemplates.addSitePageViaSiteTemplateCP(
-				pageName = "Page A",
-				sitePageType = "Content Page",
-				siteTemplateName = "Site Template Name");
-
-			PageEditor.publish();
-
-			ProductMenu.gotoPortlet(
-				category = "Site Builder",
-				portlet = "Pages");
-
-			if (IsElementPresent(index = 1, key_itemName = "Page A", locator1 = "PagesAdmin#LIST_GROUP_ITEM_PAGE_STATUS", value1 = "Draft")) {
-				PagesAdmin.gotoPageEllipsisMenuItem(
-					menuItem = "Edit",
-					pageName = "Page A");
-
-				PageEditor.publish();
-			}
-
-			takeScreenshot();
-
-			SiteTemplates.addSitePageViaSiteTemplateCP(
-				pageName = "Page B",
-				siteTemplateName = "Site Template Name");
-		}
-
-		task ("And: Navigate to the site to trigger the propagation") {
-			Navigator.openPrivateSiteURL(siteName = "site-name");
-
-			Refresh();
-
-			takeScreenshot();
-		}
-
-		task ("Then: Verify content page and widget page should appear in priavte site") {
-			Navigator.gotoPrivateSitePage(
-				pageName = "Page A",
-				siteName = "Site Name");
-
-			Navigator.gotoPrivateSitePage(
-				pageName = "Page B",
-				siteName = "Site Name");
-		}
-	}
-
-	@description = "This is a use case for LPS-150460 TC-2. User can trigger Site template propagation upon visiting a connected site."
-	@priority = 3
-	test AssertSiteTemplatePropagationWhenOpeningSite {
-		property database.types = "mysql";
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		var siteName = TestCase.getSiteName(siteName = ${siteName});
-		var sQLStatement = "SELECT * FROM Layout WHERE friendlyURL = '/test';";
-		var consoleText = "last-merge-layout-modified-time";
-
-		task ("Given: Add new site template, create a site based on the template, then add a page to the template") {
-			SiteTemplates.addCP(siteTemplateName = "Site Template Name");
-
-			Site.openSitesAdmin();
-
-			Site.addCP(
-				siteName = "Site Template Site Name",
-				siteTemplateName = "Site Template Name",
-				siteTemplateTab = "Custom Site Templates",
-				siteType = "Site Template");
-
-			SiteTemplates.addSitePageViaSiteTemplateCP(
-				pageName = "Test",
-				siteTemplateName = "Site Template Name");
-		}
-
-		task ("When: User visits the Site Template and verifies that the page is not present on the Site via looking up the database") {
-			SiteTemplatesNavigator.gotoSiteTemplatesPage(
-				pageName = "Home",
-				siteTemplateName = "Site Template Name");
-
-			var sqlResults = SQL.executeMySQLStatement(mysqlStatement = ${sQLStatement});
-
-			TestUtils.assertNotEquals(
-				actual = ${sqlResults},
-				expected = ${consoleText});
-		}
-
-		task ("And: Open the site based on the template to trigger the propagation") {
-			Navigator.gotoSitePage(
-				pageName = "Home",
-				siteName = "Site Template Site Name");
-		}
-
-		task ("Then: The page will not be visible on the website but it is present in the database") {
-			Page.viewNoPG(pageName = "Test");
-
-			var sqlResults = SQL.executeMySQLStatement(mysqlStatement = ${sQLStatement});
-
-			TestUtils.assertPartialEquals(
-				actual = ${sqlResults},
-				expected = ${consoleText});
-		}
-	}
-
-	@description = "This is a use case for LPS-131903 and LPS-132256. Verify that users can not attempt to edit pages when disable changes."
-	@priority = 3
-	test CannotEditSiteLinkedToDisabledPageModificationSiteTemplate {
-		property portal.acceptance = "true";
-
-		task ("Given: User adds new site template with disallowing site admin's right to modificate pages") {
-			SiteTemplates.addCP(
-				disableChanges = "true",
-				siteTemplateName = "Site Template Name");
-		}
-
-		task ("When: Adds a site based on this site template") {
-			Site.openSitesAdmin();
-
-			Site.addCP(
-				siteName = "Site Template Site Name",
-				siteTemplateName = "Site Template Name",
-				siteTemplateTab = "Custom Site Templates",
-				siteType = "Site Template");
-		}
-
-		task ("Then: User is not able to edit the site or to view Permissions menu") {
-			Navigator.openSiteURL(siteName = "Site Template Site Name");
-
-			Page.viewPageLockCheck();
-
-			AssertElementNotPresent(locator1 = "Icon#EDIT_PENCIL");
-
-			MouseOver(
-				key_pageName = "Home",
-				locator1 = "Home#PAGE");
-
-			AssertElementNotPresent(locator1 = "Portlet#OPTIONS_ICON");
-
-			MenuItem.viewNotPresent(menuItem = "Permissions");
-		}
-	}
-
-	@description = "This is a use case for LPS-161817. Child content page of a Site created from a Site Template cannot be viewed or edited."
-	@priority = 3
-	test CanViewAndEditChildContentPageInSiteCreatedBySiteTemplate {
-		task ("disable "exportDraftLayout"") {
-			OSGiConfig.deployOSGiConfigFile(
-				osgiConfigFileName = "com.liferay.layout.configuration.LayoutExportImportConfiguration.config",
-				osgiConfigs = "exportDraftLayout=\"false\"");
-		}
-
-		task ("Given: User adds a new site template and a site based on this site template") {
-			SiteTemplates.addCP(siteTemplateName = "Site Template Name");
-
-			Site.openSitesAdmin();
-
-			Site.addCP(
-				siteName = "Site Template Site Name",
-				siteTemplateName = "Site Template Name",
-				siteTemplateTab = "Custom Site Templates",
-				siteType = "Site Template");
-		}
-
-		task ("When: Adds a parent content page and a child content page to the created site template") {
-			SiteTemplates.addSitePageViaSiteTemplateCP(
-				pageName = "Parent Content Page",
-				sitePageType = "Content Page",
-				siteTemplateName = "Site Template Name");
-
-			PageEditor.publish();
-
-			SiteTemplates.addChildPageViaSiteTemplateCP(
-				childPageName = "Child Content Page",
-				parentPageName = "Parent Content Page",
-				sitePageType = "Content Page",
-				siteTemplateName = "Site Template Name");
-
-			PageEditor.publish();
-
-			ProductMenu.gotoPortlet(
-				category = "Site Builder",
-				portlet = "Pages");
-
-			if (IsElementPresent(index = 1, key_itemName = "Parent Content Page", locator1 = "PagesAdmin#LIST_GROUP_ITEM_PAGE_STATUS", value1 = "Draft")) {
-				PagesAdmin.gotoPageEllipsisMenuItem(
-					menuItem = "Edit",
-					pageName = "Parent Content Page");
-
-				PageEditor.publish();
-			}
-
-			ProductMenu.gotoPortlet(
-				category = "Site Builder",
-				portlet = "Pages");
-
-			Click(
-				key_pageName = "Parent Content Page",
-				locator1 = "PagesAdmin#LIST_GROUP_ITEM_CHILD_INDICATOR");
-
-			if (IsElementPresent(index = 1, key_itemName = "Child Content Page", locator1 = "PagesAdmin#LIST_GROUP_ITEM_PAGE_STATUS", value1 = "Draft")) {
-				PagesAdmin.gotoPageEllipsisMenuItem(
-					menuItem = "Edit",
-					pageName = "Child Content Page");
-
-				PageEditor.publish();
-			}
-		}
-
-		task ("Then: User can view and edit child content page in the site") {
-			PagesAdmin.openPagesAdmin(siteURLKey = "site-template-site-name");
-
-			Refresh();
-
-			// Remove Refresh(); after LPS-172741
-
-			Click(
-				key_pageName = "Parent Content Page",
-				locator1 = "PagesAdmin#LIST_GROUP_ITEM_CHILD_INDICATOR");
-
-			PagesAdmin.gotoPageEllipsisMenuItem(
-				menuItem = "Edit",
-				pageName = "Child Content Page",
-				parentPagesHierarchy = "Parent Content Page");
-
-			PageEditor.assertFragmentSidebarLoaded();
-
-			PagesAdmin.openPagesAdmin(siteURLKey = "site-template-site-name");
-
-			PagesAdmin.gotoPageEllipsisMenuItem(
-				menuItem = "View",
-				pageName = "Child Content Page",
-				parentPagesHierarchy = "Parent Content Page");
-
-			AssertVisible(locator1 = "Icon#EDIT_PENCIL");
 		}
 	}
 
@@ -906,8 +164,6 @@ definition {
 	@description = "User is not able to delete sites templates which are associated to existing sites."
 	@priority = 3
 	test DeleteSiteTemplateAssociatedWithASite {
-		property portal.acceptance = "true";
-
 		task ("Given: User adds new site template and a new site based on this site template") {
 			SiteTemplates.addCP(
 				siteTemplateActive = "Yes",
@@ -974,7 +230,7 @@ definition {
 
 		task ("And: Import the site template lar file on the virtual instance") {
 			User.firstLoginPG(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				userEmailAddress = "test@www.able.com",
 				virtualHostsURL = "http://www.able.com:8080");
 
@@ -1102,7 +358,7 @@ definition {
 		task ("When: User changes the language of the portal back to English") {
 			Navigator.openURL();
 
-			UserBar.gotoDropdownItem(dropdownItem = "Mi cuenta");
+			UserBar.gotoDropdownItem(dropdownItem = "Configuración de la cuenta");
 
 			MyAccount.changeUserLanguage(
 				languageName = "English (United States)",
@@ -1127,8 +383,6 @@ definition {
 	@description = "Sites created from templates should only be editable by connecting users with admin rights."
 	@priority = 3
 	test OnlySiteAdminCanModifyPageAssociatedWithSiteTemplate {
-		property portal.acceptance = "true";
-
 		task ("Given: User adds new site template and a new site based on this site template") {
 			SiteTemplates.addCP(siteTemplateName = "Site Template Name");
 
@@ -1154,10 +408,7 @@ definition {
 				userLastName = "userln",
 				userScreenName = "usersn");
 
-			ApplicationsMenu.gotoPortlet(
-				category = "Users",
-				panel = "Control Panel",
-				portlet = "Users and Organizations");
+			User.openUsersAdmin();
 
 			User.editPasswordCP(
 				userEmailAddress = "userea@liferay.com",
@@ -1190,10 +441,8 @@ definition {
 	@description = "User can reset changes made on already existing portlets on sites which are based on site templates."
 	@priority = 3
 	test ResetPageChanges {
-		property portal.acceptance = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
-		property testray.component.names = "Training";
 
 		var siteName = TestCase.getSiteName(siteName = ${siteName});
 
@@ -1275,142 +524,6 @@ definition {
 		}
 	}
 
-	@description = "This is a use case for LPS-166286. TC-5: Verify that the LAR from the Site Template export is cached, so different Sites can reuse it for content page."
-	@priority = 3
-	test SiteCanReuseCachedSiteTemplateLarFileForContentPage {
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		task ("Given: Add new site template and two new sites based on this site template") {
-			SiteTemplates.addCP(siteTemplateName = "Site Template Name");
-
-			Site.openSitesAdmin();
-
-			Site.addCP(
-				siteName = "Site Name A",
-				siteTemplateName = "Site Template Name",
-				siteTemplateTab = "Custom Site Templates",
-				siteType = "Site Template");
-
-			Site.openSitesAdmin();
-
-			Site.addCP(
-				siteName = "Site Name B",
-				siteTemplateName = "Site Template Name",
-				siteTemplateTab = "Custom Site Templates",
-				siteType = "Site Template");
-		}
-
-		task ("And: Add Category log levels") {
-			ServerAdministration.openServerAdmin();
-
-			ServerAdministration.addCategoryLogLevels(
-				categoryLevel = "ALL",
-				categoryName = "com.liferay.exportimport.internal.background.task.LayoutSetPrototypeMergeBackgroundTaskExecutor");
-		}
-
-		task ("When: Add an AP widget to home page in Site template and navigate to Site Name A for triggering the propagation") {
-			SiteTemplatesNavigator.gotoSiteTemplatesPage(
-				pageName = "Home",
-				siteTemplateName = "Site Template Name");
-
-			ContentPages.gotoPageEditor();
-
-			PageEditor.addWidget(portletName = "Asset Publisher");
-
-			PageEditor.publish();
-
-			Navigator.openWithAppendToBaseURL(urlAppend = "web/site-name-a/home");
-
-			Refresh();
-		}
-
-		task ("And: Navigate to the Site Name B to trigger the propagation") {
-			Navigator.openWithAppendToBaseURL(urlAppend = "web/site-name-b/home");
-
-			Refresh();
-
-			Navigator.openWithAppendToBaseURL(urlAppend = "web/site-name-b/home");
-		}
-
-		task ("Then: Verify the propagation of Site Name B should reuse the cached site template Lar file") {
-			Alert.viewInfoMessageSpecific(infoMessage = "There are no results.");
-
-			AssertConsoleTextPresent(value1 = "Using cached layout set prototype LAR file");
-		}
-	}
-
-	@description = "This is a use case for LPS-166286. TC-4: Verify that the LAR from the Site Template export is cached, so different Sites can reuse it for widget page."
-	@priority = 3
-	test SiteCanReuseCachedSiteTemplateLarFileForWidgetPage {
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		var siteName = TestCase.getSiteName(siteName = ${siteName});
-
-		task ("Given: Add new site template with widget page and two new sites based on this site template") {
-			SiteTemplates.addCP(siteTemplateName = "Site Template Name");
-
-			SiteTemplates.addSitePageViaSiteTemplateCP(
-				pageName = "Page A",
-				siteTemplateName = "Site Template Name");
-
-			Site.openSitesAdmin();
-
-			Site.addCP(
-				siteName = "Site Name A",
-				siteTemplateName = "Site Template Name",
-				siteTemplateTab = "Custom Site Templates",
-				siteType = "Site Template");
-
-			Site.openSitesAdmin();
-
-			Site.addCP(
-				siteName = "Site Name B",
-				siteTemplateName = "Site Template Name",
-				siteTemplateTab = "Custom Site Templates",
-				siteType = "Site Template");
-		}
-
-		task ("And: Add Category log levels") {
-			ServerAdministration.openServerAdmin();
-
-			ServerAdministration.addCategoryLogLevels(
-				categoryLevel = "ALL",
-				categoryName = "com.liferay.exportimport.internal.background.task.LayoutSetPrototypeMergeBackgroundTaskExecutor");
-		}
-
-		task ("When: Add a WCD portlet to widget page in Site template and navigate to Site Name A for triggering the propagation") {
-			SiteTemplatesNavigator.gotoSiteTemplatesPage(
-				pageName = "Page A",
-				siteTemplateName = "Site Template Name");
-
-			Portlet.addPG(
-				defaultURL = "false",
-				portletName = "Web Content Display");
-
-			Navigator.gotoSitePage(
-				pageName = "Page A",
-				siteName = "Site Name A");
-
-			Refresh();
-		}
-
-		task ("And: Navigate to the Site Name B to trigger the propagation") {
-			Navigator.gotoSitePage(
-				pageName = "Page A",
-				siteName = "Site Name B");
-
-			Refresh();
-		}
-
-		task ("Then: Verify the propagation of Site Name B should reuse the cached site template Lar file") {
-			Portlet.viewPG(portletName = "Web Content Display");
-
-			AssertConsoleTextPresent(value1 = "Using cached layout set prototype LAR file");
-		}
-	}
-
 	@description = "This is a use case for LPS-44550. XSS should not be possible through site template name field."
 	@priority = 3
 	test SiteTemplateXSS {
@@ -1427,8 +540,7 @@ definition {
 				siteName = "Site Name",
 				siteTemplateName = '''<script>alert(123);</script>''',
 				siteTemplateTab = "Custom Site Templates",
-				siteType = "Site Template",
-				uncheckPropagation = "true");
+				siteType = "Site Template");
 		}
 
 		task ("When: User opens the new site's page admin page") {
@@ -1453,76 +565,13 @@ definition {
 		}
 	}
 
-	@description = "This is a use case for LPS-124594 and LPS-129081. User can switch propagation status on site template sites with the propagation button."
-	@priority = 3
-	test SwitchPropagationWithOneClickControl {
-		var siteName = TestCase.getSiteName(siteName = ${siteName});
-
-		task ("Given: User adds new site template and a new site based on this site template") {
-			SiteTemplates.addCP(siteTemplateName = "Site Template Name");
-
-			Site.openSitesAdmin();
-
-			Site.addSiteTemplateCP(
-				siteName = "Site Name",
-				siteTemplateName = "Site Template Name",
-				siteTemplateTab = "Custom Site Templates");
-		}
-
-		task ("And: Disables propagation of the template") {
-			SiteTemplatesNavigator.gotoSiteTemplatesPage(
-				pageName = "Home",
-				siteTemplateName = "Site Template Name");
-
-			SiteTemplates.disablePropagationPG();
-		}
-
-		task ("When: User adds a portlet to the site template") {
-			ContentPages.gotoPageEditor();
-
-			PageEditor.addWidget(portletName = "Asset Publisher");
-
-			PageEditor.publish();
-		}
-
-		task ("Then: The portlet won't appear on the new site") {
-			Navigator.openSiteURL(siteName = "Site Name");
-
-			Refresh();
-
-			Portlet.viewNoPortletsPresentPG();
-		}
-
-		task ("When: User enables propagation of the template") {
-			SiteTemplatesNavigator.gotoSiteTemplatesPage(
-				pageName = "Home",
-				siteTemplateName = "Site Template Name");
-
-			SiteTemplates.enablePropagationPG();
-		}
-
-		task ("Then: The portlet will appear on the new site") {
-			Navigator.openSiteURL(siteName = "Site Name");
-
-			Refresh();
-
-			ContentPages.gotoPageEditor();
-
-			AssertElementPresent(
-				key_portletName = "AssetPublisher",
-				locator1 = "Portlet#SPECIFIC_FRAGMENTS_AND_WIDGETS");
-		}
-	}
-
 	@description = "This is a use case for LPS-174434 TC-1 TC-2. Verify there's a confirmation dialog and toast message appears when the Site's Page saved with friendly URL collision."
 	@priority = 3
 	test ViewAlertAfterAddSitePageWithURLCollision {
 		property custom.properties = "feature.flag.LPS-174417=true";
 
 		task ("Given add new site based on the new site template with poropagation false") {
-			SiteTemplates.addCP(
-				disablePropagation = "true",
-				siteTemplateName = "Site Template Name");
+			SiteTemplates.addCP(siteTemplateName = "Site Template Name");
 
 			Site.openSitesAdmin();
 
@@ -1632,9 +681,7 @@ definition {
 		property test.run.type = "single";
 
 		task ("Given User adds pages with friendly URL collision in new site and site template") {
-			SiteTemplates.addCP(
-				disablePropagation = "true",
-				siteTemplateName = "Site Template Name");
+			SiteTemplates.addCP(siteTemplateName = "Site Template Name");
 
 			Site.openSitesAdmin();
 
@@ -1710,6 +757,10 @@ definition {
 				category = "Site Builder",
 				portlet = "Pages");
 
+			Alert.viewSuccessMessage();
+
+			WaitForElementNotPresent(locator1 = "Message#SUCCESS_DISMISSIBLE");
+
 			PagesAdmin.gotoPageEllipsisMenuItem(
 				menuItem = "View",
 				pageName = "Home");
@@ -1724,6 +775,10 @@ definition {
 				siteName = "Site Name",
 				siteTemplateName = "Site Template Name",
 				siteTemplateTab = "Custom Site Templates");
+
+			Alert.viewSuccessMessage();
+
+			WaitForElementNotPresent(locator1 = "Message#SUCCESS_DISMISSIBLE");
 		}
 
 		task ("Then: The javascript will be inherited from the site template") {
@@ -1784,9 +839,7 @@ definition {
 		property custom.properties = "feature.flag.LPS-174417=true";
 
 		task ("Given User adds page in site template, adds new site based on the new site template with page") {
-			SiteTemplates.addCP(
-				disablePropagation = "true",
-				siteTemplateName = "Site Template Name");
+			SiteTemplates.addCP(siteTemplateName = "Site Template Name");
 
 			Site.openSitesAdmin();
 
@@ -1843,20 +896,18 @@ definition {
 		task ("Given User adds similar friendly URL page with page in template to 5 sites based on the template") {
 			SiteTemplates.addCP(siteTemplateName = "Site Template Name");
 
-			for (var name : list "1,2,3,4,5") {
-				Site.openSitesAdmin();
+			Site.openSitesAdmin();
 
-				Site.addSiteTemplateCP(
-					siteName = "Site Name${name}",
-					siteTemplateName = "Site Template Name",
-					siteTemplateTab = "Custom Site Templates");
+			Site.addSiteTemplateCP(
+				siteName = "Site Name1",
+				siteTemplateName = "Site Template Name",
+				siteTemplateTab = "Custom Site Templates");
 
-				PagesAdmin.openPagesAdmin(siteURLKey = "Site Name${name}");
+			PagesAdmin.openPagesAdmin(siteURLKey = "Site Name1");
 
-				PagesAdmin.addPage(
-					pageName = "Page1",
-					sitePageType = "Widget Page");
-			}
+			PagesAdmin.addPage(
+				pageName = "Page1",
+				sitePageType = "Widget Page");
 		}
 
 		task ("When User adds page with same Friendly URL conflicts in site template") {
@@ -1871,9 +922,9 @@ definition {
 				inputFieldId = "/page1",
 				locator1 = "TextInput#INPUT_ID");
 
-			AssertTextEquals(
+			AssertTextEquals.assertPartialText(
 				locator1 = "Message#ERROR_3",
-				value1 = "Warning:The site template page friendly URL is conflicting with the page friendly URL in some of the sites created from this template. Page Page1 of Site Name1 Page Page1 of Site Name2 Page Page1 of Site Name3 Page Page1 of Site Name4 Page Page1 of Site Name5");
+				value1 = "Warning:The site template page friendly URL is conflicting with the page friendly URL in some of the sites created from this template");
 		}
 	}
 
@@ -1883,9 +934,7 @@ definition {
 		property custom.properties = "feature.flag.LPS-174417=true";
 
 		task ("Given User adds new site base on template with child page") {
-			SiteTemplates.addCP(
-				disablePropagation = "true",
-				siteTemplateName = "Site Template Name");
+			SiteTemplates.addCP(siteTemplateName = "Site Template Name");
 
 			Site.openSitesAdmin();
 

@@ -20,7 +20,7 @@
 				"rootPortletId", portletDisplay.getRootPortletId()
 			).build()
 		%>'
-		module="js/commerce_term_entries"
+		module="{commerceTermEntries} from commerce-payment-web"
 	/>
 
 	<commerce-ui:panel
@@ -32,7 +32,6 @@
 			fdsActionDropdownItems="<%= commercePaymentMethodGroupRelQualifiersDisplayContext.getCommerceTermEntryFDSActionDropdownItems() %>"
 			formName="fm"
 			id="<%= CommercePaymentMethodGroupRelFDSNames.TERM_ENTRIES %>"
-			itemsPerPage="<%= 10 %>"
 		/>
 	</commerce-ui:panel>
 </c:if>

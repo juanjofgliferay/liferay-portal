@@ -24,6 +24,7 @@ import org.osgi.service.component.annotations.Component;
 public class AnalyticsAssociationLocalServiceImpl
 	extends AnalyticsAssociationLocalServiceBaseImpl {
 
+	@Override
 	public AnalyticsAssociation addAnalyticsAssociation(
 		long companyId, Date createDate, long userId,
 		String associationClassName, long associationClassPK, String className,
@@ -43,6 +44,16 @@ public class AnalyticsAssociationLocalServiceImpl
 		analyticsAssociation.setClassPK(classPK);
 
 		return analyticsAssociationPersistence.update(analyticsAssociation);
+	}
+
+	@Override
+	public void deleteAnalyticsAssociations(long companyId) {
+		analyticsAssociationPersistence.removeByCompanyId(companyId);
+	}
+
+	@Override
+	public void deleteAnalyticsAssociations(long companyId, Date modifiedDate) {
+		analyticsAssociationPersistence.removeByC_LtM(companyId, modifiedDate);
 	}
 
 	@Override

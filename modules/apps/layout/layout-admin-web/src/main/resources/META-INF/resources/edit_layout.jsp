@@ -97,7 +97,7 @@ renderResponse.setTitle(layoutsAdminDisplayContext.getConfigurationTitle(selLayo
 								"enableLayoutURL", enableLayoutURL
 							).build()
 						%>'
-						module="js/layout/IncompleteLayoutEventListener"
+						module="{IncompleteLayoutEventListener} from layout-admin-web"
 					/>
 				</aui:button-row>
 			</clay:sheet>
@@ -110,7 +110,6 @@ renderResponse.setTitle(layoutsAdminDisplayContext.getConfigurationTitle(selLayo
 			containerCssClass="col-lg-8"
 			containerWrapperCssClass="container-fluid container-fluid-max-xl container-form-lg"
 			context="<%= selLayout %>"
-			inverted="<%= true %>"
 			key="<%= LayoutScreenNavigationEntryConstants.SCREEN_NAVIGATION_KEY_LAYOUT %>"
 			menubarCssClass="menubar menubar-transparent menubar-vertical-expand-lg"
 			navCssClass="col-lg-3"

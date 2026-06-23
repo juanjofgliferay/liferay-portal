@@ -19,7 +19,6 @@ import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalServiceUtil;
 import com.liferay.portal.kernel.service.RoleLocalServiceUtil;
 import com.liferay.portal.kernel.util.LoggingTimer;
-import com.liferay.portal.util.PortalInstances;
 
 /**
  * @author Brian Wing Shun Chan
@@ -55,8 +54,7 @@ public class VerifyRole extends VerifyProcess {
 	@Override
 	protected void doVerify() throws Exception {
 		CompanyLocalServiceUtil.forEachCompanyId(
-			companyId -> verifyRoles(companyId),
-			PortalInstances.getCompanyIdsBySQL());
+			companyId -> verifyRoles(companyId));
 	}
 
 	protected void verifyRoles(long companyId) throws Exception {

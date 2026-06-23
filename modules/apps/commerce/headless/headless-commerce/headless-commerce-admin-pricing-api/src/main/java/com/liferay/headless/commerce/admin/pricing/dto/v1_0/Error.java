@@ -16,7 +16,12 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,24 +29,22 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Zoltán Takács
  * @generated
  */
 @Generated("")
-@GraphQLName("Error")
-@JsonFilter("Liferay.Vulcan")
-@Schema(
+@GraphQLName(
+	description = "Standard error envelope returned by the JAX-RS exception mappers in the impl module. Wraps the HTTP status, an internal error code, and a human-readable message and description for failed requests; emitted as application/json or application/xml based on the request's Accept header.",
+	value = "Error"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "Standard error envelope returned by the JAX-RS exception mappers in the impl module. Wraps the HTTP status, an internal error code, and a human-readable message and description for failed requests; emitted as application/json or application/xml based on the request's Accept header.",
 	requiredProperties = {"errorCode", "errorDescription", "message", "status"}
 )
+@JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "Error")
 public class Error implements Serializable {
 
@@ -53,125 +56,193 @@ public class Error implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Error.class, json);
 	}
 
-	@Schema(description = "Internal error code mapping", example = "996")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Internal Liferay error code that classifies the failure. Stable across releases for the same error condition; used by integration code to branch on specific failure modes without parsing the message.",
+		example = "996"
+	)
 	public Integer getErrorCode() {
+		if (_errorCodeSupplier != null) {
+			errorCode = _errorCodeSupplier.get();
+
+			_errorCodeSupplier = null;
+		}
+
 		return errorCode;
 	}
 
 	public void setErrorCode(Integer errorCode) {
 		this.errorCode = errorCode;
+
+		_errorCodeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setErrorCode(
 		UnsafeSupplier<Integer, Exception> errorCodeUnsafeSupplier) {
 
-		try {
-			errorCode = errorCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_errorCodeSupplier = () -> {
+			try {
+				return errorCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField(description = "Internal error code mapping")
+	@GraphQLField(
+		description = "Internal Liferay error code that classifies the failure. Stable across releases for the same error condition; used by integration code to branch on specific failure modes without parsing the message."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	@NotNull
 	protected Integer errorCode;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<Integer> _errorCodeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Detailed, human-readable explanation of the failure intended for log entries and developer-facing tooling. May embed lookup keys that identify the offending entity.",
 		example = "Unable to find currency. Currency code should be expressed with 3-letter ISO 4217 format."
 	)
 	public String getErrorDescription() {
+		if (_errorDescriptionSupplier != null) {
+			errorDescription = _errorDescriptionSupplier.get();
+
+			_errorDescriptionSupplier = null;
+		}
+
 		return errorDescription;
 	}
 
 	public void setErrorDescription(String errorDescription) {
 		this.errorDescription = errorDescription;
+
+		_errorDescriptionSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setErrorDescription(
 		UnsafeSupplier<String, Exception> errorDescriptionUnsafeSupplier) {
 
-		try {
-			errorDescription = errorDescriptionUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_errorDescriptionSupplier = () -> {
+			try {
+				return errorDescriptionUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Detailed, human-readable explanation of the failure intended for log entries and developer-facing tooling. May embed lookup keys that identify the offending entity."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	@NotEmpty
 	protected String errorDescription;
 
-	@Schema(
-		example = "No CommerceCurrency exists with the key {groupId=41811, code=US Dollar}"
+	@JsonIgnore
+	private Supplier<String> _errorDescriptionSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Short, human-readable summary of the failure intended for end-user display. May embed lookup keys that identify the offending entity.",
+		example = "No currency exists with the key (companyId=41811, code=USD)"
 	)
 	public String getMessage() {
+		if (_messageSupplier != null) {
+			message = _messageSupplier.get();
+
+			_messageSupplier = null;
+		}
+
 		return message;
 	}
 
 	public void setMessage(String message) {
 		this.message = message;
+
+		_messageSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setMessage(
 		UnsafeSupplier<String, Exception> messageUnsafeSupplier) {
 
-		try {
-			message = messageUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_messageSupplier = () -> {
+			try {
+				return messageUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Short, human-readable summary of the failure intended for end-user display. May embed lookup keys that identify the offending entity."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	@NotEmpty
 	protected String message;
 
-	@Schema(description = "HTTP Status code", example = "404")
+	@JsonIgnore
+	private Supplier<String> _messageSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "HTTP status code returned with the response. Mirrors the numeric status of the response line.",
+		example = "404"
+	)
 	public Integer getStatus() {
+		if (_statusSupplier != null) {
+			status = _statusSupplier.get();
+
+			_statusSupplier = null;
+		}
+
 		return status;
 	}
 
 	public void setStatus(Integer status) {
 		this.status = status;
+
+		_statusSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setStatus(
 		UnsafeSupplier<Integer, Exception> statusUnsafeSupplier) {
 
-		try {
-			status = statusUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_statusSupplier = () -> {
+			try {
+				return statusUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField(description = "HTTP Status code")
+	@GraphQLField(
+		description = "HTTP status code returned with the response. Mirrors the numeric status of the response line."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	@NotNull
 	protected Integer status;
+
+	@JsonIgnore
+	private Supplier<Integer> _statusSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -200,6 +271,8 @@ public class Error implements Serializable {
 
 		sb.append("{");
 
+		Integer errorCode = getErrorCode();
+
 		if (errorCode != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -209,6 +282,8 @@ public class Error implements Serializable {
 
 			sb.append(errorCode);
 		}
+
+		String errorDescription = getErrorDescription();
 
 		if (errorDescription != null) {
 			if (sb.length() > 1) {
@@ -224,6 +299,8 @@ public class Error implements Serializable {
 			sb.append("\"");
 		}
 
+		String message = getMessage();
+
 		if (message != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -237,6 +314,8 @@ public class Error implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Integer status = getStatus();
 
 		if (status != null) {
 			if (sb.length() > 1) {
@@ -253,8 +332,8 @@ public class Error implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.admin.pricing.dto.v1_0.Error",
 		name = "x-class-name"
 	)
@@ -300,7 +379,10 @@ public class Error implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -346,3 +428,4 @@ public class Error implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:226005210

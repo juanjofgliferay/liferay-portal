@@ -20,16 +20,20 @@ import {close, modalTypes, open} from 'shared/actions/modals';
 import {connect, ConnectedProps} from 'react-redux';
 import {CSSTransition, TransitionGroup} from 'react-transition-group';
 import {DISPLAY_NAME} from 'shared/util/pagination';
+import {
+	getModifiedEventAttributeDefinitions,
+	getTabs
+} from 'event-analysis/utils/utils';
 import {OrderByDirections} from 'shared/util/constants';
 import {SafeResults} from 'shared/hoc/util';
-import {useQuery} from '@apollo/react-hooks';
+import {useQuery} from '@apollo/client';
 
 const connector = connect(null, {close, open});
 
 type PropsFromRedux = ConnectedProps<typeof connector>;
 
 interface IAttributeFilterDropdownProps extends PropsFromRedux {
-	alignmentPosition?: typeof Align[keyof typeof Align];
+	alignmentPosition?: (typeof Align)[keyof typeof Align];
 	attribute?: Attribute;
 	disabledIds?: string[];
 	eventId: string;
@@ -49,14 +53,11 @@ const AttributeFilterDropdown: React.FC<IAttributeFilterDropdownProps> = ({
 	trigger,
 	uneditableIds
 }) => {
-	const [
-		attributeOwnerType,
-		setAttributeOwnerType
-	] = useState<AttributeOwnerTypes>(AttributeOwnerTypes.Event);
+	const [attributeOwnerType, setAttributeOwnerType] =
+		useState<AttributeOwnerTypes>(AttributeOwnerTypes.Event);
 	const [query, setQuery] = useState('');
-	const [selectedAttribute, setSelectedAttribute] = useState<Attribute>(
-		filter ? attribute : null
-	);
+	const [selectedAttribute, setSelectedAttribute] =
+		useState<Attribute | null>(filter && attribute ? attribute : null);
 
 	const result = useQuery<
 		EventAttributeDefinitionsData,
@@ -95,7 +96,9 @@ const AttributeFilterDropdown: React.FC<IAttributeFilterDropdownProps> = ({
 				if (!active) {
 					setAttributeOwnerType(AttributeOwnerTypes.Event);
 					setQuery('');
-					setSelectedAttribute(filter ? attribute : null);
+					setSelectedAttribute(
+						filter && attribute ? attribute : null
+					);
 				}
 			}}
 			trigger={trigger}
@@ -114,16 +117,7 @@ const AttributeFilterDropdown: React.FC<IAttributeFilterDropdownProps> = ({
 							<div className='d-flex flex-column'>
 								<BaseDropdown.Header
 									activeTabId={attributeOwnerType}
-									tabs={[
-										{
-											onClick: () =>
-												setAttributeOwnerType(
-													AttributeOwnerTypes.Event
-												),
-											tabId: AttributeOwnerTypes.Event,
-											title: Liferay.Language.get('event')
-										}
-									]}
+									tabs={getTabs(setAttributeOwnerType)}
 									title={Liferay.Language.get('attributes')}
 								/>
 
@@ -141,36 +135,35 @@ const AttributeFilterDropdown: React.FC<IAttributeFilterDropdownProps> = ({
 											eventAttributeDefinitions: Attribute[];
 										};
 									}) => {
-										const modifieldEventAttributeDefinitions = attribute
-											? eventAttributeDefinitions.map(
-													eventAttributeDefinition => {
-														if (
-															attribute.id ===
-															eventAttributeDefinition.id
-														) {
-															return attribute;
-														}
-
-														return eventAttributeDefinition;
-													}
-											  )
-											: eventAttributeDefinitions;
+										const modifiedEventAttributeDefinitions =
+											getModifiedEventAttributeDefinitions(
+												{
+													attribute: attribute!,
+													attributeOwnerType,
+													eventAttributeDefinitions
+												}
+											);
 
 										return (
 											<BaseDropdown.SearchableList
-												activeId={attributeId}
+												activeId={
+													attributeId ?? undefined
+												}
 												disabledIds={disabledIds}
 												items={
-													modifieldEventAttributeDefinitions
+													modifiedEventAttributeDefinitions
 												}
-												onEditClick={(
-													attribute: Attribute
-												) => {
+												onEditClick={item => {
+													if (!item) {
+														return;
+													}
+
 													open(
 														modalTypes.EDIT_ATTRIBUTE_EVENT_MODAL,
 														{
-															id: attribute.id,
-															mutation: UPDATE_EVENT_ATTRIBUTE_DEFINITION,
+															id: item.id,
+															mutation:
+																UPDATE_EVENT_ATTRIBUTE_DEFINITION,
 															onClose,
 															query: EVENT_ATTRIBUTE_DEFINITION_QUERY,
 															showTypecast: true
@@ -179,15 +172,17 @@ const AttributeFilterDropdown: React.FC<IAttributeFilterDropdownProps> = ({
 
 													setActive(false);
 												}}
-												onItemClick={(
-													attribute: Attribute
-												) => {
+												onItemClick={item => {
 													setSelectedAttribute(
-														attribute
+														item as Attribute
 													);
 												}}
 												onQueryChange={setQuery}
 												query={query}
+												showInfoCard={
+													attributeOwnerType ===
+													AttributeOwnerTypes.Event
+												}
 												uneditableIds={uneditableIds}
 											/>
 										);
@@ -204,12 +199,12 @@ const AttributeFilterDropdown: React.FC<IAttributeFilterDropdownProps> = ({
 						>
 							<div className='w-100'>
 								<FilterOptions
-									attribute={selectedAttribute}
+									attribute={selectedAttribute!}
 									attributeOwnerType={attributeOwnerType}
 									eventId={eventId}
-									filterId={filterId}
+									filterId={filterId ?? undefined}
 									onActiveChange={setActive}
-									onAttributeChange={params => {
+									onAttributeChange={(params: Attribute) => {
 										setSelectedAttribute(params);
 									}}
 									onEditClick={
@@ -224,9 +219,9 @@ const AttributeFilterDropdown: React.FC<IAttributeFilterDropdownProps> = ({
 													open(
 														modalTypes.EDIT_ATTRIBUTE_EVENT_MODAL,
 														{
-															id:
-																selectedAttribute.id,
-															mutation: UPDATE_EVENT_ATTRIBUTE_DEFINITION,
+															id: selectedAttribute.id,
+															mutation:
+																UPDATE_EVENT_ATTRIBUTE_DEFINITION,
 															onClose,
 															query: EVENT_ATTRIBUTE_DEFINITION_QUERY,
 															showTypecast: true

@@ -8,11 +8,11 @@ package com.liferay.portal.lpkg.deployer.test;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.lpkg.StaticLPKGResolver;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.URLCodec;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.lpkg.deployer.LPKGDeployer;
-import com.liferay.portal.util.PropsValues;
 
 import java.io.File;
 import java.io.IOException;
@@ -85,7 +85,7 @@ public class LPKGDeployerTest {
 					String fileName = StringUtil.toLowerCase(
 						fileNamePath.toString());
 
-					if (fileName.endsWith(".markdown")) {
+					if (fileName.endsWith(".md")) {
 						return FileVisitResult.CONTINUE;
 					}
 
@@ -230,6 +230,7 @@ public class LPKGDeployerTest {
 						StandardCopyOption.REPLACE_EXISTING);
 
 					try (ZipFile zipFile2 = new ZipFile(tempFilePath.toFile());
+
 						InputStream inputStream2 = zipFile2.getInputStream(
 							new ZipEntry(
 								"WEB-INF/liferay-plugin-package.properties"))) {

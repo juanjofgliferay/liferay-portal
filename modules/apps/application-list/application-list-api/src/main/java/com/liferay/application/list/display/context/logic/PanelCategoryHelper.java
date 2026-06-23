@@ -8,11 +8,12 @@ package com.liferay.application.list.display.context.logic;
 import com.liferay.application.list.PanelApp;
 import com.liferay.application.list.PanelAppRegistry;
 import com.liferay.application.list.PanelCategory;
-import com.liferay.application.list.PanelCategoryRegistry;
 import com.liferay.application.list.constants.PanelCategoryKeys;
+import com.liferay.application.list.util.PanelCategoryRegistryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,17 +23,13 @@ import java.util.List;
  */
 public class PanelCategoryHelper {
 
-	public PanelCategoryHelper(
-		PanelAppRegistry panelAppRegistry,
-		PanelCategoryRegistry panelCategoryRegistry) {
-
+	public PanelCategoryHelper(PanelAppRegistry panelAppRegistry) {
 		_panelAppRegistry = panelAppRegistry;
-		_panelCategoryRegistry = panelCategoryRegistry;
 	}
 
 	public boolean containsPortlet(String portletId, String panelCategoryKey) {
 		for (PanelCategory curPanelCategory :
-				_panelCategoryRegistry.getChildPanelCategories(
+				PanelCategoryRegistryUtil.getChildPanelCategories(
 					panelCategoryKey)) {
 
 			if (hasPortlet(portletId, curPanelCategory.getKey()) ||
@@ -50,7 +47,7 @@ public class PanelCategoryHelper {
 		PermissionChecker permissionChecker, Group group) {
 
 		for (PanelCategory curPanelCategory :
-				_panelCategoryRegistry.getChildPanelCategories(
+				PanelCategoryRegistryUtil.getChildPanelCategories(
 					panelCategoryKey, permissionChecker, group)) {
 
 			if (hasPortlet(
@@ -68,19 +65,41 @@ public class PanelCategoryHelper {
 			portletId, panelCategoryKey, permissionChecker, group);
 	}
 
+	public PanelCategory getActivePanelCategory(
+		String panelCategoryKey, String portletId, ThemeDisplay themeDisplay) {
+
+		for (PanelCategory childPanelCategory :
+				getChildPanelCategories(panelCategoryKey, themeDisplay)) {
+
+			if (containsPortlet(portletId, childPanelCategory.getKey())) {
+				return childPanelCategory;
+			}
+		}
+
+		return null;
+	}
+
 	public List<PanelApp> getAllPanelApps(String panelCategoryKey) {
 		List<PanelApp> panelApps = new ArrayList<>();
 
 		panelApps.addAll(_panelAppRegistry.getPanelApps(panelCategoryKey));
 
 		for (PanelCategory childPanelCategory :
-				_panelCategoryRegistry.getChildPanelCategories(
+				PanelCategoryRegistryUtil.getChildPanelCategories(
 					panelCategoryKey)) {
 
 			panelApps.addAll(getAllPanelApps(childPanelCategory.getKey()));
 		}
 
 		return panelApps;
+	}
+
+	public List<PanelCategory> getChildPanelCategories(
+		String panelKey, ThemeDisplay themeDisplay) {
+
+		return PanelCategoryRegistryUtil.getChildPanelCategories(
+			panelKey, themeDisplay.getPermissionChecker(),
+			themeDisplay.getScopeGroup());
 	}
 
 	public String getFirstPortletId(
@@ -95,7 +114,7 @@ public class PanelCategoryHelper {
 		}
 
 		List<PanelCategory> panelCategories =
-			_panelCategoryRegistry.getChildPanelCategories(
+			PanelCategoryRegistryUtil.getChildPanelCategories(
 				panelCategoryKey, permissionChecker, group);
 
 		if (panelCategories.isEmpty()) {
@@ -119,13 +138,24 @@ public class PanelCategoryHelper {
 		Group group, User user) {
 
 		int count =
-			_panelCategoryRegistry.getChildPanelCategoriesNotificationsCount(
+			PanelCategoryRegistryUtil.getChildPanelCategoriesNotificationsCount(
 				this, panelCategoryKey, permissionChecker, group, user);
 
 		count += _panelAppRegistry.getPanelAppsNotificationsCount(
 			panelCategoryKey, permissionChecker, group, user);
 
 		return count;
+	}
+
+	public PanelCategory getPanelCategory(String portletId) {
+		PanelCategory panelCategory = _getPanelCategory(
+			PanelCategoryKeys.APPLICATIONS_MENU, portletId);
+
+		if (panelCategory != null) {
+			return panelCategory;
+		}
+
+		return _getPanelCategory(PanelCategoryKeys.ROOT, portletId);
 	}
 
 	public boolean hasPanelApp(String portletId) {
@@ -175,7 +205,29 @@ public class PanelCategoryHelper {
 		return false;
 	}
 
+	private PanelCategory _getPanelCategory(
+		String parentCategoryKey, String portletId) {
+
+		if (hasPortlet(portletId, parentCategoryKey)) {
+			return PanelCategoryRegistryUtil.getPanelCategory(
+				parentCategoryKey);
+		}
+
+		for (PanelCategory panelCategory1 :
+				PanelCategoryRegistryUtil.getChildPanelCategories(
+					parentCategoryKey)) {
+
+			PanelCategory panelCategory2 = _getPanelCategory(
+				panelCategory1.getKey(), portletId);
+
+			if (panelCategory2 != null) {
+				return panelCategory2;
+			}
+		}
+
+		return null;
+	}
+
 	private final PanelAppRegistry _panelAppRegistry;
-	private final PanelCategoryRegistry _panelCategoryRegistry;
 
 }

@@ -85,6 +85,8 @@ public class CTSContentModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table CTSContent";
 
+	public static final String ENTITY_ALIAS = "ctsContent";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY ctsContent.version DESC";
 
@@ -788,7 +790,7 @@ public class CTSContentModelImpl
 	private long _repositoryId;
 	private String _path;
 	private String _version;
-	private CTSContentDataBlobModel _dataBlobModel;
+	private transient CTSContentDataBlobModel _dataBlobModel;
 	private long _size;
 	private String _storeType;
 
@@ -883,3 +885,4 @@ public class CTSContentModelImpl
 	private CTSContent _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:797864709

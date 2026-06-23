@@ -1,118 +1,100 @@
-import autobind from 'autobind-decorator';
-import Card from 'shared/components/Card';
-import ClayButton from '@clayui/button';
 import CriteriaView from './CriteriaView';
-import getCN from 'classnames';
 import Label from 'shared/components/Label';
-import React from 'react';
-import {Containers} from 'shared/components/download-report/DownloadPDFReport';
-import {Segment} from 'shared/util/records';
+import Panel from '@clayui/panel';
+import React, {useContext, useEffect, useMemo} from 'react';
+import {extractRemoteCriterionEntries} from 'segment/segment-editor/dynamic/criterion-types/extract';
+import {ReferencedObjectsContext} from 'segment/segment-editor/dynamic/context/referencedObjects';
+import {ReportContainer} from 'shared/components/download-report/DownloadPDFReport';
+import {SegmentTypes} from 'shared/util/constants';
 import {translateQueryToCriteria} from 'segment/segment-editor/dynamic/utils/odata';
-import {withReferencedObjectsProvider} from 'segment/segment-editor/dynamic/context/referencedObjects';
-
-const HEADER_MARGIN = 16;
+import {useDownloadReportContext} from 'shared/components/download-report/DownloadReportContext';
 
 interface ICriteriaCardProps {
+	channelId?: string;
 	criteriaString: string;
+	groupId?: string;
 	includeAnonymousUsers: boolean;
-	segment: Segment;
+	segmentType: SegmentTypes;
+	sequential: boolean;
 	timeZoneId: string;
 }
 
-interface ICriteriaCardState {
-	expand: boolean;
-	truncate: boolean;
-}
+const CriteriaCard: React.FC<ICriteriaCardProps> = ({
+	channelId,
+	criteriaString,
+	groupId,
+	includeAnonymousUsers,
+	segmentType,
+	sequential,
+	timeZoneId
+}) => {
+	const _criteriaViewRef = React.createRef<HTMLDivElement>();
 
-class CriteriaCard extends React.Component<
-	ICriteriaCardProps,
-	ICriteriaCardState
-> {
-	state = {
-		expand: false,
-		truncate: true
-	};
+	const {clearReportContainers, setReportContainer} =
+		useDownloadReportContext();
 
-	private _criteriaViewRef = React.createRef<HTMLDivElement>();
+	const {addProperty} = useContext(ReferencedObjectsContext);
 
-	componentDidMount() {
-		this.updateCriteriaTruncation();
+	const criteria = useMemo(
+		() => translateQueryToCriteria(criteriaString),
+		[criteriaString]
+	);
 
-		window.addEventListener('resize', this.updateCriteriaTruncation);
-	}
+	useEffect(() => {
+		setReportContainer(ReportContainer.SegmentCriteriaCard);
 
-	componentWillUnmount() {
-		window.removeEventListener('resize', this.updateCriteriaTruncation);
-	}
+		return clearReportContainers;
+	}, []);
 
-	@autobind
-	handleClick() {
-		this.setState({expand: true});
-	}
-
-	@autobind
-	updateCriteriaTruncation() {
-		const node = this._criteriaViewRef.current;
-
-		if (node) {
-			const {bottom} = node.getBoundingClientRect();
-
-			this.setState({
-				truncate: bottom > window.innerHeight - HEADER_MARGIN
-			});
+	useEffect(() => {
+		if (!channelId || !groupId || !addProperty) {
+			return;
 		}
-	}
 
-	render() {
-		const {
-			props: {criteriaString, includeAnonymousUsers, timeZoneId},
-			state: {expand, truncate}
-		} = this;
+		extractRemoteCriterionEntries(criteria).forEach(
+			({criterionType, id, name}) => {
+				addProperty(criterionType.createProperty({id, name}));
+			}
+		);
+	}, [channelId, groupId, criteria]);
 
-		const hideOverflow = !expand && truncate;
+	return (
+		<Panel
+			className='card-root'
+			collapsable
+			defaultExpanded
+			displayTitle={
+				<Panel.Title className='card-title'>
+					{Liferay.Language.get('segment-criteria')}
+				</Panel.Title>
+			}
+			id={ReportContainer.SegmentCriteriaCard}
+		>
+			<Panel.Body className='criteria-card-root'>
+				{includeAnonymousUsers && (
+					<Label display='info' size='lg' uppercase>
+						{Liferay.Language.get('includes-anonymous-individuals')}
+					</Label>
+				)}
 
-		return (
-			<Card
-				className='criteria-card-root'
-				id={Containers.SegmentCriteriaCard}
-			>
-				<Card.Header>
-					<Card.Title>
-						{Liferay.Language.get('segment-criteria')}
-					</Card.Title>
+				{segmentType === SegmentTypes.RealTime && sequential && (
+					<Label display='info' size='lg' uppercase>
+						{Liferay.Language.get('sequential-events')}
+					</Label>
+				)}
 
-					{includeAnonymousUsers && (
-						<Label display='secondary' size='lg' uppercase>
-							{Liferay.Language.get('include-anonymous')}
-						</Label>
-					)}
-				</Card.Header>
-
-				<Card.Body className={getCN({truncate: hideOverflow})}>
+				{criteria && (
 					<CriteriaView
-						criteria={translateQueryToCriteria(criteriaString)}
-						ref={this._criteriaViewRef}
+						criteria={criteria}
+						ref={_criteriaViewRef}
+						segmentType={segmentType}
+						sequential={sequential}
 						timeZoneId={timeZoneId}
 					/>
-				</Card.Body>
-
-				{hideOverflow && (
-					<div className='fade-out-cover'>
-						<div className='view-all-button-container'>
-							<ClayButton
-								className='button-root'
-								displayType='unstyled'
-								onClick={this.handleClick}
-								size='sm'
-							>
-								{Liferay.Language.get('view-all-criteria')}
-							</ClayButton>
-						</div>
-					</div>
 				)}
-			</Card>
-		);
-	}
-}
+			</Panel.Body>
+		</Panel>
+	);
+};
 
-export default withReferencedObjectsProvider(CriteriaCard);
+export default CriteriaCard;

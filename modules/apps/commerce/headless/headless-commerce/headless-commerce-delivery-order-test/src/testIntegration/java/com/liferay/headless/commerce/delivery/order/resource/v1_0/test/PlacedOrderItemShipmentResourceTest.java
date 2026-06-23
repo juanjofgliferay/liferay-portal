@@ -75,13 +75,13 @@ public class PlacedOrderItemShipmentResourceTest
 			_user.getUserId());
 
 		_accountEntry = _accountEntryLocalService.addAccountEntry(
-			_user.getUserId(), 0, RandomTestUtil.randomString(),
-			RandomTestUtil.randomString(), null,
+			StringPool.BLANK, _user.getUserId(), 0,
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(), null,
 			RandomTestUtil.randomString() + "@liferay.com", null,
 			RandomTestUtil.randomString(), "business", 1, _serviceContext);
 
 		_commerceCurrency = _commerceCurrencyLocalService.addCommerceCurrency(
-			_user.getUserId(), RandomTestUtil.randomString(),
+			null, _user.getUserId(), RandomTestUtil.randomString(),
 			RandomTestUtil.randomLocaleStringMap(),
 			RandomTestUtil.randomString(), BigDecimal.ONE, new HashMap<>(), 2,
 			2, "HALF_EVEN", false, RandomTestUtil.nextDouble(), true);
@@ -98,19 +98,13 @@ public class PlacedOrderItemShipmentResourceTest
 			_accountEntry.getAccountEntryId(),
 			_commerceCurrency.getCommerceCurrencyId());
 
-		_commerceOrder.setOrderStatus(
-			CommerceOrderConstants.ORDER_STATUS_COMPLETED);
-
-		_commerceOrder = _commerceOrderLocalService.updateCommerceOrder(
-			_commerceOrder);
-
 		_commercePriceList =
 			_commercePriceListLocalService.addCommercePriceList(
-				RandomTestUtil.randomString(), testGroup.getGroupId(),
-				_user.getUserId(), _commerceCurrency.getCommerceCurrencyId(),
-				true, CommercePriceListConstants.TYPE_PRICE_LIST, 0, true,
-				RandomTestUtil.randomString(), RandomTestUtil.nextDouble(), 1,
-				1, 2022, 12, 0, 0, 0, 0, 0, 0, true, _serviceContext);
+				RandomTestUtil.randomString(), _user.getUserId(),
+				testGroup.getGroupId(), 0, true, _commerceCurrency.getCode(), 1,
+				12, 0, 1, 2022, 0, 0, 0, 0, 0, RandomTestUtil.randomString(),
+				true, true, RandomTestUtil.nextDouble(),
+				CommercePriceListConstants.TYPE_PRICE_LIST, _serviceContext);
 
 		_cpInstance = CPTestUtil.addCPInstanceWithRandomSku(
 			testGroup.getGroupId(), BigDecimal.TEN);
@@ -127,13 +121,22 @@ public class PlacedOrderItemShipmentResourceTest
 					testGroup, _commerceOrder),
 				_serviceContext);
 
+		_commerceOrder = _commerceOrderLocalService.getCommerceOrder(
+			_commerceOrder.getCommerceOrderId());
+
+		_commerceOrder.setOrderStatus(
+			CommerceOrderConstants.ORDER_STATUS_COMPLETED);
+
+		_commerceOrder = _commerceOrderLocalService.updateCommerceOrder(
+			_commerceOrder);
+
 		_country = _countryLocalService.addCountry(
-			"XY", "XYZ", true, true, RandomTestUtil.randomString(),
+			null, "XY", "XYZ", true, true, RandomTestUtil.randomString(),
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 			RandomTestUtil.nextDouble(), true, true, false, _serviceContext);
 
 		_region = _regionLocalService.addRegion(
-			_country.getCountryId(), true, RandomTestUtil.randomString(),
+			null, _country.getCountryId(), true, RandomTestUtil.randomString(),
 			RandomTestUtil.nextDouble(), RandomTestUtil.randomString(),
 			_serviceContext);
 	}
@@ -145,12 +148,12 @@ public class PlacedOrderItemShipmentResourceTest
 		Address localShippingAddress = _addressLocalService.addAddress(
 			RandomTestUtil.randomString(), _user.getUserId(),
 			AccountEntry.class.getName(), _accountEntry.getAccountEntryId(),
+			_country.getCountryId(), 0, _region.getRegionId(),
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(), true,
+			RandomTestUtil.randomString(), false, RandomTestUtil.randomString(),
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(), null,
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			RandomTestUtil.randomString(), _region.getRegionId(),
-			_country.getCountryId(), 0, true, false,
-			RandomTestUtil.randomString(), _serviceContext);
+			_serviceContext);
 
 		_addresses.add(localShippingAddress);
 
@@ -161,6 +164,7 @@ public class PlacedOrderItemShipmentResourceTest
 				createDate = RandomTestUtil.nextDate();
 				estimatedDeliveryDate = RandomTestUtil.nextDate();
 				estimatedShippingDate = RandomTestUtil.nextDate();
+				externalReferenceCode = RandomTestUtil.randomString();
 				id = RandomTestUtil.randomLong();
 				modifiedDate = RandomTestUtil.nextDate();
 				orderId = _commerceOrder.getCommerceOrderId();
@@ -173,6 +177,24 @@ public class PlacedOrderItemShipmentResourceTest
 					RandomTestUtil.randomString());
 			}
 		};
+	}
+
+	@Override
+	protected PlacedOrderItemShipment
+			testGetPlacedOrderItemByExternalReferenceCodePlacedOrderItemShipmentsPage_addPlacedOrderItemShipment(
+				String externalReferenceCode,
+				PlacedOrderItemShipment placedOrderItemShipment)
+		throws Exception {
+
+		return _addCommerceShipmentItem(placedOrderItemShipment);
+	}
+
+	@Override
+	protected String
+			testGetPlacedOrderItemByExternalReferenceCodePlacedOrderItemShipmentsPage_getExternalReferenceCode()
+		throws Exception {
+
+		return _commerceOrderItem.getExternalReferenceCode();
 	}
 
 	@Override
@@ -191,14 +213,6 @@ public class PlacedOrderItemShipmentResourceTest
 		throws Exception {
 
 		return _commerceOrderItem.getCommerceOrderItemId();
-	}
-
-	@Override
-	protected PlacedOrderItemShipment
-			testGraphQLPlacedOrderItemShipment_addPlacedOrderItemShipment()
-		throws Exception {
-
-		return _addCommerceShipmentItem(randomPlacedOrderItemShipment());
 	}
 
 	private PlacedOrderItemShipment _addCommerceShipmentItem(
@@ -235,6 +249,8 @@ public class PlacedOrderItemShipmentResourceTest
 					placedOrderItemShipment.getEstimatedDeliveryDate();
 				estimatedShippingDate =
 					placedOrderItemShipment.getEstimatedShippingDate();
+				externalReferenceCode =
+					placedOrderItemShipment.getExternalReferenceCode();
 				id = commerceShipmentItem.getCommerceShipmentItemId();
 				modifiedDate = commerceShipmentItem.getModifiedDate();
 				orderId = _commerceOrder.getCommerceOrderId();

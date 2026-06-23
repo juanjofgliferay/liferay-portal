@@ -15,7 +15,7 @@ PortletURL editImageURL = (PortletURL)request.getAttribute("liferay-item-selecto
 String emptyResultsMessage = GetterUtil.getString(request.getAttribute("liferay-item-selector:repository-entry-browser:emptyResultsMessage"));
 ItemSelectorReturnType existingFileEntryReturnType = (ItemSelectorReturnType)request.getAttribute("liferay-item-selector:repository-entry-browser:existingFileEntryReturnType");
 List<String> extensions = (List)request.getAttribute("liferay-item-selector:repository-entry-browser:extensions");
-long folderId = ParamUtil.getLong(request, "folderId", GetterUtil.getLong(request.getAttribute("liferay-item-selector:repository-entry-browser:folderId")));
+long folderId = GetterUtil.getLong(request.getAttribute("liferay-item-selector:repository-entry-browser:folderId"));
 String itemSelectedEventName = GetterUtil.getString(request.getAttribute("liferay-item-selector:repository-entry-browser:itemSelectedEventName"));
 ItemSelectorReturnTypeResolver<?, FileEntry> itemSelectorReturnTypeResolver = (ItemSelectorReturnTypeResolver<?, FileEntry>)request.getAttribute("liferay-item-selector:repository-entry-browser:itemSelectorReturnTypeResolver");
 long maxFileSize = GetterUtil.getLong(request.getAttribute("liferay-item-selector:repository-entry-browser:maxFileSize"));
@@ -45,9 +45,9 @@ if (uploadURL != null) {
 %>
 
 <liferay-util:html-top
-	outputKey="item_selector_repository_entry_browser"
+	outputKey="com.liferay.item.selector.taglib#/repository_entry_browser/page.jsp"
 >
-	<link href="<%= ServletContextUtil.getContextPath() %>/repository_entry_browser/css/main.css" rel="stylesheet" type="text/css" />
+	<aui:link hashedFile="<%= true %>" href="item-selector-taglib/repository_entry_browser/css/main.css" rel="stylesheet" type="text/css" />
 </liferay-util:html-top>
 
 <%
@@ -70,7 +70,7 @@ SearchContainer<?> searchContainer = new SearchContainer(renderRequest, itemSele
 	filterLabelItems="<%= itemSelectorRepositoryEntryManagementToolbarDisplayContext.getFilterLabelItems() %>"
 	itemsTotal="<%= repositoryEntriesCount %>"
 	orderDropdownItems="<%= itemSelectorRepositoryEntryManagementToolbarDisplayContext.getOrderByDropdownItems() %>"
-	propsTransformer="repository_entry_browser/js/ItemSelectorRepositoryEntryBrowserManagementToolbarPropsTransformer"
+	propsTransformer="{ItemSelectorRepositoryEntryBrowserManagementToolbarPropsTransformer} from item-selector-taglib"
 	searchActionURL="<%= String.valueOf(itemSelectorRepositoryEntryManagementToolbarDisplayContext.getSearchURL()) %>"
 	searchFormMethod="POST"
 	searchFormName="searchFm"
@@ -127,6 +127,8 @@ SearchContainer<?> searchContainer = new SearchContainer(renderRequest, itemSele
 						return null;
 					}
 				).put(
+					"folderId", folderId
+				).put(
 					"itemSelectedEventName", itemSelectedEventName
 				).put(
 					"maxFileSize", maxFileSize
@@ -151,13 +153,13 @@ SearchContainer<?> searchContainer = new SearchContainer(renderRequest, itemSele
 					"validExtensions", StringUtil.merge(extensions)
 				).build()
 			%>'
-			module="repository_entry_browser/js/ItemSelectorRepositoryEntryBrowser"
+			module="{ItemSelectorRepositoryEntryBrowser} from item-selector-taglib"
 		/>
 	</div>
 
 	<div>
 		<react:component
-			module="repository_entry_browser/js/ItemSelectorRepositoryEntryBrowserConfigureAIModal"
+			module="{ItemSelectorRepositoryEntryBrowserConfigureAIModal} from item-selector-taglib"
 		/>
 	</div>
 
@@ -212,7 +214,7 @@ SearchContainer<?> searchContainer = new SearchContainer(renderRequest, itemSele
 							<liferay-ui:search-container-column-text
 								name="title"
 							>
-								<a class="<%= repositoryEntryBrowserDisplayContext.isPreviewable(latestFileVersion) ? "item-preview-editable" : StringPool.BLANK %> item-preview" data-metadata="<%= HtmlUtil.escapeAttribute(itemMedatadaJSONObject.toString()) %>" data-returnType="<%= HtmlUtil.escapeAttribute(ItemSelectorRepositoryEntryBrowserUtil.getItemSelectorReturnTypeClassName(itemSelectorReturnTypeResolver, existingFileEntryReturnType)) %>" data-title="<%= HtmlUtil.escapeAttribute(title) %>" data-type="<%= repositoryEntryBrowserDisplayContext.getType(latestFileVersion) %>" data-url="<%= HtmlUtil.escapeAttribute(DLURLHelperUtil.getPreviewURL(fileEntry, latestFileVersion, themeDisplay, StringPool.BLANK)) %>" data-value="<%= HtmlUtil.escapeAttribute(ItemSelectorRepositoryEntryBrowserUtil.getValue(itemSelectorReturnTypeResolver, existingFileEntryReturnType, fileEntry, themeDisplay)) %>" href="<%= Validator.isNotNull(thumbnailSrc) ? HtmlUtil.escapeHREF(DLURLHelperUtil.getImagePreviewURL(fileEntry, themeDisplay)) : themeDisplay.getPathThemeImages() + "/file_system/large/default.png" %>">
+								<div class="align-items-center d-flex">
 
 									<%
 									String iconCssClass = DLUtil.getFileIconCssClass(fileEntry.getExtension());
@@ -220,15 +222,27 @@ SearchContainer<?> searchContainer = new SearchContainer(renderRequest, itemSele
 
 									<c:if test="<%= Validator.isNotNull(iconCssClass) %>">
 										<liferay-ui:icon
+											cssClass="c-mr-2 c-mt-1"
 											icon="<%= iconCssClass %>"
 											markupView="lexicon"
 										/>
 									</c:if>
 
-									<span class="taglib-text">
-										<%= HtmlUtil.escape(title) %>
-									</span>
-								</a>
+									<a class="<%= repositoryEntryBrowserDisplayContext.isPreviewable(latestFileVersion) ? "item-preview-editable" : StringPool.BLANK %> item-preview" data-metadata="<%= HtmlUtil.escapeAttribute(itemMedatadaJSONObject.toString()) %>" data-mimeType="<%= HtmlUtil.escapeAttribute(fileEntry.getMimeType()) %>" data-returnType="<%= HtmlUtil.escapeAttribute(ItemSelectorRepositoryEntryBrowserUtil.getItemSelectorReturnTypeClassName(itemSelectorReturnTypeResolver, existingFileEntryReturnType)) %>" data-title="<%= HtmlUtil.escapeAttribute(title) %>" data-type="<%= repositoryEntryBrowserDisplayContext.getType(latestFileVersion) %>" data-url="<%= HtmlUtil.escapeAttribute(DLURLHelperUtil.getPreviewURL(fileEntry, latestFileVersion, themeDisplay, StringPool.BLANK)) %>" data-value="<%= HtmlUtil.escapeAttribute(ItemSelectorRepositoryEntryBrowserUtil.getValue(itemSelectorReturnTypeResolver, existingFileEntryReturnType, fileEntry, themeDisplay)) %>" href="<%= Validator.isNotNull(thumbnailSrc) ? HtmlUtil.escapeHREF(DLURLHelperUtil.getImagePreviewURL(fileEntry, themeDisplay)) : themeDisplay.getPathThemeImages() + "/file_system/large/default.png" %>">
+										<span class="taglib-text text-truncate">
+											<%= HtmlUtil.escape(title) %>
+										</span>
+									</a>
+
+									<c:if test="<%= !repositoryEntryBrowserDisplayContext.hasGuestViewPermission(fileEntry) %>">
+										<clay:icon
+											aria-label='<%= LanguageUtil.get(request, "not-visible-to-guest-users") %>'
+											cssClass="c-ml-2 c-mt-1 lfr-portal-tooltip text-4 text-secondary"
+											data-title='<%= LanguageUtil.get(request, "not-visible-to-guest-users") %>'
+											symbol="password-policies"
+										/>
+									</c:if>
+								</div>
 							</liferay-ui:search-container-column-text>
 
 							<c:if test="<%= repositoryEntryBrowserDisplayContext.isSearchEverywhere() %>">
@@ -418,6 +432,7 @@ SearchContainer<?> searchContainer = new SearchContainer(renderRequest, itemSele
 									}
 
 									data.put("metadata", itemMedatadaJSONObject.toString());
+									data.put("mimeType", fileEntry.getMimeType());
 									data.put("returnType", ItemSelectorRepositoryEntryBrowserUtil.getItemSelectorReturnTypeClassName(itemSelectorReturnTypeResolver, existingFileEntryReturnType));
 									data.put("title", title);
 									data.put("type", repositoryEntryBrowserDisplayContext.getType(latestFileVersion));
@@ -468,6 +483,15 @@ SearchContainer<?> searchContainer = new SearchContainer(renderRequest, itemSele
 																<%= HtmlUtil.escape(title) %>
 															</aui:a>
 
+															<c:if test="<%= !repositoryEntryBrowserDisplayContext.hasGuestViewPermission(fileEntry) %>">
+																<clay:icon
+																	aria-label='<%= LanguageUtil.get(request, "not-visible-to-guest-users") %>'
+																	cssClass="c-ml-2 c-mt-1 lfr-portal-tooltip text-4 text-secondary"
+																	data-title='<%= LanguageUtil.get(request, "not-visible-to-guest-users") %>'
+																	symbol="password-policies"
+																/>
+															</c:if>
+
 															<div class="card-detail">
 																<c:if test="<%= repositoryEntryBrowserDisplayContext.isSearchEverywhere() %>">
 																	<span class="text-secondary">
@@ -507,14 +531,14 @@ SearchContainer<?> searchContainer = new SearchContainer(renderRequest, itemSele
 									<liferay-ui:search-container-column-text
 										colspan="<%= 3 %>"
 									>
-										<h5>
+										<div class="h5">
 											<a href="<%= HtmlUtil.escapeAttribute(viewFolderURL.toString()) %>" title="<%= folder.getName() %>">
 												<strong><%= HtmlUtil.escape(folder.getName()) %></strong>
 											</a>
-										</h5>
+										</div>
 
 										<c:if test="<%= repositoryEntryBrowserDisplayContext.isSearchEverywhere() %>">
-											<h6 class="text-default">
+											<div class="h6 text-default">
 												<liferay-ui:message key="location" />:
 												<span class="text-secondary">
 													<clay:icon
@@ -523,14 +547,14 @@ SearchContainer<?> searchContainer = new SearchContainer(renderRequest, itemSele
 
 													<small><%= repositoryEntryBrowserDisplayContext.getGroupLabel(folder.getGroupId(), locale) %></small>
 												</span>
-											</h6>
+											</div>
 										</c:if>
 
-										<h6 class="text-default">
+										<div class="h6 text-default">
 											<liferay-ui:message key="created" />:
 
 											<liferay-ui:message arguments="<%= new String[] {LanguageUtil.getTimeDescription(locale, System.currentTimeMillis() - folder.getCreateDate().getTime(), true), HtmlUtil.escape(folder.getUserName())} %>" key="x-ago-by-x" translateArguments="<%= false %>" />
-										</h6>
+										</div>
 									</liferay-ui:search-container-column-text>
 								</c:if>
 
@@ -566,13 +590,22 @@ SearchContainer<?> searchContainer = new SearchContainer(renderRequest, itemSele
 									<liferay-ui:search-container-column-text
 										colspan="<%= 2 %>"
 									>
-										<div class="<%= repositoryEntryBrowserDisplayContext.isPreviewable(latestFileVersion) ? "item-preview-editable" : StringPool.BLANK %> item-preview" data-href="<%= Validator.isNotNull(thumbnailSrc) ? HtmlUtil.escapeHREF(DLURLHelperUtil.getImagePreviewURL(fileEntry, themeDisplay)) : themeDisplay.getPathThemeImages() + "/file_system/large/default.png" %>" data-metadata="<%= HtmlUtil.escapeAttribute(itemMedatadaJSONObject.toString()) %>" data-returnType="<%= HtmlUtil.escapeAttribute(ItemSelectorRepositoryEntryBrowserUtil.getItemSelectorReturnTypeClassName(itemSelectorReturnTypeResolver, existingFileEntryReturnType)) %>" data-title="<%= HtmlUtil.escapeAttribute(title) %>" data-type="<%= repositoryEntryBrowserDisplayContext.getType(latestFileVersion) %>" data-url="<%= HtmlUtil.escapeAttribute(DLURLHelperUtil.getPreviewURL(fileEntry, latestFileVersion, themeDisplay, StringPool.BLANK)) %>" data-value="<%= HtmlUtil.escapeAttribute(ItemSelectorRepositoryEntryBrowserUtil.getValue(itemSelectorReturnTypeResolver, existingFileEntryReturnType, fileEntry, themeDisplay)) %>">
-											<h5>
+										<div class="<%= repositoryEntryBrowserDisplayContext.isPreviewable(latestFileVersion) ? "item-preview-editable" : StringPool.BLANK %> item-preview" data-href="<%= Validator.isNotNull(thumbnailSrc) ? HtmlUtil.escapeHREF(DLURLHelperUtil.getImagePreviewURL(fileEntry, themeDisplay)) : themeDisplay.getPathThemeImages() + "/file_system/large/default.png" %>" data-metadata="<%= HtmlUtil.escapeAttribute(itemMedatadaJSONObject.toString()) %>" data-mimeType="<%= HtmlUtil.escapeAttribute(fileEntry.getMimeType()) %>" data-returnType="<%= HtmlUtil.escapeAttribute(ItemSelectorRepositoryEntryBrowserUtil.getItemSelectorReturnTypeClassName(itemSelectorReturnTypeResolver, existingFileEntryReturnType)) %>" data-title="<%= HtmlUtil.escapeAttribute(title) %>" data-type="<%= repositoryEntryBrowserDisplayContext.getType(latestFileVersion) %>" data-url="<%= HtmlUtil.escapeAttribute(DLURLHelperUtil.getPreviewURL(fileEntry, latestFileVersion, themeDisplay, StringPool.BLANK)) %>" data-value="<%= HtmlUtil.escapeAttribute(ItemSelectorRepositoryEntryBrowserUtil.getValue(itemSelectorReturnTypeResolver, existingFileEntryReturnType, fileEntry, themeDisplay)) %>">
+											<div class="h5">
 												<strong><%= title %></strong>
-											</h5>
+
+												<c:if test="<%= !repositoryEntryBrowserDisplayContext.hasGuestViewPermission(fileEntry) %>">
+													<clay:icon
+														aria-label='<%= LanguageUtil.get(request, "not-visible-to-guest-users") %>'
+														cssClass="c-ml-2 c-mt-1 lfr-portal-tooltip text-4 text-secondary"
+														data-title='<%= LanguageUtil.get(request, "not-visible-to-guest-users") %>'
+														symbol="password-policies"
+													/>
+												</c:if>
+											</div>
 
 											<c:if test="<%= repositoryEntryBrowserDisplayContext.isSearchEverywhere() %>">
-												<h6 class="text-default">
+												<div class="h6 text-default">
 													<liferay-ui:message key="location" />:
 													<span class="text-secondary">
 														<clay:icon
@@ -581,20 +614,20 @@ SearchContainer<?> searchContainer = new SearchContainer(renderRequest, itemSele
 
 														<small><%= repositoryEntryBrowserDisplayContext.getGroupLabel(fileEntry.getGroupId(), locale) %></small>
 													</span>
-												</h6>
+												</div>
 											</c:if>
 
-											<h6 class="text-default">
+											<div class="h6 text-default">
 												<liferay-ui:message key="version" />:
 
 												<%= String.valueOf(fileEntry.getVersion()) %>
-											</h6>
+											</div>
 
-											<h6 class="text-default">
+											<div class="h6 text-default">
 												<liferay-ui:message key="last-updated" />:
 
 												<liferay-ui:message arguments="<%= new String[] {LanguageUtil.getTimeDescription(locale, System.currentTimeMillis() - fileEntry.getModifiedDate().getTime(), true), HtmlUtil.escape(latestFileVersion.getUserName())} %>" key="x-ago-by-x" translateArguments="<%= false %>" />
-											</h6>
+											</div>
 										</div>
 									</liferay-ui:search-container-column-text>
 

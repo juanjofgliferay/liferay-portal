@@ -6,55 +6,134 @@
 package com.liferay.object.definition.util;
 
 import com.liferay.batch.engine.unit.BatchEngineUnitThreadLocal;
+import com.liferay.object.constants.ObjectDefinitionConstants;
+import com.liferay.object.constants.ObjectPortletKeys;
+import com.liferay.object.model.ObjectDefinition;
+import com.liferay.object.modifiable.system.ModifiableSystemObjectDefinition;
+import com.liferay.object.modifiable.system.ModifiableSystemObjectDefinitionRegistryUtil;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.events.StartupHelperUtil;
+import com.liferay.portal.kernel.portlet.FriendlyURLResolver;
+import com.liferay.portal.kernel.portlet.FriendlyURLResolverRegistryUtil;
+import com.liferay.portal.kernel.portlet.constants.FriendlyURLResolverConstants;
+import com.liferay.portal.kernel.security.RandomUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.PortalRunMode;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.util.PortalInstances;
 
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * @author Alejandro Tardín
  */
 public class ObjectDefinitionUtil {
 
+	public static String generateRandomClassName() {
+		StringBuilder sb = new StringBuilder();
+
+		sb.append(
+			ObjectDefinitionConstants.
+				CLASS_NAME_PREFIX_CUSTOM_OBJECT_DEFINITION);
+		sb.append(StringUtil.toUpperCase(StringUtil.randomId(1)));
+		sb.append(RandomUtil.nextInt(10));
+		sb.append(StringUtil.toUpperCase(StringUtil.randomId(1)));
+		sb.append(RandomUtil.nextInt(10));
+
+		return sb.toString();
+	}
+
+	public static String getItemClassName(ObjectDefinition objectDefinition) {
+		if (objectDefinition.isSystem()) {
+			return objectDefinition.getClassName() + StringPool.POUND +
+				objectDefinition.getObjectDefinitionId();
+		}
+
+		return objectDefinition.getClassName();
+	}
+
 	public static String getModifiableSystemObjectDefinitionRESTContextPath(
 		String name) {
 
-		if (PortalRunMode.isTestMode() && Objects.equals(name, "Test")) {
+		if (PortalRunMode.isTestMode() && StringUtil.startsWith(name, "Test")) {
 			return "/test";
 		}
 
-		return _allowedModifiableSystemObjectDefinitionNames.get(name);
+		String restContextPath =
+			_allowedModifiableSystemObjectDefinitionNames.get(name);
+
+		if (restContextPath != null) {
+			return restContextPath;
+		}
+
+		ModifiableSystemObjectDefinition modifiableSystemObjectDefinition =
+			ModifiableSystemObjectDefinitionRegistryUtil.
+				getModifiableSystemObjectDefinition(name);
+
+		if (modifiableSystemObjectDefinition == null) {
+			return null;
+		}
+
+		return modifiableSystemObjectDefinition.getRESTContextPath();
+	}
+
+	public static String getPortletId(String className) {
+		return StringUtil.replaceFirst(
+			className,
+			ObjectDefinitionConstants.
+				CLASS_NAME_PREFIX_CUSTOM_OBJECT_DEFINITION,
+			ObjectPortletKeys.OBJECT_DEFINITIONS + StringPool.UNDERLINE);
 	}
 
 	public static boolean isAllowedModifiableSystemObjectDefinitionName(
 		String name) {
 
-		if (PortalRunMode.isTestMode() && StringUtil.startsWith(name, "Test")) {
+		if ((PortalRunMode.isTestMode() &&
+			 StringUtil.startsWith(name, "Test")) ||
+			_allowedModifiableSystemObjectDefinitionNames.containsKey(name)) {
+
 			return true;
 		}
 
-		return _allowedModifiableSystemObjectDefinitionNames.containsKey(name);
+		if (!isInvokerBundleAllowed()) {
+			return false;
+		}
+
+		ModifiableSystemObjectDefinition modifiableSystemObjectDefinition =
+			ModifiableSystemObjectDefinitionRegistryUtil.
+				getModifiableSystemObjectDefinition(name);
+
+		if (modifiableSystemObjectDefinition != null) {
+			return true;
+		}
+
+		return false;
 	}
 
-	public static boolean
-		isAllowedUnmodifiableSystemObjectDefinitionExternalReferenceCode(
-			String externalReferenceCode, String name) {
+	public static boolean isDefaultFriendlyURLSeparator(
+		String friendlyURLSeparator) {
 
-		if (PortalRunMode.isTestMode()) {
+		FriendlyURLResolver friendlyURLResolver =
+			FriendlyURLResolverRegistryUtil.
+				getFriendlyURLResolverByDefaultURLSeparator(
+					FriendlyURLResolverConstants.URL_SEPARATOR_OBJECT_ENTRY);
+
+		if ((friendlyURLResolver != null) &&
+			StringUtil.equals(
+				StringUtil.removeSubstring(
+					friendlyURLResolver.getURLSeparator(), StringPool.SLASH),
+				friendlyURLSeparator)) {
+
 			return true;
 		}
 
-		return StringUtil.equals(
-			_allowedUnmodifiableSystemObjectDefinitionNames.get(name),
-			externalReferenceCode);
+		return false;
 	}
 
 	public static boolean isInvokerBundleAllowed() {
-		if (PortalInstances.isCurrentCompanyInDeletionProcess() ||
-			PortalRunMode.isTestMode()) {
+		if (ObjectDefinitionThreadLocal.isSkipBundleAllowedCheck() ||
+			PortalInstances.isCurrentCompanyInDeletionProcess() ||
+			PortalRunMode.isTestMode() || StartupHelperUtil.isUpgrading()) {
 
 			return true;
 		}
@@ -85,13 +164,42 @@ public class ObjectDefinitionUtil {
 	}
 
 	private static final String[] _ALLOWED_INVOKER_BUNDLE_SYMBOLIC_NAMES = {
-		"com.liferay.frontend.data.set.views.web",
-		"com.liferay.headless.builder.impl", "com.liferay.list.type.service",
-		"com.liferay.notification.service", "com.liferay.object.service"
+		"com.liferay.account.service",
+		"com.liferay.ai.hub.pricing.site.initializer",
+		"com.liferay.ai.hub.site.initializer", "com.liferay.commerce.service",
+		"com.liferay.content.site.generator.impl", "com.liferay.cookies.impl",
+		"com.liferay.frontend.data.set.admin.web",
+		"com.liferay.frontend.data.set.impl",
+		"com.liferay.headless.builder.impl", "com.liferay.launch.impl",
+		"com.liferay.list.type.service", "com.liferay.mcp.server.rest.impl",
+		"com.liferay.notification.service", "com.liferay.object.service",
+		"com.liferay.seo.studio.site.initializer",
+		"com.liferay.site.initializer.cmp", "com.liferay.site.initializer.cms",
+		"com.liferay.site.initializer.dsr"
 	};
 
 	private static final Map<String, String>
 		_allowedModifiableSystemObjectDefinitionNames = HashMapBuilder.put(
+			"AccountValidatorResult", "/account/validator-results"
+		).put(
+			"AIHubAgentDefinition", "/ai-hub/agent-definitions"
+		).put(
+			"AIHubChatbot", "/ai-hub/chatbots"
+		).put(
+			"AIHubConfiguration", "/ai-hub/configurations"
+		).put(
+			"AIHubContentRetriever", "/ai-hub/content-retrievers"
+		).put(
+			"AIHubCrawlerJob", "/ai-hub/crawler-jobs"
+		).put(
+			"AIHubGuardrail", "/ai-hub/guardrails"
+		).put(
+			"AIHubInstructionDefinition", "/ai-hub/instruction-definitions"
+		).put(
+			"AIHubMCPServer", "/ai-hub/mcp-servers"
+		).put(
+			"AIHubReport", "/ai-hub/reports"
+		).put(
 			"APIApplication", "/headless-builder/applications"
 		).put(
 			"APIEndpoint", "/headless-builder/endpoints"
@@ -106,38 +214,88 @@ public class ObjectDefinitionUtil {
 		).put(
 			"Bookmark", "/bookmarks"
 		).put(
-			"FDSAction", "/data-set-manager/actions"
+			"CMPProject", "/cmp/projects"
 		).put(
-			"FDSClientExtensionFilter",
-			"/data-set-manager/client-extension-filters"
+			"CMPTask", "/cmp/tasks"
 		).put(
-			"FDSDateFilter", "/data-set-manager/date-filters"
+			"CMSBasicDocument", "/cms/basic-documents"
 		).put(
-			"FDSDynamicFilter", "/data-set-manager/dynamic-filters"
+			"CMSBasicWebContent", "/cms/basic-web-contents"
 		).put(
-			"FDSEntry", "/data-set-manager/entries"
+			"CMSBlog", "/cms/blogs"
 		).put(
-			"FDSField", "/data-set-manager/fields"
+			"CMSBulkActionTask", "/cms/bulk-action-tasks"
 		).put(
-			"FDSSort", "/data-set-manager/sorts"
+			"CMSDefaultPermission", "/cms/default-permissions"
 		).put(
-			"FDSView", "/data-set-manager/views"
-		).build();
-	private static final Map<String, String>
-		_allowedUnmodifiableSystemObjectDefinitionNames = HashMapBuilder.put(
-			"AccountEntry", "L_ACCOUNT"
+			"CMSExternalVideo", "/cms/external-videos"
 		).put(
-			"Address", "L_POSTAL_ADDRESS"
+			"CommerceReturn", "/commerce/returns"
 		).put(
-			"CommerceOrder", "L_COMMERCE_ORDER"
+			"CommerceReturnItem", "/commerce/return-items"
 		).put(
-			"CommercePricingClass", "L_COMMERCE_PRODUCT_GROUP"
+			"CSGGeneration", "/content-site-generator/generations"
 		).put(
-			"CPDefinition", "L_COMMERCE_PRODUCT_DEFINITION"
+			"CSGGenerationItem", "/content-site-generator/generation-items"
 		).put(
-			"Organization", "L_ORGANIZATION"
+			"DataSet", "/data-set-admin/data-sets"
 		).put(
-			"User", "L_USER"
+			"DataSetAction", "/data-set-admin/actions"
+		).put(
+			"DataSetCardsSection", "/data-set-admin/cards-sections"
+		).put(
+			"DataSetClientExtensionFilter",
+			"/data-set-admin/client-extension-filters"
+		).put(
+			"DataSetDateFilter", "/data-set-admin/date-filters"
+		).put(
+			"DataSetListSection", "/data-set-admin/list-sections"
+		).put(
+			"DataSetSelectionFilter", "/data-set-admin/selection-filters"
+		).put(
+			"DataSetSnapshot", "/data-set-admin/snapshots"
+		).put(
+			"DataSetSort", "/data-set-admin/sorts"
+		).put(
+			"DataSetTableSection", "/data-set-admin/table-sections"
+		).put(
+			"DSRRoom", "/digital-sales-room/rooms"
+		).put(
+			"FunctionalCookieEntry", "/functional-cookies-entries"
+		).put(
+			"KnowledgeBase", "/cms/knowledge-bases"
+		).put(
+			"LaunchEntry", "/launch-entries"
+		).put(
+			"LaunchSet", "/launch-sets"
+		).put(
+			"MCPServerDataMask", "/mcp/server-data-masks"
+		).put(
+			"MCPServerProfile", "/mcp/server-profiles"
+		).put(
+			"MCPServerProfileDataMask", "/mcp/server-profile-data-masks"
+		).put(
+			"MCPServerPrompt", "/mcp/server-prompts"
+		).put(
+			"NecessaryCookieEntry", "/necessary-cookies-entries"
+		).put(
+			"PerformanceCookieEntry", "/performance-cookies-entries"
+		).put(
+			"PersonalizationCookieEntry", "/personalization-cookies-entries"
+		).put(
+			"SEOStudioDomain", "/seo-studio/domains"
+		).put(
+			"SEOStudioGSCCredentials", "/seo-studio/gsc-credentials"
+		).put(
+			"SEOStudioInsightType", "/seo-studio/insight-types"
+		).put(
+			"SEOStudioInstance", "/seo-studio/instances"
+		).put(
+			"SEOStudioPage", "/seo-studio/pages"
+		).put(
+			"SEOStudioScan", "/seo-studio/scans"
+		).put(
+			"SEOStudioScanInsight", "/seo-studio/scan-insights"
 		).build();
 
 }

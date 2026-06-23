@@ -3,9 +3,13 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+/* eslint-disable no-undef*/
+
 import {initializeCache} from './src/main/resources/META-INF/resources/page_editor/app/utils/cache';
 
 initializeCache();
+
+Liferay.FeatureFlags['LPD-11235'] = true;
 
 Liferay.Util.sub.mockImplementation((key, ...args) => {
 	const argsArray = args.flatMap((arg) => arg);
@@ -16,6 +20,53 @@ Liferay.Util.sub.mockImplementation((key, ...args) => {
 		.replace(/-x$/, () => `-${argsArray.shift()}`);
 });
 
+Liferay.Util = {
+	...Liferay.Util,
+	Session: {
+		get: jest.fn(),
+		set: jest.fn(),
+	},
+};
+
+jest.mock('@ckeditor/ckeditor5-bookmark/dist/index', () => ({}));
+jest.mock('@ckeditor/ckeditor5-clipboard/dist/index', () => ({}));
+jest.mock('@ckeditor/ckeditor5-editor-decoupled/dist/index', () => ({}));
+jest.mock('@ckeditor/ckeditor5-editor-balloon/dist/index', () => ({}));
+jest.mock('@ckeditor/ckeditor5-editor-classic/dist/index', () => ({}));
+jest.mock('@ckeditor/ckeditor5-editor-inline/dist/index', () => ({}));
+jest.mock('@ckeditor/ckeditor5-editor-multi-root/dist/index', () => ({}));
+jest.mock('@ckeditor/ckeditor5-emoji/dist/index', () => ({}));
+jest.mock('@ckeditor/ckeditor5-find-and-replace/dist/index', () => ({}));
+jest.mock('@ckeditor/ckeditor5-horizontal-line/dist/index', () => ({}));
+jest.mock('@ckeditor/ckeditor5-html-embed/dist/index', () => ({}));
+jest.mock('@ckeditor/ckeditor5-html-support/dist/index', () => ({}));
+jest.mock('@ckeditor/ckeditor5-image/dist/index', () => ({}));
+jest.mock('@ckeditor/ckeditor5-link/dist/index', () => ({}));
+jest.mock('@ckeditor/ckeditor5-list/dist/index', () => ({}));
+jest.mock('@ckeditor/ckeditor5-markdown-gfm/dist/index', () => ({}));
+jest.mock('@ckeditor/ckeditor5-media-embed/dist/index', () => ({}));
+jest.mock('@ckeditor/ckeditor5-mention/dist/index', () => ({}));
+jest.mock('@ckeditor/ckeditor5-minimap/dist/index', () => ({}));
+jest.mock('@ckeditor/ckeditor5-page-break/dist/index', () => ({}));
+jest.mock('@ckeditor/ckeditor5-special-characters/dist/index', () => ({}));
+jest.mock('@ckeditor/ckeditor5-style/dist/index', () => ({}));
+jest.mock('@ckeditor/ckeditor5-table/dist/index', () => ({}));
+jest.mock('@ckeditor/ckeditor5-ui/dist/index', () => ({}));
+jest.mock('@ckeditor/ckeditor5-widget/dist/index', () => ({}));
+
+jest.mock('frontend-js-web', () => ({
+	...jest.requireActual('frontend-js-web'),
+	fetch: jest.fn(),
+	sub: jest.fn((key, ...args) => {
+		const argsArray = args.flatMap((arg) => arg);
+
+		return key
+			.replace(/^x-/, () => `${argsArray.shift()}-`)
+			.replace(/-x(\.?)-/g, (_, dot) => `-${argsArray.shift()}${dot}-`)
+			.replace(/-x$/, () => `-${argsArray.shift()}`);
+	}),
+}));
+
 if (typeof Array.prototype.flatMap !== 'function') {
 	Array.prototype.flatMap = function () {
 		return Array.prototype.map
@@ -24,7 +75,6 @@ if (typeof Array.prototype.flatMap !== 'function') {
 	};
 }
 
-// eslint-disable-next-line
 jest.mock(
 	'./src/main/resources/META-INF/resources/page_editor/app/config/index',
 	() => ({
@@ -71,12 +121,18 @@ jest.mock(
 			defaultSegmentsExperienceId: '0',
 			frontendTokens: {},
 			layoutType: 'content',
-			panels: [['browser']],
 			portletNamespace: 'page-editor-portlet-namespace',
 			selectedViewportSize: 'desktop',
-			sidebarPanels: {
+			sidebarPanels: [['browser']],
+			sidebarPanelsMap: {
 				browser: {label: 'Browser', sidebarPanelId: 'browser'},
 			},
 		},
 	})
+);
+
+jest.mock(
+	'./src/main/resources/META-INF/resources/page_editor/app/utils/useIsSmallResolution',
+
+	() => jest.fn(() => false)
 );

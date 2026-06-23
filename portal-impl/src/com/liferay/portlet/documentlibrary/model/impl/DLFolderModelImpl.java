@@ -118,11 +118,18 @@ public class DLFolderModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table DLFolder";
 
+	public static final String ENTITY_ALIAS = "dlFolder";
+
+	public static final String FILTER_PK_COLUMN_NAME = "folderId";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY dlFolder.parentFolderId ASC, dlFolder.name ASC";
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY DLFolder.parentFolderId ASC, DLFolder.name ASC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY dlFolder.parentFolderId ASC, dlFolder.name ASC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -241,7 +248,7 @@ public class DLFolderModelImpl
 		FINDER_CACHE_ENABLED_DLFILEENTRYTYPES_DLFOLDERS = true;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.document.library.kernel.model.DLFolder"));
 
 	public DLFolderModelImpl() {
@@ -1775,3 +1782,4 @@ public class DLFolderModelImpl
 	private DLFolder _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1007208852

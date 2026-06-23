@@ -33,25 +33,8 @@ const updateRequestParams = {
 
 describe('Individual Segment API', () => {
 	describe('Create Segment', () => {
-		it('should NOT pass filter in the data object to sendRequest if the segmentType is STATIC', () => {
-			const segmentType = 'STATIC';
-
-			const data = {
-				channelId: '123',
-				individualIds: createArgs.individualIds,
-				name: createArgs.name
-			};
-
-			create({...createArgs, segmentType});
-
-			expect(sendRequest).toHaveBeenCalledWith({
-				...newRequestParams,
-				data: {...data, segmentType}
-			});
-		});
-
-		it('should not pass individualIds in the data object to sendRequest if the segmentType is DYNAMIC', () => {
-			const segmentType = 'DYNAMIC';
+		it('should not pass individualIds in the data object to sendRequest if the segmentType is BATCH', () => {
+			const segmentType = 'BATCH';
 
 			create({...createArgs, segmentType});
 
@@ -59,24 +42,51 @@ describe('Individual Segment API', () => {
 				...newRequestParams,
 				data: {
 					channelId: '123',
+					externalReferenceCode: '',
 					filter: "(name eq 'test test')",
 					includeAnonymousUsers: false,
 					name: createArgs.name,
-					segmentType
+					segmentType,
+					sequential: false
+				}
+			});
+		});
+
+		it('should forward externalReferenceCode to sendRequest when provided', () => {
+			const externalReferenceCode = 'vip-users_2026';
+
+			create({
+				...createArgs,
+				externalReferenceCode,
+				segmentType: 'BATCH'
+			});
+
+			expect(sendRequest).toHaveBeenCalledWith({
+				...newRequestParams,
+				data: {
+					channelId: '123',
+					externalReferenceCode,
+					filter: "(name eq 'test test')",
+					includeAnonymousUsers: false,
+					name: createArgs.name,
+					segmentType: 'BATCH',
+					sequential: false
 				}
 			});
 		});
 	});
 
 	describe('Update Segment', () => {
-		it('should pass filter in data object to sendRequest if the segmentType is DYNAMIC', () => {
-			const segmentType = 'DYNAMIC';
+		it('should pass filter in data object to sendRequest if the segmentType is BATCH', () => {
+			const segmentType = 'BATCH';
 
 			const data = {
 				channelId: '123',
+				externalReferenceCode: '',
 				filter: "(name eq 'test test')",
 				includeAnonymousUsers: false,
-				name: updateArgs.name
+				name: updateArgs.name,
+				sequential: false
 			};
 
 			update({...updateArgs, segmentType});
@@ -87,20 +97,26 @@ describe('Individual Segment API', () => {
 			});
 		});
 
-		it('should NOT pass filter in data object to sendRequest if the segmentType is STATIC', () => {
-			const segmentType = 'STATIC';
+		it('should forward externalReferenceCode to sendRequest when provided', () => {
+			const externalReferenceCode = 'vip-users_2026';
 
-			const data = {
-				channelId: '123',
-				individualIds: updateArgs.individualIds,
-				name: updateArgs.name
-			};
-
-			update({...updateArgs, segmentType});
+			update({
+				...updateArgs,
+				externalReferenceCode,
+				segmentType: 'BATCH'
+			});
 
 			expect(sendRequest).toHaveBeenCalledWith({
 				...updateRequestParams,
-				data: {...data, segmentType}
+				data: {
+					channelId: '123',
+					externalReferenceCode,
+					filter: "(name eq 'test test')",
+					includeAnonymousUsers: false,
+					name: updateArgs.name,
+					segmentType: 'BATCH',
+					sequential: false
+				}
 			});
 		});
 	});

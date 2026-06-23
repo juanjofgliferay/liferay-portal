@@ -37,6 +37,7 @@ public class PhoneWrapper
 		attributes.put("mvccVersion", getMvccVersion());
 		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("phoneId", getPhoneId());
 		attributes.put("companyId", getCompanyId());
 		attributes.put("userId", getUserId());
@@ -71,6 +72,13 @@ public class PhoneWrapper
 
 		if (uuid != null) {
 			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long phoneId = (Long)attributes.get("phoneId");
@@ -219,6 +227,16 @@ public class PhoneWrapper
 	@Override
 	public String getExtension() {
 		return model.getExtension();
+	}
+
+	/**
+	 * Returns the external reference code of this phone.
+	 *
+	 * @return the external reference code of this phone
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
 	}
 
 	@Override
@@ -419,6 +437,16 @@ public class PhoneWrapper
 	}
 
 	/**
+	 * Sets the external reference code of this phone.
+	 *
+	 * @param externalReferenceCode the external reference code of this phone
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
 	 * Sets the list type ID of this phone.
 	 *
 	 * @param listTypeId the list type ID of this phone
@@ -556,3 +584,4 @@ public class PhoneWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-101967722

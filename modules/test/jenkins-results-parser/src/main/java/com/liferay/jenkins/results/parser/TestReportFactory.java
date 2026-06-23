@@ -21,6 +21,31 @@ public class TestReportFactory {
 	public static TestReport newTestReport(
 		DownstreamBuildReport downstreamBuildReport, JSONObject jsonObject) {
 
+		String batchName = downstreamBuildReport.getBatchName();
+
+		if (batchName.startsWith("integration") ||
+			batchName.startsWith("modules-integration") ||
+			batchName.startsWith("modules-unit") ||
+			batchName.startsWith("unit")) {
+
+			return new JUnitTestReport(downstreamBuildReport, jsonObject);
+		}
+		else if (batchName.startsWith("js-unit")) {
+			return new JSUnitTestReport(downstreamBuildReport, jsonObject);
+		}
+		else if (batchName.startsWith("modules-compile") ||
+				 batchName.startsWith("modules-semantic-versioning") ||
+				 batchName.startsWith("rest-builder") ||
+				 batchName.startsWith("rest-builder-and-service-builder") ||
+				 batchName.startsWith("service-builder") ||
+				 batchName.startsWith("workspaces-compile")) {
+
+			return new ModulesTestReport(downstreamBuildReport, jsonObject);
+		}
+		else if (batchName.startsWith("playwright-js")) {
+			return new PlaywrightTestReport(downstreamBuildReport, jsonObject);
+		}
+
 		return new DefaultTestReport(downstreamBuildReport, jsonObject);
 	}
 

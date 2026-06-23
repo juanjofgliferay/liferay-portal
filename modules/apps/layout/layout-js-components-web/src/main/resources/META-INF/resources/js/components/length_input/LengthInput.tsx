@@ -4,7 +4,7 @@
  */
 
 import ClayButton from '@clayui/button';
-import ClayDropDown, {Align} from '@clayui/drop-down';
+import {Option, Picker} from '@clayui/core';
 import ClayForm, {ClayInput} from '@clayui/form';
 import ClayIcon from '@clayui/icon';
 import classNames from 'classnames';
@@ -12,7 +12,10 @@ import {useId} from 'frontend-js-components-web';
 import {sub} from 'frontend-js-web';
 import React, {
 	KeyboardEvent,
+	Ref,
+	forwardRef,
 	useEffect,
+	useImperativeHandle,
 	useMemo,
 	useRef,
 	useState,
@@ -20,9 +23,9 @@ import React, {
 
 import useControlledState from '../../hooks/useControlledState';
 import isValidStyleValue from '../../utils/isValidStyleValue';
-import {Field} from '../color_picker/ColorPicker';
 
 import './LengthInput.scss';
+import {Field} from '../../types/ColorPicker';
 
 const CUSTOM = 'custom' as const;
 
@@ -36,7 +39,7 @@ const REGEX = /^(-?(?:[\d]*\.?[\d]+))(px|em|vh|vw|rem|%)$/;
 
 const UNITS = ['px', '%', 'em', 'rem', 'vw', 'vh', CUSTOM] as const;
 
-type Unit = typeof UNITS[number];
+type Unit = (typeof UNITS)[number];
 type Value = {unit: Unit; value: number | string};
 
 const isUnit = (unit: string): unit is Unit => {
@@ -51,15 +54,15 @@ const getInitialValue = (value: string | undefined): Value => {
 	const match = value.toString().toLowerCase().match(REGEX);
 
 	if (match) {
-		const [, number, unit] = match;
+		const [, nextNumber, nextUnit] = match;
 
-		if (!isUnit(unit)) {
-			throw new Error(`Invalid unit "${unit}"`);
+		if (!isUnit(nextUnit)) {
+			throw new Error(`Invalid unit "${nextUnit}"`);
 		}
 
 		return {
-			unit,
-			value: number,
+			unit: nextUnit,
+			value: nextNumber,
 		};
 	}
 
@@ -69,246 +72,288 @@ const getInitialValue = (value: string | undefined): Value => {
 	};
 };
 
+const getNextValue = (value: number | string | undefined, unit: Unit) => {
+	const [, nextNumber, nextUnit] =
+		value?.toString().toLowerCase().match(REGEX) || [];
+
+	return {
+		nextNumber: nextNumber || value || '',
+		nextUnit: isUnit(nextUnit) ? nextUnit : unit,
+	};
+};
+
 interface Props {
 	className?: string;
 	defaultUnit?: Unit;
 	field: Field;
 	onEnter?: () => {};
 	onValueSelect: (fieldName: string, value: string) => void;
+	ref?: React.Ref<HTMLInputElement>;
 	showLabel?: boolean;
 	value?: string;
 }
 
-export default function LengthInput({
-	className,
-	defaultUnit,
-	field,
-	onEnter,
-	onValueSelect,
-	showLabel = true,
-	value,
-}: Props) {
-	const [active, setActive] = useState(false);
-	const [error, setError] = useState(false);
-	const inputId = useId();
-	const inputRef = useRef<HTMLInputElement>(null);
+type LengthInputRef = {
+	focus: () => void;
+};
 
-	const initialValue = useMemo(() => getInitialValue(value), [value]);
+type TriggerButtonProps = {
+	defaultUnit: Unit;
+	unit: Unit;
+};
 
-	const [nextValue, setNextValue] = useControlledState(initialValue.value);
-	const [nextUnit, setNextUnit] = useState(initialValue.unit);
-	const triggerId = useId();
+const TriggerButton = React.forwardRef(
+	(
+		{defaultUnit, unit, ...props}: TriggerButtonProps,
+		ref: Ref<HTMLButtonElement>
+	) => {
+		return (
+			<ClayButton
+				{...props}
+				aria-label={sub(
+					Liferay.Language.get('select-a-unit-currently-selected-x'),
+					unit
+				)}
+				className="border-0 layout__length-input__button p-1"
+				displayType="secondary"
+				monospaced
+				ref={ref}
+				size="sm"
+				title={Liferay.Language.get('select-a-unit')}
+			>
+				{defaultUnit ||
+					(unit === CUSTOM ? (
+						<ClayIcon symbol="code" />
+					) : (
+						unit.toUpperCase()
+					))}
+			</ClayButton>
+		);
+	}
+);
 
-	const handleUnitSelect = (unit: Unit) => {
-		setActive(false);
-		setNextUnit(unit);
+const LengthInput = forwardRef<LengthInputRef, Props>(
+	(
+		{
+			className,
+			defaultUnit,
+			field,
+			onEnter,
+			onValueSelect,
+			showLabel = true,
+			value: currentValue,
+		},
+		ref
+	) => {
+		const [error, setError] = useState(false);
+		const inputId = useId();
+		const inputRef = useRef<HTMLInputElement>(null);
+		const shouldFocusInputRef = useRef(false);
 
-		document.getElementById(triggerId)!.focus();
+		const initialValue = useMemo(
+			() => getInitialValue(currentValue),
+			[currentValue]
+		);
 
-		if (!nextValue || unit === nextUnit) {
-			return;
-		}
+		const [value, setValue] = useControlledState(initialValue.value);
+		const [unit, setUnit] = useState(initialValue.unit);
 
-		let valueWithUnits = `${nextValue}${unit}`;
+		useImperativeHandle(ref, () => ({
+			focus: () => {
+				inputRef.current?.focus();
+			},
+		}));
 
-		if (unit === CUSTOM) {
-			inputRef.current!.focus();
+		useEffect(() => {
+			if (shouldFocusInputRef.current) {
+				shouldFocusInputRef.current = false;
 
-			setNextValue('');
+				setTimeout(() => {
+					inputRef.current?.focus();
+				}, 100);
+			}
+		}, [unit]);
 
-			return;
-		}
-		else if (typeof nextValue !== 'number' || isNaN(nextValue)) {
-			valueWithUnits = '';
+		const onSelectUnit = (selectedUnit: Unit) => {
+			setUnit(selectedUnit);
 
-			inputRef.current!.focus();
+			if (!value || selectedUnit === unit) {
+				return;
+			}
 
-			if (field.typeOptions?.showLengthField) {
-				setNextValue(valueWithUnits);
+			let valueWithUnits = `${value}${selectedUnit}`;
+
+			if (selectedUnit === CUSTOM) {
+				shouldFocusInputRef.current = true;
+
+				setValue('');
 
 				return;
 			}
-		}
+			else if (typeof value !== 'number' || isNaN(value)) {
+				valueWithUnits = '';
 
-		if (valueWithUnits !== value) {
-			onValueSelect(field.name, valueWithUnits);
-		}
-	};
+				shouldFocusInputRef.current = true;
 
-	const handleValueSelect = () => {
-		const match = nextValue.toString().toLowerCase().match(REGEX);
-		let valueWithUnits = nextValue;
+				if (field.typeOptions?.showLengthField) {
+					setValue(valueWithUnits);
 
-		if (match) {
-			const [, number, unit] = match;
-
-			valueWithUnits = `${number}${unit}`;
-
-			setNextValue(number);
-		}
-		else if (nextUnit !== CUSTOM && nextValue) {
-			valueWithUnits = `${nextValue}${nextUnit}`;
-		}
-
-		if (
-			field.typeOptions?.showLengthField &&
-			(!valueWithUnits ||
-				!isValidStyleValue(
-					field.cssProperty || '',
-					valueWithUnits.toString()
-				))
-		) {
-			const [, number, unit] = value?.toLowerCase().match(REGEX) || [];
-
-			setNextValue(number || value || '');
-			setNextUnit(isUnit(unit) ? unit : CUSTOM);
-			setError(true);
-
-			setTimeout(() => setError(false), 1000);
-
-			return;
-		}
-
-		if (valueWithUnits !== value) {
-			onValueSelect(field.name, valueWithUnits.toString());
-		}
-	};
-
-	const handleKeyUp = (event: KeyboardEvent) => {
-		if (nextUnit !== CUSTOM && KEYS_NOT_ALLOWED.has(event.key)) {
-			event.preventDefault();
-		}
-
-		if (event.key === 'Enter') {
-			if (onEnter) {
-				onEnter();
+					return;
+				}
 			}
 
-			handleValueSelect();
-		}
-	};
+			if (valueWithUnits !== currentValue) {
+				onValueSelect(field.name, valueWithUnits);
+			}
+		};
 
-	useEffect(() => {
-		if (!value) {
-			return;
-		}
+		const handleValueSelect = () => {
+			if (value === currentValue && unit !== CUSTOM) {
+				return;
+			}
 
-		const [, , unit] = value.toString().toLowerCase().match(REGEX) || [];
+			const match = value.toString().toLowerCase().match(REGEX);
+			let valueWithUnits = value;
 
-		setNextUnit(isUnit(unit) ? unit : CUSTOM);
-	}, [value]);
+			if (match) {
+				const [, nextNumber, nextUnit] = match;
 
-	return (
-		<ClayForm.Group
-			className={classNames(className, 'layout__length-input')}
-		>
-			<label
-				className={classNames({'sr-only': !showLabel})}
-				htmlFor={inputId}
+				valueWithUnits = `${nextNumber}${nextUnit}`;
+
+				setValue(nextNumber);
+				setUnit(nextUnit as Unit);
+			}
+			else if (unit !== CUSTOM && value) {
+				valueWithUnits = `${value}${unit}`;
+			}
+
+			if (
+				field.typeOptions?.showLengthField &&
+				(!valueWithUnits ||
+					!isValidStyleValue(
+						field.cssProperty || '',
+						valueWithUnits.toString()
+					))
+			) {
+				const {nextNumber, nextUnit} = getNextValue(currentValue, unit);
+
+				setValue(nextNumber);
+				setUnit(nextUnit);
+				setError(true);
+
+				setTimeout(() => setError(false), 1000);
+
+				return;
+			}
+
+			if (valueWithUnits !== currentValue) {
+				onValueSelect(field.name, valueWithUnits.toString());
+			}
+		};
+
+		const handleKeyUp = (event: KeyboardEvent) => {
+			if (unit !== CUSTOM && KEYS_NOT_ALLOWED.has(event.key)) {
+				event.preventDefault();
+			}
+
+			if (event.key === 'Enter') {
+				if (onEnter) {
+					onEnter();
+				}
+
+				handleValueSelect();
+			}
+		};
+
+		useEffect(() => {
+			if (!currentValue) {
+				return;
+			}
+
+			setUnit((previousUnit) => {
+				const {nextUnit} = getNextValue(currentValue, previousUnit);
+
+				return nextUnit;
+			});
+		}, [currentValue]);
+
+		return (
+			<ClayForm.Group
+				className={classNames(className, 'layout__length-input w-100')}
 			>
-				{field.label}
-			</label>
+				<label
+					className={classNames({'sr-only': !showLabel})}
+					htmlFor={inputId}
+				>
+					{field.label}
+				</label>
 
-			<ClayInput.Group>
-				<ClayInput.GroupItem prepend>
-					<ClayInput
-						aria-label={field.label}
-						id={inputId}
-						insetBefore={Boolean(field.icon)}
-						onBlur={() => {
-							if (nextValue !== value) {
-								handleValueSelect();
+				<ClayInput.Group className="rounded">
+					<ClayInput.GroupItem prepend>
+						<ClayInput
+							aria-label={field.label}
+							id={inputId}
+							insetBefore={Boolean(field.icon)}
+							onBlur={() => handleValueSelect()}
+							onChange={(event) => {
+								setValue(event.target.value);
+							}}
+							onKeyUp={handleKeyUp}
+							ref={inputRef}
+							sizing="sm"
+							type={
+								!defaultUnit && unit === CUSTOM
+									? 'text'
+									: 'number'
 							}
-						}}
-						onChange={(event) => {
-							setNextValue(event.target.value);
-						}}
-						onKeyUp={handleKeyUp}
-						ref={inputRef}
-						sizing="sm"
-						type={
-							!defaultUnit && nextUnit === CUSTOM
-								? 'text'
-								: 'number'
-						}
-						value={nextValue}
-					/>
+							value={value}
+						/>
 
-					{field.icon ? (
-						<ClayInput.GroupInsetItem before>
-							<label
-								className="layout__input-with-icon__label-icon mb-0 pl-1 pr-3 text-center"
-								htmlFor={inputId}
-							>
-								<ClayIcon
-									className="lfr-portal-tooltip"
-									data-title={field.label}
-									symbol={field.icon}
-								/>
-
-								<span className="sr-only">{field.label}</span>
-							</label>
-						</ClayInput.GroupInsetItem>
-					) : null}
-				</ClayInput.GroupItem>
-
-				<ClayInput.GroupItem append shrink>
-					<ClayDropDown
-						active={active}
-						alignmentPosition={Align.BottomRight}
-						menuElementAttrs={{
-							className: 'layout__length-input__dropdown',
-							containerProps: {
-								className: 'cadmin',
-							},
-						}}
-						onActiveChange={setActive}
-						renderMenuOnClick
-						trigger={
-							<ClayButton
-								aria-expanded={active}
-								aria-haspopup="true"
-								aria-label={sub(
-									Liferay.Language.get('select-a-unit'),
-									nextUnit
-								)}
-								className="layout__length-input__button p-1"
-								disabled={Boolean(defaultUnit)}
-								displayType="secondary"
-								id={triggerId}
-								size="sm"
-								title={Liferay.Language.get('select-units')}
-							>
-								{defaultUnit ||
-									(nextUnit === CUSTOM ? (
-										<ClayIcon symbol="code" />
-									) : (
-										nextUnit.toUpperCase()
-									))}
-							</ClayButton>
-						}
-					>
-						<ClayDropDown.ItemList aria-labelledby={triggerId}>
-							{UNITS.map((unit) => (
-								<ClayDropDown.Item
-									key={unit}
-									onClick={() => handleUnitSelect(unit)}
+						{field.icon ? (
+							<ClayInput.GroupInsetItem before>
+								<label
+									className="layout__input-with-icon__label-icon mb-0 pl-1 pr-3 text-center"
+									htmlFor={inputId}
 								>
-									{unit.toUpperCase()}
-								</ClayDropDown.Item>
-							))}
-						</ClayDropDown.ItemList>
-					</ClayDropDown>
-				</ClayInput.GroupItem>
+									<ClayIcon
+										className="lfr-portal-tooltip"
+										data-title={field.label}
+										symbol={field.icon}
+									/>
 
-				{error ? (
-					<span aria-live="assertive" className="sr-only">
-						{Liferay.Language.get(
-							'this-field-requires-a-valid-style-value'
+									<span className="sr-only">
+										{field.label}
+									</span>
+								</label>
+							</ClayInput.GroupInsetItem>
+						) : null}
+					</ClayInput.GroupItem>
+
+					<Picker
+						as={TriggerButton}
+						defaultUnit={defaultUnit}
+						disabled={Boolean(defaultUnit)}
+						items={[...UNITS]}
+						onSelectionChange={(unit) => onSelectUnit(unit as Unit)}
+						selectedKey={defaultUnit || unit}
+						unit={unit}
+					>
+						{(item) => (
+							<Option key={item}>{item.toUpperCase()}</Option>
 						)}
-					</span>
-				) : null}
-			</ClayInput.Group>
-		</ClayForm.Group>
-	);
-}
+					</Picker>
+
+					{error ? (
+						<span aria-live="assertive" className="sr-only">
+							{Liferay.Language.get(
+								'this-field-requires-a-valid-style-value'
+							)}
+						</span>
+					) : null}
+				</ClayInput.Group>
+			</ClayForm.Group>
+		);
+	}
+);
+
+export default LengthInput;

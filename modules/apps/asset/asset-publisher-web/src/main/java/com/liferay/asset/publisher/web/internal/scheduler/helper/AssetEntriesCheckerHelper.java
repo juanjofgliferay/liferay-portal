@@ -11,7 +11,6 @@ import com.liferay.asset.kernel.service.persistence.AssetEntryQuery;
 import com.liferay.asset.kernel.util.NotifiedAssetEntryThreadLocal;
 import com.liferay.asset.list.asset.entry.provider.AssetListAssetEntryProvider;
 import com.liferay.asset.list.model.AssetListEntry;
-import com.liferay.asset.list.service.AssetListEntryLocalService;
 import com.liferay.asset.list.service.AssetListEntrySegmentsEntryRelLocalService;
 import com.liferay.asset.publisher.constants.AssetPublisherPortletKeys;
 import com.liferay.asset.publisher.util.AssetPublisherHelper;
@@ -19,7 +18,9 @@ import com.liferay.asset.publisher.web.internal.configuration.AssetPublisherSele
 import com.liferay.asset.publisher.web.internal.configuration.AssetPublisherWebConfiguration;
 import com.liferay.asset.publisher.web.internal.constants.AssetPublisherSelectionStyleConstants;
 import com.liferay.asset.publisher.web.internal.helper.AssetPublisherWebHelper;
+import com.liferay.asset.publisher.web.internal.util.AssetPublisherUtil;
 import com.liferay.asset.util.AssetHelper;
+import com.liferay.info.pagination.InfoPage;
 import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
@@ -28,6 +29,7 @@ import com.liferay.portal.kernel.dao.orm.Property;
 import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
@@ -41,12 +43,14 @@ import com.liferay.portal.kernel.search.SearchContextFactory;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
+import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.PortletPreferenceValueLocalService;
 import com.liferay.portal.kernel.service.PortletPreferencesLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.EscapableLocalizableFunction;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleThreadLocal;
@@ -55,16 +59,19 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.SubscriptionSender;
 import com.liferay.portal.kernel.util.TimeZoneThreadLocal;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
 import com.liferay.portlet.asset.service.permission.AssetEntryPermission;
 import com.liferay.portlet.configuration.kernel.util.PortletConfigurationUtil;
-import com.liferay.segments.SegmentsEntryRetriever;
 import com.liferay.segments.configuration.provider.SegmentsConfigurationProvider;
 import com.liferay.segments.constants.SegmentsEntryConstants;
 import com.liferay.subscription.model.Subscription;
 import com.liferay.subscription.service.SubscriptionLocalService;
+
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletPreferences;
 
 import java.io.IOException;
 
@@ -77,40 +84,41 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
-import javax.portlet.PortletException;
-import javax.portlet.PortletPreferences;
-
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Eudaldo Alonso
  */
-@Component(
-	configurationPid = "com.liferay.asset.publisher.web.internal.configuration.AssetPublisherWebConfiguration",
-	service = AssetEntriesCheckerHelper.class
-)
+@Component(service = AssetEntriesCheckerHelper.class)
 public class AssetEntriesCheckerHelper {
 
 	public void checkAssetEntries() throws Exception {
-		ActionableDynamicQuery actionableDynamicQuery =
-			_portletPreferencesLocalService.getActionableDynamicQuery();
+		_companyLocalService.forEachCompanyId(
+			companyId -> {
+				ActionableDynamicQuery actionableDynamicQuery =
+					_portletPreferencesLocalService.getActionableDynamicQuery();
 
-		actionableDynamicQuery.setAddCriteriaMethod(
-			dynamicQuery -> {
-				Property property = PropertyFactoryUtil.forName("portletId");
+				actionableDynamicQuery.setCompanyId(companyId);
 
-				dynamicQuery.add(
-					property.like(
-						PortletIdCodec.encode(
-							AssetPublisherPortletKeys.ASSET_PUBLISHER,
-							StringPool.PERCENT)));
+				actionableDynamicQuery.setAddCriteriaMethod(
+					dynamicQuery -> {
+						Property property = PropertyFactoryUtil.forName(
+							"portletId");
+
+						dynamicQuery.add(
+							property.like(
+								PortletIdCodec.encode(
+									AssetPublisherPortletKeys.ASSET_PUBLISHER,
+									StringPool.PERCENT)));
+					});
+				actionableDynamicQuery.setPerformActionMethod(
+					(com.liferay.portal.kernel.model.PortletPreferences
+						portletPreferences) -> _checkAssetEntries(
+							portletPreferences));
+
+				actionableDynamicQuery.performActions();
 			});
-		actionableDynamicQuery.setPerformActionMethod(
-			(com.liferay.portal.kernel.model.PortletPreferences
-				portletPreferences) -> _checkAssetEntries(portletPreferences));
-
-		actionableDynamicQuery.performActions();
 	}
 
 	private void _checkAssetEntries(
@@ -163,6 +171,7 @@ public class AssetEntriesCheckerHelper {
 		}
 
 		_notifySubscribers(
+			layout,
 			_portal.getLayoutFullURL(
 				layout.getGroupId(), portletPreferencesModel.getPortletId()),
 			_subscriptionLocalService.getSubscriptions(
@@ -172,7 +181,8 @@ public class AssetEntriesCheckerHelper {
 				_assetPublisherWebHelper.getSubscriptionClassPK(
 					portletPreferencesModel.getPlid(),
 					portletPreferencesModel.getPortletId())),
-			portletPreferences, newAssetEntries);
+			portletPreferencesModel.getPortletId(), portletPreferences,
+			newAssetEntries);
 
 		NotifiedAssetEntryThreadLocal.setNotifiedAssetEntryIdsModified(true);
 
@@ -203,10 +213,29 @@ public class AssetEntriesCheckerHelper {
 			return Collections.emptyList();
 		}
 
-		PermissionChecker permissionChecker = null;
-
 		try {
-			permissionChecker = PermissionCheckerFactoryUtil.create(user);
+			PermissionChecker permissionChecker =
+				PermissionCheckerFactoryUtil.create(user);
+
+			return TransformUtil.transform(
+				assetEntries,
+				assetEntry -> {
+					try {
+						if (AssetEntryPermission.contains(
+								permissionChecker, assetEntry,
+								ActionKeys.VIEW)) {
+
+							return assetEntry;
+						}
+					}
+					catch (Exception exception) {
+						if (_log.isDebugEnabled()) {
+							_log.debug(exception);
+						}
+					}
+
+					return null;
+				});
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
@@ -215,25 +244,6 @@ public class AssetEntriesCheckerHelper {
 
 			return Collections.emptyList();
 		}
-
-		List<AssetEntry> filteredAssetEntries = new ArrayList<>();
-
-		for (AssetEntry assetEntry : assetEntries) {
-			try {
-				if (AssetEntryPermission.contains(
-						permissionChecker, assetEntry, ActionKeys.VIEW)) {
-
-					filteredAssetEntries.add(assetEntry);
-				}
-			}
-			catch (Exception exception) {
-				if (_log.isDebugEnabled()) {
-					_log.debug(exception);
-				}
-			}
-		}
-
-		return filteredAssetEntries;
 	}
 
 	private List<AssetEntry> _getAssetEntries(
@@ -250,7 +260,7 @@ public class AssetEntriesCheckerHelper {
 				AssetPublisherSelectionStyleConstants.TYPE_ASSET_LIST)) {
 
 			return _getAssetListEntrySelectedAssetEntries(
-				portletPreferences, layout.getGroupId());
+				layout.getCompanyId(), layout.getGroupId(), portletPreferences);
 		}
 		else if (Objects.equals(
 					selectionStyle,
@@ -264,21 +274,14 @@ public class AssetEntriesCheckerHelper {
 	}
 
 	private List<AssetEntry> _getAssetListEntrySelectedAssetEntries(
-		PortletPreferences portletPreferences, long groupId) {
-
-		long assetListEntryId = GetterUtil.getLong(
-			portletPreferences.getValue("assetListEntryId", null));
-
-		if (assetListEntryId <= 0) {
-			return Collections.emptyList();
-		}
+		long companyId, long groupId, PortletPreferences portletPreferences) {
 
 		List<AssetEntry> assetEntries = new ArrayList<>();
 
 		try {
 			AssetListEntry assetListEntry =
-				_assetListEntryLocalService.fetchAssetListEntry(
-					assetListEntryId);
+				AssetPublisherUtil.getAssetListEntry(
+					false, companyId, groupId, portletPreferences);
 
 			if (assetListEntry == null) {
 				return Collections.emptyList();
@@ -294,8 +297,8 @@ public class AssetEntriesCheckerHelper {
 						TransformUtil.transform(
 							_assetListEntrySegmentsEntryRelLocalService.
 								getAssetListEntrySegmentsEntryRels(
-									assetListEntryId, QueryUtil.ALL_POS,
-									QueryUtil.ALL_POS),
+									assetListEntry.getAssetListEntryId(),
+									QueryUtil.ALL_POS, QueryUtil.ALL_POS),
 							assetListEntrySegmentsEntryRel ->
 								assetListEntrySegmentsEntryRel.
 									getSegmentsEntryId()));
@@ -305,7 +308,7 @@ public class AssetEntriesCheckerHelper {
 				if (_log.isWarnEnabled()) {
 					_log.warn(
 						"Unable to get segments entry IDs for asset list " +
-							"entry " + assetListEntryId);
+							"entry " + assetListEntry.getAssetListEntryId());
 				}
 
 				if (_log.isDebugEnabled()) {
@@ -313,9 +316,13 @@ public class AssetEntriesCheckerHelper {
 				}
 			}
 
-			assetEntries = _assetListAssetEntryProvider.getAssetEntries(
-				assetListEntry, segmentsEntryIds, null, null, StringPool.BLANK,
-				StringPool.BLANK, QueryUtil.ALL_POS, QueryUtil.ALL_POS);
+			InfoPage<AssetEntry> infoPage =
+				_assetListAssetEntryProvider.getAssetEntriesInfoPage(
+					assetListEntry, segmentsEntryIds, null, null,
+					StringPool.BLANK, StringPool.BLANK, QueryUtil.ALL_POS,
+					QueryUtil.ALL_POS);
+
+			assetEntries = (List<AssetEntry>)infoPage.getPageItems();
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
@@ -371,6 +378,19 @@ public class AssetEntriesCheckerHelper {
 		}
 	}
 
+	private String _getGroupDescriptiveName(Layout layout, Locale locale) {
+		try {
+			Group group = _groupLocalService.fetchGroup(layout.getGroupId());
+
+			return group.getDescriptiveName(locale);
+		}
+		catch (PortalException portalException) {
+			_log.error(portalException);
+		}
+
+		return StringPool.BLANK;
+	}
+
 	private List<AssetEntry> _getManuallySelectedAssetEntries(
 		PortletPreferences portletPreferences, long groupId) {
 
@@ -413,9 +433,40 @@ public class AssetEntriesCheckerHelper {
 		return assetEntries;
 	}
 
+	private Map<Locale, String> _getPortletTitleMap(
+		String portletId, PortletPreferences portletPreferences) {
+
+		if (!PortletConfigurationUtil.isUseCustomTitle(portletPreferences)) {
+			return null;
+		}
+
+		Map<Locale, String> map = new HashMap<>();
+
+		boolean empty = true;
+
+		for (Locale locale : _language.getAvailableLocales()) {
+			String portletTitle = GetterUtil.getString(
+				PortletConfigurationUtil.getPortletTitle(
+					portletId, portletPreferences,
+					LocaleUtil.toLanguageId(locale)));
+
+			map.put(locale, portletTitle);
+
+			if (Validator.isNotNull(portletTitle)) {
+				empty = false;
+			}
+		}
+
+		if (!empty) {
+			return map;
+		}
+
+		return null;
+	}
+
 	private SubscriptionSender _getSubscriptionSender(
-		String layoutURL, PortletPreferences portletPreferences,
-		List<AssetEntry> assetEntries) {
+		Layout layout, String layoutURL, String portletId,
+		PortletPreferences portletPreferences, List<AssetEntry> assetEntries) {
 
 		if (assetEntries.isEmpty()) {
 			return null;
@@ -437,7 +488,6 @@ public class AssetEntriesCheckerHelper {
 
 		SubscriptionSender subscriptionSender = new SubscriptionSender();
 
-		subscriptionSender.setCompanyId(assetEntry.getCompanyId());
 		subscriptionSender.setContextAttributes(
 			"[$ASSET_ENTRIES$]",
 			com.liferay.petra.string.StringUtil.merge(
@@ -449,8 +499,18 @@ public class AssetEntriesCheckerHelper {
 		subscriptionSender.setGroupId(assetEntry.getGroupId());
 		subscriptionSender.setHtmlFormat(true);
 		subscriptionSender.setLocalizedBodyMap(localizedBodyMap);
+		subscriptionSender.setLocalizedContextAttribute(
+			"[$ASSET_ENTRIES$]",
+			new EscapableLocalizableFunction(
+				locale -> com.liferay.petra.string.StringUtil.merge(
+					assetEntries, entry -> entry.getTitle(locale),
+					StringPool.COMMA_AND_SPACE)));
+		subscriptionSender.setLocalizedContextAttribute(
+			"[$SITE_NAME$]",
+			new EscapableLocalizableFunction(
+				locale -> _getGroupDescriptiveName(layout, locale)));
 		subscriptionSender.setLocalizedPortletTitleMap(
-			PortletConfigurationUtil.getPortletTitleMap(portletPreferences));
+			_getPortletTitleMap(portletId, portletPreferences));
 		subscriptionSender.setLocalizedSubjectMap(localizedSubjectMap);
 		subscriptionSender.setMailId("asset_entry", assetEntry.getEntryId());
 		subscriptionSender.setNotificationType(
@@ -463,8 +523,9 @@ public class AssetEntriesCheckerHelper {
 	}
 
 	private void _notifySubscribers(
-		String layoutURL, List<Subscription> subscriptions,
-		PortletPreferences portletPreferences, List<AssetEntry> assetEntries) {
+		Layout layout, String layoutURL, List<Subscription> subscriptions,
+		String portletId, PortletPreferences portletPreferences,
+		List<AssetEntry> assetEntries) {
 
 		if (!_assetPublisherWebHelper.getEmailAssetEntryAddedEnabled(
 				portletPreferences)) {
@@ -506,7 +567,8 @@ public class AssetEntriesCheckerHelper {
 				assetEntriesToUsersMap.entrySet()) {
 
 			SubscriptionSender subscriptionSender = _getSubscriptionSender(
-				layoutURL, portletPreferences, entry.getKey());
+				layout, layoutURL, portletId, portletPreferences,
+				entry.getKey());
 
 			if (subscriptionSender == null) {
 				continue;
@@ -534,9 +596,6 @@ public class AssetEntriesCheckerHelper {
 	private AssetListAssetEntryProvider _assetListAssetEntryProvider;
 
 	@Reference
-	private AssetListEntryLocalService _assetListEntryLocalService;
-
-	@Reference
 	private AssetListEntrySegmentsEntryRelLocalService
 		_assetListEntrySegmentsEntryRelLocalService;
 
@@ -547,10 +606,16 @@ public class AssetEntriesCheckerHelper {
 	private AssetPublisherWebHelper _assetPublisherWebHelper;
 
 	@Reference
+	private CompanyLocalService _companyLocalService;
+
+	@Reference
 	private ConfigurationProvider _configurationProvider;
 
 	@Reference
 	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private LayoutLocalService _layoutLocalService;
@@ -567,9 +632,6 @@ public class AssetEntriesCheckerHelper {
 
 	@Reference
 	private SegmentsConfigurationProvider _segmentsConfigurationProvider;
-
-	@Reference
-	private SegmentsEntryRetriever _segmentsEntryRetriever;
 
 	@Reference
 	private SubscriptionLocalService _subscriptionLocalService;

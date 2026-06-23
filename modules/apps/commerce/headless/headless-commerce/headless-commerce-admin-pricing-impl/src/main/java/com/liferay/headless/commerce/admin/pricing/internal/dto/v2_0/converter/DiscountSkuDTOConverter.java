@@ -53,19 +53,22 @@ public class DiscountSkuDTOConverter
 
 		return new DiscountSku() {
 			{
-				actions = dtoConverterContext.getActions();
-				discountExternalReferenceCode =
-					commerceDiscount.getExternalReferenceCode();
-				discountId = commerceDiscount.getCommerceDiscountId();
-				discountSkuId = commerceDiscountRel.getCommerceDiscountRelId();
-				productId = cpDefinition.getCPDefinitionId();
-				productName = LanguageUtils.getLanguageIdMap(
-					cpDefinition.getNameMap());
-				skuExternalReferenceCode =
-					cpInstance.getExternalReferenceCode();
-				skuId = cpInstance.getCPInstanceId();
-				unitOfMeasureKey = _getUnitOfMeasureKey(
-					commerceDiscountRel.getTypeSettingsUnicodeProperties());
+				setActions(dtoConverterContext::getActions);
+				setDiscountExternalReferenceCode(
+					commerceDiscount::getExternalReferenceCode);
+				setDiscountId(commerceDiscount::getCommerceDiscountId);
+				setDiscountSkuId(commerceDiscountRel::getCommerceDiscountRelId);
+				setProductId(cpDefinition::getCPDefinitionId);
+				setProductName(
+					() -> LanguageUtils.getLanguageIdMap(
+						cpDefinition.getNameMap()));
+				setSkuExternalReferenceCode(
+					cpInstance::getExternalReferenceCode);
+				setSkuId(cpInstance::getCPInstanceId);
+				setUnitOfMeasureKey(
+					() -> _getUnitOfMeasureKey(
+						commerceDiscountRel.
+							getTypeSettingsUnicodeProperties()));
 			}
 		};
 	}
@@ -73,14 +76,13 @@ public class DiscountSkuDTOConverter
 	private String _getUnitOfMeasureKey(
 		UnicodeProperties typeSettingsUnicodeProperties) {
 
-		if ((typeSettingsUnicodeProperties != null) &&
-			typeSettingsUnicodeProperties.containsKey("unitOfMeasureKey")) {
+		if ((typeSettingsUnicodeProperties == null) ||
+			!typeSettingsUnicodeProperties.containsKey("unitOfMeasureKey")) {
 
-			return typeSettingsUnicodeProperties.getProperty(
-				"unitOfMeasureKey");
+			return null;
 		}
 
-		return null;
+		return typeSettingsUnicodeProperties.getProperty("unitOfMeasureKey");
 	}
 
 	@Reference

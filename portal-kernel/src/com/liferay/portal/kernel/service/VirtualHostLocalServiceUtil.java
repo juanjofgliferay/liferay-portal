@@ -196,19 +196,12 @@ public class VirtualHostLocalServiceUtil {
 		return getService().dynamicQueryCount(dynamicQuery, projection);
 	}
 
-	public static VirtualHost fetchVirtualHost(long virtualHostId) {
-		return getService().fetchVirtualHost(virtualHostId);
+	public static VirtualHost fetchCompanyDefaultVirtualHost(long companyId) {
+		return getService().fetchCompanyDefaultVirtualHost(companyId);
 	}
 
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 #getVirtualHosts(long, long)}
-	 */
-	@Deprecated
-	public static VirtualHost fetchVirtualHost(
-		long companyId, long layoutSetId) {
-
-		return getService().fetchVirtualHost(companyId, layoutSetId);
+	public static VirtualHost fetchVirtualHost(long virtualHostId) {
+		return getService().fetchVirtualHost(virtualHostId);
 	}
 
 	public static VirtualHost fetchVirtualHost(String hostname) {
@@ -259,17 +252,6 @@ public class VirtualHostLocalServiceUtil {
 		return getService().getVirtualHost(virtualHostId);
 	}
 
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 #getVirtualHosts(long, long)}
-	 */
-	@Deprecated
-	public static VirtualHost getVirtualHost(long companyId, long layoutSetId)
-		throws PortalException {
-
-		return getService().getVirtualHost(companyId, layoutSetId);
-	}
-
 	public static VirtualHost getVirtualHost(String hostname)
 		throws PortalException {
 
@@ -318,17 +300,6 @@ public class VirtualHostLocalServiceUtil {
 	}
 
 	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 #updateVirtualHosts(long, long, TreeMap)}
-	 */
-	@Deprecated
-	public static VirtualHost updateVirtualHost(
-		long companyId, long layoutSetId, String hostname) {
-
-		return getService().updateVirtualHost(companyId, layoutSetId, hostname);
-	}
-
-	/**
 	 * Updates the virtual host in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
 	 * <p>
@@ -361,3 +332,4 @@ public class VirtualHostLocalServiceUtil {
 	private static volatile VirtualHostLocalService _service;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-219097511

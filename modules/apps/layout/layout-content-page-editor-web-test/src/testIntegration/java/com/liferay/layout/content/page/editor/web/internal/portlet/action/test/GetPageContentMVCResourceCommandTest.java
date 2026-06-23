@@ -61,13 +61,12 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
-import com.liferay.segments.constants.SegmentsEntryConstants;
 import com.liferay.segments.model.SegmentsExperience;
 import com.liferay.segments.service.SegmentsExperienceLocalService;
 import com.liferay.segments.test.util.SegmentsTestUtil;
 
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -109,8 +108,9 @@ public class GetPageContentMVCResourceCommandTest {
 	public void testCollectionMapping() throws Exception {
 		AssetListEntry assetListEntry =
 			_assetListEntryLocalService.addDynamicAssetListEntry(
-				TestPropsValues.getUserId(), _group.getGroupId(),
-				RandomTestUtil.randomString(), null, _serviceContext);
+				RandomTestUtil.randomString(), TestPropsValues.getUserId(),
+				_group.getGroupId(), RandomTestUtil.randomString(), null,
+				_serviceContext);
 
 		_createLayoutStructure(
 			layoutStructure -> {
@@ -157,7 +157,7 @@ public class GetPageContentMVCResourceCommandTest {
 			null, TestPropsValues.getUserId(), _group.getGroupId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			StringUtil.randomString(), ContentTypes.APPLICATION_OCTET_STREAM,
-			new byte[0], null, null, new ServiceContext());
+			new byte[0], null, null, null, new ServiceContext());
 
 		_createLayoutStructure(
 			layoutStructure -> {
@@ -330,8 +330,7 @@ public class GetPageContentMVCResourceCommandTest {
 
 		SegmentsExperience segmentsExperience =
 			SegmentsTestUtil.addSegmentsExperience(
-				_group.getGroupId(), SegmentsEntryConstants.ID_DEFAULT,
-				_layout.getPlid());
+				_group.getGroupId(), null, null, _layout.getPlid());
 
 		ContentLayoutTestUtil.addFragmentEntryLinkToLayout(
 			JSONUtil.put(
@@ -443,8 +442,8 @@ public class GetPageContentMVCResourceCommandTest {
 
 		_layoutPageTemplateStructureLocalService.
 			updateLayoutPageTemplateStructureData(
-				_group.getGroupId(), _layout.getPlid(),
-				layoutStructure.toString());
+				TestPropsValues.getUserId(), _group.getGroupId(),
+				_layout.getPlid(), layoutStructure.toString());
 	}
 
 	private MockLiferayResourceRequest _getMockLiferayPortletResourceRequest(
@@ -457,13 +456,13 @@ public class GetPageContentMVCResourceCommandTest {
 		mockLiferayResourceRequest.addParameter(
 			"segmentsExperienceId", String.valueOf(segmentsExperienceId));
 		mockLiferayResourceRequest.setAttribute(
-			JavaConstants.JAVAX_PORTLET_CONFIG, null);
+			JavaConstants.JAKARTA_PORTLET_CONFIG, null);
 
 		MockHttpServletRequest mockHttpServletRequest =
 			new MockHttpServletRequest();
 
 		mockHttpServletRequest.setAttribute(
-			JavaConstants.JAVAX_PORTLET_RESPONSE,
+			JavaConstants.JAKARTA_PORTLET_RESPONSE,
 			new MockLiferayResourceResponse());
 
 		ThemeDisplay themeDisplay = _getThemeDisplay();

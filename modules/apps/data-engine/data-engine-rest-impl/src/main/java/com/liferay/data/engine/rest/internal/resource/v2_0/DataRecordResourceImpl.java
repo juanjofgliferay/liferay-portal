@@ -45,7 +45,6 @@ import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.search.filter.QueryFilter;
-import com.liferay.portal.kernel.search.generic.BooleanQueryImpl;
 import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -53,7 +52,6 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.odata.entity.StringEntityField;
 import com.liferay.portal.search.legacy.searcher.SearchRequestBuilderFactory;
@@ -63,15 +61,13 @@ import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.vulcan.util.SearchUtil;
 
-import java.util.ArrayList;
+import jakarta.validation.ValidationException;
+
+import jakarta.ws.rs.core.MultivaluedMap;
+
 import java.util.Collections;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.validation.ValidationException;
-
-import javax.ws.rs.core.MultivaluedMap;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
@@ -140,13 +136,6 @@ public class DataRecordResourceImpl extends BaseDataRecordResourceImpl {
 			Long dataRecordCollectionId, Pagination pagination)
 		throws Exception {
 
-		if (pagination.getPageSize() > 250) {
-			throw new ValidationException(
-				_language.format(
-					contextAcceptLanguage.getPreferredLocale(),
-					"page-size-is-greater-than-x", 250));
-		}
-
 		DataRecordCollectionPermissionUtil.check(
 			PermissionThreadLocal.getPermissionChecker(),
 			_ddlRecordSetLocalService.getDDLRecordSet(dataRecordCollectionId),
@@ -154,7 +143,8 @@ public class DataRecordResourceImpl extends BaseDataRecordResourceImpl {
 
 		DataRecordExporter dataRecordExporter = new DataRecordExporter(
 			_ddlRecordSetLocalService, _ddmFormFieldTypeServicesRegistry,
-			_ddmStructureLayoutLocalService, _spiDDMFormRuleConverter);
+			_ddmStructureLayoutLocalService, _ddmStructureLocalService,
+			_spiDDMFormRuleConverter);
 
 		return dataRecordExporter.export(
 			transform(
@@ -169,13 +159,6 @@ public class DataRecordResourceImpl extends BaseDataRecordResourceImpl {
 			Long dataRecordCollectionId, Long dataListViewId, String keywords,
 			Pagination pagination, Sort[] sorts)
 		throws Exception {
-
-		if (pagination.getPageSize() > 250) {
-			throw new ValidationException(
-				_language.format(
-					contextAcceptLanguage.getPreferredLocale(),
-					"page-size-is-greater-than-x", 250));
-		}
 
 		DataRecordCollectionPermissionUtil.check(
 			PermissionThreadLocal.getPermissionChecker(),
@@ -192,7 +175,7 @@ public class DataRecordResourceImpl extends BaseDataRecordResourceImpl {
 					return;
 				}
 
-				BooleanQuery ddmContentBooleanQuery = new BooleanQueryImpl();
+				BooleanQuery ddmContentBooleanQuery = new BooleanQuery();
 
 				for (Locale locale :
 						_language.getCompanyAvailableLocales(
@@ -249,30 +232,31 @@ public class DataRecordResourceImpl extends BaseDataRecordResourceImpl {
 			long dataRecordCollectionId = GetterUtil.getLong(
 				(String)multivaluedMap.getFirst("dataRecordCollectionId"));
 
-			if (dataRecordCollectionId > 0) {
-				DDLRecordSet ddlRecordSet =
-					_ddlRecordSetLocalService.getDDLRecordSet(
-						dataRecordCollectionId);
-
-				DDMStructure ddmStructure = ddlRecordSet.getDDMStructure();
-
-				dataDefinitionId = ddmStructure.getStructureId();
+			if (dataRecordCollectionId <= 0) {
+				return new DataRecordEntityModel(Collections.emptyList());
 			}
+
+			DDLRecordSet ddlRecordSet =
+				_ddlRecordSetLocalService.getDDLRecordSet(
+					dataRecordCollectionId);
+
+			DDMStructure ddmStructure = ddlRecordSet.getDDMStructure();
+
+			dataDefinitionId = ddmStructure.getStructureId();
 		}
 
-		List<EntityField> entityFields = new ArrayList<>();
-
-		if (dataDefinitionId > 0) {
-			DDMStructure ddmStructure =
-				_ddmStructureLocalService.getDDMStructure(dataDefinitionId);
-
-			for (String fieldName : ddmStructure.getFieldNames()) {
-				entityFields.add(
-					new StringEntityField(fieldName, locale -> fieldName));
-			}
+		if (dataDefinitionId <= 0) {
+			return new DataRecordEntityModel(Collections.emptyList());
 		}
 
-		return new DataRecordEntityModel(entityFields);
+		DDMStructure ddmStructure = _ddmStructureLocalService.getDDMStructure(
+			dataDefinitionId);
+
+		return new DataRecordEntityModel(
+			transform(
+				ddmStructure.getFieldNames(),
+				fieldName -> new StringEntityField(
+					fieldName, locale -> fieldName)));
 	}
 
 	@Override
@@ -297,7 +281,7 @@ public class DataRecordResourceImpl extends BaseDataRecordResourceImpl {
 		DDLRecordSet ddlRecordSet = _ddlRecordSetLocalService.getRecordSet(
 			dataRecordCollectionId);
 
-		dataRecord.setDataRecordCollectionId(dataRecordCollectionId);
+		dataRecord.setDataRecordCollectionId(() -> dataRecordCollectionId);
 
 		DDMStructure ddmStructure = ddlRecordSet.getDDMStructure();
 
@@ -338,9 +322,9 @@ public class DataRecordResourceImpl extends BaseDataRecordResourceImpl {
 
 		DDLRecordSet ddlRecordSet = ddlRecord.getRecordSet();
 
-		dataRecord.setDataRecordCollectionId(ddlRecordSet.getRecordSetId());
+		dataRecord.setDataRecordCollectionId(ddlRecordSet::getRecordSetId);
 
-		dataRecord.setId(dataRecordId);
+		dataRecord.setId(() -> dataRecordId);
 
 		DDMStructure ddmStructure = ddlRecordSet.getDDMStructure();
 
@@ -387,20 +371,22 @@ public class DataRecordResourceImpl extends BaseDataRecordResourceImpl {
 	protected void preparePatch(
 		DataRecord dataRecord, DataRecord existingDataRecord) {
 
-		if (dataRecord.getDataRecordValues() != null) {
-			existingDataRecord.setDataRecordValues(
-				() -> {
-					DataRecord getDataRecord = getDataRecord(
-						existingDataRecord.getId());
-
-					Map<String, Object> dataRecordValues =
-						getDataRecord.getDataRecordValues();
-
-					dataRecordValues.putAll(dataRecord.getDataRecordValues());
-
-					return dataRecordValues;
-				});
+		if (dataRecord.getDataRecordValues() == null) {
+			return;
 		}
+
+		existingDataRecord.setDataRecordValues(
+			() -> {
+				DataRecord getDataRecord = getDataRecord(
+					existingDataRecord.getId());
+
+				Map<String, Object> dataRecordValues =
+					getDataRecord.getDataRecordValues();
+
+				dataRecordValues.putAll(dataRecord.getDataRecordValues());
+
+				return dataRecordValues;
+			});
 	}
 
 	private BooleanFilter _getBooleanFilter(
@@ -489,25 +475,20 @@ public class DataRecordResourceImpl extends BaseDataRecordResourceImpl {
 			DDMStructure ddmStructure, Sort[] sorts)
 		throws PortalException {
 
-		List<com.liferay.portal.search.sort.Sort> searchSorts =
-			new ArrayList<>();
+		return transform(
+			sorts,
+			sort -> {
+				SortOrder sortOrder = SortOrder.ASC;
 
-		for (Sort sort : sorts) {
-			SortOrder sortOrder = SortOrder.ASC;
+				if (sort.isReverse()) {
+					sortOrder = SortOrder.DESC;
+				}
 
-			if (sort.isReverse()) {
-				sortOrder = SortOrder.DESC;
-			}
-
-			com.liferay.portal.search.sort.Sort searchSort =
-				_ddmIndexer.createDDMStructureFieldSort(
+				return _ddmIndexer.createDDMStructureFieldSort(
 					ddmStructure, sort.getFieldName(),
 					contextAcceptLanguage.getPreferredLocale(), sortOrder);
-
-			searchSorts.add(searchSort);
-		}
-
-		return searchSorts.toArray(new FieldSort[0]);
+			},
+			FieldSort.class);
 	}
 
 	private DataRecord _toDataRecord(DDLRecord ddlRecord) throws Exception {
@@ -524,11 +505,13 @@ public class DataRecordResourceImpl extends BaseDataRecordResourceImpl {
 
 		return new DataRecord() {
 			{
-				dataRecordCollectionId = ddlRecordSet.getRecordSetId();
-				dataRecordValues = dataStorage.get(
-					ddmStructure.getStructureId(), ddlRecord.getDDMStorageId());
-				id = ddlRecord.getRecordId();
-				status = ddlRecord.getStatus();
+				setDataRecordCollectionId(ddlRecordSet::getRecordSetId);
+				setDataRecordValues(
+					() -> dataStorage.get(
+						ddmStructure.getStructureId(),
+						ddlRecord.getDDMStorageId()));
+				setId(ddlRecord::getRecordId);
+				setStatus(ddlRecord::getStatus);
 			}
 		};
 	}

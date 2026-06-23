@@ -9,10 +9,15 @@ import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.search.document.Document;
 import com.liferay.portal.search.document.DocumentBuilder;
+import com.liferay.portal.search.document.DocumentBuilderFactory;
+import com.liferay.portal.search.index.IndexNameBuilder;
 import com.liferay.portal.search.query.BooleanQuery;
+import com.liferay.portal.search.query.QueriesUtil;
+import com.liferay.portal.workflow.metrics.internal.search.constants.WorkflowMetricsIndexTypeConstants;
 import com.liferay.portal.workflow.metrics.internal.sla.WorkflowMetricsInstanceSLAStatus;
 import com.liferay.portal.workflow.metrics.search.index.InstanceWorkflowMetricsIndexer;
 import com.liferay.portal.workflow.metrics.search.index.TaskWorkflowMetricsIndexer;
+import com.liferay.portal.workflow.metrics.search.index.constants.WorkflowMetricsIndexNameConstants;
 
 import java.time.Duration;
 
@@ -38,7 +43,7 @@ public class InstanceWorkflowMetricsIndexerImpl
 		Date createDate, long instanceId, Date modifiedDate, long processId,
 		String processVersion, long userId, String userName) {
 
-		DocumentBuilder documentBuilder = documentBuilderFactory.builder();
+		DocumentBuilder documentBuilder = DocumentBuilderFactory.builder();
 
 		documentBuilder.setValue(
 			"active", true
@@ -108,7 +113,7 @@ public class InstanceWorkflowMetricsIndexerImpl
 		long companyId, Date completionDate, long duration, long instanceId,
 		Date modifiedDate) {
 
-		DocumentBuilder documentBuilder = documentBuilderFactory.builder();
+		DocumentBuilder documentBuilder = DocumentBuilderFactory.builder();
 
 		documentBuilder.setLong(
 			"companyId", companyId
@@ -150,7 +155,7 @@ public class InstanceWorkflowMetricsIndexerImpl
 
 	@Override
 	public void deleteInstance(long companyId, long instanceId) {
-		DocumentBuilder documentBuilder = documentBuilderFactory.builder();
+		DocumentBuilder documentBuilder = DocumentBuilderFactory.builder();
 
 		documentBuilder.setLong(
 			"companyId", companyId
@@ -174,12 +179,14 @@ public class InstanceWorkflowMetricsIndexerImpl
 
 	@Override
 	public String getIndexName(long companyId) {
-		return _instanceWorkflowMetricsIndex.getIndexName(companyId);
+		return WorkflowMetricsIndex.getIndexName(
+			_indexNameBuilder,
+			WorkflowMetricsIndexNameConstants.SUFFIX_INSTANCE, companyId);
 	}
 
 	@Override
 	public String getIndexType() {
-		return _instanceWorkflowMetricsIndex.getIndexType();
+		return WorkflowMetricsIndexTypeConstants.INSTANCE_TYPE;
 	}
 
 	@Override
@@ -188,7 +195,7 @@ public class InstanceWorkflowMetricsIndexerImpl
 		Map<Locale, String> assetTypeMap, long companyId, long instanceId,
 		Date modifiedDate) {
 
-		DocumentBuilder documentBuilder = documentBuilderFactory.builder();
+		DocumentBuilder documentBuilder = DocumentBuilderFactory.builder();
 
 		documentBuilder.setValue(
 			"active", active
@@ -230,11 +237,11 @@ public class InstanceWorkflowMetricsIndexerImpl
 	private void _updateDocuments(
 		long companyId, Map<String, Object> fieldsMap, long instanceId) {
 
-		BooleanQuery booleanQuery = queries.booleanQuery();
+		BooleanQuery booleanQuery = QueriesUtil.booleanQuery();
 
 		booleanQuery.addMustQueryClauses(
-			queries.term("companyId", companyId),
-			queries.term("instanceId", instanceId));
+			QueriesUtil.term("companyId", companyId),
+			QueriesUtil.term("instanceId", instanceId));
 
 		_slaInstanceResultWorkflowMetricsIndexer.updateDocuments(
 			companyId, fieldsMap, booleanQuery);
@@ -249,8 +256,8 @@ public class InstanceWorkflowMetricsIndexerImpl
 			companyId, fieldsMap, booleanQuery);
 	}
 
-	@Reference(target = "(workflow.metrics.index.entity.name=instance)")
-	private WorkflowMetricsIndex _instanceWorkflowMetricsIndex;
+	@Reference
+	private IndexNameBuilder _indexNameBuilder;
 
 	@Reference
 	private SLAInstanceResultWorkflowMetricsIndexer

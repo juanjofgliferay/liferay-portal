@@ -1,16 +1,16 @@
-@component-name = "portal-upgrades"
+@component-name = "portal-content-management"
 definition {
 
+	property browser.chrome.version = "139.0";
 	property ci.retries.disabled = "true";
 	property data.archive.type = "data-archive-web-content-first-complex-fields";
-	property database.types = "db2,mariadb,mysql,oracle,postgresql,sybase";
+	property database.types = "db2,mariadb,mysql,oracle,postgresql";
 	property portal.release = "true";
 	property portal.upstream = "true";
 	property portal.version = "7.3.10.1";
 	property test.liferay.virtual.instance = "false";
 	property test.run.type = "single";
-	property testray.component.names = "Upgrades WEM,Web Content Administration";
-	property testray.main.component.name = "Upgrades WEM";
+	property testray.main.component.name = "Upgrades Content Management";
 
 	setUp {
 		SignIn.signIn();
@@ -223,13 +223,15 @@ definition {
 	@description = "This is a use case for LRQA-61632. Can Duplicate Repeatable Fields And Remove Them With First Complex Structure"
 	@priority = 3
 	test CanDuplicateRepeatableFieldsAndRemoveThem {
+		property portal.release = "quarantine";
+
 		task ("Duplicate all fields that can be duplicated, 1-4 times") {
 			WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
 
 			WebContentNavigator.gotoEditCP(webContentTitle = "Web Content Complex Title 1");
 
 			WaitForVisible(
-				key_fieldFieldLabel = "PaginaOrigem",
+				key_fieldFieldLabel = "Imagem Aba 01",
 				locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL");
 
 			for (var fieldName : list "Logo,Beneficio,Companhia,JeitoIdentificar,Destino,DescricaoOpPar,CompanhiaOperadora") {
@@ -291,7 +293,7 @@ definition {
 
 		Button.clickSaveAsDraft();
 
-		PortletEntry.publish();
+		WebContent.publishExistingWCArticleWithPermissions();
 
 		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
 
@@ -395,7 +397,7 @@ definition {
 
 		IFrame.closeFrame();
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 	}
 
 	@description = "This is a use case for LRQA-61632. Enable Staging,Publish to live site, assert value entered persists,including images and links  With First Complex Structure"

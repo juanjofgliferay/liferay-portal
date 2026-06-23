@@ -9,18 +9,23 @@ import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.exportimport.kernel.service.StagingLocalServiceUtil;
 import com.liferay.layout.test.util.LayoutTestUtil;
 import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.NoSuchGroupException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.service.CompanyLocalService;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.persistence.GroupUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.Sync;
 import com.liferay.portal.kernel.test.rule.SynchronousDestinationTestRule;
+import com.liferay.portal.kernel.test.util.CompanyTestUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.PropsValuesTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
@@ -42,6 +47,8 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import org.osgi.service.component.runtime.ServiceComponentRuntime;
 
 /**
  * @author Akos Thurzo
@@ -120,6 +127,18 @@ public class StagingGroupHelperTest {
 				_log.debug(noSuchGroupException);
 			}
 		}
+	}
+
+	@Test
+	public void testFetchCompanyGroup() throws Exception {
+		Assert.assertNotNull(
+			_stagingGroupHelper.fetchCompanyGroup(
+				TestPropsValues.getCompanyId()));
+
+		Company company = CompanyTestUtil.addCompany();
+
+		Assert.assertNotNull(
+			_stagingGroupHelper.fetchCompanyGroup(company.getCompanyId()));
 	}
 
 	@Test
@@ -899,10 +918,10 @@ public class StagingGroupHelperTest {
 			TestPropsValues.getUserId(), _localLiveGroup, false, false,
 			serviceContext);
 
-		_localStagingGroup = GroupLocalServiceUtil.getStagingGroup(
+		_localStagingGroup = GroupLocalServiceUtil.fetchStagingGroup(
 			_localLiveGroup.getGroupId());
 
-		Assert.assertTrue(_localStagingGroup != null);
+		Assert.assertNotNull(_localStagingGroup);
 	}
 
 	private void _addRemoteStagingGroups() throws Exception {
@@ -951,14 +970,14 @@ public class StagingGroupHelperTest {
 		Layout layout = LayoutTestUtil.addTypePortletLayout(group);
 
 		return GroupLocalServiceUtil.addGroup(
-			TestPropsValues.getUserId(), GroupConstants.DEFAULT_PARENT_GROUP_ID,
-			Layout.class.getName(), layout.getPlid(),
-			GroupConstants.DEFAULT_LIVE_GROUP_ID,
+			StringPool.BLANK, TestPropsValues.getUserId(),
+			GroupConstants.DEFAULT_PARENT_GROUP_ID, Layout.class.getName(),
+			layout.getPlid(), GroupConstants.DEFAULT_LIVE_GROUP_ID,
 			HashMapBuilder.put(
 				LocaleUtil.getDefault(), String.valueOf(layout.getPlid())
 			).build(),
-			null, 0, true, GroupConstants.DEFAULT_MEMBERSHIP_RESTRICTION, null,
-			false, true, null);
+			null, 0, null, true, GroupConstants.DEFAULT_MEMBERSHIP_RESTRICTION,
+			null, false, false, true, null);
 	}
 
 	private Group _executeWithRemoteCredentials(Supplier<Group> groupSupplier) {
@@ -983,6 +1002,12 @@ public class StagingGroupHelperTest {
 	private static final Log _log = LogFactoryUtil.getLog(
 		StagingGroupHelperTest.class);
 
+	@Inject
+	private CompanyLocalService _companyLocalService;
+
+	@Inject
+	private GroupLocalService _groupLocalService;
+
 	private Group _localLiveGroup;
 	private Group _localLiveScopeGroup;
 	private Group _localStagingGroup;
@@ -992,6 +1017,9 @@ public class StagingGroupHelperTest {
 	private Group _remoteLiveScopeGroup;
 	private Group _remoteStagingGroup;
 	private Group _remoteStagingScopeGroup;
+
+	@Inject
+	private ServiceComponentRuntime _serviceComponentRuntime;
 
 	@Inject
 	private StagingGroupHelper _stagingGroupHelper;

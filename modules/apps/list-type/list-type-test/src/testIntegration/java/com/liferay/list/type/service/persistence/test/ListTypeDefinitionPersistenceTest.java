@@ -113,11 +113,7 @@ public class ListTypeDefinitionPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		ListTypeDefinition newListTypeDefinition = _persistence.create(pk);
-
-		newListTypeDefinition.setMvccVersion(RandomTestUtil.nextLong());
+		ListTypeDefinition newListTypeDefinition = addListTypeDefinition();
 
 		newListTypeDefinition.setUuid(RandomTestUtil.randomString());
 
@@ -137,6 +133,8 @@ public class ListTypeDefinitionPersistenceTest {
 		newListTypeDefinition.setName(RandomTestUtil.randomString());
 
 		newListTypeDefinition.setSystem(RandomTestUtil.randomBoolean());
+
+		newListTypeDefinition.setStatus(RandomTestUtil.nextInt());
 
 		_listTypeDefinitions.add(_persistence.update(newListTypeDefinition));
 
@@ -178,6 +176,9 @@ public class ListTypeDefinitionPersistenceTest {
 		Assert.assertEquals(
 			existingListTypeDefinition.isSystem(),
 			newListTypeDefinition.isSystem());
+		Assert.assertEquals(
+			existingListTypeDefinition.getStatus(),
+			newListTypeDefinition.getStatus());
 	}
 
 	@Test(
@@ -221,6 +222,14 @@ public class ListTypeDefinitionPersistenceTest {
 	}
 
 	@Test
+	public void testCountByC_U() throws Exception {
+		_persistence.countByC_U(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
+
+		_persistence.countByC_U(0L, 0L);
+	}
+
+	@Test
 	public void testCountByERC_C() throws Exception {
 		_persistence.countByERC_C("", RandomTestUtil.nextLong());
 
@@ -258,7 +267,8 @@ public class ListTypeDefinitionPersistenceTest {
 			"ListTypeDefinition", "mvccVersion", true, "uuid", true,
 			"externalReferenceCode", true, "listTypeDefinitionId", true,
 			"companyId", true, "userId", true, "userName", true, "createDate",
-			true, "modifiedDate", true, "name", true, "system", true);
+			true, "modifiedDate", true, "name", true, "system", true, "status",
+			true);
 	}
 
 	@Test
@@ -554,8 +564,6 @@ public class ListTypeDefinitionPersistenceTest {
 
 		ListTypeDefinition listTypeDefinition = _persistence.create(pk);
 
-		listTypeDefinition.setMvccVersion(RandomTestUtil.nextLong());
-
 		listTypeDefinition.setUuid(RandomTestUtil.randomString());
 
 		listTypeDefinition.setExternalReferenceCode(
@@ -575,6 +583,8 @@ public class ListTypeDefinitionPersistenceTest {
 
 		listTypeDefinition.setSystem(RandomTestUtil.randomBoolean());
 
+		listTypeDefinition.setStatus(RandomTestUtil.nextInt());
+
 		_listTypeDefinitions.add(_persistence.update(listTypeDefinition));
 
 		return listTypeDefinition;
@@ -586,3 +596,4 @@ public class ListTypeDefinitionPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1784447139

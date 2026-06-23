@@ -108,11 +108,7 @@ public class SystemEventPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		SystemEvent newSystemEvent = _persistence.create(pk);
-
-		newSystemEvent.setMvccVersion(RandomTestUtil.nextLong());
+		SystemEvent newSystemEvent = addSystemEvent();
 
 		newSystemEvent.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -125,6 +121,9 @@ public class SystemEventPersistenceTest {
 		newSystemEvent.setUserName(RandomTestUtil.randomString());
 
 		newSystemEvent.setCreateDate(RandomTestUtil.nextDate());
+
+		newSystemEvent.setClassExternalReferenceCode(
+			RandomTestUtil.randomString());
 
 		newSystemEvent.setClassNameId(RandomTestUtil.nextLong());
 
@@ -167,6 +166,9 @@ public class SystemEventPersistenceTest {
 		Assert.assertEquals(
 			Time.getShortTimestamp(existingSystemEvent.getCreateDate()),
 			Time.getShortTimestamp(newSystemEvent.getCreateDate()));
+		Assert.assertEquals(
+			existingSystemEvent.getClassExternalReferenceCode(),
+			newSystemEvent.getClassExternalReferenceCode());
 		Assert.assertEquals(
 			existingSystemEvent.getClassNameId(),
 			newSystemEvent.getClassNameId());
@@ -249,8 +251,9 @@ public class SystemEventPersistenceTest {
 		return OrderByComparatorFactoryUtil.create(
 			"SystemEvent", "mvccVersion", true, "ctCollectionId", true,
 			"systemEventId", true, "groupId", true, "companyId", true, "userId",
-			true, "userName", true, "createDate", true, "classNameId", true,
-			"classPK", true, "classUuid", true, "referrerClassNameId", true,
+			true, "userName", true, "createDate", true,
+			"classExternalReferenceCode", true, "classNameId", true, "classPK",
+			true, "classUuid", true, "referrerClassNameId", true,
 			"parentSystemEventId", true, "systemEventSetKey", true, "type",
 			true);
 	}
@@ -469,8 +472,6 @@ public class SystemEventPersistenceTest {
 
 		SystemEvent systemEvent = _persistence.create(pk);
 
-		systemEvent.setMvccVersion(RandomTestUtil.nextLong());
-
 		systemEvent.setCtCollectionId(RandomTestUtil.nextLong());
 
 		systemEvent.setGroupId(RandomTestUtil.nextLong());
@@ -482,6 +483,9 @@ public class SystemEventPersistenceTest {
 		systemEvent.setUserName(RandomTestUtil.randomString());
 
 		systemEvent.setCreateDate(RandomTestUtil.nextDate());
+
+		systemEvent.setClassExternalReferenceCode(
+			RandomTestUtil.randomString());
 
 		systemEvent.setClassNameId(RandomTestUtil.nextLong());
 
@@ -509,3 +513,4 @@ public class SystemEventPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1024370352

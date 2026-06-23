@@ -3,12 +3,16 @@ import AddReport from '../components/AddReport';
 import AssetCard from '../hocs/AssetCard';
 import autobind from 'autobind-decorator';
 import BasePage from 'shared/components/base-page';
+import ClayButton from '@clayui/button';
 import ClayIcon from '@clayui/icon';
+import ClayLink from '@clayui/link';
+import ClayPopover from '@clayui/popover';
 import CustomAssetsDashboardQuery from 'shared/queries/CustomAssetsDashboardQuery';
 import CustomAssetsReportMutation from 'shared/queries/CustomAssetsReportMutation';
 import getQuery from 'shared/queries/custom-asset-query';
 import React from 'react';
 import TimeRangeQuery from 'shared/queries/TimeRangeQuery';
+import URLConstants from 'shared/util/url-constants';
 import withCurrentUser from 'shared/hoc/WithCurrentUser';
 import {addAlert} from 'shared/actions/alerts';
 import {Alert} from 'shared/types';
@@ -16,7 +20,8 @@ import {ChannelContext} from 'shared/context/channel';
 import {compose} from 'redux';
 import {connect} from 'react-redux';
 import {getRangeSelectorsFromQuery} from 'shared/util/util';
-import {graphql} from '@apollo/react-hoc';
+import {getSafeDecodedURIComponent} from 'shared/util/util';
+import {graphql} from '@apollo/client/react/hoc';
 import {hasChanges} from 'shared/util/react';
 import {PropTypes} from 'prop-types';
 import {sub} from 'shared/util/lang';
@@ -193,8 +198,6 @@ class CustomAssetsDashboardPage extends React.Component {
 				modifiedByUserName
 			}
 		}).then(({data}) => {
-			analytics.track('Created Custom Asset Report');
-
 			const {definition} = data.dashboard;
 
 			this.setState({
@@ -279,7 +282,7 @@ class CustomAssetsDashboardPage extends React.Component {
 			params: {channelId, groupId, title}
 		} = router;
 
-		const decodedTitle = decodeURIComponent(title);
+		const decodedTitle = getSafeDecodedURIComponent(title);
 
 		return (
 			<BasePage documentTitle={Liferay.Language.get('assets')}>
@@ -296,7 +299,50 @@ class CustomAssetsDashboardPage extends React.Component {
 					]}
 					groupId={groupId}
 				>
-					<BasePage.Header.TitleSection title={decodedTitle} />
+					<BasePage.Header.TitleSection
+						deprecated
+						title={decodedTitle}
+					>
+						<ClayPopover
+							alignPosition='bottom'
+							closeOnClickOutside
+							header={Liferay.Language.get('deprecated-feature')}
+							trigger={
+								<ClayButton
+									data-tooltip
+									data-tooltip-align='top'
+									displayType='warning'
+									title={Liferay.Language.get(
+										'open-deprecated-definition'
+									)}
+									translucent
+								>
+									{Liferay.Language.get(
+										'deprecated'
+									).toUpperCase()}
+									<span className='inline-item inline-item-before pl-2'>
+										<ClayIcon symbol='warning-full' />
+									</span>
+								</ClayButton>
+							}
+						>
+							{Liferay.Language.get('this-feature-is-deprecated')}
+
+							<ClayLink
+								className='ml-1'
+								decoration='underline'
+								href={
+									URLConstants.MaintenanceModeAndDeprecationDocumentation
+								}
+								key='deprecated'
+								target='_blank'
+							>
+								{Liferay.Language.get(
+									'learn-more-about-deprecated-features'
+								)}
+							</ClayLink>
+						</ClayPopover>
+					</BasePage.Header.TitleSection>
 				</BasePage.Header>
 
 				<BasePage.Context.Provider value={{filters, router}}>

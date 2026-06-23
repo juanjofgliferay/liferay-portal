@@ -12,7 +12,6 @@ InfoCollectionProviderDisplayContext infoCollectionProviderDisplayContext = (Inf
 %>
 
 <clay:navigation-bar
-	inverted="<%= true %>"
 	navigationItems='<%= assetListDisplayContext.getNavigationItems("collection-providers") %>'
 />
 
@@ -40,18 +39,24 @@ InfoCollectionProviderDisplayContext infoCollectionProviderDisplayContext = (Inf
 			>
 				<div class="list-group-title">
 					<%= HtmlUtil.escape(infoCollectionProviderDisplayContext.getTitle(infoCollectionProvider)) %>
-
-					<c:if test="<%= infoCollectionProvider instanceof BetaInfoCollectionProvider %>">
-						<clay:label
-							displayType="info"
-							label='<%= LanguageUtil.get(request, "beta") %>'
-						/>
-					</c:if>
 				</div>
 
 				<div class="list-group-subtext">
 					<liferay-ui:message key="<%= HtmlUtil.escape(infoCollectionProviderDisplayContext.getSubtitle(infoCollectionProvider)) %>" />
 				</div>
+
+				<c:choose>
+					<c:when test="<%= infoCollectionProvider instanceof BetaInfoCollectionProvider %>">
+						<liferay-frontend:feature-indicator
+							type="beta"
+						/>
+					</c:when>
+					<c:when test="<%= infoCollectionProvider instanceof DeprecatedInfoCollectionProvider %>">
+						<liferay-frontend:feature-indicator
+							type="deprecated"
+						/>
+					</c:when>
+				</c:choose>
 			</liferay-ui:search-container-column-text>
 
 			<%
@@ -62,7 +67,7 @@ InfoCollectionProviderDisplayContext infoCollectionProviderDisplayContext = (Inf
 				<clay:dropdown-actions
 					aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 					dropdownItems="<%= infoCollectionProviderActionDropdownItems.getActionDropdownItems() %>"
-					propsTransformer="js/InfoCollectionProviderDropdownDefaultPropsTransformer"
+					propsTransformer="{InfoCollectionProviderDropdownDefaultPropsTransformer} from asset-list-web"
 				/>
 			</liferay-ui:search-container-column-text>
 		</liferay-ui:search-container-row>

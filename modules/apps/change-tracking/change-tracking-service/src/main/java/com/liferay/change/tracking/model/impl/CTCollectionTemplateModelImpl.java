@@ -85,16 +85,23 @@ public class CTCollectionTemplateModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table CTCollectionTemplate (mvccVersion LONG default 0 not null,ctCollectionTemplateId LONG not null primary key,companyId LONG,userId LONG,createDate DATE null,modifiedDate DATE null,name VARCHAR(75) null,description VARCHAR(75) null)";
+		"create table CTCollectionTemplate (mvccVersion LONG default 0 not null,ctCollectionTemplateId LONG not null primary key,companyId LONG,userId LONG,createDate DATE null,modifiedDate DATE null,name VARCHAR(75) null,description VARCHAR(200) null)";
 
 	public static final String TABLE_SQL_DROP =
 		"drop table CTCollectionTemplate";
+
+	public static final String ENTITY_ALIAS = "ctCollectionTemplate";
+
+	public static final String FILTER_PK_COLUMN_NAME = "ctCollectionTemplateId";
 
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY ctCollectionTemplate.createDate ASC";
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY CTCollectionTemplate.createDate ASC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY ctCollectionTemplate.createDate ASC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -822,3 +829,4 @@ public class CTCollectionTemplateModelImpl
 	private CTCollectionTemplate _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-988894098

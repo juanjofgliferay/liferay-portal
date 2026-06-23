@@ -6,31 +6,30 @@
 package com.liferay.portal.osgi.web.http.servlet.internal.activator;
 
 import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.string.CharPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.security.SecureRandomUtil;
 import com.liferay.portal.kernel.servlet.PortletSessionListenerManager;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ProxyFactory;
 import com.liferay.portal.osgi.web.http.servlet.HttpServletEndpoint;
-import com.liferay.portal.osgi.web.http.servlet.internal.HttpServletEndpointControllerImpl;
+import com.liferay.portal.osgi.web.http.servlet.internal.HttpServletEndpointController;
 import com.liferay.portal.osgi.web.http.servlet.internal.servlet.HttpServletEndpointServlet;
+import com.liferay.portal.osgi.web.http.servlet.internal.servlet.HttpSessionTracker;
+
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletRegistration;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpSessionEvent;
+import jakarta.servlet.http.HttpSessionListener;
 
 import java.util.Collections;
 import java.util.Map;
-
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletRegistration;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpSession;
-import javax.servlet.http.HttpSessionEvent;
-import javax.servlet.http.HttpSessionListener;
-
-import org.eclipse.equinox.http.servlet.internal.HttpServletEndpointController;
-import org.eclipse.equinox.http.servlet.internal.servlet.HttpSessionTracker;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -89,17 +88,18 @@ public class HttpServletImplBundleActivator implements BundleActivator {
 		return TransformUtil.transformToArray(
 			servletRegistration.getMappings(),
 			mapping -> {
-				if (mapping.indexOf('/') != 0) {
+				if (mapping.indexOf(CharPool.SLASH) != 0) {
 					return null;
 				}
 
-				if (mapping.charAt(mapping.length() - 1) == '*') {
+				if (mapping.charAt(mapping.length() - 1) == CharPool.STAR) {
 					mapping = mapping.substring(0, mapping.length() - 2);
 
 					if ((mapping.length() > 1) &&
-						(mapping.charAt(mapping.length() - 1) != '/')) {
+						(mapping.charAt(mapping.length() - 1) !=
+							CharPool.SLASH)) {
 
-						mapping += '/';
+						mapping += CharPool.SLASH;
 					}
 				}
 
@@ -119,7 +119,7 @@ public class HttpServletImplBundleActivator implements BundleActivator {
 			public void sessionDestroyed(HttpSessionEvent httpSessionEvent) {
 				HttpSession httpSession = httpSessionEvent.getSession();
 
-				HttpSessionTracker.clearHttpSessionAdaptors(
+				HttpSessionTracker.clearHttpSessionWrappers(
 					httpSession.getId());
 			}
 
@@ -147,9 +147,11 @@ public class HttpServletImplBundleActivator implements BundleActivator {
 
 			ServletContext servletContext = servletConfig.getServletContext();
 
+			ThreadLocalRandom threadLocalRandom = ThreadLocalRandom.current();
+
 			Map<String, Object> attributesMap =
 				HashMapBuilder.<String, Object>put(
-					"http.servlet.endpoint.id", SecureRandomUtil.nextLong()
+					"http.servlet.endpoint.id", threadLocalRandom.nextLong()
 				).put(
 					ListUtil.fromEnumeration(
 						servletConfig.getInitParameterNames()),
@@ -172,7 +174,7 @@ public class HttpServletImplBundleActivator implements BundleActivator {
 				).build();
 
 			HttpServletEndpointController httpServletEndpointController =
-				new HttpServletEndpointControllerImpl(
+				new HttpServletEndpointController(
 					Collections.unmodifiableMap(attributesMap), _bundleContext,
 					servletContext);
 

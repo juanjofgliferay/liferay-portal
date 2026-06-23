@@ -8,11 +8,18 @@ package com.liferay.portal.vulcan.internal.jaxrs.context.provider.test;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
 import com.liferay.portal.vulcan.internal.test.util.URLConnectionUtil;
+
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Application;
+import jakarta.ws.rs.core.MediaType;
 
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
@@ -21,12 +28,6 @@ import java.net.URLConnection;
 
 import java.util.Collections;
 import java.util.Set;
-
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.MediaType;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -73,7 +74,8 @@ public class XMLMessageBodyReaderTest {
 	@Test
 	public void testIsReadFromXML() throws Exception {
 		URLConnection urlConnection = URLConnectionUtil.createURLConnection(
-			"http://localhost:8080/o/test-vulcan/test-class");
+			"http://localhost:" + PortalUtil.getPortalServerPort(false) +
+				"/o/test-vulcan/test-class");
 
 		urlConnection.setDoOutput(true);
 		urlConnection.setRequestProperty(

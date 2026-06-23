@@ -27,6 +27,11 @@ import org.osgi.service.component.annotations.Reference;
 public class CommerceAvailabilityEstimatePanelApp extends BasePanelApp {
 
 	@Override
+	public String getIcon() {
+		return "date";
+	}
+
+	@Override
 	public Portlet getPortlet() {
 		return _portlet;
 	}
@@ -37,7 +42,7 @@ public class CommerceAvailabilityEstimatePanelApp extends BasePanelApp {
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + CommercePortletKeys.COMMERCE_AVAILABILITY_ESTIMATE + ")"
+		target = "(jakarta.portlet.name=" + CommercePortletKeys.COMMERCE_AVAILABILITY_ESTIMATE + ")"
 	)
 	private Portlet _portlet;
 

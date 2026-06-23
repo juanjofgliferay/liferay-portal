@@ -12,16 +12,14 @@ interface IIndividualAttributesModalInterface
 	onClose: () => void;
 }
 
-const IndividualAttributesModal: React.FC<IIndividualAttributesModalInterface> = ({
-	dataSources,
-	fieldName,
-	onClose
-}) => (
+const IndividualAttributesModal: React.FC<
+	IIndividualAttributesModalInterface
+> = ({dataSources, fieldName, onClose}) => (
 	<Modal>
 		<Modal.Header onClose={onClose} title={fieldName} />
 
 		<Modal.Body>
-			<h5>{Liferay.Language.get('data-sources')}</h5>
+			<div className='h5'>{Liferay.Language.get('data-sources')}</div>
 
 			<Table
 				columns={[

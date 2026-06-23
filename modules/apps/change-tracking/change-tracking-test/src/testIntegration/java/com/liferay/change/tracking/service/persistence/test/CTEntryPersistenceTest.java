@@ -112,11 +112,7 @@ public class CTEntryPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		CTEntry newCTEntry = _persistence.create(pk);
-
-		newCTEntry.setMvccVersion(RandomTestUtil.nextLong());
+		CTEntry newCTEntry = addCTEntry();
 
 		newCTEntry.setUuid(RandomTestUtil.randomString());
 
@@ -213,6 +209,13 @@ public class CTEntryPersistenceTest {
 		_persistence.countByUuid_C("null", 0L);
 
 		_persistence.countByUuid_C((String)null, 0L);
+	}
+
+	@Test
+	public void testCountByUserId() throws Exception {
+		_persistence.countByUserId(RandomTestUtil.nextLong());
+
+		_persistence.countByUserId(0L);
 	}
 
 	@Test
@@ -581,8 +584,6 @@ public class CTEntryPersistenceTest {
 
 		CTEntry ctEntry = _persistence.create(pk);
 
-		ctEntry.setMvccVersion(RandomTestUtil.nextLong());
-
 		ctEntry.setUuid(RandomTestUtil.randomString());
 
 		ctEntry.setExternalReferenceCode(RandomTestUtil.randomString());
@@ -615,3 +616,4 @@ public class CTEntryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:755834548

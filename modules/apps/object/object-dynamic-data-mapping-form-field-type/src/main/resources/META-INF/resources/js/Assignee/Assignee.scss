@@ -1,0 +1,37 @@
+@import 'atlas-variables';
+
+.object-field__assignee {
+	&-image {
+		align-items: center;
+		border-radius: 50%;
+		display: flex;
+		height: 24px;
+		width: 24px;
+	}
+
+	&-initials {
+		align-items: center;
+		background-color: $primary;
+		border-radius: 50%;
+		color: #fff;
+		display: flex;
+		font-size: 10px;
+		font-weight: 800;
+		height: 24px;
+		justify-content: center;
+		min-width: 24px;
+		width: 24px;
+	}
+
+	&-option {
+		align-items: center;
+		display: flex;
+		gap: 1rem;
+
+		&-name {
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+	}
+}

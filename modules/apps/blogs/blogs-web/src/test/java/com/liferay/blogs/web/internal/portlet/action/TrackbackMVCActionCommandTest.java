@@ -11,23 +11,21 @@ import com.liferay.blogs.service.BlogsEntryService;
 import com.liferay.blogs.service.BlogsEntryServiceUtil;
 import com.liferay.blogs.web.internal.trackback.Trackback;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactory;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
-import com.liferay.portal.kernel.test.util.PropsTestUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
-import java.util.Collections;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletRequest;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletRequest;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -53,13 +51,21 @@ public class TrackbackMVCActionCommandTest {
 	@Before
 	public void setUp() throws Exception {
 		ReflectionTestUtil.setFieldValue(
-			BlogsEntryServiceUtil.class, "_service", _blogsEntryService);
+			BlogsEntryServiceUtil.class, "_serviceSnapshot",
+			new Snapshot<BlogsEntryService>(
+				BlogsEntryServiceUtil.class, BlogsEntryService.class) {
+
+				@Override
+				public BlogsEntryService get() {
+					return _blogsEntryService;
+				}
+
+			});
 
 		_setUpActionRequest();
 		_setUpBlogsEntry();
 		_setUpPortalUtil();
 		_setUpPortletPreferencesFactoryUtil();
-		_setUpPropsUtil();
 	}
 
 	@Test
@@ -268,10 +274,6 @@ public class TrackbackMVCActionCommandTest {
 
 		portletPreferencesFactoryUtil.setPortletPreferencesFactory(
 			portletPreferencesFactory);
-	}
-
-	private void _setUpPropsUtil() {
-		PropsTestUtil.setProps(Collections.emptyMap());
 	}
 
 	private void _whenGetEntryThenReturn(BlogsEntry blogsEntry)

@@ -86,6 +86,8 @@ public class UserGroupRoleModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table UserGroupRole";
 
+	public static final String ENTITY_ALIAS = "userGroupRole";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY userGroupRole.userGroupRoleId ASC";
 
@@ -142,7 +144,7 @@ public class UserGroupRoleModelImpl
 	public static final long USERGROUPROLEID_COLUMN_BITMASK = 8L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.portal.kernel.model.UserGroupRole"));
 
 	public UserGroupRoleModelImpl() {
@@ -762,3 +764,4 @@ public class UserGroupRoleModelImpl
 	private UserGroupRole _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-2063169839

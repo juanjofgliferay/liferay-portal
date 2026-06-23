@@ -72,8 +72,9 @@ public class BookmarksFolderLocalServiceTest {
 			_group.getGroupId(), RandomTestUtil.randomString());
 
 		Role role = RoleLocalServiceUtil.addRole(
-			TestPropsValues.getUserId(), null, 0, StringUtil.randomString(),
-			null, null, RoleConstants.TYPE_SITE, null,
+			RandomTestUtil.randomString(), TestPropsValues.getUserId(), null, 0,
+			StringUtil.randomString(), null, null, RoleConstants.TYPE_SITE,
+			null,
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
 		ResourcePermissionLocalServiceUtil.addResourcePermission(
@@ -233,7 +234,7 @@ public class BookmarksFolderLocalServiceTest {
 	@Inject(
 		filter = "model.class.name=com.liferay.bookmarks.model.BookmarksFolder"
 	)
-	private static ModelResourcePermission<BookmarksFolder>
+	private ModelResourcePermission<BookmarksFolder>
 		_bookmarksFolderModelResourcePermission;
 
 	@DeleteAfterTestRun

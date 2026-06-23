@@ -1,27 +1,30 @@
 import Card from 'shared/components/Card';
+import ClayLink from '@clayui/link';
 import Constants, {
 	CompositionTypes,
 	RangeKeyTimeRanges,
 	Sizes
 } from 'shared/util/constants';
-import DropdownRangeKey from 'shared/hoc/DropdownRangeKey';
 import InterestsQuery from 'shared/queries/InterestsQuery';
 import React from 'react';
 import URLConstants from 'shared/util/url-constants';
 import {compose} from 'redux';
 import {compositionListColumns} from 'shared/util/table-columns';
 import {COUNT, createOrderIOMap} from 'shared/util/pagination';
+import {DropdownRangeKey} from 'shared/components/dropdown-range-key/DropdownRangeKey';
 import {
 	getMapResultToProps,
 	mapPropsToOptions
 } from './mappers/composition-query';
-import {graphql} from '@apollo/react-hoc';
+import {graphql, OperationOption} from '@apollo/client/react/hoc';
 import {pickBy} from 'lodash';
+import {RangeSelectors} from 'shared/types';
 import {Routes, setUriQueryValues, toRoute} from 'shared/util/router';
 import {sub} from 'shared/util/lang';
 import {useChannelContext} from 'shared/context/channel';
 import {useParams} from 'react-router-dom';
-import {useQueryPagination, useQueryRangeSelectors} from 'shared/hooks';
+import {useQueryPagination} from 'shared/hooks/useQueryPagination';
+import {useQueryRangeSelectors} from 'shared/hooks/useQueryRangeSelectors';
 import {withHistory, withPaginationBar, withTableData} from 'shared/hoc';
 
 const {
@@ -33,7 +36,7 @@ const withData = () =>
 		graphql(InterestsQuery, {
 			options: mapPropsToOptions,
 			props: getMapResultToProps(CompositionTypes.SiteInterests)
-		}),
+		} as OperationOption<object, object>),
 		withPaginationBar({defaultDelta})
 	);
 
@@ -46,19 +49,19 @@ const TableWithData = withTableData(withData, {
 				)}
 			</span>
 
-			<a
+			<ClayLink
 				href={URLConstants.SitesDashboardSearchTermsAndInterests}
 				key='DOCUMENTATION'
 				target='_blank'
 			>
 				{Liferay.Language.get('learn-more-about-interests')}
-			</a>
+			</ClayLink>
 		</>
 	),
 	emptyIcon: {
 		border: false,
 		size: Sizes.XXXLarge,
-		symbol: 'ac-satellite'
+		symbol: 'ac_satellite'
 	},
 	emptyTitle: Liferay.Language.get('there-are-no-interests-found'),
 	getColumns: ({
@@ -67,11 +70,17 @@ const TableWithData = withTableData(withData, {
 		maxCount,
 		rangeSelectors,
 		totalCount
+	}: {
+		channelId: string;
+		groupId: string;
+		maxCount: number;
+		rangeSelectors: RangeSelectors;
+		totalCount: number;
 	}) => [
 		compositionListColumns.getName({
 			label: Liferay.Language.get('topic'),
-			maxWidth: null,
-			routeFn: ({data: {name}}) =>
+			maxWidth: 200,
+			routeFn: ({data: {name}}: {data: {name: string}}) =>
 				name &&
 				setUriQueryValues(
 					pickBy({...rangeSelectors}),
@@ -96,9 +105,12 @@ const TableWithData = withTableData(withData, {
 	rowIdentifier: 'name'
 });
 
-const Interests = ({history}) => {
+const Interests = ({history}: {history: {push: (path: string) => void}}) => {
 	const {selectedChannel} = useChannelContext();
-	const {channelId, groupId} = useParams();
+	const {channelId, groupId} = useParams<{
+		channelId: string;
+		groupId: string;
+	}>();
 	const {delta, orderIOMap, page} = useQueryPagination({
 		initialOrderIOMap: createOrderIOMap(COUNT)
 	});
@@ -109,7 +121,15 @@ const Interests = ({history}) => {
 
 	const rangeKeys = [Yesterday, Last7Days, Last30Days, Last90Days];
 
-	const handleRangeKeyValueChange = ({rangeEnd, rangeKey, rangeStart}) => {
+	const handleRangeKeyValueChange = ({
+		rangeEnd,
+		rangeKey,
+		rangeStart
+	}: {
+		rangeEnd?: string | null;
+		rangeKey: number | string | null;
+		rangeStart?: string | null;
+	}) => {
 		history.push(
 			setUriQueryValues(
 				pickBy({
@@ -135,7 +155,7 @@ const Interests = ({history}) => {
 
 				<DropdownRangeKey
 					legacy={false}
-					onChange={handleRangeKeyValueChange}
+					onRangeSelectorChange={handleRangeKeyValueChange}
 					rangeKeys={rangeKeys}
 					rangeSelectors={rangeSelectors}
 				/>

@@ -4,7 +4,7 @@ import React from 'react';
 import {DataSource} from 'shared/util/records';
 import {SafeResults} from 'shared/hoc/util';
 import {sub} from 'shared/util/lang';
-import {useRequest} from 'shared/hooks';
+import {useRequest} from 'shared/hooks/useRequest';
 
 interface IDeleteChannelModalProps extends React.HTMLAttributes<HTMLElement> {
 	channelName: string;
@@ -63,13 +63,15 @@ const DeleteChannelModal: React.FC<IDeleteChannelModalProps> = ({
 			}
 		>
 			<SafeResults
-				{...{data, error, loading}}
+				data={data}
+				error={error}
+				loading={loading}
 				page={false}
 				pageDisplay={false}
 				refetch={refetch}
 				spacer
 			>
-				{({items, total}) => (
+				{({items, total}: {items: DataSource[]; total: number}) => (
 					<>
 						<div className='text-secondary'>
 							<p>

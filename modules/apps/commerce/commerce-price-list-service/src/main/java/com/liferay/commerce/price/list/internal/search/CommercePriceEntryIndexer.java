@@ -11,7 +11,6 @@ import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.service.CPInstanceLocalService;
 import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
-import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.search.BaseIndexer;
@@ -26,11 +25,11 @@ import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
 import java.util.LinkedHashMap;
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -129,7 +128,7 @@ public class CommercePriceEntryIndexer extends BaseIndexer<CommercePriceEntry> {
 			commercePriceEntry.getCommercePriceListId());
 		document.addKeyword(
 			FIELD_EXTERNAL_REFERENCE_CODE,
-			commercePriceEntry.getExternalReferenceCode());
+			commercePriceEntry.getExternalReferenceCode(), true);
 
 		CPInstance cpInstance = _cpInstanceLocalService.fetchCPInstance(
 			commercePriceEntry.getCProductId(),
@@ -137,10 +136,10 @@ public class CommercePriceEntryIndexer extends BaseIndexer<CommercePriceEntry> {
 
 		if (cpInstance != null) {
 			document.addKeyword("cpInstanceId", cpInstance.getCPInstanceId());
-			document.addKeyword("sku", cpInstance.getSku());
+			document.addKeyword("sku", cpInstance.getSku(), true);
 			document.addKeyword(
 				"skuExternalReferenceCode",
-				cpInstance.getExternalReferenceCode());
+				cpInstance.getExternalReferenceCode(), true);
 
 			CPDefinition cpDefinition = cpInstance.getCPDefinition();
 
@@ -186,35 +185,11 @@ public class CommercePriceEntryIndexer extends BaseIndexer<CommercePriceEntry> {
 	}
 
 	@Override
-	protected void doReindex(String[] ids) throws Exception {
-		long companyId = GetterUtil.getLong(ids[0]);
+	protected IndexableActionableDynamicQuery
+		getIndexableActionableDynamicQuery() {
 
-		_reindexCommercePriceEntries(companyId);
-	}
-
-	private void _reindexCommercePriceEntries(long companyId) throws Exception {
-		IndexableActionableDynamicQuery indexableActionableDynamicQuery =
-			_commercePriceEntryLocalService.
-				getIndexableActionableDynamicQuery();
-
-		indexableActionableDynamicQuery.setCompanyId(companyId);
-		indexableActionableDynamicQuery.setPerformActionMethod(
-			(CommercePriceEntry commercePriceEntry) -> {
-				try {
-					indexableActionableDynamicQuery.addDocuments(
-						getDocument(commercePriceEntry));
-				}
-				catch (PortalException portalException) {
-					if (_log.isWarnEnabled()) {
-						_log.warn(
-							"Unable to index commerce price entry " +
-								commercePriceEntry,
-							portalException);
-					}
-				}
-			});
-
-		indexableActionableDynamicQuery.performActions();
+		return _commercePriceEntryLocalService.
+			getIndexableActionableDynamicQuery();
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

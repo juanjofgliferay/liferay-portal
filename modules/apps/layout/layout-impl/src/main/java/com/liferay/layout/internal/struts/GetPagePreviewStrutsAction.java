@@ -5,6 +5,10 @@
 
 package com.liferay.layout.internal.struts;
 
+import com.liferay.asset.kernel.AssetRendererFactoryRegistryUtil;
+import com.liferay.asset.kernel.model.AssetEntry;
+import com.liferay.asset.kernel.model.AssetRendererFactory;
+import com.liferay.asset.util.LinkedAssetEntryIdsUtil;
 import com.liferay.info.constants.InfoDisplayWebKeys;
 import com.liferay.info.item.ClassPKInfoItemIdentifier;
 import com.liferay.info.item.InfoItemReference;
@@ -15,11 +19,17 @@ import com.liferay.layout.display.page.LayoutDisplayPageObjectProvider;
 import com.liferay.layout.display.page.LayoutDisplayPageProvider;
 import com.liferay.layout.display.page.LayoutDisplayPageProviderRegistry;
 import com.liferay.layout.display.page.constants.LayoutDisplayPageWebKeys;
+import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
+import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalService;
 import com.liferay.petra.string.StringBundler;
-import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.model.LayoutSet;
+import com.liferay.portal.kernel.model.Theme;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
 import com.liferay.portal.kernel.service.LayoutLocalService;
@@ -41,9 +51,8 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.segments.constants.SegmentsWebKeys;
 import com.liferay.segments.service.SegmentsExperienceLocalService;
 
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -72,10 +81,12 @@ public class GetPagePreviewStrutsAction implements StrutsAction {
 
 		ThemeDisplay themeDisplay = (ThemeDisplay)currentThemeDisplay.clone();
 
+		Layout layout = themeDisplay.getLayout();
+
 		long selPlid = ParamUtil.getLong(httpServletRequest, "selPlid");
 
 		if (selPlid > 0) {
-			Layout layout = _layoutLocalService.fetchLayout(selPlid);
+			layout = _layoutLocalService.fetchLayout(selPlid);
 
 			themeDisplay.setLayout(layout);
 
@@ -87,11 +98,11 @@ public class GetPagePreviewStrutsAction implements StrutsAction {
 
 			themeDisplay.setPlid(layout.getPlid());
 			themeDisplay.setScopeGroupId(layout.getGroupId());
+			themeDisplay.setSiteGroupId(layout.getGroupId());
 		}
 
-		if (!LayoutPermissionUtil.containsLayoutUpdatePermission(
-				PermissionCheckerFactoryUtil.create(themeDisplay.getRealUser()),
-				themeDisplay.getLayout())) {
+		if (!_containsLayoutPreviewDraftPermission(
+				layout, themeDisplay.getRealUser())) {
 
 			httpServletResponse.setStatus(HttpServletResponse.SC_NOT_FOUND);
 
@@ -125,14 +136,16 @@ public class GetPagePreviewStrutsAction implements StrutsAction {
 
 			themeDisplay.setLocale(LocaleUtil.fromLanguageId(languageId));
 
+			Theme theme = layout.getTheme();
+
+			themeDisplay.setLookAndFeel(theme, layout.getColorScheme());
+
 			themeDisplay.setSignedIn(false);
 
 			User guestUser = _userLocalService.getGuestUser(
 				themeDisplay.getCompanyId());
 
 			themeDisplay.setUser(guestUser);
-
-			Layout layout = themeDisplay.getLayout();
 
 			layout.setClassNameId(0);
 
@@ -168,23 +181,31 @@ public class GetPagePreviewStrutsAction implements StrutsAction {
 			layout.includeLayoutContent(
 				httpServletRequest, httpServletResponse);
 
-			ServletContext servletContext = ServletContextPool.get(
-				StringPool.BLANK);
-			LayoutSet layoutSet = themeDisplay.getLayoutSet();
-
 			Document document = Jsoup.parse(
 				ThemeUtil.include(
-					servletContext, httpServletRequest, httpServletResponse,
-					"portal_normal.ftl", layoutSet.getTheme(), false));
+					ServletContextPool.get(_portal.getServletContextName()),
+					httpServletRequest, httpServletResponse,
+					"portal_normal.ftl", theme, false));
 
-			Element contentElement = document.getElementById("content");
+			Element element = document.getElementById("content");
+
+			if (element == null) {
+				if (_log.isWarnEnabled()) {
+					_log.warn(
+						"Replacing all body content because theme " +
+							theme.getThemeId() +
+								" lacks a tag with ID \"content\"");
+				}
+
+				element = document.body();
+			}
 
 			StringBundler sb = (StringBundler)httpServletRequest.getAttribute(
 				WebKeys.LAYOUT_CONTENT);
 
-			contentElement.html(sb.toString());
+			element.html(sb.toString());
 
-			ServletResponseUtil.write(httpServletResponse, document.toString());
+			ServletResponseUtil.write(httpServletResponse, document.html());
 		}
 		finally {
 			httpServletRequest.setAttribute(
@@ -200,6 +221,78 @@ public class GetPagePreviewStrutsAction implements StrutsAction {
 		}
 
 		return null;
+	}
+
+	private void _addLinkedAssetEntryId(
+		String className, long classPK, HttpServletRequest httpServletRequest) {
+
+		AssetRendererFactory<?> assetRendererFactory =
+			AssetRendererFactoryRegistryUtil.getAssetRendererFactoryByClassName(
+				className);
+
+		if (assetRendererFactory == null) {
+			return;
+		}
+
+		try {
+			AssetEntry assetEntry = assetRendererFactory.getAssetEntry(
+				className, classPK);
+
+			if (assetEntry != null) {
+				LinkedAssetEntryIdsUtil.addLinkedAssetEntryId(
+					httpServletRequest, assetEntry.getEntryId());
+			}
+		}
+		catch (PortalException portalException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(portalException);
+			}
+		}
+	}
+
+	private boolean _containsLayoutPreviewDraftPermission(
+			Layout layout, User user)
+		throws Exception {
+
+		Group group = layout.getGroup();
+
+		if (group.hasStagingGroup()) {
+			Layout stagingLayout = _fetchStagingLayout(
+				layout, group.getStagingGroup());
+
+			if (stagingLayout != null) {
+				layout = stagingLayout;
+			}
+		}
+
+		return LayoutPermissionUtil.containsLayoutPreviewDraftPermission(
+			PermissionCheckerFactoryUtil.create(user), layout);
+	}
+
+	private Layout _fetchStagingLayout(Layout layout, Group stagingGroup) {
+		LayoutPageTemplateEntry layoutPageTemplateEntry =
+			_layoutPageTemplateEntryLocalService.
+				fetchLayoutPageTemplateEntryByPlid(layout.getPlid());
+
+		if (layoutPageTemplateEntry != null) {
+			LayoutPageTemplateEntry stagingLayoutPageTemplateEntry =
+				_layoutPageTemplateEntryLocalService.
+					fetchLayoutPageTemplateEntry(
+						stagingGroup.getGroupId(),
+						layoutPageTemplateEntry.
+							getLayoutPageTemplateEntryKey());
+
+			if (stagingLayoutPageTemplateEntry != null) {
+				return _layoutLocalService.fetchLayout(
+					stagingLayoutPageTemplateEntry.getPlid());
+			}
+
+			return null;
+		}
+
+		return _layoutLocalService.fetchLayoutByUuidAndGroupId(
+			layout.getUuid(), stagingGroup.getGroupId(),
+			layout.isPrivateLayout());
 	}
 
 	private void _includeInfoItemObjects(
@@ -236,7 +329,8 @@ public class GetPagePreviewStrutsAction implements StrutsAction {
 
 		LayoutDisplayPageProvider<?> layoutDisplayPageProvider =
 			_layoutDisplayPageProviderRegistry.
-				getLayoutDisplayPageProviderByClassName(className);
+				getLayoutDisplayPageProviderByClassName(
+					_portal.getCompanyId(httpServletRequest), className);
 
 		httpServletRequest.setAttribute(
 			LayoutDisplayPageWebKeys.LAYOUT_DISPLAY_PAGE_PROVIDER,
@@ -251,7 +345,12 @@ public class GetPagePreviewStrutsAction implements StrutsAction {
 				LayoutDisplayPageWebKeys.LAYOUT_DISPLAY_PAGE_OBJECT_PROVIDER,
 				layoutDisplayPageObjectProvider);
 		}
+
+		_addLinkedAssetEntryId(className, classPK, httpServletRequest);
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		GetPagePreviewStrutsAction.class);
 
 	@Reference
 	private InfoItemServiceRegistry _infoItemServiceRegistry;
@@ -262,6 +361,10 @@ public class GetPagePreviewStrutsAction implements StrutsAction {
 
 	@Reference
 	private LayoutLocalService _layoutLocalService;
+
+	@Reference
+	private LayoutPageTemplateEntryLocalService
+		_layoutPageTemplateEntryLocalService;
 
 	@Reference
 	private Portal _portal;

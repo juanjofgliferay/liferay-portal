@@ -1,6 +1,7 @@
-@component-name = "portal-knowledge-base"
+@component-name = "portal-content-management"
 definition {
 
+	property browser.chrome.version = "139.0";
 	property ci.retries.disabled = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
@@ -51,9 +52,9 @@ definition {
 
 		KBFolder.gotoCP(kbFolderName = "KB Folder");
 
-		ManagementBar.setFilterAndOrder(filterBy = "Title");
+		ManagementBar.setFilterAndOrder(orderBy = "Title");
 
-		Click(locator1 = "ManagementBar#ORDER_ICON_GENERIC_BUTTON");
+		ManagementBar.setFilterAndOrder(orderBy = "Descending");
 
 		KBArticle.viewCP(
 			indexNumber = 1,
@@ -95,9 +96,9 @@ definition {
 
 		KBFolder.gotoCP(kbFolderName = "KB Folder");
 
-		ManagementBar.setFilterAndOrder(filterBy = "Modified Date");
+		ManagementBar.setFilterAndOrder(orderBy = "Modified Date");
 
-		Click(locator1 = "ManagementBar#ORDER_ICON_GENERIC_BUTTON");
+		ManagementBar.setFilterAndOrder(orderBy = "Descending");
 
 		KBArticle.viewCP(
 			indexNumber = 1,
@@ -146,9 +147,9 @@ definition {
 
 		KBFolder.gotoCP(kbFolderName = "KB Folder");
 
-		ManagementBar.setFilterAndOrder(filterBy = "View Count");
+		ManagementBar.setFilterAndOrder(orderBy = "View Count");
 
-		Click(locator1 = "ManagementBar#ORDER_ICON_GENERIC_BUTTON");
+		ManagementBar.setFilterAndOrder(orderBy = "Descending");
 
 		KBArticle.viewCP(
 			indexNumber = 1,
@@ -188,7 +189,7 @@ definition {
 
 		KBFolder.viewFolderNameCP(kbFolderName = "KB Folder");
 
-		Button.viewNotPresent(button = "New");
+		AssertElementNotPresent(locator1 = "Dropdown#EMPTY_MESSAGE_DROPDOWN");
 	}
 
 	@description = "This test checks that all articles in a folder can be deleted via Toolbar."
@@ -219,7 +220,9 @@ definition {
 
 		KBArticle.selectAllCP();
 
-		KBArticle.deleteCP();
+		KBArticle.deleteCP(
+			itemsNumber = 2,
+			moveToRecycleBin = "multipleArticles");
 
 		KBArticle.viewDefaultCP(newFolder = "true");
 	}
@@ -488,10 +491,7 @@ definition {
 	@priority = 3
 	@refactorneeded
 	test EditKBFolderWithCustomField {
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "Custom Fields");
+		CustomFields.openCustomFieldAdmin();
 
 		CustomFields.addCP(
 			customFieldName = "Date",

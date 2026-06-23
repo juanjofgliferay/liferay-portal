@@ -43,7 +43,7 @@ public class RepositoryTableReferenceDefinitionTest
 	@Override
 	protected CTModel<?> addCTModel() throws Exception {
 		return _repositoryLocalService.addRepository(
-			TestPropsValues.getUserId(), group.getGroupId(),
+			null, TestPropsValues.getUserId(), group.getGroupId(),
 			_portal.getClassNameId(PortletRepository.class.getName()),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			RepositoryTableReferenceDefinitionTest.class.getSimpleName(),
@@ -53,9 +53,9 @@ public class RepositoryTableReferenceDefinitionTest
 	}
 
 	@Inject
-	private static RepositoryLocalService _repositoryLocalService;
+	private Portal _portal;
 
 	@Inject
-	private Portal _portal;
+	private RepositoryLocalService _repositoryLocalService;
 
 }

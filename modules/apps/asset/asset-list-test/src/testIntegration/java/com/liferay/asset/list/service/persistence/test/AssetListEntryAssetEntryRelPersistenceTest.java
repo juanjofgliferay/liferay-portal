@@ -115,13 +115,8 @@ public class AssetListEntryAssetEntryRelPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
 		AssetListEntryAssetEntryRel newAssetListEntryAssetEntryRel =
-			_persistence.create(pk);
-
-		newAssetListEntryAssetEntryRel.setMvccVersion(
-			RandomTestUtil.nextLong());
+			addAssetListEntryAssetEntryRel();
 
 		newAssetListEntryAssetEntryRel.setCtCollectionId(
 			RandomTestUtil.nextLong());
@@ -249,6 +244,13 @@ public class AssetListEntryAssetEntryRelPersistenceTest {
 		_persistence.countByAssetListEntryId(RandomTestUtil.nextLong());
 
 		_persistence.countByAssetListEntryId(0L);
+	}
+
+	@Test
+	public void testCountByAssetEntryId() throws Exception {
+		_persistence.countByAssetEntryId(RandomTestUtil.nextLong());
+
+		_persistence.countByAssetEntryId(0L);
 	}
 
 	@Test
@@ -665,8 +667,6 @@ public class AssetListEntryAssetEntryRelPersistenceTest {
 		AssetListEntryAssetEntryRel assetListEntryAssetEntryRel =
 			_persistence.create(pk);
 
-		assetListEntryAssetEntryRel.setMvccVersion(RandomTestUtil.nextLong());
-
 		assetListEntryAssetEntryRel.setCtCollectionId(
 			RandomTestUtil.nextLong());
 
@@ -709,3 +709,4 @@ public class AssetListEntryAssetEntryRelPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:236788942

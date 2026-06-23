@@ -8,10 +8,10 @@ package com.liferay.portal.workflow.metrics.rest.internal.jaxrs.exception.mapper
 import com.liferay.portal.workflow.metrics.exception.WorkflowMetricsSLADefinitionDuplicateNameException;
 import com.liferay.portal.workflow.metrics.rest.dto.v1_0.GenericError;
 
+import jakarta.ws.rs.ext.ExceptionMapper;
+
 import java.util.Collections;
 import java.util.List;
-
-import javax.ws.rs.ext.ExceptionMapper;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -38,9 +38,10 @@ public class SLADuplicateNameExceptionMapper
 		return Collections.singletonList(
 			new GenericError() {
 				{
-					fieldName = "name";
-					message = SLADuplicateNameExceptionMapper.this.getMessage(
-						"an-sla-with-the-same-name-already-exists");
+					setFieldName(() -> "name");
+					setMessage(
+						() -> SLADuplicateNameExceptionMapper.this.getMessage(
+							"an-sla-with-the-same-name-already-exists"));
 				}
 			});
 	}

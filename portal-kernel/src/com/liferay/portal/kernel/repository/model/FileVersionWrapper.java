@@ -44,11 +44,7 @@ public class FileVersionWrapper
 
 		FileVersionWrapper fileVersionWrapper = (FileVersionWrapper)object;
 
-		if (Objects.equals(_fileVersion, fileVersionWrapper._fileVersion)) {
-			return true;
-		}
-
-		return false;
+		return Objects.equals(_fileVersion, fileVersionWrapper._fileVersion);
 	}
 
 	@Override
@@ -88,6 +84,11 @@ public class FileVersionWrapper
 	@Override
 	public String getDescription() {
 		return _fileVersion.getDescription();
+	}
+
+	@Override
+	public Date getDisplayDate() {
+		return _fileVersion.getDisplayDate();
 	}
 
 	@Override
@@ -293,6 +294,11 @@ public class FileVersionWrapper
 	@Override
 	public boolean isPending() {
 		return _fileVersion.isPending();
+	}
+
+	@Override
+	public boolean isScheduled() {
+		return _fileVersion.isScheduled();
 	}
 
 	@Override

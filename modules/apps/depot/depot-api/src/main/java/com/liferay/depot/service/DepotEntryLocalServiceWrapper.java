@@ -5,8 +5,11 @@
 
 package com.liferay.depot.service;
 
+import com.liferay.depot.model.DepotEntry;
+import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.service.ServiceWrapper;
 import com.liferay.portal.kernel.service.persistence.BasePersistence;
+import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 
 /**
  * Provides a wrapper for {@link DepotEntryLocalService}.
@@ -39,14 +42,12 @@ public class DepotEntryLocalServiceWrapper
 	 * @return the depot entry that was added
 	 */
 	@Override
-	public com.liferay.depot.model.DepotEntry addDepotEntry(
-		com.liferay.depot.model.DepotEntry depotEntry) {
-
+	public DepotEntry addDepotEntry(DepotEntry depotEntry) {
 		return _depotEntryLocalService.addDepotEntry(depotEntry);
 	}
 
 	@Override
-	public com.liferay.depot.model.DepotEntry addDepotEntry(
+	public DepotEntry addDepotEntry(
 			com.liferay.portal.kernel.model.Group group,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
@@ -55,14 +56,14 @@ public class DepotEntryLocalServiceWrapper
 	}
 
 	@Override
-	public com.liferay.depot.model.DepotEntry addDepotEntry(
+	public DepotEntry addDepotEntry(
 			java.util.Map<java.util.Locale, String> nameMap,
-			java.util.Map<java.util.Locale, String> descriptionMap,
+			java.util.Map<java.util.Locale, String> descriptionMap, int type,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _depotEntryLocalService.addDepotEntry(
-			nameMap, descriptionMap, serviceContext);
+			nameMap, descriptionMap, type, serviceContext);
 	}
 
 	/**
@@ -72,9 +73,7 @@ public class DepotEntryLocalServiceWrapper
 	 * @return the new depot entry
 	 */
 	@Override
-	public com.liferay.depot.model.DepotEntry createDepotEntry(
-		long depotEntryId) {
-
+	public DepotEntry createDepotEntry(long depotEntryId) {
 		return _depotEntryLocalService.createDepotEntry(depotEntryId);
 	}
 
@@ -101,8 +100,7 @@ public class DepotEntryLocalServiceWrapper
 	 * @throws PortalException
 	 */
 	@Override
-	public com.liferay.depot.model.DepotEntry deleteDepotEntry(
-			com.liferay.depot.model.DepotEntry depotEntry)
+	public DepotEntry deleteDepotEntry(DepotEntry depotEntry)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _depotEntryLocalService.deleteDepotEntry(depotEntry);
@@ -120,8 +118,7 @@ public class DepotEntryLocalServiceWrapper
 	 * @throws PortalException if a depot entry with the primary key could not be found
 	 */
 	@Override
-	public com.liferay.depot.model.DepotEntry deleteDepotEntry(
-			long depotEntryId)
+	public DepotEntry deleteDepotEntry(long depotEntryId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _depotEntryLocalService.deleteDepotEntry(depotEntryId);
@@ -241,9 +238,7 @@ public class DepotEntryLocalServiceWrapper
 	}
 
 	@Override
-	public com.liferay.depot.model.DepotEntry fetchDepotEntry(
-		long depotEntryId) {
-
+	public DepotEntry fetchDepotEntry(long depotEntryId) {
 		return _depotEntryLocalService.fetchDepotEntry(depotEntryId);
 	}
 
@@ -255,7 +250,7 @@ public class DepotEntryLocalServiceWrapper
 	 * @return the matching depot entry, or <code>null</code> if a matching depot entry could not be found
 	 */
 	@Override
-	public com.liferay.depot.model.DepotEntry fetchDepotEntryByUuidAndGroupId(
+	public DepotEntry fetchDepotEntryByUuidAndGroupId(
 		String uuid, long groupId) {
 
 		return _depotEntryLocalService.fetchDepotEntryByUuidAndGroupId(
@@ -263,9 +258,7 @@ public class DepotEntryLocalServiceWrapper
 	}
 
 	@Override
-	public com.liferay.depot.model.DepotEntry fetchGroupDepotEntry(
-		long groupId) {
-
+	public DepotEntry fetchGroupDepotEntry(long groupId) {
 		return _depotEntryLocalService.fetchGroupDepotEntry(groupId);
 	}
 
@@ -288,10 +281,15 @@ public class DepotEntryLocalServiceWrapper
 	 * @return the range of depot entries
 	 */
 	@Override
-	public java.util.List<com.liferay.depot.model.DepotEntry> getDepotEntries(
-		int start, int end) {
-
+	public java.util.List<DepotEntry> getDepotEntries(int start, int end) {
 		return _depotEntryLocalService.getDepotEntries(start, end);
+	}
+
+	@Override
+	public java.util.List<DepotEntry> getDepotEntries(
+		long companyId, int type) {
+
+		return _depotEntryLocalService.getDepotEntries(companyId, type);
 	}
 
 	/**
@@ -302,8 +300,8 @@ public class DepotEntryLocalServiceWrapper
 	 * @return the matching depot entries, or an empty list if no matches were found
 	 */
 	@Override
-	public java.util.List<com.liferay.depot.model.DepotEntry>
-		getDepotEntriesByUuidAndCompanyId(String uuid, long companyId) {
+	public java.util.List<DepotEntry> getDepotEntriesByUuidAndCompanyId(
+		String uuid, long companyId) {
 
 		return _depotEntryLocalService.getDepotEntriesByUuidAndCompanyId(
 			uuid, companyId);
@@ -320,11 +318,10 @@ public class DepotEntryLocalServiceWrapper
 	 * @return the range of matching depot entries, or an empty list if no matches were found
 	 */
 	@Override
-	public java.util.List<com.liferay.depot.model.DepotEntry>
-		getDepotEntriesByUuidAndCompanyId(
-			String uuid, long companyId, int start, int end,
-			com.liferay.portal.kernel.util.OrderByComparator
-				<com.liferay.depot.model.DepotEntry> orderByComparator) {
+	public java.util.List<DepotEntry> getDepotEntriesByUuidAndCompanyId(
+		String uuid, long companyId, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<DepotEntry>
+			orderByComparator) {
 
 		return _depotEntryLocalService.getDepotEntriesByUuidAndCompanyId(
 			uuid, companyId, start, end, orderByComparator);
@@ -340,6 +337,11 @@ public class DepotEntryLocalServiceWrapper
 		return _depotEntryLocalService.getDepotEntriesCount();
 	}
 
+	@Override
+	public int getDepotEntriesCount(long companyId, int type) {
+		return _depotEntryLocalService.getDepotEntriesCount(companyId, type);
+	}
+
 	/**
 	 * Returns the depot entry with the primary key.
 	 *
@@ -348,7 +350,7 @@ public class DepotEntryLocalServiceWrapper
 	 * @throws PortalException if a depot entry with the primary key could not be found
 	 */
 	@Override
-	public com.liferay.depot.model.DepotEntry getDepotEntry(long depotEntryId)
+	public DepotEntry getDepotEntry(long depotEntryId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _depotEntryLocalService.getDepotEntry(depotEntryId);
@@ -363,12 +365,34 @@ public class DepotEntryLocalServiceWrapper
 	 * @throws PortalException if a matching depot entry could not be found
 	 */
 	@Override
-	public com.liferay.depot.model.DepotEntry getDepotEntryByUuidAndGroupId(
-			String uuid, long groupId)
+	public DepotEntry getDepotEntryByUuidAndGroupId(String uuid, long groupId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _depotEntryLocalService.getDepotEntryByUuidAndGroupId(
 			uuid, groupId);
+	}
+
+	@Override
+	public java.util.List<Long> getDepotEntryGroupIds(
+		long companyId, int type) {
+
+		return _depotEntryLocalService.getDepotEntryGroupIds(companyId, type);
+	}
+
+	@Override
+	public java.util.List<Long> getDepotEntryGroupIds(
+		long companyId, long userId, int type) {
+
+		return _depotEntryLocalService.getDepotEntryGroupIds(
+			companyId, userId, type);
+	}
+
+	@Override
+	public java.util.List<Long> getDepotEntryGroupIds(
+		long companyId, long userId, int type, boolean dynamicInheritanceOnly) {
+
+		return _depotEntryLocalService.getDepotEntryGroupIds(
+			companyId, userId, type, dynamicInheritanceOnly);
 	}
 
 	/**
@@ -376,8 +400,8 @@ public class DepotEntryLocalServiceWrapper
 	 */
 	@Deprecated
 	@Override
-	public java.util.List<com.liferay.depot.model.DepotEntry>
-		getDepotEntryGroupRelsByUuidAndCompanyId(String uuid, long companyId) {
+	public java.util.List<DepotEntry> getDepotEntryGroupRelsByUuidAndCompanyId(
+		String uuid, long companyId) {
 
 		return _depotEntryLocalService.getDepotEntryGroupRelsByUuidAndCompanyId(
 			uuid, companyId);
@@ -394,10 +418,8 @@ public class DepotEntryLocalServiceWrapper
 	}
 
 	@Override
-	public java.util.List<com.liferay.depot.model.DepotEntry>
-			getGroupConnectedDepotEntries(
-				long groupId, boolean ddmStructuresAvailable, int start,
-				int end)
+	public java.util.List<DepotEntry> getGroupConnectedDepotEntries(
+			long groupId, boolean ddmStructuresAvailable, int start, int end)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _depotEntryLocalService.getGroupConnectedDepotEntries(
@@ -405,22 +427,22 @@ public class DepotEntryLocalServiceWrapper
 	}
 
 	@Override
-	public java.util.List<com.liferay.depot.model.DepotEntry>
-			getGroupConnectedDepotEntries(long groupId, int start, int end)
+	public java.util.List<DepotEntry> getGroupConnectedDepotEntries(
+			long groupId, int type, int start, int end)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _depotEntryLocalService.getGroupConnectedDepotEntries(
-			groupId, start, end);
+			groupId, type, start, end);
 	}
 
 	@Override
-	public int getGroupConnectedDepotEntriesCount(long groupId) {
+	public int getGroupConnectedDepotEntriesCount(long groupId, int type) {
 		return _depotEntryLocalService.getGroupConnectedDepotEntriesCount(
-			groupId);
+			groupId, type);
 	}
 
 	@Override
-	public com.liferay.depot.model.DepotEntry getGroupDepotEntry(long groupId)
+	public DepotEntry getGroupDepotEntry(long groupId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _depotEntryLocalService.getGroupDepotEntry(groupId);
@@ -465,14 +487,12 @@ public class DepotEntryLocalServiceWrapper
 	 * @return the depot entry that was updated
 	 */
 	@Override
-	public com.liferay.depot.model.DepotEntry updateDepotEntry(
-		com.liferay.depot.model.DepotEntry depotEntry) {
-
+	public DepotEntry updateDepotEntry(DepotEntry depotEntry) {
 		return _depotEntryLocalService.updateDepotEntry(depotEntry);
 	}
 
 	@Override
-	public com.liferay.depot.model.DepotEntry updateDepotEntry(
+	public DepotEntry updateDepotEntry(
 			long depotEntryId, java.util.Map<java.util.Locale, String> nameMap,
 			java.util.Map<java.util.Locale, String> descriptionMap,
 			java.util.Map<String, Boolean> depotAppCustomizationMap,
@@ -492,6 +512,26 @@ public class DepotEntryLocalServiceWrapper
 	}
 
 	@Override
+	public CTPersistence<DepotEntry> getCTPersistence() {
+		return _depotEntryLocalService.getCTPersistence();
+	}
+
+	@Override
+	public Class<DepotEntry> getModelClass() {
+		return _depotEntryLocalService.getModelClass();
+	}
+
+	@Override
+	public <R, E extends Throwable> R updateWithUnsafeFunction(
+			UnsafeFunction<CTPersistence<DepotEntry>, R, E>
+				updateUnsafeFunction)
+		throws E {
+
+		return _depotEntryLocalService.updateWithUnsafeFunction(
+			updateUnsafeFunction);
+	}
+
+	@Override
 	public DepotEntryLocalService getWrappedService() {
 		return _depotEntryLocalService;
 	}
@@ -506,3 +546,4 @@ public class DepotEntryLocalServiceWrapper
 	private DepotEntryLocalService _depotEntryLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-2008945564

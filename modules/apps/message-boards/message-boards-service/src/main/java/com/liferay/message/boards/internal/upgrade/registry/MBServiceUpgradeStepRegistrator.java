@@ -23,10 +23,8 @@ import com.liferay.message.boards.internal.upgrade.v6_5_0.FriendlyURLUpgradeProc
 import com.liferay.message.boards.model.MBCategory;
 import com.liferay.message.boards.model.MBMessage;
 import com.liferay.message.boards.model.MBThread;
+import com.liferay.portal.kernel.model.Release;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
-import com.liferay.portal.kernel.service.ResourceActionLocalService;
-import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
-import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.upgrade.BaseExternalReferenceCodeUpgradeProcess;
 import com.liferay.portal.kernel.upgrade.BaseSQLServerDatetimeUpgradeProcess;
 import com.liferay.portal.kernel.upgrade.CTModelUpgradeProcess;
@@ -34,9 +32,9 @@ import com.liferay.portal.kernel.upgrade.DummyUpgradeStep;
 import com.liferay.portal.kernel.upgrade.GuestUnsupportedResourcePermissionsUpgradeProcess;
 import com.liferay.portal.kernel.upgrade.MVCCVersionUpgradeProcess;
 import com.liferay.portal.kernel.upgrade.UpgradeProcessFactory;
+import com.liferay.portal.kernel.upgrade.UpgradeStep;
 import com.liferay.portal.kernel.upgrade.ViewCountUpgradeProcess;
 import com.liferay.portal.upgrade.registry.UpgradeStepRegistrator;
-import com.liferay.view.count.service.ViewCountEntryLocalService;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -52,16 +50,25 @@ public class MBServiceUpgradeStepRegistrator implements UpgradeStepRegistrator {
 		registry.register("0.0.1", "1.0.0", new UpgradeClassNames());
 
 		registry.register(
-			"1.0.0", "1.0.1",
+			"1.0.0", "1.0.0.step-1",
 			new GuestUnsupportedResourcePermissionsUpgradeProcess(
 				MBCategory.class.getName(), ActionKeys.DELETE,
-				ActionKeys.MOVE_THREAD, ActionKeys.PERMISSIONS),
+				ActionKeys.MOVE_THREAD, ActionKeys.PERMISSIONS));
+
+		registry.register(
+			"1.0.0.step-1", "1.0.0.step-2",
 			new GuestUnsupportedResourcePermissionsUpgradeProcess(
 				MBMessage.class.getName(), ActionKeys.DELETE,
-				ActionKeys.PERMISSIONS),
+				ActionKeys.PERMISSIONS));
+
+		registry.register(
+			"1.0.0.step-2", "1.0.0.step-3",
 			new GuestUnsupportedResourcePermissionsUpgradeProcess(
 				MBConstants.RESOURCE_NAME, ActionKeys.LOCK_THREAD,
-				ActionKeys.MOVE_THREAD),
+				ActionKeys.MOVE_THREAD));
+
+		registry.register(
+			"1.0.0.step-3", "1.0.1",
 			new GuestUnsupportedResourcePermissionsUpgradeProcess(
 				MBThread.class.getName(), ActionKeys.DELETE));
 
@@ -78,10 +85,12 @@ public class MBServiceUpgradeStepRegistrator implements UpgradeStepRegistrator {
 				}));
 
 		registry.register(
-			"2.0.0", "3.0.0",
+			"2.0.0", "2.0.1",
 			new ViewCountUpgradeProcess(
-				"MBThread", MBThread.class, "threadId", "viewCount"),
-			new MBMessageTreePathUpgradeProcess());
+				"MBThread", MBThread.class, "threadId", "viewCount"));
+
+		registry.register(
+			"2.0.1", "3.0.0", new MBMessageTreePathUpgradeProcess());
 
 		registry.register("3.0.0", "3.1.0", new UrlSubjectUpgradeProcess());
 
@@ -92,8 +101,15 @@ public class MBServiceUpgradeStepRegistrator implements UpgradeStepRegistrator {
 
 		registry.register(
 			"4.0.0", "5.0.0",
-			UpgradeProcessFactory.dropColumns("MBThread", "messageCount"),
 			new MVCCVersionUpgradeProcess() {
+
+				@Override
+				protected UpgradeStep[] getPreUpgradeSteps() {
+					return new UpgradeStep[] {
+						UpgradeProcessFactory.dropColumns(
+							"MBThread", "messageCount")
+					};
+				}
 
 				@Override
 				protected String[] getTableNames() {
@@ -133,8 +149,8 @@ public class MBServiceUpgradeStepRegistrator implements UpgradeStepRegistrator {
 			new BaseExternalReferenceCodeUpgradeProcess() {
 
 				@Override
-				protected String[][] getTableAndPrimaryKeyColumnNames() {
-					return new String[][] {{"MBMessage", "messageId"}};
+				protected String[] getTableNames() {
+					return new String[] {"MBMessage"};
 				}
 
 			});
@@ -156,21 +172,27 @@ public class MBServiceUpgradeStepRegistrator implements UpgradeStepRegistrator {
 				"MBSuspiciousActivity", "reason", "VARCHAR(255) null"));
 
 		registry.register("6.4.1", "6.5.0", new FriendlyURLUpgradeProcess());
+
+		registry.register(
+			"6.5.0", "6.5.1",
+			UpgradeProcessFactory.alterColumnType(
+				"MBCategory", "name", "VARCHAR(255) null"));
+
+		registry.register(
+			"6.5.1", "6.6.0",
+			new BaseExternalReferenceCodeUpgradeProcess() {
+
+				@Override
+				protected String[] getTableNames() {
+					return new String[] {"MBCategory"};
+				}
+
+			});
 	}
 
-	@Reference
-	private ResourceActionLocalService _resourceActionLocalService;
-
-	@Reference
-	private ResourcePermissionLocalService _resourcePermissionLocalService;
-
-	@Reference
-	private RoleLocalService _roleLocalService;
-
-	/**
-	 * See LPS-101086. The ViewCount table needs to exist.
-	 */
-	@Reference
-	private ViewCountEntryLocalService _viewCountEntryLocalService;
+	@Reference(
+		target = "(&(release.bundle.symbolic.name=com.liferay.view.count.service)(&(release.schema.version>=1.0.0)))"
+	)
+	private Release _release;
 
 }

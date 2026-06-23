@@ -337,14 +337,6 @@ public class CommercePriceEntryLocalServiceWrapper
 	}
 
 	@Override
-	public CommercePriceEntry fetchByExternalReferenceCode(
-		String externalReferenceCode, long companyId) {
-
-		return _commercePriceEntryLocalService.fetchByExternalReferenceCode(
-			externalReferenceCode, companyId);
-	}
-
-	@Override
 	public CommercePriceEntry fetchCommercePriceEntry(
 		long commercePriceEntryId) {
 
@@ -556,6 +548,16 @@ public class CommercePriceEntryLocalServiceWrapper
 	}
 
 	@Override
+	public java.util.List<CommercePriceEntry> getInstanceCommercePriceEntries(
+		String cpInstanceUuid, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<CommercePriceEntry>
+			orderByComparator) {
+
+		return _commercePriceEntryLocalService.getInstanceCommercePriceEntries(
+			cpInstanceUuid, start, end, orderByComparator);
+	}
+
+	@Override
 	public int getInstanceCommercePriceEntriesCount(String cpInstanceUuid) {
 		return _commercePriceEntryLocalService.
 			getInstanceCommercePriceEntriesCount(cpInstanceUuid);
@@ -747,3 +749,4 @@ public class CommercePriceEntryLocalServiceWrapper
 	private CommercePriceEntryLocalService _commercePriceEntryLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1581385262

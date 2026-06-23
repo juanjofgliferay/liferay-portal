@@ -1,11 +1,14 @@
 import * as API from 'shared/api';
 import ClayLink from '@clayui/link';
-import Distribution, {CONTEXT_OPTIONS} from 'contacts/components/Distribution';
+import DistributionBase, {
+	CONTEXT_OPTIONS
+} from 'contacts/components/Distribution';
+const Distribution = DistributionBase as React.ComponentType<any>;
 import NoResultsDisplay from 'shared/components/NoResultsDisplay';
 import React from 'react';
 import StatesRenderer from 'shared/components/states-renderer/StatesRenderer';
 import URLConstants from 'shared/util/url-constants';
-import {compose, withCurrentUser, withQuery} from 'shared/hoc';
+import {compose, withQuery} from 'shared/hoc';
 import {connect, ConnectedProps} from 'react-redux';
 import {
 	fetchIndividualsDistribution,
@@ -14,9 +17,9 @@ import {
 import {get} from 'lodash';
 import {Routes, toRoute} from 'shared/util/router';
 import {Sizes} from 'shared/util/constants';
-import {useDataSource} from 'shared/hooks/useDataSource';
+import {useCurrentUser} from 'shared/hooks/useCurrentUser';
+import {useDataSources} from 'shared/context/dataSources';
 import {useParams} from 'react-router-dom';
-import {User} from 'shared/util/records';
 
 const connector = connect(null, {
 	fetchDistribution: fetchIndividualsDistribution
@@ -25,29 +28,31 @@ const connector = connect(null, {
 type PropsFromRedux = ConnectedProps<typeof connector>;
 
 interface IIndividualsDistributionProps extends PropsFromRedux {
-	currentUser: User;
 	knownIndividualCount: number | null;
 }
 
-export const IndividualsDistribution: React.FC<IIndividualsDistributionProps> = ({
-	currentUser,
-	knownIndividualCount,
-	...otherProps
-}) => {
+export const IndividualsDistribution: React.FC<
+	IIndividualsDistributionProps
+> = ({knownIndividualCount, ...otherProps}) => {
 	const {groupId} = useParams();
+	const dataSourceStates = useDataSources();
+	const currentUser = useCurrentUser();
 	const authorized = currentUser.isAdmin();
-	const dataSourceStates = useDataSource();
 
 	return (
 		<StatesRenderer {...dataSourceStates}>
 			<StatesRenderer.Empty
 				description={
 					<>
-						{Liferay.Language.get(
-							'connect-a-data-source-to-get-started'
-						)}
+						{authorized
+							? Liferay.Language.get(
+									'connect-a-data-source-to-get-started'
+							  )
+							: Liferay.Language.get(
+									'please-contact-your-workspace-administrator-to-add-data-sources'
+							  )}
 
-						<a
+						<ClayLink
 							className='d-block mb-3'
 							href={URLConstants.DataSourceConnection}
 							key='DOCUMENTATION'
@@ -56,16 +61,19 @@ export const IndividualsDistribution: React.FC<IIndividualsDistributionProps> = 
 							{Liferay.Language.get(
 								'access-our-documentation-to-learn-more'
 							)}
-						</a>
+						</ClayLink>
 
 						{authorized && (
 							<ClayLink
 								button
 								className='button-root'
 								displayType='primary'
-								href={toRoute(Routes.SETTINGS_ADD_DATA_SOURCE, {
-									groupId
-								})}
+								href={toRoute(
+									Routes.SETTINGS_DATA_SOURCE_LIST,
+									{
+										groupId
+									}
+								)}
 							>
 								{Liferay.Language.get('connect-data-source')}
 							</ClayLink>
@@ -96,7 +104,7 @@ export const IndividualsDistribution: React.FC<IIndividualsDistributionProps> = 
 													'try-choosing-a-different-breakdown'
 												)}
 
-												<a
+												<ClayLink
 													className='d-block'
 													href={
 														URLConstants.IndividualsDashboardBreakdownDocumentation
@@ -107,13 +115,13 @@ export const IndividualsDistribution: React.FC<IIndividualsDistributionProps> = 
 													{Liferay.Language.get(
 														'learn-more-about-distribution'
 													)}
-												</a>
+												</ClayLink>
 											</>
 										}
 										icon={{
 											border: false,
 											size: Sizes.XXXLarge,
-											symbol: 'ac-satellite'
+											symbol: 'ac_satellite'
 										}}
 										title={Liferay.Language.get(
 											'there-are-no-results-found'
@@ -130,16 +138,15 @@ export const IndividualsDistribution: React.FC<IIndividualsDistributionProps> = 
 };
 
 export default compose<any>(
-	withCurrentUser,
 	withQuery(
-		({channelId, groupId}) =>
+		({channelId, groupId}: {channelId: string; groupId: string}) =>
 			API.individuals.search({
 				channelId,
 				groupId,
 				includeAnonymousUsers: false
 			}),
-		val => val,
-		({data, error}) => ({
+		(val: unknown) => val,
+		({data, error}: {data: unknown; error: unknown}) => ({
 			knownIndividualCount: error ? 0 : get(data, 'total', null)
 		})
 	),

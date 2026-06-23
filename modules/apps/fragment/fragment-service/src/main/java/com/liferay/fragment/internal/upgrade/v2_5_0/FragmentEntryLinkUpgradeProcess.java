@@ -23,8 +23,16 @@ public class FragmentEntryLinkUpgradeProcess extends UpgradeProcess {
 
 	@Override
 	protected void doUpgrade() throws Exception {
+		_upgradePlid();
 		_upgradeRendererKey();
-		_upgratePlid();
+	}
+
+	private void _upgradePlid() throws Exception {
+		alterTableAddColumn("FragmentEntryLink", "plid", "LONG");
+
+		runSQL(
+			"update FragmentEntryLink set plid = classPK where classNameId = " +
+				PortalUtil.getClassNameId(Layout.class.getName()));
 	}
 
 	private void _upgradeRendererKey() throws Exception {
@@ -32,7 +40,9 @@ public class FragmentEntryLinkUpgradeProcess extends UpgradeProcess {
 				"select fragmentEntryLinkId, rendererKey from " +
 					"FragmentEntryLink where rendererKey like " +
 						"'BASIC_SECTION%'");
+
 			ResultSet resultSet = preparedStatement1.executeQuery();
+
 			PreparedStatement preparedStatement2 =
 				AutoBatchPreparedStatementUtil.autoBatch(
 					connection,
@@ -57,14 +67,6 @@ public class FragmentEntryLinkUpgradeProcess extends UpgradeProcess {
 
 			preparedStatement2.executeBatch();
 		}
-	}
-
-	private void _upgratePlid() throws Exception {
-		alterTableAddColumn("FragmentEntryLink", "plid", "LONG");
-
-		runSQL(
-			"update FragmentEntryLink set plid = classPK where classNameId = " +
-				PortalUtil.getClassNameId(Layout.class.getName()));
 	}
 
 	private static final Map<String, String> _contributedFragmentKeys =

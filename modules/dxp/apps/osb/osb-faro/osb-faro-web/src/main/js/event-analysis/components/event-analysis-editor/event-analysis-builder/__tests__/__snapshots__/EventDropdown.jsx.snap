@@ -2,28 +2,6 @@
 
 exports[`EventDropdown render 1`] = `
 <div
-  aria-hidden="true"
-  data-aria-hidden="true"
->
-  <div
-    class="dropdown"
-  >
-    <button
-      aria-controls="clay-dropdown-menu-1"
-      aria-expanded="true"
-      aria-haspopup="true"
-      class="dropdown-toggle"
-      data-testid="target"
-      style=""
-    >
-      click me
-    </button>
-  </div>
-</div>
-`;
-
-exports[`EventDropdown render 2`] = `
-<div
   class="dropdown-menu base-dropdown-menu-root show"
   id="clay-dropdown-menu-1"
   role="presentation"
@@ -123,7 +101,7 @@ exports[`EventDropdown render 2`] = `
                 role="presentation"
               >
                 <use
-                  href="/o/osb-faro-web/dist/sprite.svg#search"
+                  href="#search"
                 />
               </svg>
             </button>

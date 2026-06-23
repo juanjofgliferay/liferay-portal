@@ -298,6 +298,11 @@ public interface ResourceLocalService extends BaseLocalService {
 			String actionId, long[] roleIds)
 		throws PortalException;
 
+	public void removeResource(
+			long companyId, String name, int scope, String primKey, long roleId,
+			String actionId)
+		throws PortalException;
+
 	/**
 	 * Updates the resources for the model, replacing their group and guest
 	 * permissions with new ones from the service context.
@@ -394,3 +399,4 @@ public interface ResourceLocalService extends BaseLocalService {
 		String newPrimKey);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:409201244

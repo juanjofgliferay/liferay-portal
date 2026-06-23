@@ -10,6 +10,7 @@ import com.liferay.mentions.strategy.MentionsStrategy;
 import com.liferay.mentions.util.MentionsUtil;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -30,22 +31,22 @@ import com.liferay.portal.kernel.service.permission.PortletPermissionUtil;
 import com.liferay.portal.kernel.servlet.ServletResponseUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ContentTypes;
+import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.user.taglib.servlet.taglib.UserPortraitTag;
 
-import java.util.ArrayList;
+import jakarta.portlet.Portlet;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
-
-import javax.portlet.Portlet;
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
-
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
@@ -62,12 +63,12 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.add-default-resource=true",
 		"com.liferay.portlet.display-category=category.hidden",
 		"com.liferay.portlet.icon=/icons/mentions.png",
-		"javax.portlet.display-name=Mentions",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.name=" + MentionsPortletKeys.MENTIONS,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=administrator",
-		"javax.portlet.version=3.0"
+		"jakarta.portlet.display-name=Mentions",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.name=" + MentionsPortletKeys.MENTIONS,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=administrator",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -134,19 +135,19 @@ public class MentionsPortlet extends MVCPortlet {
 				continue;
 			}
 
-			String mention = "@" + user.getScreenName();
+			String mention = "@" + HtmlUtil.escape(user.getScreenName());
 
 			String profileURL = user.getDisplayURL(themeDisplay);
 
 			if (Validator.isNotNull(profileURL)) {
 				mention = StringBundler.concat(
-					"<a href=\"", profileURL, "\">@", user.getScreenName(),
-					"</a>");
+					"<a href=\"", profileURL, "\">@",
+					HtmlUtil.escape(user.getScreenName()), "</a>");
 			}
 
 			jsonArray.put(
 				JSONUtil.put(
-					"fullName", user.getFullName()
+					"fullName", HtmlUtil.escape(user.getFullName())
 				).put(
 					"mention", mention
 				).put(
@@ -154,7 +155,7 @@ public class MentionsPortlet extends MVCPortlet {
 					UserPortraitTag.getUserPortraitHTML(
 						StringPool.BLANK, user, themeDisplay)
 				).put(
-					"screenName", user.getScreenName()
+					"screenName", HtmlUtil.escape(user.getScreenName())
 				));
 		}
 
@@ -197,30 +198,30 @@ public class MentionsPortlet extends MVCPortlet {
 
 		return () -> {
 			try {
-				List<User> filteredUsers = new ArrayList<>();
+				return TransformUtil.transform(
+					mentionsStrategy.getUsers(
+						themeDisplay.getCompanyId(),
+						themeDisplay.getSiteGroupId(), themeDisplay.getUserId(),
+						query, jsonObject),
+					user -> {
+						PermissionChecker permissionChecker =
+							PermissionCheckerFactoryUtil.create(user);
 
-				List<User> users = mentionsStrategy.getUsers(
-					themeDisplay.getCompanyId(), themeDisplay.getSiteGroupId(),
-					themeDisplay.getUserId(), query, jsonObject);
+						Layout layout = themeDisplay.getLayout();
 
-				for (User user : users) {
-					PermissionChecker permissionChecker =
-						PermissionCheckerFactoryUtil.create(user);
+						if ((layout != null) &&
+							_layoutPermission.contains(
+								permissionChecker, layout, true,
+								ActionKeys.VIEW) &&
+							PortletPermissionUtil.contains(
+								permissionChecker, layout, discussionPortletId,
+								ActionKeys.VIEW)) {
 
-					Layout layout = themeDisplay.getLayout();
+							return user;
+						}
 
-					if ((layout != null) &&
-						_layoutPermission.contains(
-							permissionChecker, layout, true, ActionKeys.VIEW) &&
-						PortletPermissionUtil.contains(
-							permissionChecker, layout, discussionPortletId,
-							ActionKeys.VIEW)) {
-
-						filteredUsers.add(user);
-					}
-				}
-
-				return filteredUsers;
+						return null;
+					});
 			}
 			catch (PortalException portalException) {
 				_log.error(portalException);

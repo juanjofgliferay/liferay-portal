@@ -3,7 +3,12 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {navigate, openConfirmModal, openModal} from 'frontend-js-web';
+import {
+	openConfirmModal,
+	openModal,
+	openToast,
+} from 'frontend-js-components-web';
+import {fetch, navigate} from 'frontend-js-web';
 
 import openDeleteLayoutModal from './openDeleteLayoutModal';
 
@@ -36,7 +41,31 @@ const ACTIONS = {
 		openDeleteLayoutModal({
 			message,
 			onDelete: () => {
-				navigate(deleteLayoutURL);
+				fetch(deleteLayoutURL, {
+					method: 'post',
+				})
+					.then((response) => response.json())
+					.then(({errorMessage, redirectURL}) => {
+						if (errorMessage) {
+							openToast({
+								message: errorMessage,
+								title: Liferay.Language.get('error'),
+								type: 'danger',
+							});
+						}
+						else {
+							navigate(redirectURL);
+						}
+					})
+					.catch(() =>
+						openToast({
+							message: Liferay.Language.get(
+								'an-unexpected-error-occurred'
+							),
+							title: Liferay.Language.get('error'),
+							type: 'danger',
+						})
+					);
 			},
 		});
 	},
@@ -62,13 +91,6 @@ const ACTIONS = {
 		openModal({
 			title: Liferay.Language.get('permissions'),
 			url: permissionLayoutURL,
-		});
-	},
-
-	viewCollectionItems: ({viewCollectionItemsURL}) => {
-		openModal({
-			title: Liferay.Language.get('collection-items'),
-			url: viewCollectionItemsURL,
 		});
 	},
 };

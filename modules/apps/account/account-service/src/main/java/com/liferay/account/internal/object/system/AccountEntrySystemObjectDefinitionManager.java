@@ -5,9 +5,11 @@
 
 package com.liferay.account.internal.object.system;
 
+import com.liferay.account.constants.AccountConstants;
 import com.liferay.account.model.AccountEntry;
 import com.liferay.account.model.AccountEntryTable;
 import com.liferay.account.service.AccountEntryLocalService;
+import com.liferay.account.service.AccountEntryService;
 import com.liferay.headless.admin.user.dto.v1_0.Account;
 import com.liferay.headless.admin.user.resource.v1_0.AccountResource;
 import com.liferay.object.constants.ObjectDefinitionConstants;
@@ -21,12 +23,18 @@ import com.liferay.petra.sql.dsl.Table;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.BaseModel;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.search.Sort;
+import com.liferay.portal.kernel.search.filter.Filter;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.vulcan.pagination.Page;
+import com.liferay.portal.vulcan.pagination.Pagination;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
@@ -40,10 +48,12 @@ public class AccountEntrySystemObjectDefinitionManager
 	extends BaseSystemObjectDefinitionManager {
 
 	@Override
-	public long addBaseModel(User user, Map<String, Object> values)
+	public long addBaseModel(
+			boolean checkPermissions, User user, Map<String, Object> values)
 		throws Exception {
 
-		AccountResource accountResource = _buildAccountResource(user);
+		AccountResource accountResource = _buildAccountResource(
+			checkPermissions);
 
 		Account account = accountResource.postAccount(_toAccount(values));
 
@@ -60,6 +70,7 @@ public class AccountEntrySystemObjectDefinitionManager
 			(AccountEntry)baseModel);
 	}
 
+	@Override
 	public BaseModel<?> fetchBaseModelByExternalReferenceCode(
 		String externalReferenceCode, long companyId) {
 
@@ -100,8 +111,12 @@ public class AccountEntrySystemObjectDefinitionManager
 	}
 
 	@Override
-	public Map<Locale, String> getLabelMap() {
-		return createLabelMap("account");
+	public Map<String, String> getLabelKeys() {
+		return HashMapBuilder.put(
+			"label", "account"
+		).put(
+			"pluralLabel", "accounts"
+		).build();
 	}
 
 	@Override
@@ -143,8 +158,25 @@ public class AccountEntrySystemObjectDefinitionManager
 	}
 
 	@Override
-	public Map<Locale, String> getPluralLabelMap() {
-		return createLabelMap("accounts");
+	public BaseModel<?> getOrAddEmptyBaseModel(
+			String externalReferenceCode, User user)
+		throws PortalException {
+
+		return _accountEntryService.getOrAddEmptyAccountEntry(
+			externalReferenceCode, externalReferenceCode,
+			AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS);
+	}
+
+	@Override
+	public Page<?> getPage(
+			User user, String search, Filter filter, Pagination pagination,
+			Sort[] sorts)
+		throws Exception {
+
+		AccountResource accountResource = _buildAccountResource(true);
+
+		return accountResource.getAccountsPage(
+			search, filter, pagination, sorts);
 	}
 
 	@Override
@@ -169,7 +201,7 @@ public class AccountEntrySystemObjectDefinitionManager
 
 	@Override
 	public int getVersion() {
-		return 1;
+		return 2;
 	}
 
 	@Override
@@ -177,7 +209,7 @@ public class AccountEntrySystemObjectDefinitionManager
 			long primaryKey, User user, Map<String, Object> values)
 		throws Exception {
 
-		AccountResource accountResource = _buildAccountResource(user);
+		AccountResource accountResource = _buildAccountResource(true);
 
 		Account account = accountResource.patchAccount(
 			primaryKey, _toAccount(values));
@@ -185,11 +217,16 @@ public class AccountEntrySystemObjectDefinitionManager
 		setExtendedProperties(Account.class.getName(), account, user, values);
 	}
 
-	private AccountResource _buildAccountResource(User user) {
+	private AccountResource _buildAccountResource(boolean checkPermissions) {
 		AccountResource.Builder builder = _accountResourceFactory.create();
 
+		PermissionChecker permissionChecker =
+			PermissionThreadLocal.getPermissionChecker();
+
+		User user = permissionChecker.getUser();
+
 		return builder.checkPermissions(
-			false
+			checkPermissions
 		).preferredLocale(
 			user.getLocale()
 		).user(
@@ -200,19 +237,25 @@ public class AccountEntrySystemObjectDefinitionManager
 	private Account _toAccount(Map<String, Object> values) {
 		return new Account() {
 			{
-				description = GetterUtil.getString(values.get("description"));
-				externalReferenceCode = GetterUtil.getString(
-					values.get("externalReferenceCode"));
-				name = GetterUtil.getString(values.get("name"));
-				type = Account.Type.create(
-					StringUtil.toLowerCase(
-						GetterUtil.getString(values.get("type"))));
+				setDescription(
+					() -> GetterUtil.getString(values.get("description")));
+				setExternalReferenceCode(
+					() -> GetterUtil.getString(
+						values.get("externalReferenceCode")));
+				setName(() -> GetterUtil.getString(values.get("name")));
+				setType(
+					() -> Account.Type.create(
+						StringUtil.toLowerCase(
+							GetterUtil.getString(values.get("type")))));
 			}
 		};
 	}
 
 	@Reference
 	private AccountEntryLocalService _accountEntryLocalService;
+
+	@Reference
+	private AccountEntryService _accountEntryService;
 
 	@Reference
 	private AccountResource.Factory _accountResourceFactory;

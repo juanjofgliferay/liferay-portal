@@ -12,7 +12,10 @@ import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClass
 /**
  * @author Pei-Jung Lan
  */
-@ExtendedObjectClassDefinition(category = "security-tools")
+@ExtendedObjectClassDefinition(
+	category = "security-tools",
+	scope = ExtendedObjectClassDefinition.Scope.COMPANY
+)
 @Meta.OCD(
 	id = "com.liferay.captcha.configuration.CaptchaConfiguration",
 	localization = "content/Language", name = "captcha-configuration-name"
@@ -20,10 +23,11 @@ import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClass
 public interface CaptchaConfiguration {
 
 	@Meta.AD(
-		deflt = "1", description = "max-challenges-help",
-		name = "max-challenges", required = false
+		deflt = "com.liferay.captcha.simplecaptcha.SimpleCaptchaImpl",
+		description = "captcha-engine-help", name = "captcha-engine",
+		required = false
 	)
-	public int maxChallenges();
+	public String captchaEngine();
 
 	@Meta.AD(
 		deflt = "true", name = "create-account-captcha-enabled",
@@ -32,9 +36,10 @@ public interface CaptchaConfiguration {
 	public boolean createAccountCaptchaEnabled();
 
 	@Meta.AD(
-		deflt = "true", name = "send-password-captcha-enabled", required = false
+		deflt = "1", description = "max-challenges-help",
+		name = "max-challenges", required = false
 	)
-	public boolean sendPasswordCaptchaEnabled();
+	public int maxChallenges();
 
 	@Meta.AD(
 		deflt = "false", name = "message-boards-edit-category-captcha-enabled",
@@ -49,22 +54,16 @@ public interface CaptchaConfiguration {
 	public boolean messageBoardsEditMessageCaptchaEnabled();
 
 	@Meta.AD(
-		deflt = "com.liferay.captcha.simplecaptcha.SimpleCaptchaImpl",
-		description = "captcha-engine-help", name = "captcha-engine",
-		optionLabels = {"SimpleCaptcha", "reCAPTCHA"},
-		optionValues = {
-			"com.liferay.captcha.simplecaptcha.SimpleCaptchaImpl",
-			"com.liferay.captcha.recaptcha.ReCaptchaImpl"
-		},
-		required = false
+		deflt = "https://www.google.com/recaptcha/api/fallback?k=",
+		name = "recaptcha-no-script-url", required = false
 	)
-	public String captchaEngine();
-
-	@Meta.AD(name = "recaptcha-public-key", required = false)
-	public String reCaptchaPublicKey();
+	public String reCaptchaNoScriptURL();
 
 	@Meta.AD(name = "recaptcha-private-key", required = false)
 	public String reCaptchaPrivateKey();
+
+	@Meta.AD(name = "recaptcha-public-key", required = false)
+	public String reCaptchaPublicKey();
 
 	@Meta.AD(
 		deflt = "https://www.google.com/recaptcha/api.js",
@@ -73,28 +72,15 @@ public interface CaptchaConfiguration {
 	public String reCaptchaScriptURL();
 
 	@Meta.AD(
-		deflt = "https://www.google.com/recaptcha/api/fallback?k=",
-		name = "recaptcha-no-script-url", required = false
-	)
-	public String reCaptchaNoScriptURL();
-
-	@Meta.AD(
 		deflt = "https://www.google.com/recaptcha/api/siteverify",
 		name = "recaptcha-verify-url", required = false
 	)
 	public String reCaptchaVerifyURL();
 
 	@Meta.AD(
-		deflt = "50", description = "simple-captcha-height-help",
-		name = "simple-captcha-height", required = false
+		deflt = "true", name = "send-password-captcha-enabled", required = false
 	)
-	public int simpleCaptchaHeight();
-
-	@Meta.AD(
-		deflt = "150", description = "simple-captcha-width-help",
-		name = "simple-captcha-width", required = false
-	)
-	public int simpleCaptchaWidth();
+	public boolean sendPasswordCaptchaEnabled();
 
 	@Meta.AD(
 		deflt = "nl.captcha.backgrounds.FlatColorBackgroundProducer|nl.captcha.backgrounds.GradiatedBackgroundProducer|nl.captcha.backgrounds.SquigglesBackgroundProducer|nl.captcha.backgrounds.TransparentBackgroundProducer",
@@ -111,6 +97,12 @@ public interface CaptchaConfiguration {
 	public String[] simpleCaptchaGimpyRenderers();
 
 	@Meta.AD(
+		deflt = "50", description = "simple-captcha-height-help",
+		name = "simple-captcha-height", required = false
+	)
+	public int simpleCaptchaHeight();
+
+	@Meta.AD(
 		deflt = "nl.captcha.noise.CurvedLineNoiseProducer|nl.captcha.noise.StraightLineNoiseProducer",
 		description = "simple-captcha-noise-producers-help",
 		name = "simple-captcha-noise-producers", required = false
@@ -123,6 +115,12 @@ public interface CaptchaConfiguration {
 		name = "simple-captcha-text-producers", required = false
 	)
 	public String[] simpleCaptchaTextProducers();
+
+	@Meta.AD(
+		deflt = "150", description = "simple-captcha-width-help",
+		name = "simple-captcha-width", required = false
+	)
+	public int simpleCaptchaWidth();
 
 	@Meta.AD(
 		deflt = "nl.captcha.text.renderer.DefaultWordRenderer",

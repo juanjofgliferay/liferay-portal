@@ -12,9 +12,6 @@ import com.liferay.portal.search.collapse.CollapseBuilderFactory;
 import com.liferay.portal.search.collapse.InnerHitBuilderFactory;
 import com.liferay.portal.search.internal.collapse.CollapseBuilderFactoryImpl;
 import com.liferay.portal.search.internal.collapse.InnerHitBuilderFactoryImpl;
-import com.liferay.portal.search.internal.geolocation.GeoBuildersImpl;
-import com.liferay.portal.search.internal.query.QueriesImpl;
-import com.liferay.portal.search.internal.script.ScriptsImpl;
 import com.liferay.portal.search.internal.searcher.SearchRequestBuilderFactoryImpl;
 import com.liferay.portal.search.internal.sort.SortsImpl;
 import com.liferay.portal.search.searcher.SearchRequest;
@@ -87,6 +84,35 @@ public class AdvancedSXPSearchRequestBodyContributorTest {
 	}
 
 	@Test
+	public void testFields() {
+		Configuration configuration = new Configuration();
+
+		SearchRequestBuilder searchRequestBuilder =
+			_searchRequestBuilderFactory.builder();
+
+		AdvancedConfiguration advancedConfiguration =
+			new AdvancedConfiguration();
+
+		List<String> storedFields = Arrays.asList(
+			Field.TITLE, Field.DESCRIPTION);
+
+		advancedConfiguration.setFields(storedFields.toArray(new String[0]));
+
+		configuration.setAdvancedConfiguration(advancedConfiguration);
+
+		_advancedSXPSearchRequestBodyContributor.contribute(
+			configuration, searchRequestBuilder, null);
+
+		SearchContext searchContext = searchRequestBuilder.withSearchContextGet(
+			Function.identity());
+
+		QueryConfig queryConfig = searchContext.getQueryConfig();
+
+		Assert.assertEquals(
+			storedFields, Arrays.asList(queryConfig.getSelectedFieldNames()));
+	}
+
+	@Test
 	public void testStoredFields() {
 		Configuration configuration = new Configuration();
 
@@ -107,13 +133,10 @@ public class AdvancedSXPSearchRequestBodyContributorTest {
 		_advancedSXPSearchRequestBodyContributor.contribute(
 			configuration, searchRequestBuilder, null);
 
-		SearchContext searchContext = searchRequestBuilder.withSearchContextGet(
-			Function.identity());
+		SearchRequest searchRequest = searchRequestBuilder.build();
 
-		QueryConfig queryConfig = searchContext.getQueryConfig();
-
-		Assert.assertEquals(
-			storedFields, Arrays.asList(queryConfig.getSelectedFieldNames()));
+		Assert.assertArrayEquals(
+			storedFields.toArray(), searchRequest.getStoredFields());
 	}
 
 	private AdvancedSXPSearchRequestBodyContributor
@@ -125,7 +148,6 @@ public class AdvancedSXPSearchRequestBodyContributorTest {
 	private final SearchRequestBuilderFactory _searchRequestBuilderFactory =
 		new SearchRequestBuilderFactoryImpl();
 	private final SortConverter _sortConverter = new SortConverter(
-		new GeoBuildersImpl(), new QueryConverter(new QueriesImpl()),
-		new ScriptConverter(new ScriptsImpl()), new SortsImpl());
+		new QueryConverter(), new ScriptConverter(), new SortsImpl());
 
 }

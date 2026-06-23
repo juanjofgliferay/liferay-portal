@@ -17,15 +17,13 @@ import {REMOVE_ALL_ITEMS, VIEW_DETAILS} from './util/constants';
 const CartResource = ServiceProvider.DeliveryCartAPI('v1');
 
 function CartItemsListActions() {
-	const {
-		actionURLs,
-		cartState,
-		labels,
-		setIsUpdating,
-		updateCartModel,
-	} = useContext(MiniCartContext);
+	const {actionURLs, cartState, labels, setIsUpdating, updateCartModel} =
+		useContext(MiniCartContext);
 
-	const {cartItems = [], id: orderId} = cartState;
+	const {
+		id: orderId,
+		summary: {itemsCount},
+	} = cartState;
 	const {orderDetailURL} = actionURLs;
 
 	const [isAsking, setIsAsking] = useState(false);
@@ -52,10 +50,10 @@ function CartItemsListActions() {
 		<div className="mini-cart-header">
 			<div className="mini-cart-header-block">
 				<div className="mini-cart-header-resume">
-					{!!cartItems.length && (
+					{!!itemsCount && (
 						<>
-							<span className="items">{cartItems.length}</span>
-							{cartItems.length > 1
+							<span className="items">{itemsCount}</span>
+							{itemsCount > 1
 								? ' ' + Liferay.Language.get('products')
 								: ' ' + Liferay.Language.get('product')}
 						</>
@@ -71,7 +69,7 @@ function CartItemsListActions() {
 					>
 						<ClayButton
 							className="action"
-							disabled={!cartItems.length}
+							disabled={!itemsCount}
 							displayType="link"
 							onClick={() => {
 								liferayNavigate(orderDetailURL);
@@ -83,7 +81,7 @@ function CartItemsListActions() {
 
 						<ClayButton
 							className="action text-danger"
-							disabled={!cartItems.length}
+							disabled={!itemsCount}
 							displayType="link"
 							onClick={askConfirmation}
 							small

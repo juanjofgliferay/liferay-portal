@@ -9,14 +9,14 @@
 
 <clay:management-toolbar
 	managementToolbarDisplayContext="<%= new AssetTagsManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, assetTagsDisplayContext) %>"
-	propsTransformer="js/ManagementToolbarPropsTransformer"
+	propsTransformer="{ManagementToolbarPropsTransformer} from asset-tags-admin-web"
 />
 
 <portlet:actionURL name="deleteTag" var="deleteTagURL">
 	<portlet:param name="redirect" value="<%= currentURL %>" />
 </portlet:actionURL>
 
-<aui:form action="<%= deleteTagURL %>" cssClass="container-fluid container-fluid-max-xl" name="fm">
+<aui:form action="<%= deleteTagURL %>" cssClass="container-fluid container-fluid-max-xxxl" name="fm">
 	<liferay-site-navigation:breadcrumb
 		breadcrumbEntries="<%= BreadcrumbEntriesUtil.getBreadcrumbEntries(request, true, false, false, true, true) %>"
 	/>
@@ -58,7 +58,7 @@
 						<clay:dropdown-actions
 							aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 							dropdownItems="<%= assetTagsDisplayContext.getAssetTagActionDropdownItems(tag) %>"
-							propsTransformer="js/AssetTagActionDropdownPropsTransformer"
+							propsTransformer="{AssetTagActionDropdownPropsTransformer} from asset-tags-admin-web"
 						/>
 					</liferay-ui:search-container-column-text>
 				</c:when>
@@ -79,7 +79,7 @@
 						<clay:dropdown-actions
 							aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 							dropdownItems="<%= assetTagsDisplayContext.getAssetTagActionDropdownItems(tag) %>"
-							propsTransformer="js/AssetTagActionDropdownPropsTransformer"
+							propsTransformer="{AssetTagActionDropdownPropsTransformer} from asset-tags-admin-web"
 						/>
 					</liferay-ui:search-container-column-text>
 				</c:when>

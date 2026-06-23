@@ -40,12 +40,12 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Andrea Sbarra
@@ -143,23 +143,21 @@ public class CommerceAccountDisplayContext {
 	}
 
 	public List<User> getAllowedUsers() throws PortalException {
-		List<User> companyUsers = _userService.getCompanyUsers(
-			_commerceAccountRelRequestHelper.getCompanyId(), QueryUtil.ALL_POS,
-			QueryUtil.ALL_POS);
+		return TransformUtil.transform(
+			_userService.getCompanyUsers(
+				_commerceAccountRelRequestHelper.getCompanyId(),
+				QueryUtil.ALL_POS, QueryUtil.ALL_POS),
+			user -> {
+				if (_accountEntryModelResourcePermission.contains(
+						PermissionCheckerFactoryUtil.create(user), 0,
+						CommerceAccountActionKeys.
+							MANAGE_AVAILABLE_ACCOUNTS_VIA_USER_CHANNEL_REL)) {
 
-		List<User> filteredUsers = new ArrayList<>();
+					return user;
+				}
 
-		for (User user : companyUsers) {
-			if (_accountEntryModelResourcePermission.contains(
-					PermissionCheckerFactoryUtil.create(user), 0,
-					CommerceAccountActionKeys.
-						MANAGE_AVAILABLE_ACCOUNTS_VIA_USER_CHANNEL_REL)) {
-
-				filteredUsers.add(user);
-			}
-		}
-
-		return filteredUsers;
+				return null;
+			});
 	}
 
 	public long getCommerceChannelId() {
@@ -281,8 +279,9 @@ public class CommerceAccountDisplayContext {
 			});
 
 		return ListUtil.filter(
-			_commerceChannelService.getCommerceChannels(
-				_commerceAccountRelRequestHelper.getCompanyId()),
+			_commerceChannelService.getEligibleCommerceChannels(
+				_accountEntry.getAccountEntryId(), null, QueryUtil.ALL_POS,
+				QueryUtil.ALL_POS),
 			commerceChannel -> !commerceChannelIds.contains(
 				commerceChannel.getCommerceChannelId()));
 	}

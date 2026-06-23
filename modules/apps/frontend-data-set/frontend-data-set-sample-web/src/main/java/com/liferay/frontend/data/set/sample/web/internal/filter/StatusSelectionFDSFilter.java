@@ -22,14 +22,14 @@ import org.osgi.service.component.annotations.Component;
  * @author Javier de Arcos
  */
 @Component(
-	property = "frontend.data.set.name=" + FDSSampleFDSNames.CUSTOMIZED,
+	property = "frontend.data.set.name=" + FDSSampleFDSNames.ADVANCED,
 	service = FDSFilter.class
 )
 public class StatusSelectionFDSFilter extends BaseSelectionFDSFilter {
 
 	@Override
 	public String getEntityFieldType() {
-		return FDSEntityFieldTypes.COLLECTION;
+		return FDSEntityFieldTypes.COLLECTION_INTEGER;
 	}
 
 	@Override

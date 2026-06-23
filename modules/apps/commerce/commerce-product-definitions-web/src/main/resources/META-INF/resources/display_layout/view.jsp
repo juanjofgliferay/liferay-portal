@@ -79,7 +79,7 @@ if (selLayout != null) {
 			"removeIcon", removeCPDefinitionIcon
 		).build()
 	%>'
-	module="js/EditDisplayLayout"
+	module="{EditDisplayLayout} from commerce-product-definitions-web"
 />
 
 <commerce-ui:panel
@@ -95,6 +95,5 @@ if (selLayout != null) {
 		creationMenu="<%= cpDefinitionDisplayLayoutDisplayContext.getCreationMenu() %>"
 		dataProviderKey="<%= CommerceProductFDSNames.PRODUCT_DISPLAY_PAGES %>"
 		id="<%= CommerceProductFDSNames.PRODUCT_DISPLAY_PAGES %>"
-		itemsPerPage="<%= 10 %>"
 	/>
 </commerce-ui:panel>

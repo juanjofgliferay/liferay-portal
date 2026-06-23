@@ -6,17 +6,25 @@
 package com.liferay.object.internal.model.listener;
 
 import com.liferay.object.model.ObjectDefinition;
+import com.liferay.object.service.ObjectDefinitionLocalService;
+import com.liferay.object.service.ObjectRelationshipLocalService;
+import com.liferay.object.tree.Node;
+import com.liferay.object.tree.ObjectDefinitionTreeFactory;
+import com.liferay.object.tree.Tree;
 import com.liferay.portal.kernel.audit.AuditMessage;
 import com.liferay.portal.kernel.audit.AuditRouter;
 import com.liferay.portal.kernel.exception.ModelListenerException;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.model.BaseModelListener;
 import com.liferay.portal.kernel.model.ModelListener;
+import com.liferay.portal.kernel.search.Indexer;
+import com.liferay.portal.kernel.search.IndexerRegistryUtil;
 import com.liferay.portal.security.audit.event.generators.constants.EventTypes;
 import com.liferay.portal.security.audit.event.generators.util.Attribute;
 import com.liferay.portal.security.audit.event.generators.util.AttributesBuilder;
 import com.liferay.portal.security.audit.event.generators.util.AuditMessageBuilder;
 
+import java.util.Iterator;
 import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
@@ -28,6 +36,43 @@ import org.osgi.service.component.annotations.Reference;
 @Component(service = ModelListener.class)
 public class ObjectDefinitionModelListener
 	extends BaseModelListener<ObjectDefinition> {
+
+	@Override
+	public void onAfterUpdate(
+			ObjectDefinition originalObjectDefinition,
+			ObjectDefinition objectDefinition)
+		throws ModelListenerException {
+
+		if (!objectDefinition.isRootNode()) {
+			return;
+		}
+
+		ObjectDefinitionTreeFactory objectDefinitionTreeFactory =
+			new ObjectDefinitionTreeFactory(
+				_objectDefinitionLocalService, _objectRelationshipLocalService);
+
+		try {
+			Tree tree = objectDefinitionTreeFactory.create(
+				objectDefinition.getObjectDefinitionId());
+
+			Iterator<Node> iterator = tree.iterator();
+
+			while (iterator.hasNext()) {
+				Node node = iterator.next();
+
+				Indexer<ObjectDefinition> indexer =
+					IndexerRegistryUtil.nullSafeGetIndexer(
+						ObjectDefinition.class);
+
+				indexer.reindex(
+					_objectDefinitionLocalService.getObjectDefinition(
+						node.getPrimaryKey()));
+			}
+		}
+		catch (Exception exception) {
+			throw new ModelListenerException(exception);
+		}
+	}
 
 	@Override
 	public void onBeforeCreate(ObjectDefinition objectDefinition)
@@ -52,8 +97,8 @@ public class ObjectDefinitionModelListener
 		try {
 			_auditRouter.route(
 				AuditMessageBuilder.buildAuditMessage(
-					EventTypes.UPDATE, ObjectDefinition.class.getName(),
-					objectDefinition.getObjectDefinitionId(),
+					ObjectDefinition.class.getName(),
+					objectDefinition.getObjectDefinitionId(), EventTypes.UPDATE,
 					_getModifiedAttributes(
 						originalObjectDefinition, objectDefinition)));
 		}
@@ -88,8 +133,8 @@ public class ObjectDefinitionModelListener
 
 		try {
 			AuditMessage auditMessage = AuditMessageBuilder.buildAuditMessage(
-				eventType, ObjectDefinition.class.getName(),
-				objectDefinition.getObjectDefinitionId(), null);
+				ObjectDefinition.class.getName(),
+				objectDefinition.getObjectDefinitionId(), eventType, null);
 
 			JSONObject additionalInfoJSONObject =
 				auditMessage.getAdditionalInfo();
@@ -113,5 +158,11 @@ public class ObjectDefinitionModelListener
 
 	@Reference
 	private AuditRouter _auditRouter;
+
+	@Reference
+	private ObjectDefinitionLocalService _objectDefinitionLocalService;
+
+	@Reference
+	private ObjectRelationshipLocalService _objectRelationshipLocalService;
 
 }

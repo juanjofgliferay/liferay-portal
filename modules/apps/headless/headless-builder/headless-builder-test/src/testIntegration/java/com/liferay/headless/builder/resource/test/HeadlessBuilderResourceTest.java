@@ -37,7 +37,6 @@ import com.liferay.object.model.ObjectEntry;
 import com.liferay.object.model.ObjectField;
 import com.liferay.object.model.ObjectFieldSetting;
 import com.liferay.object.model.ObjectRelationship;
-import com.liferay.object.rest.test.util.ObjectDefinitionTestUtil;
 import com.liferay.object.rest.test.util.ObjectEntryTestUtil;
 import com.liferay.object.rest.test.util.ObjectFieldTestUtil;
 import com.liferay.object.rest.test.util.ObjectRelationshipTestUtil;
@@ -45,6 +44,7 @@ import com.liferay.object.service.ObjectDefinitionLocalService;
 import com.liferay.object.service.ObjectEntryLocalService;
 import com.liferay.object.service.ObjectFieldLocalService;
 import com.liferay.object.service.ObjectFieldSettingLocalService;
+import com.liferay.object.test.util.ObjectDefinitionTestUtil;
 import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
@@ -54,6 +54,13 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.ResourceConstants;
+import com.liferay.portal.kernel.model.Role;
+import com.liferay.portal.kernel.model.role.RoleConstants;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
+import com.liferay.portal.kernel.service.RoleLocalService;
+import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.constants.TestDataConstants;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DataGuard;
@@ -61,17 +68,25 @@ import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.HTTPTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.URLCodec;
-import com.liferay.portal.test.rule.FeatureFlags;
+import com.liferay.portal.security.service.access.policy.model.SAPEntry;
+import com.liferay.portal.security.service.access.policy.service.SAPEntryLocalService;
+import com.liferay.portal.test.log.LogCapture;
+import com.liferay.portal.test.log.LoggerTestUtil;
+import com.liferay.portal.test.rule.FeatureFlag;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
 
 import java.io.File;
@@ -82,6 +97,7 @@ import java.text.DateFormat;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import org.junit.Assert;
@@ -98,18 +114,20 @@ import org.skyscreamer.jsonassert.JSONCompareMode;
  * @author Luis Miguel Barcos
  */
 @DataGuard(scope = DataGuard.Scope.METHOD)
-@FeatureFlags("LPS-178642")
+@FeatureFlag("LPS-178642")
 public class HeadlessBuilderResourceTest extends BaseTestCase {
 
 	@ClassRule
 	@Rule
 	public static final AggregateTestRule aggregateTestRule =
-		new LiferayIntegrationTestRule();
+		new AggregateTestRule(
+			new LiferayIntegrationTestRule(),
+			PermissionCheckerMethodTestRule.INSTANCE);
 
 	@BeforeClass
 	public static void setUpClass() {
 		_dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
-			"yyyy-MM-dd'T'00:00:00'Z'");
+			"yyyy-MM-dd'T'00:00:00.000'Z'");
 		_dateTimeFormat = DateFormatFactoryUtil.getSimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 	}
@@ -121,7 +139,7 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 
 		_documentResource = DocumentResource.builder(
 		).authentication(
-			"test@liferay.com", "test"
+			"test@liferay.com", PropsValues.DEFAULT_ADMIN_PASSWORD
 		).locale(
 			LocaleUtil.getDefault()
 		).build();
@@ -139,14 +157,14 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 				null, TestPropsValues.getUserId(),
 				Collections.singletonMap(
 					LocaleUtil.US, RandomTestUtil.randomString()),
-				false, listTypeEntries);
+				false, listTypeEntries, new ServiceContext());
 
 		_objectDefinition1 = _addObjectDefinition(
-			1, false, ObjectDefinitionConstants.SCOPE_COMPANY);
+			1, ObjectDefinitionConstants.SCOPE_COMPANY);
 		_objectDefinition2 = _addObjectDefinition(
-			2, false, ObjectDefinitionConstants.SCOPE_COMPANY);
+			2, ObjectDefinitionConstants.SCOPE_COMPANY);
 		_objectDefinition3 = _addObjectDefinition(
-			3, false, ObjectDefinitionConstants.SCOPE_COMPANY);
+			3, ObjectDefinitionConstants.SCOPE_COMPANY);
 
 		_objectRelationship1 = _addObjectRelationship(
 			_objectDefinition1, _objectDefinition2,
@@ -161,11 +179,11 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 			_objectDefinition2, _objectRelationship2.getName());
 
 		_siteScopedObjectDefinition1 = _addObjectDefinition(
-			1, false, ObjectDefinitionConstants.SCOPE_SITE);
+			1, ObjectDefinitionConstants.SCOPE_SITE);
 		_siteScopedObjectDefinition2 = _addObjectDefinition(
-			2, false, ObjectDefinitionConstants.SCOPE_SITE);
+			2, ObjectDefinitionConstants.SCOPE_SITE);
 		_siteScopedObjectDefinition3 = _addObjectDefinition(
-			3, false, ObjectDefinitionConstants.SCOPE_SITE);
+			3, ObjectDefinitionConstants.SCOPE_SITE);
 
 		_siteScopedObjectRelationship1 = _addObjectRelationship(
 			_siteScopedObjectDefinition1, _siteScopedObjectDefinition2,
@@ -183,7 +201,35 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 	}
 
 	@Test
-	public void testGetInDifferentCompany() throws Exception {
+	public void testGetIndividualObjectEntryByUniqueField() throws Exception {
+		_addAPIApplication(
+			_API_APPLICATION_ERC_1, _API_ENDPOINT_ERC_1, _BASE_URL_1,
+			_objectDefinition1.getExternalReferenceCode(),
+			_objectRelationship1.getName(), _objectRelationship2.getName(),
+			_API_APPLICATION_PATH_1, "textUniqueField",
+			APIApplication.Endpoint.RetrieveType.SINGLE_ELEMENT.getValue(),
+			APIApplication.Endpoint.Scope.COMPANY);
+
+		_publishAPIApplication(_API_APPLICATION_ERC_1);
+
+		_addCustomObjectEntry(
+			1, null, _objectDefinition1, "value1", "valueUnique");
+
+		JSONAssert.assertEquals(
+			JSONUtil.put(
+				"textUniqueProperty", "valueUnique"
+			).toString(),
+			HTTPTestUtil.invokeToJSONObject(
+				null,
+				StringBundler.concat(
+					"c/", _BASE_URL_1, _API_APPLICATION_PATH_1, "/valueUnique"),
+				Http.Method.GET
+			).toString(),
+			JSONCompareMode.LENIENT);
+	}
+
+	@Test
+	public void testGetOpenAPIInDifferentCompany() throws Exception {
 		_addAPIApplication(
 			_API_APPLICATION_ERC_1, _API_ENDPOINT_ERC_1, _BASE_URL_1,
 			_objectDefinition1.getExternalReferenceCode(),
@@ -217,16 +263,23 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 
 		HTTPTestUtil.customize(
 		).withBaseURL(
-			"http://www.able.com:8080"
+			"http://www.able.com:" + PortalUtil.getPortalServerPort(false)
 		).withCredentials(
-			"test@able.com", "test"
+			"test@able.com", PropsValues.DEFAULT_ADMIN_PASSWORD
 		).apply(
 			() -> {
-				Assert.assertEquals(
-					404,
-					HTTPTestUtil.invokeToHttpCode(
-						null, "c/" + _BASE_URL_1 + _API_APPLICATION_PATH_1,
-						Http.Method.GET));
+				try (LogCapture logCapture =
+						LoggerTestUtil.configureLog4JLogger(
+							"portal_web.docroot.errors.code_jsp",
+							LoggerTestUtil.WARN)) {
+
+					Assert.assertEquals(
+						404,
+						HTTPTestUtil.invokeToHttpCode(
+							null, "c/" + _BASE_URL_1 + _API_APPLICATION_PATH_1,
+							Http.Method.GET));
+				}
+
 				Assert.assertFalse(
 					HTTPTestUtil.invokeToJSONObject(
 						null, "openapi", Http.Method.GET
@@ -282,34 +335,6 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 			"headless-builder/applications/by-external-reference-code/" +
 				_API_APPLICATION_ERC_1,
 			Http.Method.GET);
-	}
-
-	@Test
-	public void testGetIndividualObjectEntryByUniqueField() throws Exception {
-		_addAPIApplication(
-			_API_APPLICATION_ERC_1, _API_ENDPOINT_ERC_1, _BASE_URL_1,
-			_objectDefinition1.getExternalReferenceCode(),
-			_objectRelationship1.getName(), _objectRelationship2.getName(),
-			_API_APPLICATION_PATH_1, "textUniqueField",
-			APIApplication.Endpoint.RetrieveType.SINGLE_ELEMENT.getValue(),
-			APIApplication.Endpoint.Scope.COMPANY);
-
-		_publishAPIApplication(_API_APPLICATION_ERC_1);
-
-		_addCustomObjectEntry(
-			1, null, _objectDefinition1, "value1", "valueUnique");
-
-		JSONAssert.assertEquals(
-			JSONUtil.put(
-				"textUniqueProperty", "valueUnique"
-			).toString(),
-			HTTPTestUtil.invokeToJSONObject(
-				null,
-				StringBundler.concat(
-					"c/", _BASE_URL_1, _API_APPLICATION_PATH_1, "/valueUnique"),
-				Http.Method.GET
-			).toString(),
-			JSONCompareMode.LENIENT);
 	}
 
 	@Test
@@ -384,9 +409,14 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 			APIApplication.Endpoint.RetrieveType.COLLECTION.getValue(),
 			APIApplication.Endpoint.Scope.COMPANY);
 
-		_addAPIFilter(
-			_API_ENDPOINT_ERC_1,
-			"textField eq 'value5' or textField eq 'value7'");
+		assertSuccessfulJSONObject(
+			JSONUtil.put(
+				"oDataFilter", "textField eq 'value5' or textField eq 'value7'"
+			).put(
+				"r_apiEndpointToAPIFilters_l_apiEndpointERC",
+				_API_ENDPOINT_ERC_1
+			).toString(),
+			"headless-builder/filters", Http.Method.POST);
 
 		_publishAPIApplication(_API_APPLICATION_ERC_1);
 
@@ -451,7 +481,7 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 			APIApplication.Endpoint.RetrieveType.COLLECTION.getValue(),
 			APIApplication.Endpoint.Scope.COMPANY);
 
-		_addAPISort(_API_ENDPOINT_ERC_1, "textField:asc");
+		_addAPISort("textField:asc");
 
 		_publishAPIApplication(_API_APPLICATION_ERC_1);
 
@@ -636,7 +666,7 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 			APIApplication.Endpoint.RetrieveType.COLLECTION.getValue(),
 			APIApplication.Endpoint.Scope.COMPANY);
 
-		_addAPISort(_API_ENDPOINT_ERC_1, "textField:desc");
+		_addAPISort("textField:desc");
 
 		_publishAPIApplication(_API_APPLICATION_ERC_1);
 
@@ -830,15 +860,25 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 
 		String endpoint1 = "c/" + _BASE_URL_1 + _API_APPLICATION_PATH_1;
 
-		Assert.assertEquals(
-			404,
-			HTTPTestUtil.invokeToHttpCode(null, endpoint1, Http.Method.GET));
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				"portal_web.docroot.errors.code_jsp", LoggerTestUtil.WARN)) {
+
+			Assert.assertEquals(
+				404,
+				HTTPTestUtil.invokeToHttpCode(
+					null, endpoint1, Http.Method.GET));
+		}
 
 		String endpoint2 = "c/" + _BASE_URL_2 + _API_APPLICATION_PATH_2;
 
-		Assert.assertEquals(
-			404,
-			HTTPTestUtil.invokeToHttpCode(null, endpoint2, Http.Method.GET));
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				"portal_web.docroot.errors.code_jsp", LoggerTestUtil.WARN)) {
+
+			Assert.assertEquals(
+				404,
+				HTTPTestUtil.invokeToHttpCode(
+					null, endpoint2, Http.Method.GET));
+		}
 
 		_publishAPIApplication(_API_APPLICATION_ERC_1);
 		_publishAPIApplication(_API_APPLICATION_ERC_2);
@@ -918,22 +958,31 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 			).toString(),
 			JSONCompareMode.LENIENT);
 
-		Assert.assertEquals(
-			404,
-			HTTPTestUtil.invokeToHttpCode(
-				null,
-				StringBundler.concat(
-					"c/", _BASE_URL_1, StringPool.SLASH,
-					RandomTestUtil.randomString()),
-				Http.Method.GET));
-		Assert.assertEquals(
-			404,
-			HTTPTestUtil.invokeToHttpCode(
-				null,
-				StringBundler.concat(
-					"c/", _BASE_URL_2, StringPool.SLASH,
-					RandomTestUtil.randomString()),
-				Http.Method.GET));
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				"portal_web.docroot.errors.code_jsp", LoggerTestUtil.WARN)) {
+
+			Assert.assertEquals(
+				404,
+				HTTPTestUtil.invokeToHttpCode(
+					null,
+					StringBundler.concat(
+						"c/", _BASE_URL_1, StringPool.SLASH,
+						RandomTestUtil.randomString()),
+					Http.Method.GET));
+		}
+
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				"portal_web.docroot.errors.code_jsp", LoggerTestUtil.WARN)) {
+
+			Assert.assertEquals(
+				404,
+				HTTPTestUtil.invokeToHttpCode(
+					null,
+					StringBundler.concat(
+						"c/", _BASE_URL_2, StringPool.SLASH,
+						RandomTestUtil.randomString()),
+					Http.Method.GET));
+		}
 
 		HTTPTestUtil.invokeToJSONObject(
 			JSONUtil.put(
@@ -943,9 +992,15 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 				_API_APPLICATION_ERC_1,
 			Http.Method.PATCH);
 
-		Assert.assertEquals(
-			404,
-			HTTPTestUtil.invokeToHttpCode(null, endpoint1, Http.Method.GET));
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				"portal_web.docroot.errors.code_jsp", LoggerTestUtil.WARN)) {
+
+			Assert.assertEquals(
+				404,
+				HTTPTestUtil.invokeToHttpCode(
+					null, endpoint1, Http.Method.GET));
+		}
+
 		Assert.assertEquals(
 			200,
 			HTTPTestUtil.invokeToHttpCode(null, endpoint2, Http.Method.GET));
@@ -977,7 +1032,7 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 				StringPool.FORWARD_SLASH +
 					StringUtil.toLowerCase(RandomTestUtil.randomString())
 			).put(
-				"r_apiApplicationToAPIEndpoints_c_apiApplicationId",
+				"r_apiApplicationToAPIEndpoints_l_apiApplicationId",
 				apiApplicationJSONObject.getLong("id")
 			).put(
 				"responseAPISchemaToAPIEndpoints",
@@ -1009,7 +1064,7 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 				).put(
 					"name", RandomTestUtil.randomString()
 				).put(
-					"r_apiApplicationToAPISchemas_c_apiApplicationId",
+					"r_apiApplicationToAPISchemas_l_apiApplicationId",
 					apiApplicationJSONObject.getLong("id")
 				)
 			).put(
@@ -1029,11 +1084,11 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 	@Test
 	public void testGetWithIndirectlyUnrelatedObjectEntries() throws Exception {
 		ObjectDefinition objectDefinition1 = _addObjectDefinition(
-			4, false, ObjectDefinitionConstants.SCOPE_COMPANY);
+			4, ObjectDefinitionConstants.SCOPE_COMPANY);
 		ObjectDefinition objectDefinition2 = _addObjectDefinition(
-			5, false, ObjectDefinitionConstants.SCOPE_COMPANY);
+			5, ObjectDefinitionConstants.SCOPE_COMPANY);
 		ObjectDefinition objectDefinition3 = _addObjectDefinition(
-			6, false, ObjectDefinitionConstants.SCOPE_COMPANY);
+			6, ObjectDefinitionConstants.SCOPE_COMPANY);
 
 		ObjectRelationship objectRelationship1 = _addObjectRelationship(
 			objectDefinition2, objectDefinition1,
@@ -1042,11 +1097,66 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 			objectDefinition2, objectDefinition3,
 			ObjectRelationshipConstants.TYPE_ONE_TO_MANY);
 
-		_addAPIApplication(
-			_API_APPLICATION_ERC_1, _API_ENDPOINT_ERC_1, _BASE_URL_1,
-			objectDefinition1.getExternalReferenceCode(),
-			objectRelationship1.getName(), objectRelationship2.getName(),
-			_API_APPLICATION_PATH_1);
+		String apiSchemaExternalReferenceCode = RandomTestUtil.randomString();
+
+		assertSuccessfulJSONObject(
+			JSONUtil.put(
+				"apiApplicationToAPIEndpoints",
+				JSONUtil.putAll(
+					_createAPIEndpoint(
+						_API_ENDPOINT_ERC_1, Http.Method.GET,
+						_API_APPLICATION_PATH_1, null,
+						APIApplication.Endpoint.RetrieveType.COLLECTION.
+							getValue(),
+						APIApplication.Endpoint.Scope.COMPANY))
+			).put(
+				"apiApplicationToAPISchemas",
+				JSONUtil.put(
+					JSONUtil.put(
+						"apiSchemaToAPIProperties",
+						JSONUtil.putAll(
+							JSONUtil.put(
+								"description", "description"
+							).put(
+								"name", "integerProperty4"
+							).put(
+								"objectFieldERC",
+								_API_SCHEMA_INTEGER_FIELD_ERC + 4
+							),
+							JSONUtil.put(
+								"description", "description"
+							).put(
+								"name", "relatedTextProperty6"
+							).put(
+								"objectFieldERC", _API_SCHEMA_TEXT_FIELD_ERC + 6
+							).put(
+								"objectRelationshipNames",
+								objectRelationship1.getName() + "," +
+									objectRelationship2.getName()
+							))
+					).put(
+						"description", "description"
+					).put(
+						"externalReferenceCode", apiSchemaExternalReferenceCode
+					).put(
+						"mainObjectDefinitionERC",
+						objectDefinition1.getExternalReferenceCode()
+					).put(
+						"name", "name"
+					))
+			).put(
+				"applicationStatus", "unpublished"
+			).put(
+				"baseURL", _BASE_URL_1
+			).put(
+				"externalReferenceCode", _API_APPLICATION_ERC_1
+			).put(
+				"title", RandomTestUtil.randomString()
+			).toString(),
+			"headless-builder/applications", Http.Method.POST);
+
+		_relateAPIEndpointWithAPISchemas(
+			_API_ENDPOINT_ERC_1, apiSchemaExternalReferenceCode);
 
 		_publishAPIApplication(_API_APPLICATION_ERC_1);
 
@@ -1116,6 +1226,520 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 	}
 
 	@Test
+	public void testGetWithPostEndpoint() throws Exception {
+		String apiSchemaExternalReferenceCode = RandomTestUtil.randomString();
+
+		assertSuccessfulJSONObject(
+			JSONUtil.put(
+				"apiApplicationToAPIEndpoints",
+				JSONUtil.putAll(
+
+					// Order is relevant to reproduce the issue. See LPS-202115.
+
+					_createAPIEndpoint(
+						_API_ENDPOINT_ERC_2, Http.Method.POST,
+						"/testpost", null,
+						APIApplication.Endpoint.RetrieveType.SINGLE_ELEMENT.
+							getValue(),
+						APIApplication.Endpoint.Scope.COMPANY),
+					_createAPIEndpoint(
+						_API_ENDPOINT_ERC_1, Http.Method.GET,
+						"/testget", null,
+						APIApplication.Endpoint.RetrieveType.COLLECTION.
+							getValue(),
+						APIApplication.Endpoint.Scope.COMPANY))
+			).put(
+				"apiApplicationToAPISchemas",
+				JSONUtil.put(
+					JSONUtil.put(
+						"apiSchemaToAPIProperties",
+						JSONUtil.putAll(
+							JSONUtil.put(
+								"description", "description"
+							).put(
+								"name", "attachmentProperty"
+							).put(
+								"objectFieldERC",
+								_API_SCHEMA_ATTACHMENT_FIELD_ERC + 1
+							),
+							JSONUtil.put(
+								"description", "description"
+							).put(
+								"name", "booleanProperty"
+							).put(
+								"objectFieldERC",
+								_API_SCHEMA_BOOLEAN_FIELD_ERC + 1
+							),
+							JSONUtil.put(
+								"description", "description"
+							).put(
+								"name", "dateProperty"
+							).put(
+								"objectFieldERC",
+								_API_SCHEMA_DATE_FIELD_ERC + 1
+							),
+							JSONUtil.put(
+								"description", "description"
+							).put(
+								"name", "dateTimeProperty"
+							).put(
+								"objectFieldERC",
+								_API_SCHEMA_DATE_TIME_FIELD_ERC + 1
+							),
+							JSONUtil.put(
+								"description", "description"
+							).put(
+								"name", "decimalProperty"
+							).put(
+								"objectFieldERC",
+								_API_SCHEMA_DECIMAL_FIELD_ERC + 1
+							),
+							JSONUtil.put(
+								"description", "description"
+							).put(
+								"name", "integerProperty"
+							).put(
+								"objectFieldERC",
+								_API_SCHEMA_INTEGER_FIELD_ERC + 1
+							),
+							JSONUtil.put(
+								"description", "description"
+							).put(
+								"name", "longIntegerProperty"
+							).put(
+								"objectFieldERC",
+								_API_SCHEMA_LONG_INTEGER_FIELD_ERC + 1
+							),
+							JSONUtil.put(
+								"description", "description"
+							).put(
+								"name", "longTextProperty"
+							).put(
+								"objectFieldERC",
+								_API_SCHEMA_LONG_TEXT_FIELD_ERC + 1
+							),
+							JSONUtil.put(
+								"description", "description"
+							).put(
+								"name", "multiselectPicklistProperty"
+							).put(
+								"objectFieldERC",
+								_API_SCHEMA_MULTISELECT_PICKLIST_FIELD_ERC + 1
+							),
+							JSONUtil.put(
+								"description", "description"
+							).put(
+								"name", "picklistProperty"
+							).put(
+								"objectFieldERC",
+								_API_SCHEMA_PICKLIST_FIELD_ERC + 1
+							),
+							JSONUtil.put(
+								"description", "description"
+							).put(
+								"name", "precisionDecimalProperty"
+							).put(
+								"objectFieldERC",
+								_API_SCHEMA_PRECISION_DECIMAL_FIELD_ERC + 1
+							),
+							JSONUtil.put(
+								"description", "description"
+							).put(
+								"name", "richTextProperty"
+							).put(
+								"objectFieldERC",
+								_API_SCHEMA_RICH_TEXT_FIELD_ERC + 1
+							),
+							JSONUtil.put(
+								"description", "description"
+							).put(
+								"name", "textProperty"
+							).put(
+								"objectFieldERC",
+								_API_SCHEMA_TEXT_FIELD_ERC + 1
+							),
+							JSONUtil.put(
+								"description", "description"
+							).put(
+								"name", "textUniqueProperty"
+							).put(
+								"objectFieldERC",
+								_API_SCHEMA_UNIQUE_TEXT_FIELD_ERC + 1
+							))
+					).put(
+						"description", "description"
+					).put(
+						"externalReferenceCode", apiSchemaExternalReferenceCode
+					).put(
+						"mainObjectDefinitionERC",
+						_objectDefinition1.getExternalReferenceCode()
+					).put(
+						"name", "name"
+					))
+			).put(
+				"applicationStatus", "unpublished"
+			).put(
+				"baseURL", _BASE_URL_1
+			).put(
+				"externalReferenceCode",
+				_API_APPLICATION_ERC_1
+			).put(
+				"title", RandomTestUtil.randomString()
+			).toString(),
+			"headless-builder/applications", Http.Method.POST);
+		assertSuccessfulJSONObject(
+			null,
+			StringBundler.concat(
+				"headless-builder/schemas/by-external-reference-code/",
+				apiSchemaExternalReferenceCode,
+				"/responseAPISchemaToAPIEndpoints/", _API_ENDPOINT_ERC_1),
+			Http.Method.PUT);
+		assertSuccessfulJSONObject(
+			null,
+			StringBundler.concat(
+				"headless-builder/schemas/by-external-reference-code/",
+				apiSchemaExternalReferenceCode,
+				"/requestAPISchemaToAPIEndpoints/", _API_ENDPOINT_ERC_2),
+			Http.Method.PUT);
+		assertSuccessfulJSONObject(
+			null,
+			StringBundler.concat(
+				"headless-builder/schemas/by-external-reference-code/",
+				apiSchemaExternalReferenceCode,
+				"/responseAPISchemaToAPIEndpoints/", _API_ENDPOINT_ERC_2),
+			Http.Method.PUT);
+
+		_publishAPIApplication(_API_APPLICATION_ERC_1);
+
+		Document document = _addRandomDocument();
+
+		long attachmentPropertyIdValue = document.getId();
+
+		boolean booleanPropertyValue = RandomTestUtil.randomBoolean();
+		String datePropertyValue = _dateFormat.format(
+			RandomTestUtil.nextDate());
+		String dateTimePropertyValue = _dateTimeFormat.format(
+			RandomTestUtil.nextDate());
+		double decimalPropertyValue = RandomTestUtil.randomDouble();
+		int integerPropertyValue = RandomTestUtil.randomInt();
+		long longIntegerPropertyValue = RandomTestUtil.randomLong(
+			ObjectFieldValidationConstants.BUSINESS_TYPE_LONG_VALUE_MIN,
+			ObjectFieldValidationConstants.BUSINESS_TYPE_LONG_VALUE_MAX);
+		String longTextPropertyValue = RandomTestUtil.randomString();
+		Serializable multiselectPicklistPropertyValue =
+			(Serializable)TransformUtil.transform(
+				Arrays.asList(ListTypeValue.VALUE1, ListTypeValue.VALUE3),
+				ListTypeValue::name);
+		String picklistPropertyValue = ListTypeValue.VALUE1.name();
+		double precisionDecimalPropertyValue = 1.1;
+		String richTextPropertyValue = RandomTestUtil.randomString();
+		String textPropertyValue = RandomTestUtil.randomString();
+		String textUniquePropertyValue = "Unique field value";
+
+		JSONObject expectedJSONObject = JSONUtil.put(
+			"attachmentProperty", JSONUtil.put("id", attachmentPropertyIdValue)
+		).put(
+			"booleanProperty", booleanPropertyValue
+		).put(
+			"dateProperty", datePropertyValue
+		).put(
+			"dateTimeProperty", dateTimePropertyValue
+		).put(
+			"decimalProperty", decimalPropertyValue
+		).put(
+			"integerProperty", integerPropertyValue
+		).put(
+			"longIntegerProperty", (Long)longIntegerPropertyValue
+		).put(
+			"longTextProperty", longTextPropertyValue
+		).put(
+			"multiselectPicklistProperty",
+			JSONUtil.putAll(
+				JSONUtil.put(
+					"key", ListTypeValue.VALUE1
+				).put(
+					"name", ListTypeValue.VALUE1
+				),
+				JSONUtil.put(
+					"key", ListTypeValue.VALUE3
+				).put(
+					"name", ListTypeValue.VALUE3
+				))
+		).put(
+			"picklistProperty",
+			JSONUtil.put(
+				"key", ListTypeValue.VALUE1
+			).put(
+				"name", ListTypeValue.VALUE1
+			)
+		).put(
+			"precisionDecimalProperty", precisionDecimalPropertyValue
+		).put(
+			"richTextProperty", richTextPropertyValue
+		).put(
+			"textProperty", textPropertyValue
+		).put(
+			"textUniqueProperty", textUniquePropertyValue
+		);
+
+		JSONAssert.assertEquals(
+			expectedJSONObject.toString(),
+			HTTPTestUtil.invokeToJSONObject(
+				JSONUtil.put(
+					"attachmentProperty", attachmentPropertyIdValue
+				).put(
+					"booleanProperty", booleanPropertyValue
+				).put(
+					"dateProperty", datePropertyValue
+				).put(
+					"dateTimeProperty", dateTimePropertyValue
+				).put(
+					"decimalProperty", decimalPropertyValue
+				).put(
+					"integerProperty", integerPropertyValue
+				).put(
+					"longIntegerProperty", longIntegerPropertyValue
+				).put(
+					"longTextProperty", longTextPropertyValue
+				).put(
+					"multiselectPicklistProperty",
+					multiselectPicklistPropertyValue
+				).put(
+					"picklistProperty", picklistPropertyValue
+				).put(
+					"precisionDecimalProperty", precisionDecimalPropertyValue
+				).put(
+					"richTextProperty", richTextPropertyValue
+				).put(
+					"textProperty", textPropertyValue
+				).put(
+					"textUniqueProperty", textUniquePropertyValue
+				).toString(),
+				StringBundler.concat("c/", _BASE_URL_1, "/testpost"),
+				Http.Method.POST
+			).toString(),
+			JSONCompareMode.LENIENT);
+		JSONAssert.assertEquals(
+			JSONUtil.put(
+				"items", JSONUtil.putAll(expectedJSONObject)
+			).toString(),
+			HTTPTestUtil.invokeToJSONObject(
+				null, StringBundler.concat("c/", _BASE_URL_1, "/testget"),
+				Http.Method.GET
+			).toString(),
+			JSONCompareMode.LENIENT);
+	}
+
+	@FeatureFlag("LPD-10964")
+	@Test
+	public void testGetWithRecordProperty() throws Exception {
+		_addAPIApplicationWithRecordProperty(
+			Http.Method.GET, _objectDefinition1.getExternalReferenceCode());
+
+		_publishAPIApplication(_API_APPLICATION_ERC_1);
+
+		ObjectEntry objectEntry1 = _addCustomObjectEntry(
+			1, null, _objectDefinition1, "value1",
+			RandomTestUtil.randomString());
+		ObjectEntry objectEntry2 = _addCustomObjectEntry(
+			2, null, _objectDefinition2, "value2",
+			RandomTestUtil.randomString());
+
+		_relateObjectEntries(objectEntry1, objectEntry2, _objectRelationship1);
+
+		_testGetWithRecordProperty(
+			JSONUtil.putAll(
+				JSONUtil.put(
+					"description", "description"
+				).put(
+					"externalReferenceCode", _API_PROPERTY_RECORD_ERC_1
+				).put(
+					"name", "record1"
+				).put(
+					"type", "record"
+				),
+				JSONUtil.put(
+					"description", "description"
+				).put(
+					"externalReferenceCode", _API_PROPERTY_VALUE_ERC_1
+				).put(
+					"name", "integerProperty"
+				).put(
+					"objectFieldERC", _API_SCHEMA_INTEGER_FIELD_ERC + 1
+				)),
+			JSONUtil.put("integerProperty", 1), objectEntry1);
+		_testGetWithRecordProperty(
+			JSONUtil.putAll(
+				JSONUtil.put(
+					"description", "description"
+				).put(
+					"externalReferenceCode", _API_PROPERTY_RECORD_ERC_1
+				).put(
+					"name", "record1"
+				).put(
+					"type", "record"
+				),
+				JSONUtil.put(
+					"description", "description"
+				).put(
+					"externalReferenceCode", _API_PROPERTY_RECORD_ERC_2
+				).put(
+					"name", "record2"
+				).put(
+					"type", "record"
+				),
+				JSONUtil.put(
+					"description", "description"
+				).put(
+					"externalReferenceCode", _API_PROPERTY_RECORD_ERC_3
+				).put(
+					"name", "record3"
+				).put(
+					"r_apiPropertyToAPIProperties_l_apiPropertyERC",
+					_API_PROPERTY_RECORD_ERC_2
+				).put(
+					"type", "record"
+				),
+				JSONUtil.put(
+					"description", "description"
+				).put(
+					"externalReferenceCode", _API_PROPERTY_RECORD_ERC_4
+				).put(
+					"name", "record4"
+				).put(
+					"type", "record"
+				),
+				JSONUtil.put(
+					"description", "description"
+				).put(
+					"externalReferenceCode", _API_PROPERTY_RECORD_ERC_5
+				).put(
+					"name", "record5"
+				).put(
+					"r_apiPropertyToAPIProperties_l_apiPropertyERC",
+					_API_PROPERTY_RECORD_ERC_4
+				).put(
+					"type", "record"
+				),
+				JSONUtil.put(
+					"description", "description"
+				).put(
+					"externalReferenceCode", _API_PROPERTY_VALUE_ERC_1
+				).put(
+					"name", "integerProperty"
+				).put(
+					"objectFieldERC", _API_SCHEMA_INTEGER_FIELD_ERC + 1
+				).put(
+					"r_apiPropertyToAPIProperties_l_apiPropertyERC",
+					_API_PROPERTY_RECORD_ERC_2
+				),
+				JSONUtil.put(
+					"description", "description"
+				).put(
+					"externalReferenceCode", _API_PROPERTY_VALUE_ERC_2
+				).put(
+					"name", "relatedMultiselectPicklistProperty"
+				).put(
+					"objectFieldERC",
+					_API_SCHEMA_MULTISELECT_PICKLIST_FIELD_ERC + 2
+				).put(
+					"objectRelationshipNames", _objectRelationship1.getName()
+				).put(
+					"r_apiPropertyToAPIProperties_l_apiPropertyERC",
+					_API_PROPERTY_RECORD_ERC_5
+				)),
+			JSONUtil.put(
+				"record2", JSONUtil.put("integerProperty", 1)
+			).put(
+				"record4",
+				JSONUtil.put(
+					"record5",
+					JSONUtil.put(
+						"relatedMultiselectPicklistProperty",
+						Collections.emptyList()))
+			),
+			objectEntry1);
+
+		_disassociateAPIProperties();
+
+		_testGetWithRecordProperty(
+			JSONUtil.putAll(
+				JSONUtil.put(
+					"description", "description"
+				).put(
+					"externalReferenceCode", _API_PROPERTY_RECORD_ERC_1
+				).put(
+					"name", "record1"
+				).put(
+					"type", "record"
+				),
+				JSONUtil.put(
+					"description", "description"
+				).put(
+					"externalReferenceCode", _API_PROPERTY_RECORD_ERC_2
+				).put(
+					"name", "record2"
+				).put(
+					"r_apiPropertyToAPIProperties_l_apiPropertyERC",
+					_API_PROPERTY_RECORD_ERC_1
+				).put(
+					"type", "record"
+				),
+				JSONUtil.put(
+					"description", "description"
+				).put(
+					"externalReferenceCode", _API_PROPERTY_RECORD_ERC_3
+				).put(
+					"name", "record3"
+				).put(
+					"r_apiPropertyToAPIProperties_l_apiPropertyERC",
+					_API_PROPERTY_RECORD_ERC_2
+				).put(
+					"type", "record"
+				),
+				JSONUtil.put(
+					"description", "description"
+				).put(
+					"externalReferenceCode", _API_PROPERTY_VALUE_ERC_1
+				).put(
+					"name", "integerProperty"
+				).put(
+					"objectFieldERC", _API_SCHEMA_INTEGER_FIELD_ERC + 1
+				).put(
+					"r_apiPropertyToAPIProperties_l_apiPropertyERC",
+					_API_PROPERTY_RECORD_ERC_2
+				),
+				JSONUtil.put(
+					"description", "description"
+				).put(
+					"externalReferenceCode", _API_PROPERTY_VALUE_ERC_2
+				).put(
+					"name", "relatedMultiselectPicklistProperty"
+				).put(
+					"objectFieldERC",
+					_API_SCHEMA_MULTISELECT_PICKLIST_FIELD_ERC + 2
+				).put(
+					"objectRelationshipNames", _objectRelationship1.getName()
+				).put(
+					"r_apiPropertyToAPIProperties_l_apiPropertyERC",
+					_API_PROPERTY_RECORD_ERC_3
+				)),
+			JSONUtil.put(
+				"record1",
+				JSONUtil.put(
+					"record2",
+					JSONUtil.put(
+						"integerProperty", 1
+					).put(
+						"record3",
+						JSONUtil.put(
+							"relatedMultiselectPicklistProperty",
+							Collections.emptyList())
+					))),
+			objectEntry1);
+	}
+
+	@Test
 	public void testGetWithRelatedModel() throws Exception {
 		JSONObject apiApplicationJSONObject = HTTPTestUtil.invokeToJSONObject(
 			JSONUtil.put(
@@ -1147,7 +1771,7 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 				StringPool.FORWARD_SLASH +
 					StringUtil.toLowerCase(RandomTestUtil.randomString())
 			).put(
-				"r_apiApplicationToAPIEndpoints_c_apiApplicationId",
+				"r_apiApplicationToAPIEndpoints_l_apiApplicationId",
 				apiApplicationJSONObject.getLong("id")
 			).put(
 				"responseAPISchemaToAPIEndpoints",
@@ -1172,7 +1796,7 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 				).put(
 					"name", RandomTestUtil.randomString()
 				).put(
-					"r_apiApplicationToAPISchemas_c_apiApplicationId",
+					"r_apiApplicationToAPISchemas_l_apiApplicationId",
 					apiApplicationJSONObject.getLong("id")
 				)
 			).put(
@@ -1378,6 +2002,73 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 	}
 
 	@Test
+	public void testGetWithServiceAccessPolicy() throws Exception {
+		_addAPIApplication(
+			_API_APPLICATION_ERC_1, _API_ENDPOINT_ERC_1, _BASE_URL_1,
+			_objectDefinition1.getExternalReferenceCode(),
+			_objectRelationship1.getName(), _objectRelationship2.getName(),
+			_API_APPLICATION_PATH_1, null,
+			APIApplication.Endpoint.RetrieveType.COLLECTION.getValue(),
+			APIApplication.Endpoint.Scope.COMPANY);
+
+		_publishAPIApplication(_API_APPLICATION_ERC_1);
+
+		ObjectEntry objectEntry = _addCustomObjectEntry(
+			0, null, _objectDefinition1, RandomTestUtil.randomString(),
+			RandomTestUtil.randomString());
+
+		Role guestRole = _roleLocalService.getRole(
+			TestPropsValues.getCompanyId(), RoleConstants.GUEST);
+
+		_resourcePermissionLocalService.setResourcePermissions(
+			TestPropsValues.getCompanyId(), _objectDefinition1.getClassName(),
+			ResourceConstants.SCOPE_INDIVIDUAL,
+			String.valueOf(objectEntry.getObjectEntryId()),
+			guestRole.getRoleId(), new String[] {ActionKeys.VIEW});
+
+		_addCustomObjectEntry(
+			0, null, _objectDefinition1, RandomTestUtil.randomString(),
+			RandomTestUtil.randomString());
+
+		_sapEntry = _sapEntryLocalService.addSAPEntry(
+			TestPropsValues.getUserId(),
+			"com.liferay.headless.builder.internal.resource." +
+				"HeadlessBuilderResourceImpl#get",
+			true, true, RandomTestUtil.randomString(),
+			HashMapBuilder.put(
+				LocaleUtil.getDefault(), RandomTestUtil.randomString()
+			).build(),
+			ServiceContextTestUtil.getServiceContext());
+
+		Map<String, Serializable> values = objectEntry.getValues();
+
+		HTTPTestUtil.customize(
+		).withGuest(
+		).apply(
+			() -> JSONAssert.assertEquals(
+				JSONUtil.put(
+					"items",
+					JSONUtil.putAll(
+						JSONUtil.put(
+							"textProperty", values.get("textProperty")))
+				).put(
+					"lastPage", 1
+				).put(
+					"page", 1
+				).put(
+					"pageSize", 20
+				).put(
+					"totalCount", 1
+				).toString(),
+				HTTPTestUtil.invokeToJSONObject(
+					null, "c/" + _BASE_URL_1 + _API_APPLICATION_PATH_1,
+					Http.Method.GET
+				).toString(),
+				JSONCompareMode.LENIENT)
+		);
+	}
+
+	@Test
 	public void testGetWithSiteScopedEndpoint() throws Exception {
 		_addAPIApplication(
 			_API_APPLICATION_ERC_1, _API_ENDPOINT_ERC_1, _BASE_URL_1,
@@ -1389,24 +2080,39 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 
 		String endpointPath = "c/" + _BASE_URL_1 + _API_APPLICATION_PATH_1;
 
-		Assert.assertEquals(
-			404,
-			HTTPTestUtil.invokeToHttpCode(null, endpointPath, Http.Method.GET));
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				"portal_web.docroot.errors.code_jsp", LoggerTestUtil.WARN)) {
+
+			Assert.assertEquals(
+				404,
+				HTTPTestUtil.invokeToHttpCode(
+					null, endpointPath, Http.Method.GET));
+		}
 
 		String scopedEndpointPath = StringBundler.concat(
 			"c/", _BASE_URL_1, "/scopes/", TestPropsValues.getGroupId(),
 			_API_APPLICATION_PATH_1);
 
-		Assert.assertEquals(
-			404,
-			HTTPTestUtil.invokeToHttpCode(
-				null, scopedEndpointPath, Http.Method.GET));
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				"portal_web.docroot.errors.code_jsp", LoggerTestUtil.WARN)) {
+
+			Assert.assertEquals(
+				404,
+				HTTPTestUtil.invokeToHttpCode(
+					null, scopedEndpointPath, Http.Method.GET));
+		}
 
 		_publishAPIApplication(_API_APPLICATION_ERC_1);
 
-		Assert.assertEquals(
-			404,
-			HTTPTestUtil.invokeToHttpCode(null, endpointPath, Http.Method.GET));
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				"portal_web.docroot.errors.code_jsp", LoggerTestUtil.WARN)) {
+
+			Assert.assertEquals(
+				404,
+				HTTPTestUtil.invokeToHttpCode(
+					null, endpointPath, Http.Method.GET));
+		}
+
 		Assert.assertEquals(
 			200,
 			HTTPTestUtil.invokeToHttpCode(
@@ -1471,13 +2177,23 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 				_API_APPLICATION_ERC_1,
 			Http.Method.PATCH);
 
-		Assert.assertEquals(
-			404,
-			HTTPTestUtil.invokeToHttpCode(null, endpointPath, Http.Method.GET));
-		Assert.assertEquals(
-			404,
-			HTTPTestUtil.invokeToHttpCode(
-				null, scopedEndpointPath, Http.Method.GET));
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				"portal_web.docroot.errors.code_jsp", LoggerTestUtil.WARN)) {
+
+			Assert.assertEquals(
+				404,
+				HTTPTestUtil.invokeToHttpCode(
+					null, endpointPath, Http.Method.GET));
+		}
+
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				"portal_web.docroot.errors.code_jsp", LoggerTestUtil.WARN)) {
+
+			Assert.assertEquals(
+				404,
+				HTTPTestUtil.invokeToHttpCode(
+					null, scopedEndpointPath, Http.Method.GET));
+		}
 	}
 
 	@Test
@@ -1557,14 +2273,64 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 			_objectFieldLocalService.getObjectField(
 				_objectDefinition1.getObjectDefinitionId(), "id");
 
-		_addAPIApplication(
-			_API_APPLICATION_ERC_1, _API_ENDPOINT_ERC_1, _BASE_URL_1,
-			_objectDefinition1.getExternalReferenceCode(),
-			_API_APPLICATION_PATH_1, null,
-			APIApplication.Endpoint.RetrieveType.COLLECTION.getValue(),
-			APIApplication.Endpoint.Scope.COMPANY,
-			systemObjectFieldCreator.getExternalReferenceCode(),
-			systemObjectFieldId.getExternalReferenceCode());
+		String apiSchemaExternalReferenceCode = RandomTestUtil.randomString();
+
+		assertSuccessfulJSONObject(
+			JSONUtil.put(
+				"apiApplicationToAPIEndpoints",
+				JSONUtil.putAll(
+					_createAPIEndpoint(
+						_API_ENDPOINT_ERC_1, Http.Method.GET,
+						_API_APPLICATION_PATH_1, null,
+						APIApplication.Endpoint.RetrieveType.COLLECTION.
+							getValue(),
+						APIApplication.Endpoint.Scope.COMPANY))
+			).put(
+				"apiApplicationToAPISchemas",
+				JSONUtil.put(
+					JSONUtil.put(
+						"apiSchemaToAPIProperties",
+						JSONUtil.putAll(
+							JSONUtil.put(
+								"description", "description"
+							).put(
+								"name", "id"
+							).put(
+								"objectFieldERC",
+								systemObjectFieldId.getExternalReferenceCode()
+							),
+							JSONUtil.put(
+								"description", "description"
+							).put(
+								"name", "creator"
+							).put(
+								"objectFieldERC",
+								systemObjectFieldCreator.
+									getExternalReferenceCode()
+							))
+					).put(
+						"description", "description"
+					).put(
+						"externalReferenceCode", apiSchemaExternalReferenceCode
+					).put(
+						"mainObjectDefinitionERC",
+						_objectDefinition1.getExternalReferenceCode()
+					).put(
+						"name", "name"
+					))
+			).put(
+				"applicationStatus", "unpublished"
+			).put(
+				"baseURL", _BASE_URL_1
+			).put(
+				"externalReferenceCode", _API_APPLICATION_ERC_1
+			).put(
+				"title", RandomTestUtil.randomString()
+			).toString(),
+			"headless-builder/applications", Http.Method.POST);
+
+		_relateAPIEndpointWithAPISchemas(
+			_API_ENDPOINT_ERC_1, apiSchemaExternalReferenceCode);
 
 		_publishAPIApplication(_API_APPLICATION_ERC_1);
 
@@ -1590,13 +2356,9 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 	}
 
 	@Test
-	public void testPostObjectEntry() throws Exception {
-		ObjectDefinition objectDefinition = _addObjectDefinition(
-			7, true, ObjectDefinitionConstants.SCOPE_COMPANY);
-
+	public void testPostWithAllFields() throws Exception {
 		_addAPIApplicationWithPostEndpoint(
-			_API_APPLICATION_ERC_1, _API_ENDPOINT_ERC_1, _BASE_URL_1, 7,
-			objectDefinition.getExternalReferenceCode(), "/test",
+			true, _objectDefinition1.getExternalReferenceCode(),
 			APIApplication.Endpoint.Scope.COMPANY);
 
 		_publishAPIApplication(_API_APPLICATION_ERC_1);
@@ -1711,8 +2473,522 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 
 		List<ObjectEntry> objectEntries =
 			_objectEntryLocalService.getObjectEntries(
-				0, objectDefinition.getObjectDefinitionId(), QueryUtil.ALL_POS,
-				QueryUtil.ALL_POS);
+				0, _objectDefinition1.getObjectDefinitionId(),
+				QueryUtil.ALL_POS, QueryUtil.ALL_POS);
+
+		Assert.assertEquals(objectEntries.toString(), 1, objectEntries.size());
+	}
+
+	@Test
+	public void testPostWithDuplicateUniqueField() throws Exception {
+		String title = RandomTestUtil.randomString();
+
+		assertSuccessfulJSONObject(
+			JSONUtil.put(
+				"applicationStatus", "unpublished"
+			).put(
+				"baseURL", _BASE_URL_1
+			).put(
+				"externalReferenceCode", _API_APPLICATION_ERC_1
+			).put(
+				"title", title
+			).toString(),
+			"headless-builder/applications", Http.Method.POST);
+
+		JSONAssert.assertEquals(
+			JSONUtil.put(
+				"status", "BAD_REQUEST"
+			).put(
+				"title",
+				"The Base URL is already in use. Please enter a unique Base " +
+					"URL."
+			).toString(),
+			HTTPTestUtil.invokeToJSONObject(
+				JSONUtil.put(
+					"applicationStatus", "unpublished"
+				).put(
+					"baseURL", _BASE_URL_1
+				).put(
+					"externalReferenceCode", _API_APPLICATION_ERC_1
+				).put(
+					"title", title
+				).toString(),
+				"headless-builder/applications", Http.Method.POST
+			).toString(),
+			JSONCompareMode.STRICT);
+	}
+
+	@Test
+	public void testPostWithMissingRequiredField() throws Exception {
+		String objectFieldExternalReferenceCode = RandomTestUtil.randomString();
+
+		ObjectDefinition objectDefinition =
+			ObjectDefinitionTestUtil.publishObjectDefinition(
+				Collections.singletonList(
+					new IntegerObjectFieldBuilder(
+					).externalReferenceCode(
+						objectFieldExternalReferenceCode
+					).labelMap(
+						LocalizedMapUtil.getLocalizedMap(
+							RandomTestUtil.randomString())
+					).name(
+						"integerField"
+					).required(
+						true
+					).build()),
+				ObjectDefinitionConstants.SCOPE_COMPANY);
+
+		String apiSchemaExternalReferenceCode = RandomTestUtil.randomString();
+
+		assertSuccessfulJSONObject(
+			JSONUtil.put(
+				"apiApplicationToAPIEndpoints",
+				JSONUtil.putAll(
+					_createAPIEndpoint(
+						_API_ENDPOINT_ERC_1, Http.Method.POST, "/test", null,
+						APIApplication.Endpoint.RetrieveType.SINGLE_ELEMENT.
+							getValue(),
+						APIApplication.Endpoint.Scope.COMPANY))
+			).put(
+				"apiApplicationToAPISchemas",
+				JSONUtil.put(
+					JSONUtil.put(
+						"apiSchemaToAPIProperties",
+						JSONUtil.putAll(
+							JSONUtil.put(
+								"description", "description"
+							).put(
+								"name", "integerProperty"
+							).put(
+								"objectFieldERC",
+								objectFieldExternalReferenceCode
+							))
+					).put(
+						"description", "description"
+					).put(
+						"externalReferenceCode", apiSchemaExternalReferenceCode
+					).put(
+						"mainObjectDefinitionERC",
+						objectDefinition.getExternalReferenceCode()
+					).put(
+						"name", "name"
+					))
+			).put(
+				"applicationStatus", "unpublished"
+			).put(
+				"baseURL", _BASE_URL_1
+			).put(
+				"externalReferenceCode", _API_APPLICATION_ERC_1
+			).put(
+				"title", RandomTestUtil.randomString()
+			).toString(),
+			"headless-builder/applications", Http.Method.POST);
+		assertSuccessfulJSONObject(
+			null,
+			StringBundler.concat(
+				"headless-builder/schemas/by-external-reference-code/",
+				apiSchemaExternalReferenceCode,
+				"/requestAPISchemaToAPIEndpoints/", _API_ENDPOINT_ERC_1),
+			Http.Method.PUT);
+		assertSuccessfulJSONObject(
+			null,
+			StringBundler.concat(
+				"headless-builder/schemas/by-external-reference-code/",
+				apiSchemaExternalReferenceCode,
+				"/responseAPISchemaToAPIEndpoints/", _API_ENDPOINT_ERC_1),
+			Http.Method.PUT);
+
+		_publishAPIApplication(_API_APPLICATION_ERC_1);
+
+		JSONAssert.assertEquals(
+			JSONUtil.put(
+				"status", "BAD_REQUEST"
+			).put(
+				"title",
+				"No value was provided for required object field " +
+					"\"integerField\""
+			).toString(),
+			HTTPTestUtil.invokeToJSONObject(
+				JSONUtil.put(
+					"booleanProperty", RandomTestUtil.randomBoolean()
+				).toString(),
+				StringBundler.concat("c/", _BASE_URL_1, "/test"),
+				Http.Method.POST
+			).toString(),
+			JSONCompareMode.STRICT);
+	}
+
+	@Test
+	public void testPostWithoutResponseSchema() throws Exception {
+		_addAPIApplicationWithPostEndpoint(
+			false, _objectDefinition1.getExternalReferenceCode(),
+			APIApplication.Endpoint.Scope.COMPANY);
+
+		_publishAPIApplication(_API_APPLICATION_ERC_1);
+
+		String textPropertyValue = RandomTestUtil.randomString();
+
+		JSONAssert.assertEquals(
+			"{}",
+			HTTPTestUtil.invokeToJSONObject(
+				JSONUtil.put(
+					"textProperty", textPropertyValue
+				).toString(),
+				StringBundler.concat("c/", _BASE_URL_1, "/test"),
+				Http.Method.POST
+			).toString(),
+			JSONCompareMode.STRICT);
+
+		List<ObjectEntry> objectEntries =
+			_objectEntryLocalService.getObjectEntries(
+				0, _objectDefinition1.getObjectDefinitionId(),
+				QueryUtil.ALL_POS, QueryUtil.ALL_POS);
+
+		ObjectEntry objectEntry = objectEntries.get(objectEntries.size() - 1);
+
+		Map<String, Serializable> values = objectEntry.getValues();
+
+		Assert.assertEquals(textPropertyValue, values.get("textField"));
+	}
+
+	@FeatureFlag("LPD-10964")
+	@Test
+	public void testPostWithRecordProperty() throws Exception {
+		_addAPIApplicationWithRecordProperty(
+			Http.Method.POST, _objectDefinition1.getExternalReferenceCode());
+
+		_publishAPIApplication(_API_APPLICATION_ERC_1);
+
+		_testPostWithRecordProperty(
+			JSONUtil.putAll(
+				JSONUtil.put(
+					"description", "description"
+				).put(
+					"externalReferenceCode", _API_PROPERTY_RECORD_ERC_1
+				).put(
+					"name", "record1"
+				).put(
+					"type", "record"
+				),
+				JSONUtil.put(
+					"description", "description"
+				).put(
+					"externalReferenceCode", _API_PROPERTY_VALUE_ERC_1
+				).put(
+					"name", "integerProperty"
+				).put(
+					"objectFieldERC", _API_SCHEMA_INTEGER_FIELD_ERC + 1
+				)),
+			JSONUtil.put(
+				"integerProperty", 1
+			).put(
+				"record1", Collections.emptyMap()
+			).toString(),
+			JSONUtil.put("integerProperty", 1));
+		_testPostWithRecordProperty(
+			JSONUtil.putAll(
+				JSONUtil.put(
+					"description", "description"
+				).put(
+					"externalReferenceCode", _API_PROPERTY_RECORD_ERC_1
+				).put(
+					"name", "record1"
+				).put(
+					"type", "record"
+				),
+				JSONUtil.put(
+					"description", "description"
+				).put(
+					"externalReferenceCode", _API_PROPERTY_RECORD_ERC_2
+				).put(
+					"name", "record2"
+				).put(
+					"type", "record"
+				),
+				JSONUtil.put(
+					"description", "description"
+				).put(
+					"externalReferenceCode", _API_PROPERTY_RECORD_ERC_3
+				).put(
+					"name", "record3"
+				).put(
+					"r_apiPropertyToAPIProperties_l_apiPropertyERC",
+					_API_PROPERTY_RECORD_ERC_2
+				).put(
+					"type", "record"
+				),
+				JSONUtil.put(
+					"description", "description"
+				).put(
+					"externalReferenceCode", _API_PROPERTY_RECORD_ERC_4
+				).put(
+					"name", "record4"
+				).put(
+					"type", "record"
+				),
+				JSONUtil.put(
+					"description", "description"
+				).put(
+					"externalReferenceCode", _API_PROPERTY_RECORD_ERC_5
+				).put(
+					"name", "record5"
+				).put(
+					"r_apiPropertyToAPIProperties_l_apiPropertyERC",
+					_API_PROPERTY_RECORD_ERC_4
+				).put(
+					"type", "record"
+				),
+				JSONUtil.put(
+					"description", "description"
+				).put(
+					"externalReferenceCode", _API_PROPERTY_VALUE_ERC_1
+				).put(
+					"name", "integerProperty"
+				).put(
+					"objectFieldERC", _API_SCHEMA_INTEGER_FIELD_ERC + 1
+				).put(
+					"r_apiPropertyToAPIProperties_l_apiPropertyERC",
+					_API_PROPERTY_RECORD_ERC_2
+				),
+				JSONUtil.put(
+					"description", "description"
+				).put(
+					"externalReferenceCode", _API_PROPERTY_VALUE_ERC_2
+				).put(
+					"name", "relatedMultiselectPicklistProperty"
+				).put(
+					"objectFieldERC",
+					_API_SCHEMA_MULTISELECT_PICKLIST_FIELD_ERC + 2
+				).put(
+					"objectRelationshipNames", _objectRelationship1.getName()
+				).put(
+					"r_apiPropertyToAPIProperties_l_apiPropertyERC",
+					_API_PROPERTY_RECORD_ERC_5
+				)),
+			JSONUtil.put(
+				"record1", Collections.emptyMap()
+			).put(
+				"record2",
+				JSONUtil.put(
+					"integerProperty", 1
+				).put(
+					"record3", Collections.emptyMap()
+				)
+			).put(
+				"record4",
+				JSONUtil.put(
+					"record5",
+					JSONUtil.put(
+						"relatedMultiselectPicklistProperty",
+						Collections.emptyList()))
+			).toString(),
+			JSONUtil.put(
+				"record2", JSONUtil.put("integerProperty", 1)
+			).put(
+				"record4",
+				JSONUtil.put(
+					"record5",
+					JSONUtil.put(
+						"relatedMultiselectPicklistProperty",
+						Collections.emptyList()))
+			));
+
+		_disassociateAPIProperties();
+
+		_testPostWithRecordProperty(
+			JSONUtil.putAll(
+				JSONUtil.put(
+					"description", "description"
+				).put(
+					"externalReferenceCode", _API_PROPERTY_RECORD_ERC_1
+				).put(
+					"name", "record1"
+				).put(
+					"type", "record"
+				),
+				JSONUtil.put(
+					"description", "description"
+				).put(
+					"externalReferenceCode", _API_PROPERTY_RECORD_ERC_2
+				).put(
+					"name", "record2"
+				).put(
+					"r_apiPropertyToAPIProperties_l_apiPropertyERC",
+					_API_PROPERTY_RECORD_ERC_1
+				).put(
+					"type", "record"
+				),
+				JSONUtil.put(
+					"description", "description"
+				).put(
+					"externalReferenceCode", _API_PROPERTY_RECORD_ERC_3
+				).put(
+					"name", "record3"
+				).put(
+					"r_apiPropertyToAPIProperties_l_apiPropertyERC",
+					_API_PROPERTY_RECORD_ERC_2
+				).put(
+					"type", "record"
+				),
+				JSONUtil.put(
+					"description", "description"
+				).put(
+					"externalReferenceCode", _API_PROPERTY_VALUE_ERC_1
+				).put(
+					"name", "integerProperty"
+				).put(
+					"objectFieldERC", _API_SCHEMA_INTEGER_FIELD_ERC + 1
+				).put(
+					"r_apiPropertyToAPIProperties_l_apiPropertyERC",
+					_API_PROPERTY_RECORD_ERC_2
+				),
+				JSONUtil.put(
+					"description", "description"
+				).put(
+					"externalReferenceCode", _API_PROPERTY_VALUE_ERC_2
+				).put(
+					"name", "relatedMultiselectPicklistProperty"
+				).put(
+					"objectFieldERC",
+					_API_SCHEMA_MULTISELECT_PICKLIST_FIELD_ERC + 2
+				).put(
+					"objectRelationshipNames", _objectRelationship1.getName()
+				).put(
+					"r_apiPropertyToAPIProperties_l_apiPropertyERC",
+					_API_PROPERTY_RECORD_ERC_3
+				)),
+			JSONUtil.put(
+				"record1",
+				JSONUtil.put(
+					"record2",
+					JSONUtil.put(
+						"integerProperty", 1
+					).put(
+						"record3",
+						JSONUtil.put(
+							"relatedMultiselectPicklistProperty",
+							Collections.emptyList())
+					))
+			).toString(),
+			JSONUtil.put(
+				"record1",
+				JSONUtil.put(
+					"record2",
+					JSONUtil.put(
+						"integerProperty", 1
+					).put(
+						"record3",
+						JSONUtil.put(
+							"relatedMultiselectPicklistProperty",
+							Collections.emptyList())
+					))));
+	}
+
+	@Test
+	public void testPostWithSiteScopedEndpoint() throws Exception {
+		_addAPIApplicationWithPostEndpoint(
+			true, _siteScopedObjectDefinition1.getExternalReferenceCode(),
+			APIApplication.Endpoint.Scope.SITE);
+
+		Document document = _addRandomDocument();
+
+		String body = JSONUtil.put(
+			"attachmentProperty", document.getId()
+		).put(
+			"booleanProperty", RandomTestUtil.randomBoolean()
+		).put(
+			"dateProperty", _dateFormat.format(RandomTestUtil.nextDate())
+		).put(
+			"dateTimeProperty",
+			_dateTimeFormat.format(RandomTestUtil.nextDate())
+		).put(
+			"decimalProperty", RandomTestUtil.randomDouble()
+		).put(
+			"integerProperty", RandomTestUtil.randomInt()
+		).put(
+			"longIntegerProperty",
+			RandomTestUtil.randomLong(
+				ObjectFieldValidationConstants.BUSINESS_TYPE_LONG_VALUE_MIN,
+				ObjectFieldValidationConstants.BUSINESS_TYPE_LONG_VALUE_MAX)
+		).put(
+			"longTextProperty", RandomTestUtil.randomString()
+		).put(
+			"multiselectPicklistProperty",
+			TransformUtil.transform(
+				Arrays.asList(ListTypeValue.VALUE1, ListTypeValue.VALUE3),
+				ListTypeValue::name)
+		).put(
+			"picklistProperty", ListTypeValue.VALUE1.name()
+		).put(
+			"precisionDecimalProperty", 1.1
+		).put(
+			"richTextProperty", RandomTestUtil.randomString()
+		).put(
+			"textProperty", RandomTestUtil.randomString()
+		).put(
+			"textUniqueProperty", "Unique field value"
+		).toString();
+
+		String endpointPath = "c/" + _BASE_URL_1 + "/test";
+
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				"portal_web.docroot.errors.code_jsp", LoggerTestUtil.WARN)) {
+
+			Assert.assertEquals(
+				404,
+				HTTPTestUtil.invokeToHttpCode(
+					body, endpointPath, Http.Method.POST));
+		}
+
+		long groupId = TestPropsValues.getGroupId();
+
+		String scopedEndpointPath = StringBundler.concat(
+			"c/", _BASE_URL_1, "/scopes/", groupId, "/test");
+
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				"portal_web.docroot.errors.code_jsp", LoggerTestUtil.WARN)) {
+
+			Assert.assertEquals(
+				404,
+				HTTPTestUtil.invokeToHttpCode(
+					body, scopedEndpointPath, Http.Method.POST));
+		}
+
+		_publishAPIApplication(_API_APPLICATION_ERC_1);
+
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				"portal_web.docroot.errors.code_jsp", LoggerTestUtil.WARN)) {
+
+			Assert.assertEquals(
+				404,
+				HTTPTestUtil.invokeToHttpCode(
+					body, endpointPath, Http.Method.POST));
+		}
+
+		Assert.assertEquals(
+			200,
+			HTTPTestUtil.invokeToHttpCode(
+				body, scopedEndpointPath, Http.Method.POST));
+
+		List<ObjectEntry> objectEntries =
+			_objectEntryLocalService.getObjectEntries(
+				groupId, _siteScopedObjectDefinition1.getObjectDefinitionId(),
+				QueryUtil.ALL_POS, QueryUtil.ALL_POS);
+
+		Assert.assertEquals(objectEntries.toString(), 1, objectEntries.size());
+
+		scopedEndpointPath = StringBundler.concat(
+			"c/", _BASE_URL_1, "/scopes/", _group.getGroupId(), "/test");
+
+		Assert.assertEquals(
+			200,
+			HTTPTestUtil.invokeToHttpCode(
+				body, scopedEndpointPath, Http.Method.POST));
+
+		objectEntries = _objectEntryLocalService.getObjectEntries(
+			_group.getGroupId(),
+			_siteScopedObjectDefinition1.getObjectDefinitionId(),
+			QueryUtil.ALL_POS, QueryUtil.ALL_POS);
 
 		Assert.assertEquals(objectEntries.toString(), 1, objectEntries.size());
 	}
@@ -1732,146 +3008,16 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 			objectDefinition.getObjectDefinitionId()
 		).objectFieldSettings(
 			Arrays.asList(
-				_createObjectFieldSetting("function", "COUNT"),
 				_createObjectFieldSetting(
-					"objectRelationshipName", relationshipName))
+					ObjectFieldSettingConstants.NAME_FUNCTION,
+					ObjectFieldSettingConstants.VALUE_COUNT),
+				_createObjectFieldSetting(
+					ObjectFieldSettingConstants.NAME_OBJECT_RELATIONSHIP_NAME,
+					relationshipName))
 		).build();
 
 		ObjectFieldTestUtil.addCustomObjectField(
 			TestPropsValues.getUserId(), aggregationObjectField);
-	}
-
-	private void _addAPIApplication(
-			String apiApplicationExternalReferenceCode,
-			String apiEndpointExternalReferenceCode, String baseURL,
-			String objectDefinitionExternalReferenceCode,
-			String objectRelationshipName1, String objectRelationshipName2,
-			String path)
-		throws Exception {
-
-		String apiSchemaExternalReferenceCode = RandomTestUtil.randomString();
-
-		assertSuccessfulJSONObject(
-			JSONUtil.put(
-				"apiApplicationToAPIEndpoints",
-				_createAPIEndpoint(
-					apiEndpointExternalReferenceCode, Http.Method.GET, path,
-					null,
-					APIApplication.Endpoint.RetrieveType.COLLECTION.getValue(),
-					APIApplication.Endpoint.Scope.COMPANY)
-			).put(
-				"apiApplicationToAPISchemas",
-				JSONUtil.put(
-					JSONUtil.put(
-						"apiSchemaToAPIProperties",
-						JSONUtil.putAll(
-							JSONUtil.put(
-								"description", "description"
-							).put(
-								"name", "integerProperty4"
-							).put(
-								"objectFieldERC",
-								_API_SCHEMA_INTEGER_FIELD_ERC + 4
-							),
-							JSONUtil.put(
-								"description", "description"
-							).put(
-								"name", "relatedTextProperty6"
-							).put(
-								"objectFieldERC", _API_SCHEMA_TEXT_FIELD_ERC + 6
-							).put(
-								"objectRelationshipNames",
-								objectRelationshipName1 + "," +
-									objectRelationshipName2
-							))
-					).put(
-						"description", "description"
-					).put(
-						"externalReferenceCode", apiSchemaExternalReferenceCode
-					).put(
-						"mainObjectDefinitionERC",
-						objectDefinitionExternalReferenceCode
-					).put(
-						"name", "name"
-					))
-			).put(
-				"applicationStatus", "unpublished"
-			).put(
-				"baseURL", baseURL
-			).put(
-				"externalReferenceCode", apiApplicationExternalReferenceCode
-			).put(
-				"title", RandomTestUtil.randomString()
-			).toString(),
-			"headless-builder/applications", Http.Method.POST);
-
-		_relateAPIEndpointWithAPISchemas(
-			apiEndpointExternalReferenceCode, apiSchemaExternalReferenceCode);
-	}
-
-	private void _addAPIApplication(
-			String apiApplicationExternalReferenceCode,
-			String apiEndpointExternalReferenceCode, String baseURL,
-			String objectDefinitionExternalReferenceCode, String path,
-			String pathParameter, String retrieveType,
-			APIApplication.Endpoint.Scope scope,
-			String systemObjectFieldCreatorExternalReferenceCode,
-			String systemObjectFieldIdExternalReferenceCode)
-		throws Exception {
-
-		String apiSchemaExternalReferenceCode = RandomTestUtil.randomString();
-
-		assertSuccessfulJSONObject(
-			JSONUtil.put(
-				"apiApplicationToAPIEndpoints",
-				_createAPIEndpoint(
-					apiEndpointExternalReferenceCode, Http.Method.GET, path,
-					pathParameter, retrieveType, scope)
-			).put(
-				"apiApplicationToAPISchemas",
-				JSONUtil.put(
-					JSONUtil.put(
-						"apiSchemaToAPIProperties",
-						JSONUtil.putAll(
-							JSONUtil.put(
-								"description", "description"
-							).put(
-								"name", "id"
-							).put(
-								"objectFieldERC",
-								systemObjectFieldIdExternalReferenceCode
-							),
-							JSONUtil.put(
-								"description", "description"
-							).put(
-								"name", "creator"
-							).put(
-								"objectFieldERC",
-								systemObjectFieldCreatorExternalReferenceCode
-							))
-					).put(
-						"description", "description"
-					).put(
-						"externalReferenceCode", apiSchemaExternalReferenceCode
-					).put(
-						"mainObjectDefinitionERC",
-						objectDefinitionExternalReferenceCode
-					).put(
-						"name", "name"
-					))
-			).put(
-				"applicationStatus", "unpublished"
-			).put(
-				"baseURL", baseURL
-			).put(
-				"externalReferenceCode", apiApplicationExternalReferenceCode
-			).put(
-				"title", RandomTestUtil.randomString()
-			).toString(),
-			"headless-builder/applications", Http.Method.POST);
-
-		_relateAPIEndpointWithAPISchemas(
-			apiEndpointExternalReferenceCode, apiSchemaExternalReferenceCode);
 	}
 
 	private void _addAPIApplication(
@@ -1887,11 +3033,6 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 
 		assertSuccessfulJSONObject(
 			JSONUtil.put(
-				"apiApplicationToAPIEndpoints",
-				_createAPIEndpoint(
-					apiEndpointExternalReferenceCode, Http.Method.GET, path,
-					pathParameter, retrieveType, scope)
-			).put(
 				"apiApplicationToAPISchemas",
 				JSONUtil.put(
 					JSONUtil.put(
@@ -2015,15 +3156,23 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 				"title", RandomTestUtil.randomString()
 			).toString(),
 			"headless-builder/applications", Http.Method.POST);
-
-		_relateAPIEndpointWithAPISchemas(
-			apiEndpointExternalReferenceCode, apiSchemaExternalReferenceCode);
+		assertSuccessfulJSONObject(
+			_createAPIEndpoint(
+				apiEndpointExternalReferenceCode, Http.Method.GET, path,
+				pathParameter, retrieveType, scope
+			).put(
+				"r_apiApplicationToAPIEndpoints_l_apiApplicationERC",
+				apiApplicationExternalReferenceCode
+			).put(
+				"r_responseAPISchemaToAPIEndpoints_l_apiSchemaERC",
+				apiSchemaExternalReferenceCode
+			).toString(),
+			"headless-builder/endpoints", Http.Method.POST);
 	}
 
 	private void _addAPIApplicationWithPostEndpoint(
-			String apiApplicationExternalReferenceCode,
-			String apiEndpointExternalReferenceCode, String baseURL, int index,
-			String objectDefinitionExternalReferenceCode, String path,
+			boolean addResponseSchema,
+			String objectDefinitionExternalReferenceCode,
 			APIApplication.Endpoint.Scope scope)
 		throws Exception {
 
@@ -2032,12 +3181,12 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 		assertSuccessfulJSONObject(
 			JSONUtil.put(
 				"apiApplicationToAPIEndpoints",
-				_createAPIEndpoint(
-					apiEndpointExternalReferenceCode, Http.Method.POST, path,
-					null,
-					APIApplication.Endpoint.RetrieveType.SINGLE_ELEMENT.
-						getValue(),
-					scope)
+				JSONUtil.putAll(
+					_createAPIEndpoint(
+						_API_ENDPOINT_ERC_1, Http.Method.POST, "/test", null,
+						APIApplication.Endpoint.RetrieveType.SINGLE_ELEMENT.
+							getValue(),
+						scope))
 			).put(
 				"apiApplicationToAPISchemas",
 				JSONUtil.put(
@@ -2050,7 +3199,7 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 								"name", "attachmentProperty"
 							).put(
 								"objectFieldERC",
-								_API_SCHEMA_ATTACHMENT_FIELD_ERC + index
+								_API_SCHEMA_ATTACHMENT_FIELD_ERC + 1
 							),
 							JSONUtil.put(
 								"description", "description"
@@ -2058,15 +3207,14 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 								"name", "booleanProperty"
 							).put(
 								"objectFieldERC",
-								_API_SCHEMA_BOOLEAN_FIELD_ERC + index
+								_API_SCHEMA_BOOLEAN_FIELD_ERC + 1
 							),
 							JSONUtil.put(
 								"description", "description"
 							).put(
 								"name", "dateProperty"
 							).put(
-								"objectFieldERC",
-								_API_SCHEMA_DATE_FIELD_ERC + index
+								"objectFieldERC", _API_SCHEMA_DATE_FIELD_ERC + 1
 							),
 							JSONUtil.put(
 								"description", "description"
@@ -2074,7 +3222,7 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 								"name", "dateTimeProperty"
 							).put(
 								"objectFieldERC",
-								_API_SCHEMA_DATE_TIME_FIELD_ERC + index
+								_API_SCHEMA_DATE_TIME_FIELD_ERC + 1
 							),
 							JSONUtil.put(
 								"description", "description"
@@ -2082,7 +3230,7 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 								"name", "decimalProperty"
 							).put(
 								"objectFieldERC",
-								_API_SCHEMA_DECIMAL_FIELD_ERC + index
+								_API_SCHEMA_DECIMAL_FIELD_ERC + 1
 							),
 							JSONUtil.put(
 								"description", "description"
@@ -2090,7 +3238,7 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 								"name", "integerProperty"
 							).put(
 								"objectFieldERC",
-								_API_SCHEMA_INTEGER_FIELD_ERC + index
+								_API_SCHEMA_INTEGER_FIELD_ERC + 1
 							),
 							JSONUtil.put(
 								"description", "description"
@@ -2098,7 +3246,7 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 								"name", "longIntegerProperty"
 							).put(
 								"objectFieldERC",
-								_API_SCHEMA_LONG_INTEGER_FIELD_ERC + index
+								_API_SCHEMA_LONG_INTEGER_FIELD_ERC + 1
 							),
 							JSONUtil.put(
 								"description", "description"
@@ -2106,7 +3254,7 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 								"name", "longTextProperty"
 							).put(
 								"objectFieldERC",
-								_API_SCHEMA_LONG_TEXT_FIELD_ERC + index
+								_API_SCHEMA_LONG_TEXT_FIELD_ERC + 1
 							),
 							JSONUtil.put(
 								"description", "description"
@@ -2114,8 +3262,7 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 								"name", "multiselectPicklistProperty"
 							).put(
 								"objectFieldERC",
-								_API_SCHEMA_MULTISELECT_PICKLIST_FIELD_ERC +
-									index
+								_API_SCHEMA_MULTISELECT_PICKLIST_FIELD_ERC + 1
 							),
 							JSONUtil.put(
 								"description", "description"
@@ -2123,7 +3270,7 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 								"name", "picklistProperty"
 							).put(
 								"objectFieldERC",
-								_API_SCHEMA_PICKLIST_FIELD_ERC + index
+								_API_SCHEMA_PICKLIST_FIELD_ERC + 1
 							),
 							JSONUtil.put(
 								"description", "description"
@@ -2131,7 +3278,7 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 								"name", "precisionDecimalProperty"
 							).put(
 								"objectFieldERC",
-								_API_SCHEMA_PRECISION_DECIMAL_FIELD_ERC + index
+								_API_SCHEMA_PRECISION_DECIMAL_FIELD_ERC + 1
 							),
 							JSONUtil.put(
 								"description", "description"
@@ -2139,15 +3286,14 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 								"name", "richTextProperty"
 							).put(
 								"objectFieldERC",
-								_API_SCHEMA_RICH_TEXT_FIELD_ERC + index
+								_API_SCHEMA_RICH_TEXT_FIELD_ERC + 1
 							),
 							JSONUtil.put(
 								"description", "description"
 							).put(
 								"name", "textProperty"
 							).put(
-								"objectFieldERC",
-								_API_SCHEMA_TEXT_FIELD_ERC + index
+								"objectFieldERC", _API_SCHEMA_TEXT_FIELD_ERC + 1
 							),
 							JSONUtil.put(
 								"description", "description"
@@ -2155,7 +3301,7 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 								"name", "textUniqueProperty"
 							).put(
 								"objectFieldERC",
-								_API_SCHEMA_UNIQUE_TEXT_FIELD_ERC + index
+								_API_SCHEMA_UNIQUE_TEXT_FIELD_ERC + 1
 							))
 					).put(
 						"description", "description"
@@ -2170,9 +3316,9 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 			).put(
 				"applicationStatus", "unpublished"
 			).put(
-				"baseURL", baseURL
+				"baseURL", _BASE_URL_1
 			).put(
-				"externalReferenceCode", apiApplicationExternalReferenceCode
+				"externalReferenceCode", _API_APPLICATION_ERC_1
 			).put(
 				"title", RandomTestUtil.randomString()
 			).toString(),
@@ -2183,43 +3329,96 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 			StringBundler.concat(
 				"headless-builder/schemas/by-external-reference-code/",
 				apiSchemaExternalReferenceCode,
-				"/requestAPISchemaToAPIEndpoints/",
-				apiEndpointExternalReferenceCode),
+				"/requestAPISchemaToAPIEndpoints/", _API_ENDPOINT_ERC_1),
 			Http.Method.PUT);
-		assertSuccessfulJSONObject(
-			null,
-			StringBundler.concat(
-				"headless-builder/schemas/by-external-reference-code/",
-				apiSchemaExternalReferenceCode,
-				"/responseAPISchemaToAPIEndpoints/",
-				apiEndpointExternalReferenceCode),
-			Http.Method.PUT);
+
+		if (addResponseSchema) {
+			assertSuccessfulJSONObject(
+				null,
+				StringBundler.concat(
+					"headless-builder/schemas/by-external-reference-code/",
+					apiSchemaExternalReferenceCode,
+					"/responseAPISchemaToAPIEndpoints/", _API_ENDPOINT_ERC_1),
+				Http.Method.PUT);
+		}
 	}
 
-	private void _addAPIFilter(
-			String apiEndpointExternalReferenceCode, String filterString)
+	private void _addAPIApplicationWithRecordProperty(
+			Http.Method httpMethod,
+			String objectDefinitionExternalReferenceCode)
 		throws Exception {
 
 		assertSuccessfulJSONObject(
 			JSONUtil.put(
-				"oDataFilter", filterString
+				"apiApplicationToAPISchemas",
+				JSONUtil.put(
+					JSONUtil.put(
+						"description", "description"
+					).put(
+						"externalReferenceCode", _API_SCHEMA_OBJECT_PROPERTY_ERC
+					).put(
+						"mainObjectDefinitionERC",
+						objectDefinitionExternalReferenceCode
+					).put(
+						"name", "name"
+					))
 			).put(
-				"r_apiEndpointToAPIFilters_c_apiEndpointERC",
-				apiEndpointExternalReferenceCode
+				"applicationStatus", "unpublished"
+			).put(
+				"baseURL", _BASE_URL_1
+			).put(
+				"externalReferenceCode", _API_APPLICATION_ERC_1
+			).put(
+				"title", RandomTestUtil.randomString()
 			).toString(),
-			"headless-builder/filters", Http.Method.POST);
+			"headless-builder/applications", Http.Method.POST);
+
+		if (Objects.equals(Http.Method.GET, httpMethod)) {
+			assertSuccessfulJSONObject(
+				_createAPIEndpoint(
+					_API_ENDPOINT_ERC_1, Http.Method.GET,
+					_API_APPLICATION_PATH_1,
+					HeadlessBuilderConstants.PATH_PARAMETER_ID,
+					APIApplication.Endpoint.RetrieveType.SINGLE_ELEMENT.
+						getValue(),
+					APIApplication.Endpoint.Scope.COMPANY
+				).put(
+					"r_apiApplicationToAPIEndpoints_l_apiApplicationERC",
+					_API_APPLICATION_ERC_1
+				).put(
+					"r_responseAPISchemaToAPIEndpoints_l_apiSchemaERC",
+					_API_SCHEMA_OBJECT_PROPERTY_ERC
+				).toString(),
+				"headless-builder/endpoints", Http.Method.POST);
+		}
+		else {
+			assertSuccessfulJSONObject(
+				_createAPIEndpoint(
+					_API_ENDPOINT_ERC_1, Http.Method.POST,
+					_API_APPLICATION_PATH_1, null,
+					APIApplication.Endpoint.RetrieveType.SINGLE_ELEMENT.
+						getValue(),
+					APIApplication.Endpoint.Scope.COMPANY
+				).put(
+					"r_apiApplicationToAPIEndpoints_l_apiApplicationERC",
+					_API_APPLICATION_ERC_1
+				).put(
+					"r_responseAPISchemaToAPIEndpoints_l_apiSchemaERC",
+					_API_SCHEMA_OBJECT_PROPERTY_ERC
+				).put(
+					"r_requestAPISchemaToAPIEndpoints_l_apiSchemaERC",
+					_API_SCHEMA_OBJECT_PROPERTY_ERC
+				).toString(),
+				"headless-builder/endpoints", Http.Method.POST);
+		}
 	}
 
-	private void _addAPISort(
-			String apiEndpointExternalReferenceCode, String sortString)
-		throws Exception {
-
+	private void _addAPISort(String sortString) throws Exception {
 		assertSuccessfulJSONObject(
 			JSONUtil.put(
 				"oDataSort", sortString
 			).put(
-				"r_apiEndpointToAPISorts_c_apiEndpointERC",
-				apiEndpointExternalReferenceCode
+				"r_apiEndpointToAPISorts_l_apiEndpointERC", _API_ENDPOINT_ERC_1
 			).toString(),
 			"headless-builder/sorts", Http.Method.POST);
 	}
@@ -2287,8 +3486,7 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 			).build());
 	}
 
-	private ObjectDefinition _addObjectDefinition(
-			int index, boolean required, String scope)
+	private ObjectDefinition _addObjectDefinition(int index, String scope)
 		throws Exception {
 
 		return ObjectDefinitionTestUtil.publishObjectDefinition(
@@ -2326,8 +3524,6 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 						RandomTestUtil.randomString())
 				).name(
 					"dateField"
-				).required(
-					required
 				).build(),
 				new DateTimeObjectFieldBuilder(
 				).externalReferenceCode(
@@ -2342,8 +3538,6 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 						_createObjectFieldSetting(
 							ObjectFieldSettingConstants.NAME_TIME_STORAGE,
 							ObjectFieldSettingConstants.VALUE_CONVERT_TO_UTC))
-				).required(
-					required
 				).build(),
 				new DecimalObjectFieldBuilder(
 				).externalReferenceCode(
@@ -2353,8 +3547,6 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 						RandomTestUtil.randomString())
 				).name(
 					"decimalField"
-				).required(
-					required
 				).build(),
 				new IntegerObjectFieldBuilder(
 				).externalReferenceCode(
@@ -2364,8 +3556,6 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 						RandomTestUtil.randomString())
 				).name(
 					"integerField"
-				).required(
-					required
 				).build(),
 				new LongIntegerObjectFieldBuilder(
 				).externalReferenceCode(
@@ -2375,8 +3565,6 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 						RandomTestUtil.randomString())
 				).name(
 					"longIntegerField"
-				).required(
-					required
 				).build(),
 				new LongTextObjectFieldBuilder(
 				).externalReferenceCode(
@@ -2386,8 +3574,6 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 						RandomTestUtil.randomString())
 				).name(
 					"longTextField"
-				).required(
-					required
 				).build(),
 				new MultiselectPicklistObjectFieldBuilder(
 				).externalReferenceCode(
@@ -2399,8 +3585,6 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 					_listTypeDefinition.getListTypeDefinitionId()
 				).name(
 					"multiselectPicklistField"
-				).required(
-					required
 				).build(),
 				new PicklistObjectFieldBuilder(
 				).externalReferenceCode(
@@ -2412,8 +3596,6 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 					"picklistField"
 				).listTypeDefinitionId(
 					_listTypeDefinition.getListTypeDefinitionId()
-				).required(
-					required
 				).build(),
 				new PrecisionDecimalObjectFieldBuilder(
 				).externalReferenceCode(
@@ -2423,8 +3605,6 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 						RandomTestUtil.randomString())
 				).name(
 					"precisionDecimalField"
-				).required(
-					required
 				).build(),
 				new RichTextObjectFieldBuilder(
 				).externalReferenceCode(
@@ -2434,8 +3614,6 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 						RandomTestUtil.randomString())
 				).name(
 					"richTextField"
-				).required(
-					required
 				).build(),
 				new TextObjectFieldBuilder(
 				).externalReferenceCode(
@@ -2445,8 +3623,6 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 						RandomTestUtil.randomString())
 				).name(
 					"textField"
-				).required(
-					required
 				).build(),
 				new TextObjectFieldBuilder(
 				).externalReferenceCode(
@@ -2461,8 +3637,6 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 						_createObjectFieldSetting(
 							ObjectFieldSettingConstants.NAME_UNIQUE_VALUES,
 							Boolean.TRUE.toString()))
-				).required(
-					required
 				).build()),
 			scope);
 	}
@@ -2517,7 +3691,7 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 			String.valueOf(itemJSONObject.get(expectedObjectFieldName)));
 	}
 
-	private JSONArray _createAPIEndpoint(
+	private JSONObject _createAPIEndpoint(
 		String apiEndpointExternalReferenceCode, Http.Method method,
 		String path, String pathParameter, String retrieveType,
 		APIApplication.Endpoint.Scope scope) {
@@ -2529,27 +3703,6 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 			(pathParameter != null)) {
 
 			return JSONUtil.put(
-				JSONUtil.put(
-					"description", "description"
-				).put(
-					"externalReferenceCode", apiEndpointExternalReferenceCode
-				).put(
-					"httpMethod", StringUtil.toLowerCase(method.name())
-				).put(
-					"name", "name"
-				).put(
-					"path", path + "/{pathId}"
-				).put(
-					"pathParameter", pathParameter
-				).put(
-					"retrieveType", retrieveType
-				).put(
-					"scope", StringUtil.toLowerCase(scope.name())
-				));
-		}
-
-		return JSONUtil.put(
-			JSONUtil.put(
 				"description", "description"
 			).put(
 				"externalReferenceCode", apiEndpointExternalReferenceCode
@@ -2558,12 +3711,31 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 			).put(
 				"name", "name"
 			).put(
-				"path", path
+				"path", path + "/{pathId}"
+			).put(
+				"pathParameter", pathParameter
 			).put(
 				"retrieveType", retrieveType
 			).put(
 				"scope", StringUtil.toLowerCase(scope.name())
-			));
+			);
+		}
+
+		return JSONUtil.put(
+			"description", "description"
+		).put(
+			"externalReferenceCode", apiEndpointExternalReferenceCode
+		).put(
+			"httpMethod", StringUtil.toLowerCase(method.name())
+		).put(
+			"name", "name"
+		).put(
+			"path", path
+		).put(
+			"retrieveType", retrieveType
+		).put(
+			"scope", StringUtil.toLowerCase(scope.name())
+		);
 	}
 
 	private ObjectFieldSetting _createObjectFieldSetting(
@@ -2576,6 +3748,114 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 		objectFieldSetting.setValue(value);
 
 		return objectFieldSetting;
+	}
+
+	private void _disassociateAPIProperties() throws Exception {
+		assertSuccessfulJSONObject(
+			JSONUtil.put(
+				"apiSchemaToAPIProperties",
+				JSONUtil.putAll(
+					JSONUtil.put(
+						"description", "description"
+					).put(
+						"externalReferenceCode", _API_PROPERTY_RECORD_ERC_1
+					).put(
+						"name", "record1"
+					).put(
+						"r_apiPropertyToAPIProperties_l_apiPropertyId",
+						StringPool.BLANK
+					).put(
+						"type", "record"
+					),
+					JSONUtil.put(
+						"description", "description"
+					).put(
+						"externalReferenceCode", _API_PROPERTY_RECORD_ERC_2
+					).put(
+						"name", "record2"
+					).put(
+						"r_apiPropertyToAPIProperties_l_apiPropertyId",
+						StringPool.BLANK
+					).put(
+						"type", "record"
+					),
+					JSONUtil.put(
+						"description", "description"
+					).put(
+						"externalReferenceCode", _API_PROPERTY_RECORD_ERC_3
+					).put(
+						"name", "record3"
+					).put(
+						"r_apiPropertyToAPIProperties_l_apiPropertyId",
+						StringPool.BLANK
+					).put(
+						"type", "record"
+					),
+					JSONUtil.put(
+						"description", "description"
+					).put(
+						"externalReferenceCode", _API_PROPERTY_RECORD_ERC_4
+					).put(
+						"name", "record4"
+					).put(
+						"r_apiPropertyToAPIProperties_l_apiPropertyId",
+						StringPool.BLANK
+					).put(
+						"type", "record"
+					),
+					JSONUtil.put(
+						"description", "description"
+					).put(
+						"externalReferenceCode", _API_PROPERTY_RECORD_ERC_5
+					).put(
+						"name", "record5"
+					).put(
+						"r_apiPropertyToAPIProperties_l_apiPropertyId",
+						StringPool.BLANK
+					).put(
+						"type", "record"
+					),
+					JSONUtil.put(
+						"description", "description"
+					).put(
+						"externalReferenceCode", _API_PROPERTY_VALUE_ERC_1
+					).put(
+						"name", "integerProperty"
+					).put(
+						"objectFieldERC", _API_SCHEMA_INTEGER_FIELD_ERC + 1
+					).put(
+						"r_apiPropertyToAPIProperties_l_apiPropertyId",
+						StringPool.BLANK
+					),
+					JSONUtil.put(
+						"description", "description"
+					).put(
+						"externalReferenceCode", _API_PROPERTY_VALUE_ERC_2
+					).put(
+						"name", "relatedMultiselectPicklistProperty"
+					).put(
+						"objectFieldERC",
+						_API_SCHEMA_MULTISELECT_PICKLIST_FIELD_ERC + 2
+					).put(
+						"objectRelationshipNames",
+						_objectRelationship1.getName()
+					).put(
+						"r_apiPropertyToAPIProperties_l_apiPropertyId",
+						StringPool.BLANK
+					))
+			).put(
+				"description", "description"
+			).put(
+				"externalReferenceCode", _API_SCHEMA_OBJECT_PROPERTY_ERC
+			).put(
+				"mainObjectDefinitionERC",
+				_objectDefinition1.getExternalReferenceCode()
+			).put(
+				"name", "name"
+			).toString(),
+			"headless-builder/schemas/by-external-reference-code/" +
+				_API_SCHEMA_OBJECT_PROPERTY_ERC,
+			Http.Method.PATCH);
 	}
 
 	private void _publishAPIApplication(
@@ -2624,6 +3904,71 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 			objectRelationship, TestPropsValues.getUserId());
 	}
 
+	private void _testGetWithRecordProperty(
+			JSONArray apiSchemasToAPIPropertiesJSONArray,
+			JSONObject expectedJSONObject, ObjectEntry objectEntry)
+		throws Exception {
+
+		_updateAPISchemaToAPIPropertiesJSONArray(
+			apiSchemasToAPIPropertiesJSONArray);
+
+		_publishAPIApplication(_API_APPLICATION_ERC_1);
+
+		JSONAssert.assertEquals(
+			expectedJSONObject.toString(),
+			HTTPTestUtil.invokeToJSONObject(
+				null,
+				StringBundler.concat(
+					"c/", _BASE_URL_1, _API_APPLICATION_PATH_1,
+					StringPool.FORWARD_SLASH, objectEntry.getObjectEntryId()),
+				Http.Method.GET
+			).toString(),
+			JSONCompareMode.LENIENT);
+	}
+
+	private void _testPostWithRecordProperty(
+			JSONArray apiSchemasToAPIPropertiesJSONArray, String body,
+			JSONObject expectedJSONObject)
+		throws Exception {
+
+		_updateAPISchemaToAPIPropertiesJSONArray(
+			apiSchemasToAPIPropertiesJSONArray);
+
+		_publishAPIApplication(_API_APPLICATION_ERC_1);
+
+		JSONAssert.assertEquals(
+			expectedJSONObject.toString(),
+			HTTPTestUtil.invokeToJSONObject(
+				body,
+				StringBundler.concat(
+					"c/", _BASE_URL_1, _API_APPLICATION_PATH_1),
+				Http.Method.POST
+			).toString(),
+			JSONCompareMode.LENIENT);
+	}
+
+	private void _updateAPISchemaToAPIPropertiesJSONArray(
+			JSONArray apiSchemaToAPIPropertiesJSONArray)
+		throws Exception {
+
+		assertSuccessfulJSONObject(
+			JSONUtil.put(
+				"apiSchemaToAPIProperties", apiSchemaToAPIPropertiesJSONArray
+			).put(
+				"description", "description"
+			).put(
+				"externalReferenceCode", _API_SCHEMA_OBJECT_PROPERTY_ERC
+			).put(
+				"mainObjectDefinitionERC",
+				_objectDefinition1.getExternalReferenceCode()
+			).put(
+				"name", "name"
+			).toString(),
+			"headless-builder/schemas/by-external-reference-code/" +
+				_API_SCHEMA_OBJECT_PROPERTY_ERC,
+			Http.Method.PATCH);
+	}
+
 	private static final String _API_APPLICATION_ERC_1 =
 		RandomTestUtil.randomString();
 
@@ -2642,6 +3987,27 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 		RandomTestUtil.randomString();
 
 	private static final String _API_ENDPOINT_ERC_2 =
+		RandomTestUtil.randomString();
+
+	private static final String _API_PROPERTY_RECORD_ERC_1 =
+		RandomTestUtil.randomString();
+
+	private static final String _API_PROPERTY_RECORD_ERC_2 =
+		RandomTestUtil.randomString();
+
+	private static final String _API_PROPERTY_RECORD_ERC_3 =
+		RandomTestUtil.randomString();
+
+	private static final String _API_PROPERTY_RECORD_ERC_4 =
+		RandomTestUtil.randomString();
+
+	private static final String _API_PROPERTY_RECORD_ERC_5 =
+		RandomTestUtil.randomString();
+
+	private static final String _API_PROPERTY_VALUE_ERC_1 =
+		RandomTestUtil.randomString();
+
+	private static final String _API_PROPERTY_VALUE_ERC_2 =
 		RandomTestUtil.randomString();
 
 	private static final String _API_SCHEMA_AGGREGATION_FIELD_ERC =
@@ -2672,6 +4038,9 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 		RandomTestUtil.randomString();
 
 	private static final String _API_SCHEMA_MULTISELECT_PICKLIST_FIELD_ERC =
+		RandomTestUtil.randomString();
+
+	private static final String _API_SCHEMA_OBJECT_PROPERTY_ERC =
 		RandomTestUtil.randomString();
 
 	private static final String _API_SCHEMA_PICKLIST_FIELD_ERC =
@@ -2705,13 +4074,8 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 	@Inject
 	private ListTypeDefinitionLocalService _listTypeDefinitionLocalService;
 
-	@DeleteAfterTestRun
 	private ObjectDefinition _objectDefinition1;
-
-	@DeleteAfterTestRun
 	private ObjectDefinition _objectDefinition2;
-
-	@DeleteAfterTestRun
 	private ObjectDefinition _objectDefinition3;
 
 	@Inject
@@ -2729,15 +4093,21 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 	private ObjectRelationship _objectRelationship1;
 	private ObjectRelationship _objectRelationship2;
 
+	@Inject
+	private ResourcePermissionLocalService _resourcePermissionLocalService;
+
+	@Inject
+	private RoleLocalService _roleLocalService;
+
 	@DeleteAfterTestRun
+	private SAPEntry _sapEntry;
+
+	@Inject
+	private SAPEntryLocalService _sapEntryLocalService;
+
 	private ObjectDefinition _siteScopedObjectDefinition1;
-
-	@DeleteAfterTestRun
 	private ObjectDefinition _siteScopedObjectDefinition2;
-
-	@DeleteAfterTestRun
 	private ObjectDefinition _siteScopedObjectDefinition3;
-
 	private ObjectRelationship _siteScopedObjectRelationship1;
 	private ObjectRelationship _siteScopedObjectRelationship2;
 

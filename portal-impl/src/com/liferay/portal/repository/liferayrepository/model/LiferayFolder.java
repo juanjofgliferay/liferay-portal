@@ -11,6 +11,7 @@ import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.model.ExternalReferenceCodeModel;
 import com.liferay.portal.kernel.repository.Repository;
 import com.liferay.portal.kernel.repository.RepositoryProviderUtil;
 import com.liferay.portal.kernel.repository.capabilities.Capability;
@@ -31,7 +32,8 @@ import java.util.Objects;
 /**
  * @author Alexander Chow
  */
-public class LiferayFolder extends LiferayModel implements Folder {
+public class LiferayFolder
+	extends LiferayModel implements ExternalReferenceCodeModel, Folder {
 
 	public LiferayFolder(DLFolder dlFolder) {
 		_dlFolder = dlFolder;
@@ -79,11 +81,7 @@ public class LiferayFolder extends LiferayModel implements Folder {
 
 		LiferayFolder liferayFolder = (LiferayFolder)object;
 
-		if (Objects.equals(_dlFolder, liferayFolder._dlFolder)) {
-			return true;
-		}
-
-		return false;
+		return Objects.equals(_dlFolder, liferayFolder._dlFolder);
 	}
 
 	@Override
@@ -300,56 +298,32 @@ public class LiferayFolder extends LiferayModel implements Folder {
 
 	@Override
 	public boolean isSupportsLocking() {
-		if (isMountPoint()) {
-			return false;
-		}
-
-		return true;
+		return !isMountPoint();
 	}
 
 	@Override
 	public boolean isSupportsMetadata() {
-		if (isMountPoint()) {
-			return false;
-		}
-
-		return true;
+		return !isMountPoint();
 	}
 
 	@Override
 	public boolean isSupportsMultipleUpload() {
-		if (isMountPoint()) {
-			return false;
-		}
-
-		return true;
+		return !isMountPoint();
 	}
 
 	@Override
 	public boolean isSupportsShortcuts() {
-		if (isMountPoint()) {
-			return false;
-		}
-
-		return true;
+		return !isMountPoint();
 	}
 
 	@Override
 	public boolean isSupportsSocial() {
-		if (isMountPoint()) {
-			return false;
-		}
-
-		return true;
+		return !isMountPoint();
 	}
 
 	@Override
 	public boolean isSupportsSubscribing() {
-		if (isMountPoint()) {
-			return false;
-		}
-
-		return true;
+		return !isMountPoint();
 	}
 
 	@Override
@@ -360,6 +334,11 @@ public class LiferayFolder extends LiferayModel implements Folder {
 	@Override
 	public void setCreateDate(Date createDate) {
 		_dlFolder.setCreateDate(createDate);
+	}
+
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		_dlFolder.setExternalReferenceCode(externalReferenceCode);
 	}
 
 	@Override

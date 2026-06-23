@@ -1,6 +1,7 @@
-@import 'atlas-variables';
+@import 'atlas-custom-properties/_variables';
 
 .lfr-objects__toggle {
+	align-items: center;
 	display: flex;
 
 	&-tooltip-icon {

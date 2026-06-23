@@ -3,7 +3,7 @@
 
 <service-builder auto-import-default-references="false" auto-namespace-tables="false" dependency-injector="ds" package-path="com.liferay.sharing">
 	<namespace>Sharing</namespace>
-	<entity local-service="true" name="SharingEntry" remote-service="true" uuid="true">
+	<entity external-reference-code="group" local-service="true" name="SharingEntry" remote-service="true" uuid="true">
 
 		<!-- PK fields -->
 
@@ -23,6 +23,8 @@
 
 		<!-- Other fields -->
 
+		<column name="toTicketId" type="long" />
+		<column name="toUserGroupId" type="long" />
 		<column name="toUserId" type="long" />
 		<column name="classNameId" type="long" />
 		<column name="classPK" type="long" />
@@ -38,11 +40,21 @@
 		<finder name="UserId" return-type="Collection">
 			<finder-column name="userId" />
 		</finder>
+		<finder name="ToTicketId" return-type="Collection">
+			<finder-column name="toTicketId" />
+		</finder>
+		<finder name="ToUserGroupId" return-type="Collection">
+			<finder-column name="toUserGroupId" />
+		</finder>
 		<finder name="ToUserId" return-type="Collection">
 			<finder-column name="toUserId" />
 		</finder>
 		<finder name="LtExpirationDate" return-type="Collection">
 			<finder-column comparator="&lt;" name="expirationDate" />
+		</finder>
+		<finder name="C_CN" return-type="Collection">
+			<finder-column name="companyId" />
+			<finder-column name="classNameId" />
 		</finder>
 		<finder name="U_C" return-type="Collection">
 			<finder-column name="userId" />
@@ -56,7 +68,9 @@
 			<finder-column name="classNameId" />
 			<finder-column name="classPK" />
 		</finder>
-		<finder name="TU_C_C" return-type="SharingEntry" unique="true">
+		<finder name="TT_TUG_TU_C_C" return-type="SharingEntry" unique="true">
+			<finder-column name="toTicketId" />
+			<finder-column name="toUserGroupId" />
 			<finder-column name="toUserId" />
 			<finder-column name="classNameId" />
 			<finder-column name="classPK" />
@@ -66,6 +80,8 @@
 		<exception>DuplicateSharingEntry</exception>
 		<exception>InvalidSharingEntryAction</exception>
 		<exception>InvalidSharingEntryExpirationDate</exception>
+		<exception>InvalidSharingEntryTicket</exception>
 		<exception>InvalidSharingEntryUser</exception>
+		<exception>InvalidSharingEntryUserGroup</exception>
 	</exceptions>
 </service-builder>

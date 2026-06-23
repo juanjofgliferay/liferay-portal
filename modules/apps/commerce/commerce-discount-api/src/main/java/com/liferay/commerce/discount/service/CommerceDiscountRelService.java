@@ -56,6 +56,11 @@ public interface CommerceDiscountRelService extends BaseService {
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommerceDiscountRel fetchCommerceDiscountRel(
+			long commerceDiscountId, String className, long classPK)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceDiscountRel fetchCommerceDiscountRel(
 			String className, long classPK)
 		throws PortalException;
 
@@ -134,3 +139,4 @@ public interface CommerceDiscountRelService extends BaseService {
 	public String getOSGiServiceIdentifier();
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1728565062

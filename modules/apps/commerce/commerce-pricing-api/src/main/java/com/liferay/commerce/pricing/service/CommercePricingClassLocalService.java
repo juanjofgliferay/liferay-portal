@@ -233,10 +233,6 @@ public interface CommercePricingClassLocalService
 		DynamicQuery dynamicQuery, Projection projection);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommercePricingClass fetchByExternalReferenceCode(
-		String externalReferenceCode, long companyId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommercePricingClass fetchCommercePricingClass(
 		long commercePricingClassId);
 
@@ -405,3 +401,4 @@ public interface CommercePricingClassLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:560763641

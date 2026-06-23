@@ -6,23 +6,25 @@
 package com.liferay.osb.faro.web.internal.application;
 
 import com.liferay.osb.faro.web.internal.constants.FaroConstants;
-import com.liferay.osb.faro.web.internal.controller.main.BlockedKeywordsController;
-import com.liferay.osb.faro.web.internal.controller.main.ChannelController;
-import com.liferay.osb.faro.web.internal.controller.main.DefinitionsController;
-import com.liferay.osb.faro.web.internal.controller.main.IssueController;
-import com.liferay.osb.faro.web.internal.controller.main.MainController;
-import com.liferay.osb.faro.web.internal.controller.main.NotificationController;
-import com.liferay.osb.faro.web.internal.controller.main.OAuth2Controller;
-import com.liferay.osb.faro.web.internal.controller.main.PreferencesController;
-import com.liferay.osb.faro.web.internal.controller.main.ProjectController;
-import com.liferay.osb.faro.web.internal.controller.main.ReportController;
-import com.liferay.osb.faro.web.internal.controller.main.UserController;
+import com.liferay.osb.faro.web.internal.controller.main.BlockedKeywordsFaroController;
+import com.liferay.osb.faro.web.internal.controller.main.ChannelFaroController;
+import com.liferay.osb.faro.web.internal.controller.main.DefinitionsFaroController;
+import com.liferay.osb.faro.web.internal.controller.main.GlobalPreferencesFaroController;
+import com.liferay.osb.faro.web.internal.controller.main.IssueFaroController;
+import com.liferay.osb.faro.web.internal.controller.main.MainFaroController;
+import com.liferay.osb.faro.web.internal.controller.main.NotificationFaroController;
+import com.liferay.osb.faro.web.internal.controller.main.OAuth2FaroController;
+import com.liferay.osb.faro.web.internal.controller.main.PageExperienceFaroController;
+import com.liferay.osb.faro.web.internal.controller.main.PreferencesFaroController;
+import com.liferay.osb.faro.web.internal.controller.main.ProjectFaroController;
+import com.liferay.osb.faro.web.internal.controller.main.ReportFaroController;
+import com.liferay.osb.faro.web.internal.controller.main.UserFaroController;
+
+import jakarta.ws.rs.ApplicationPath;
+import jakarta.ws.rs.core.Application;
 
 import java.util.HashSet;
 import java.util.Set;
-
-import javax.ws.rs.ApplicationPath;
-import javax.ws.rs.core.Application;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -45,52 +47,60 @@ public class MainApplication extends BaseApplication {
 	public Set<Object> getControllers() {
 		Set<Object> controllers = new HashSet<>();
 
-		controllers.add(_blockedKeywordsController);
-		controllers.add(_channelController);
-		controllers.add(_definitionsController);
-		controllers.add(_issueController);
-		controllers.add(_mainController);
-		controllers.add(_notificationController);
-		controllers.add(_oAuth2Controller);
-		controllers.add(_preferencesController);
-		controllers.add(_projectController);
-		controllers.add(_reportController);
-		controllers.add(_userController);
+		controllers.add(_blockedKeywordsFaroController);
+		controllers.add(_channelFaroController);
+		controllers.add(_definitionsFaroController);
+		controllers.add(_globalPreferencesFaroController);
+		controllers.add(_issueFaroController);
+		controllers.add(_mainFaroController);
+		controllers.add(_notificationFaroController);
+		controllers.add(_oAuth2FaroController);
+		controllers.add(_pageExperienceFaroController);
+		controllers.add(_preferencesFaroController);
+		controllers.add(_projectFaroController);
+		controllers.add(_reportFaroController);
+		controllers.add(_userFaroController);
 
 		return controllers;
 	}
 
 	@Reference
-	private BlockedKeywordsController _blockedKeywordsController;
+	private BlockedKeywordsFaroController _blockedKeywordsFaroController;
 
 	@Reference
-	private ChannelController _channelController;
+	private ChannelFaroController _channelFaroController;
 
 	@Reference
-	private DefinitionsController _definitionsController;
+	private DefinitionsFaroController _definitionsFaroController;
 
 	@Reference
-	private IssueController _issueController;
+	private GlobalPreferencesFaroController _globalPreferencesFaroController;
 
 	@Reference
-	private MainController _mainController;
+	private IssueFaroController _issueFaroController;
 
 	@Reference
-	private NotificationController _notificationController;
+	private MainFaroController _mainFaroController;
 
 	@Reference
-	private OAuth2Controller _oAuth2Controller;
+	private NotificationFaroController _notificationFaroController;
 
 	@Reference
-	private PreferencesController _preferencesController;
+	private OAuth2FaroController _oAuth2FaroController;
 
 	@Reference
-	private ProjectController _projectController;
+	private PageExperienceFaroController _pageExperienceFaroController;
 
 	@Reference
-	private ReportController _reportController;
+	private PreferencesFaroController _preferencesFaroController;
 
 	@Reference
-	private UserController _userController;
+	private ProjectFaroController _projectFaroController;
+
+	@Reference
+	private ReportFaroController _reportFaroController;
+
+	@Reference
+	private UserFaroController _userFaroController;
 
 }

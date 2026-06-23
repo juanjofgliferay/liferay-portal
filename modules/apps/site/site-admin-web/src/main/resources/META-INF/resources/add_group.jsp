@@ -15,10 +15,11 @@ AddGroupDisplayContext addGroupDisplayContext = (AddGroupDisplayContext)request.
 
 <clay:container-fluid
 	cssClass="add-group-container"
+	fullWidth="<%= true %>"
 >
 	<liferay-frontend:edit-form
 		action="<%= addGroupDisplayContext.getAddGroupURL() %>"
-		cssClass="add-group-form pt-0"
+		cssClass="add-group-form d-none pt-0"
 		method="post"
 		name="fm"
 		onSubmit="event.preventDefault();"
@@ -26,7 +27,9 @@ AddGroupDisplayContext addGroupDisplayContext = (AddGroupDisplayContext)request.
 	>
 		<div class="add-group-content">
 			<div class="lfr-form-content">
-				<aui:input label="name" name="name" required="<%= true %>" />
+				<aui:input label="name" name="name" required="<%= true %>">
+					<aui:validator name="maxLength"><%= ModelHintsUtil.getMaxLength(Group.class.getName(), "groupKey") %></aui:validator>
+				</aui:input>
 
 				<c:if test="<%= addGroupDisplayContext.isShowLayoutSetVisibilityPrivateCheckbox() %>">
 					<aui:input label="create-default-pages-as-private-available-only-to-members-if-unchecked-they-will-be-public-available-to-anyone" name="layoutSetVisibilityPrivate" type="checkbox" />
@@ -74,5 +77,5 @@ AddGroupDisplayContext addGroupDisplayContext = (AddGroupDisplayContext)request.
 
 <liferay-frontend:component
 	componentId='<%= liferayPortletResponse.getNamespace() + "addGroup" %>'
-	module="js/AddGroup"
+	module="{AddGroup} from site-admin-web"
 />

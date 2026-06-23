@@ -5,7 +5,11 @@
 
 package com.liferay.portal.search.web.internal.search.results.portlet.shared.search;
 
+import com.liferay.portal.kernel.dao.search.SearchPaginationUtil;
+import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.PropsValues;
+import com.liferay.portal.search.constants.SearchContextAttributes;
 import com.liferay.portal.search.searcher.SearchRequestBuilder;
 import com.liferay.portal.search.searcher.SearchRequestBuilderFactory;
 import com.liferay.portal.search.web.constants.SearchResultsPortletKeys;
@@ -15,6 +19,8 @@ import com.liferay.portal.search.web.internal.util.SearchStringUtil;
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchContributor;
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchSettings;
 
+import java.util.function.Function;
+
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -22,7 +28,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author André de Oliveira
  */
 @Component(
-	property = "javax.portlet.name=" + SearchResultsPortletKeys.SEARCH_RESULTS,
+	property = "jakarta.portlet.name=" + SearchResultsPortletKeys.SEARCH_RESULTS,
 	service = PortletSharedSearchContributor.class
 )
 public class SearchResultsPortletSharedSearchContributor
@@ -52,6 +58,11 @@ public class SearchResultsPortletSharedSearchContributor
 
 			searchRequestBuilder.highlightFields(fieldsToDisplay);
 		}
+
+		searchRequestBuilder.withSearchContext(
+			searchContext -> searchContext.setAttribute(
+				SearchContextAttributes.ATTRIBUTE_KEY_EXECUTE_SEARCH,
+				Boolean.TRUE));
 	}
 
 	@Reference
@@ -70,18 +81,29 @@ public class SearchResultsPortletSharedSearchContributor
 		searchRequestBuilder.paginationStartParameterName(
 			paginationStartParameterName);
 
-		int paginationDelta = GetterUtil.getInteger(
-			portletSharedSearchSettings.getParameter(
-				searchResultsPortletPreferences.
-					getPaginationDeltaParameterName()),
-			searchResultsPortletPreferences.getPaginationDelta());
+		int paginationDelta = Math.min(
+			GetterUtil.getInteger(
+				portletSharedSearchSettings.getParameter(
+					searchResultsPortletPreferences.
+						getPaginationDeltaParameterName()),
+				searchResultsPortletPreferences.getPaginationDelta()),
+			PropsValues.SEARCH_CONTAINER_PAGE_MAX_DELTA);
 
 		portletSharedSearchSettings.setPaginationDelta(paginationDelta);
 		searchRequestBuilder.size(paginationDelta);
 
+		SearchContext searchContext = searchRequestBuilder.withSearchContextGet(
+			Function.identity());
+
 		int paginationStart = GetterUtil.getInteger(
 			portletSharedSearchSettings.getParameter(
 				paginationStartParameterName));
+
+		int[] startAndEnd = SearchPaginationUtil.calculateStartAndEnd(
+			paginationStart, paginationDelta);
+
+		searchContext.setEnd(startAndEnd[1]);
+		searchContext.setStart(startAndEnd[0]);
 
 		if (paginationStart > 0) {
 			portletSharedSearchSettings.setPaginationStart(paginationStart);

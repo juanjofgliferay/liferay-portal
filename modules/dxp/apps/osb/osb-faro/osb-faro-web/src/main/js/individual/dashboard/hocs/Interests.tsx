@@ -1,4 +1,5 @@
 import Card from 'shared/components/Card';
+import ClayLink from '@clayui/link';
 import IndividualInterestsQuery from 'shared/queries/IndividualInterestsQuery';
 import NoResultsDisplay from 'shared/components/NoResultsDisplay';
 import React from 'react';
@@ -10,24 +11,34 @@ import {
 	getMapResultToProps,
 	mapPropsToOptions
 } from 'contacts/hoc/mappers/interests-query';
-import {graphql} from '@apollo/react-hoc';
+import {graphql, OperationOption} from '@apollo/client/react/hoc';
 import {Routes, toRoute} from 'shared/util/router';
 import {useParams} from 'react-router-dom';
-import {useQueryPagination} from 'shared/hooks';
+import {useQueryPagination} from 'shared/hooks/useQueryPagination';
 import {withBaseResults} from 'shared/hoc';
 
 const withData = () =>
 	graphql(IndividualInterestsQuery, {
 		options: mapPropsToOptions,
 		props: getMapResultToProps(CompositionTypes.IndividualInterests)
-	});
+	} as OperationOption<object, object>);
 
 const TableWithData = withBaseResults(withData, {
-	getColumns: ({channelId, groupId, maxCount, totalCount}) => [
+	getColumns: ({
+		channelId,
+		groupId,
+		maxCount,
+		totalCount
+	}: {
+		channelId: string;
+		groupId: string;
+		maxCount: number;
+		totalCount: number;
+	}) => [
 		compositionListColumns.getName({
 			label: Liferay.Language.get('topic'),
 			maxWidth: 200,
-			routeFn: ({data: {name}}) =>
+			routeFn: ({data: {name}}: {data: {name: string}}) =>
 				name &&
 				toRoute(Routes.CONTACTS_INDIVIDUALS_INTEREST_DETAILS, {
 					channelId,
@@ -52,7 +63,10 @@ const TableWithData = withBaseResults(withData, {
 });
 
 const Interests: React.FC<React.HTMLAttributes<HTMLElement>> = () => {
-	const {channelId, groupId} = useParams();
+	const {channelId = '', groupId = ''} = useParams<{
+		channelId: string;
+		groupId: string;
+	}>();
 	const {delta, orderIOMap, page, query} = useQueryPagination({
 		initialOrderIOMap: createOrderIOMap(COUNT)
 	});
@@ -77,7 +91,7 @@ const Interests: React.FC<React.HTMLAttributes<HTMLElement>> = () => {
 									'check-back-later-to-verify-if-data-has-been-received-from-your-data-sources'
 								)}
 
-								<a
+								<ClayLink
 									className='d-block mb-3'
 									href={
 										URLConstants.IndividualsDashboardInterestsDocumentation
@@ -88,13 +102,13 @@ const Interests: React.FC<React.HTMLAttributes<HTMLElement>> = () => {
 									{Liferay.Language.get(
 										'learn-more-about-interests'
 									)}
-								</a>
+								</ClayLink>
 							</>
 						}
 						icon={{
 							border: false,
 							size: Sizes.XXXLarge,
-							symbol: 'ac-satellite'
+							symbol: 'ac_satellite'
 						}}
 						title={Liferay.Language.get(
 							'there-are-no-interests-found'

@@ -350,11 +350,12 @@ public interface LayoutPageTemplateStructureLocalService
 		LayoutPageTemplateStructure layoutPageTemplateStructure);
 
 	public LayoutPageTemplateStructure updateLayoutPageTemplateStructureData(
-			long groupId, long plid, long segmentsExperienceId, String data)
+			long userId, long groupId, long plid, long segmentsExperienceId,
+			String data)
 		throws PortalException;
 
 	public LayoutPageTemplateStructure updateLayoutPageTemplateStructureData(
-			long groupId, long plid, String data)
+			long userId, long groupId, long plid, String data)
 		throws PortalException;
 
 	@Override
@@ -373,3 +374,4 @@ public interface LayoutPageTemplateStructureLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1177044816

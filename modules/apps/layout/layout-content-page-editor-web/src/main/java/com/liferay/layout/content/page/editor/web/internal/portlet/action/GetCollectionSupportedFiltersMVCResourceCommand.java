@@ -19,10 +19,12 @@ import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -32,7 +34,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + ContentPageEditorPortletKeys.CONTENT_PAGE_EDITOR_PORTLET,
+		"jakarta.portlet.name=" + ContentPageEditorPortletKeys.CONTENT_PAGE_EDITOR_PORTLET,
 		"mvc.command.name=/layout_content_page_editor/get_collection_supported_filters"
 	},
 	service = MVCResourceCommand.class
@@ -45,17 +47,17 @@ public class GetCollectionSupportedFiltersMVCResourceCommand
 			ResourceRequest resourceRequest, ResourceResponse resourceResponse)
 		throws Exception {
 
-		String collections = ParamUtil.getString(
-			resourceRequest, "collections");
-
 		JSONPortletResponseUtil.writeJSON(
 			resourceRequest, resourceResponse,
 			_getSupportedFiltersJSONObject(
-				_jsonFactory.createJSONArray(collections)));
+				_jsonFactory.createJSONArray(
+					ParamUtil.getString(resourceRequest, "collections")),
+				(ThemeDisplay)resourceRequest.getAttribute(
+					WebKeys.THEME_DISPLAY)));
 	}
 
 	private JSONObject _getSupportedFiltersJSONObject(
-			JSONArray collectionsJSONArray)
+			JSONArray collectionsJSONArray, ThemeDisplay themeDisplay)
 		throws Exception {
 
 		JSONObject jsonObject = _jsonFactory.createJSONObject();
@@ -90,6 +92,8 @@ public class GetCollectionSupportedFiltersMVCResourceCommand
 				JSONUtil.toJSONArray(
 					layoutListRetriever.getSupportedInfoFilters(
 						listObjectReferenceFactory.getListObjectReference(
+							themeDisplay.getCompanyId(),
+							themeDisplay.getScopeGroupId(),
 							layoutObjectReferenceJSONObject)),
 					InfoFilter::getFilterTypeName));
 		}

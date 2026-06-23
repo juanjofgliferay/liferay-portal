@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Brian Wing Shun Chan
@@ -50,14 +49,22 @@ public class ParameterConfiguration implements Serializable {
 			ParameterConfiguration.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Map<String, Parameter> getParameters() {
+		if (_parametersSupplier != null) {
+			parameters = _parametersSupplier.get();
+
+			_parametersSupplier = null;
+		}
+
 		return parameters;
 	}
 
 	public void setParameters(Map<String, Parameter> parameters) {
 		this.parameters = parameters;
+
+		_parametersSupplier = null;
 	}
 
 	@JsonIgnore
@@ -65,20 +72,25 @@ public class ParameterConfiguration implements Serializable {
 		UnsafeSupplier<Map<String, Parameter>, Exception>
 			parametersUnsafeSupplier) {
 
-		try {
-			parameters = parametersUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_parametersSupplier = () -> {
+			try {
+				return parametersUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, Parameter> parameters;
+
+	@JsonIgnore
+	private Supplier<Map<String, Parameter>> _parametersSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -108,6 +120,8 @@ public class ParameterConfiguration implements Serializable {
 
 		sb.append("{");
 
+		Map<String, Parameter> parameters = getParameters();
+
 		if (parameters != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -123,8 +137,8 @@ public class ParameterConfiguration implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.search.experiences.rest.dto.v1_0.ParameterConfiguration",
 		name = "x-class-name"
 	)
@@ -170,7 +184,10 @@ public class ParameterConfiguration implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -216,3 +233,4 @@ public class ParameterConfiguration implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:700737207

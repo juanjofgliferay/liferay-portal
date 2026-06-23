@@ -98,6 +98,8 @@ definition {
 			key_menuItem = "Publish",
 			locator1 = "MenuItem#ANY_MENU_ITEM");
 
+		Refresh();
+
 		Publications.selectPublication(publicationName = ${publicationName});
 
 		Click(locator1 = "Publications#PUBLICATIONS_INDICATOR_BUTTON");
@@ -136,9 +138,15 @@ definition {
 
 	@summary = "Default summary"
 	macro assertViewerPermissions(publicationName = null) {
+		PublicationsNavigator.openPublicationsAdmin();
+
+		WaitForPageLoad();
+
 		AssertElementPresent(locator1 = "Publications#REVIEW_CHANGES_BUTTON");
 
-		Click(locator1 = "Publications#REVIEW_CHANGES_BUTTON");
+		Click(
+			key_publicationName = ${publicationName},
+			locator1 = "Publications#PUBLICATION_NAME_VIEW");
 
 		PublicationsChanges.assertPublicationsCommentsCRUDPermissions();
 	}

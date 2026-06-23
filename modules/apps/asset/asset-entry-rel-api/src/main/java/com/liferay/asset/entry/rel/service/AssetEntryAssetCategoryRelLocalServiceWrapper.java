@@ -150,6 +150,14 @@ public class AssetEntryAssetCategoryRelLocalServiceWrapper
 	}
 
 	@Override
+	public void deleteAssetEntryAssetCategoryRelByAssetEntry(
+		com.liferay.asset.kernel.model.AssetEntry assetEntry) {
+
+		_assetEntryAssetCategoryRelLocalService.
+			deleteAssetEntryAssetCategoryRelByAssetEntry(assetEntry);
+	}
+
+	@Override
 	public void deleteAssetEntryAssetCategoryRelByAssetEntryId(
 		long assetEntryId) {
 
@@ -426,6 +434,15 @@ public class AssetEntryAssetCategoryRelLocalServiceWrapper
 	}
 
 	@Override
+	public int getAssetEntryAssetCategoryRelsCountByClassNameId(
+		long assetCategoryId, long classNameId) {
+
+		return _assetEntryAssetCategoryRelLocalService.
+			getAssetEntryAssetCategoryRelsCountByClassNameId(
+				assetCategoryId, classNameId);
+	}
+
+	@Override
 	public long[] getAssetEntryPrimaryKeys(long assetCategoryId) {
 		return _assetEntryAssetCategoryRelLocalService.getAssetEntryPrimaryKeys(
 			assetCategoryId);
@@ -523,3 +540,4 @@ public class AssetEntryAssetCategoryRelLocalServiceWrapper
 		_assetEntryAssetCategoryRelLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1812523877

@@ -86,7 +86,7 @@ public class CommercePricingClassLocalServiceTest {
 			"It should be returned when querying the pricing class content"
 		);
 
-		CommerceCatalog catalog =
+		CommerceCatalog commerceCatalog =
 			_commerceCatalogLocalService.addCommerceCatalog(
 				null, RandomTestUtil.randomString(),
 				RandomTestUtil.randomString(),
@@ -97,7 +97,8 @@ public class CommercePricingClassLocalServiceTest {
 				_user.getUserId(), RandomTestUtil.randomLocaleStringMap(),
 				RandomTestUtil.randomLocaleStringMap(), _serviceContext);
 
-		CPInstance cpInstance = CPTestUtil.addCPInstance(catalog.getGroupId());
+		CPInstance cpInstance = CPTestUtil.addCPInstance(
+			commerceCatalog.getGroupId());
 
 		CPDefinition cpDefinition = cpInstance.getCPDefinition();
 
@@ -181,7 +182,7 @@ public class CommercePricingClassLocalServiceTest {
 			"There should be no rels associated to the pricing class"
 		);
 
-		CommerceCatalog catalog =
+		CommerceCatalog commerceCatalog =
 			_commerceCatalogLocalService.addCommerceCatalog(
 				null, RandomTestUtil.randomString(),
 				RandomTestUtil.randomString(),
@@ -192,7 +193,8 @@ public class CommercePricingClassLocalServiceTest {
 				_user.getUserId(), RandomTestUtil.randomLocaleStringMap(),
 				RandomTestUtil.randomLocaleStringMap(), _serviceContext);
 
-		CPInstance cpInstance = CPTestUtil.addCPInstance(catalog.getGroupId());
+		CPInstance cpInstance = CPTestUtil.addCPInstance(
+			commerceCatalog.getGroupId());
 
 		CPDefinition cpDefinition = cpInstance.getCPDefinition();
 
@@ -222,8 +224,6 @@ public class CommercePricingClassLocalServiceTest {
 	@Rule
 	public FrutillaRule frutillaRule = new FrutillaRule();
 
-	private static User _user;
-
 	@Inject
 	private CommerceCatalogLocalService _commerceCatalogLocalService;
 
@@ -236,5 +236,6 @@ public class CommercePricingClassLocalServiceTest {
 
 	private Group _group;
 	private ServiceContext _serviceContext;
+	private User _user;
 
 }

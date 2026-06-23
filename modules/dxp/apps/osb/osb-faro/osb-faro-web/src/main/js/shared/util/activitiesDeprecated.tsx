@@ -25,15 +25,18 @@ import {sub} from 'shared/util/lang';
 export const CHART_ACTIVITY_ID = 'activities';
 export const CHART_ID = 'individualActivity';
 
-const ACTIVITY_ACTIONS_TITLE_LANG_MAP = {
+const ACTIVITY_ACTIONS_TITLE_LANG_MAP: Record<string, string> = {
 	[ActivityActions.Comments]: Liferay.Language.get('commented-on-x'),
 	[ActivityActions.Downloads]: Liferay.Language.get('downloaded-x'),
-	[ActivityActions.Previews]: Liferay.Language.get('previewed-x'),
+	[ActivityActions.Impressions]: Liferay.Language.get('impression-made-on-x'),
 	[ActivityActions.Submissions]: Liferay.Language.get('submitted-x'),
 	[ActivityActions.Visits]: Liferay.Language.get('visited-x')
 };
 
-const ACTIVITY_ACTIONS_DESCRIPTION_LANG_MAP = {
+const ACTIVITY_ACTIONS_DESCRIPTION_LANG_MAP: Record<
+	string,
+	{plural: string; singular: string}
+> = {
 	[ActivityActions.Comments]: {
 		plural: Liferay.Language.get('x-comments'),
 		singular: Liferay.Language.get('x-comment')
@@ -42,9 +45,9 @@ const ACTIVITY_ACTIONS_DESCRIPTION_LANG_MAP = {
 		plural: Liferay.Language.get('x-downloads'),
 		singular: Liferay.Language.get('x-download')
 	},
-	[ActivityActions.Previews]: {
-		plural: Liferay.Language.get('x-previews'),
-		singular: Liferay.Language.get('x-preview')
+	[ActivityActions.Impressions]: {
+		plural: Liferay.Language.get('x-impressions'),
+		singular: Liferay.Language.get('x-impression')
 	},
 	[ActivityActions.Submissions]: {
 		plural: Liferay.Language.get('x-submissions'),
@@ -156,9 +159,7 @@ function formatActivities(
  * @param {Date|string|number} datetime - Any value accepeted by Moment.
  * @returns {Moment} Date label to be displayed.
  */
-export function formatGroupingTime(
-	datetime: Date | string | number
-): moment.Moment {
+export function formatGroupingTime(datetime: Date | string | number): string {
 	const time = moment(datetime);
 
 	return time.isSame(moment(), 'day')
@@ -180,8 +181,15 @@ export function formatSessions(
 ): any[] {
 	return flow(
 		groupBy(({day}) => moment.utc(day).startOf('day').format()),
-		mapValues(items =>
-			items.map(({activities, id, individual, startTime}) => ({
+		mapValues((items: unknown) =>
+			(
+				items as {
+					activities: any[];
+					id: string;
+					individual: unknown;
+					startTime: string | number;
+				}[]
+			).map(({activities, id, individual, startTime}) => ({
 				id,
 				individual,
 				nestedItems: formatActivities(activities, groupId, channelId),
@@ -245,7 +253,7 @@ export function getActivityLabel(totalElements: number): React.ReactNode[] {
  * @param {string} assetType
  * @return {string} Route to assetType page.
  */
-function getAssetRoute(assetType: string): string {
+function getAssetRoute(assetType: string): string | null {
 	switch (assetType) {
 		case AssetTypes.Blog:
 			return Routes.ASSETS_BLOGS_OVERVIEW;
@@ -268,9 +276,9 @@ function getAssetRoute(assetType: string): string {
 function getObjectTypeIcon(assetType: string): string {
 	switch (assetType) {
 		case AssetTypes.Blog:
-			return 'ac-blogs';
+			return 'ac_blogs';
 		case AssetTypes.Document:
-			return 'ac-documents-and-media';
+			return 'ac_documents_and_media';
 		case AssetTypes.Form:
 			return 'forms';
 		case AssetTypes.WebPage:

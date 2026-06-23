@@ -75,15 +75,16 @@ public interface CommerceInventoryWarehouseItemLocalService
 
 	public CommerceInventoryWarehouseItem addCommerceInventoryWarehouseItem(
 			String externalReferenceCode, long userId,
-			long commerceInventoryWarehouseId, BigDecimal quantity, String sku,
-			String unitOfMeasureKey)
+			long commerceInventoryWarehouseId, BigDecimal quantity,
+			BigDecimal reservedQuantity, String sku, String unitOfMeasureKey)
 		throws PortalException;
 
 	public CommerceInventoryWarehouseItem
 			addOrUpdateCommerceInventoryWarehouseItem(
 				String externalReferenceCode, long companyId, long userId,
 				long commerceInventoryWarehouseId, BigDecimal quantity,
-				String sku, String unitOfMeasureKey)
+				BigDecimal reservedQuantity, String sku,
+				String unitOfMeasureKey)
 		throws PortalException;
 
 	public int countItemsByCompanyId(
@@ -251,6 +252,10 @@ public interface CommerceInventoryWarehouseItemLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<Long> getCommerceInventoryWarehouseIds(
+		long companyId, String sku, String unitOfMeasureKey);
+
 	/**
 	 * Returns the commerce inventory warehouse item with the primary key.
 	 *
@@ -339,7 +344,8 @@ public interface CommerceInventoryWarehouseItemLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getCommerceInventoryWarehouseItemsCount(
-		long companyId, long groupId, String sku, String unitOfMeasureKey);
+		long companyId, long accountEntryId, long groupId, String sku,
+		String unitOfMeasureKey);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getCommerceInventoryWarehouseItemsCount(
@@ -383,7 +389,8 @@ public interface CommerceInventoryWarehouseItemLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public BigDecimal getStockQuantity(
-		long companyId, long groupId, String sku, String unitOfMeasureKey);
+		long companyId, long accountEntryId, long groupId, String sku,
+		String unitOfMeasureKey);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public BigDecimal getStockQuantity(
@@ -421,12 +428,9 @@ public interface CommerceInventoryWarehouseItemLocalService
 
 	public CommerceInventoryWarehouseItem updateCommerceInventoryWarehouseItem(
 			long userId, long commerceInventoryWarehouseItemId,
-			BigDecimal quantity, BigDecimal reservedQuantity, long mvccVersion)
-		throws PortalException;
-
-	public CommerceInventoryWarehouseItem updateCommerceInventoryWarehouseItem(
-			long userId, long commerceInventoryWarehouseItemId,
-			long mvccVersion, BigDecimal quantity, String unitOfMeasureKey)
+			BigDecimal quantity, BigDecimal reservedQuantity,
+			String unitOfMeasureKey, long mvccVersion)
 		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:576862875

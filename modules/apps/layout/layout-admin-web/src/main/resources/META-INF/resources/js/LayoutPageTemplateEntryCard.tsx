@@ -7,7 +7,8 @@ import ClayButton, {ClayButtonWithIcon} from '@clayui/button';
 import ClayCard from '@clayui/card';
 import ClayIcon from '@clayui/icon';
 import ClayModal, {useModal} from '@clayui/modal';
-import {createPortletURL, fetch, openModal} from 'frontend-js-web';
+import {openModal} from 'frontend-js-components-web';
+import {createPortletURL, fetch} from 'frontend-js-web';
 import {
 	KeyboardEvent,
 	MouseEvent,
@@ -21,6 +22,7 @@ interface IProps {
 	addLayoutURL: string;
 	getLayoutPageTemplateEntryListURL: string;
 	layoutPageTemplateEntryId: string;
+	modalTitle?: string;
 	portletNamespace: string;
 	subtitle: string;
 	thumbnailURL: string;
@@ -31,6 +33,7 @@ export default function LayoutPageTemplateEntryCard({
 	addLayoutURL,
 	getLayoutPageTemplateEntryListURL,
 	layoutPageTemplateEntryId,
+	modalTitle,
 	subtitle,
 	thumbnailURL,
 	title,
@@ -47,7 +50,7 @@ export default function LayoutPageTemplateEntryCard({
 			height: '60vh',
 			id: 'addLayoutDialog',
 			size: 'md',
-			title: Liferay.Language.get('add-page'),
+			title: modalTitle,
 			url: addLayoutURL,
 		});
 	};
@@ -66,10 +69,8 @@ export default function LayoutPageTemplateEntryCard({
 	};
 
 	const [entryIndex, setEntryIndex] = useState(0);
-	const [
-		layoutPageTemplateEntryList,
-		setLayoutPageTemplateEntryList,
-	] = useState<LayoutPageTemplateEntryList | null>(null);
+	const [layoutPageTemplateEntryList, setLayoutPageTemplateEntryList] =
+		useState<LayoutPageTemplateEntryList | null>(null);
 
 	const updateEntryIndex = (direction: 'previous' | 'next') => {
 		setEntryIndex((previousIndex) => {
@@ -166,7 +167,9 @@ export default function LayoutPageTemplateEntryCard({
 					}}
 					size="full-screen"
 				>
-					<ClayModal.Header>
+					<ClayModal.Header
+						closeButtonAriaLabel={Liferay.Language.get('close')}
+					>
 						{Liferay.Language.get('preview-page-template')}
 					</ClayModal.Header>
 
@@ -230,7 +233,8 @@ function PreviewModalContent({
 	setLayoutPageTemplateEntryList,
 	updateEntryIndex,
 }: IPreviewModalContentProps) {
-	const iframeRef = useRef() as React.MutableRefObject<HTMLIFrameElement | null>;
+	const iframeRef =
+		useRef() as React.MutableRefObject<HTMLIFrameElement | null>;
 
 	const layoutPageTemplateEntry = layoutPageTemplateEntryList
 		? layoutPageTemplateEntryList[entryIndex]

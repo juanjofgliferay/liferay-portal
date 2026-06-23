@@ -1,20 +1,11 @@
 import cache from './cache';
-import Uri from 'metal-uri';
-import {ApolloClient} from 'apollo-client';
-import {
-	CommerceAverageOrderValueResolver,
-	CommerceAverageRevenuePerAccountResolver,
-	CommerceIncompleteOrdersResolver,
-	CommerceTotalOrderValueResolver,
-	CustomAssetsListResolver,
-	EventAnalysisListResolver,
-	ExperimentResolver as Experiment,
-	PagePathResolver
-} from './resolvers';
+import {ApolloClient, from, HttpLink} from '@apollo/client';
+import {DEVELOPER_MODE} from 'shared/util/constants';
 import {get} from 'lodash';
-import {HttpLink} from 'apollo-link-http';
-import {onError} from 'apollo-link-error';
+import {loadDevMessages, loadErrorMessages} from '@apollo/client/dev';
+import {onError} from '@apollo/client/link/error';
 import {reloadPage} from 'shared/util/router';
+import {resolvers} from './resolvers/resolvers';
 
 const groupIdRegex = /^\/workspace\/([a-z0-9._-]+)/;
 
@@ -24,10 +15,9 @@ const groupIdRegex = /^\/workspace\/([a-z0-9._-]+)/;
  * @param {object} options
  */
 const fetchWithGroupId = (uri, options) => {
-	const currentUri = new Uri(window.location.href);
+	const currentUri = new URL(window.location.href);
 	const {operationName} = JSON.parse(options.body);
-	const pathname = currentUri.getPathname();
-	const matches = pathname.match(groupIdRegex);
+	const matches = currentUri.pathname.match(groupIdRegex);
 
 	if (matches !== null && matches.length > 1) {
 		const groupId = matches[1];
@@ -44,12 +34,13 @@ const fetchWithGroupId = (uri, options) => {
 const client = new ApolloClient({
 	addTypename: true,
 	cache,
+	connectToDevTools: FARO_DEV_MODE,
 	defaultOptions: {
 		watchQuery: {
 			notifyOnNetworkStatusChange: true
 		}
 	},
-	link: HttpLink.from([
+	link: from([
 		onError(({operation}) => {
 			const status = get(operation.getContext(), ['response', 'status']);
 
@@ -63,32 +54,20 @@ const client = new ApolloClient({
 			uri: '/o/cerebro/graphql'
 		})
 	]),
+
 	resolvers: {
-		Experiment,
-		Query: {
-			dashboards(_, params) {
-				return CustomAssetsListResolver(params);
-			},
-			eventAnalysisList(_, params) {
-				return EventAnalysisListResolver(params);
-			},
-			orderAccountAverageCurrencyValues(_, params) {
-				return CommerceAverageRevenuePerAccountResolver(params);
-			},
-			orderAverageCurrencyValues(_, params) {
-				return CommerceAverageOrderValueResolver(params);
-			},
-			orderIncompleteCurrencyValues(_, params) {
-				return CommerceIncompleteOrdersResolver(params);
-			},
-			orderTotalCurrencyValues(_, params) {
-				return CommerceTotalOrderValueResolver(params);
-			},
-			pagePath(_, params) {
-				return PagePathResolver(params);
-			}
-		}
+		/**
+		 * Queries must render only in the dev mode to avoid
+		 * add unnecessary code in the final bundle
+		 */
+		Query: DEVELOPER_MODE ? resolvers : {}
 	}
 });
+
+if (DEVELOPER_MODE) {
+	// Adds messages only in a dev environment
+	loadDevMessages();
+	loadErrorMessages();
+}
 
 export default client;

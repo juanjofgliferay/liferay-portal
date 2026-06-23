@@ -1,19 +1,35 @@
 const common = require('./webpack.common');
-const merge = require('webpack-merge');
+const {createOnProxyReq, createOnProxyRes} = require('./webpack.dev.proxy');
+const {merge} = require('webpack-merge');
 const webpack = require('webpack');
 
 require('dotenv').config();
 
+const TARGET = (process.env.FARO_URL || 'http://0.0.0.0:8080').replace(
+	/\/$/,
+	''
+);
+
+const COOKIE = process.env.FARO_COOKIE || '';
+
 module.exports = merge(common.config, {
 	devServer: {
+		client: {
+			overlay: false
+		},
 		host: '0.0.0.0',
 		port: 3000,
 		proxy: {
-			'**': process.env.FARO_URL || 'http://0.0.0.0:8080'
-		},
-		publicPath: common.PUBLIC_PATH
+			'**': {
+				changeOrigin: true,
+				onProxyReq: createOnProxyReq(COOKIE),
+				onProxyRes: createOnProxyRes(TARGET),
+				selfHandleResponse: true,
+				target: TARGET
+			}
+		}
 	},
-	devtool: 'inline-source-map',
+	devtool: 'eval-source-map',
 	mode: 'development',
 	module: {
 		rules: [
@@ -25,7 +41,8 @@ module.exports = merge(common.config, {
 		]
 	},
 	output: {
-		chunkFilename: '[name].[chunkhash:8].js'
+		chunkFilename: '[name].[chunkhash:8].js',
+		publicPath: common.PUBLIC_PATH
 	},
 	plugins: [
 		new webpack.DefinePlugin({

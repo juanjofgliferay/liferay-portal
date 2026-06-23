@@ -14,11 +14,20 @@ import com.liferay.petra.sql.dsl.Table;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.model.BaseModel;
+import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.search.Sort;
+import com.liferay.portal.kernel.search.filter.Filter;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.service.PersistedModelLocalService;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.service.PersistedModelLocalServiceRegistryUtil;
+import com.liferay.portal.vulcan.pagination.Page;
+import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -31,8 +40,14 @@ import java.util.Set;
  */
 public interface SystemObjectDefinitionManager {
 
-	public long addBaseModel(User user, Map<String, Object> values)
+	public long addBaseModel(
+			boolean checkPermissions, User user, Map<String, Object> values)
 		throws Exception;
+
+	public void checkModelResourcePermission(
+			long objectDefinitionId, PermissionChecker permissionChecker,
+			long primaryKey, String actionId)
+		throws PortalException;
 
 	public BaseModel<?> deleteBaseModel(BaseModel<?> baseModel)
 		throws PortalException;
@@ -51,11 +66,23 @@ public interface SystemObjectDefinitionManager {
 	public String getBaseModelExternalReferenceCode(long primaryKey)
 		throws PortalException;
 
+	public default long getBaseModelGroupId() {
+		return 0L;
+	}
+
 	public String getExternalReferenceCode();
 
 	public JaxRsApplicationDescriptor getJaxRsApplicationDescriptor();
 
+	public default Map<String, String> getLabelKeys() {
+		return Collections.emptyMap();
+	}
+
 	public Map<Locale, String> getLabelMap();
+
+	public default Table getLocalizationTable() {
+		return null;
+	}
 
 	public Class<?> getModelClass();
 
@@ -68,6 +95,32 @@ public interface SystemObjectDefinitionManager {
 	}
 
 	public List<ObjectField> getObjectFields();
+
+	public default BaseModel<?> getOrAddEmptyBaseModel(
+			String externalReferenceCode, User user)
+		throws PortalException {
+
+		return getBaseModelByExternalReferenceCode(
+			externalReferenceCode, user.getCompanyId());
+	}
+
+	public default Page<?> getPage(
+			User user, String search, Filter filter, Pagination pagination,
+			Sort[] sorts)
+		throws Exception {
+
+		return null;
+	}
+
+	public default PersistedModel getPersistedModel(long primaryKey)
+		throws PortalException {
+
+		PersistedModelLocalService persistedModelLocalService =
+			PersistedModelLocalServiceRegistryUtil.
+				getPersistedModelLocalService(getModelClassName());
+
+		return persistedModelLocalService.getPersistedModel(primaryKey);
+	}
 
 	public Map<Locale, String> getPluralLabelMap();
 
@@ -134,14 +187,30 @@ public interface SystemObjectDefinitionManager {
 		Map<String, Object> extendedProperties =
 			(Map<String, Object>)payloadJSONObject.get("extendedProperties");
 
+		if (oldValues) {
+			extendedProperties = (Map<String, Object>)payloadJSONObject.get(
+				"originalExtendedProperties");
+		}
+
 		if (extendedProperties != null) {
 			variables.putAll(extendedProperties);
 		}
+
+		variables.computeIfAbsent("id", id -> payloadJSONObject.get("classPK"));
 
 		return variables;
 	}
 
 	public int getVersion();
+
+	public boolean hasModelResourcePermission(
+			long objectDefinitionId, PermissionChecker permissionChecker,
+			long primaryKey, String actionId)
+		throws PortalException;
+
+	public default boolean isEnableLocalization() {
+		return false;
+	}
 
 	public void updateBaseModel(
 			long primaryKey, User user, Map<String, Object> values)

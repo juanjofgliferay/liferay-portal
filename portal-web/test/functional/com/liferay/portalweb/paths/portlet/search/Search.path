@@ -12,7 +12,7 @@
 <tbody>
 <tr>
 	<td>ADD_PORTLET_LINK</td>
-	<td>//button[contains(.,'Search')]/following-sibling::div//div[contains(@class,'item-body')]//*[normalize-space(text())='${key_portletName}']/../../..//button[contains(@class,'item-add')]</td>
+	<td>//button[contains(.,'Search')]/following-sibling::div//div[contains(@class,'item-body')]//*[normalize-space(text())='${key_portletName}']/../../../..//button[contains(@class,'item-add')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -287,17 +287,17 @@
 </tr>
 <tr>
 	<td>SORT_WIDGET_DROPDOWN</td>
-	<td>//div/select[contains(@id, "SortPortlet")]</td>
+	<td>//div/button[contains(@class, 'dropdown-toggle') and contains(@id, 'SortPortlet')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>SORT_WIDGET_SORT_OPTION</td>
-	<td>//div/select[contains(@id, "SortPortlet")]/option[contains(., "${sortOption}")]</td>
+	<td>//*[contains(@class,'dropdown-item')][contains(@href, 'sort') and contains(., '${sortOption}')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>SORT_WIDGET_SORT_OPTION_POSITION</td>
-	<td>xpath=(//div/select[contains(@id, "SortPortlet")]/option)[${key_position}]</td>
+	<td>xpath=(//*[contains(@class, "dropdown-item")][contains(@href, 'sort')])[${key_position}]</td>
 	<td></td>
 </tr>
 <tr>

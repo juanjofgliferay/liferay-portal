@@ -7,7 +7,7 @@ package com.liferay.portal.remote.json.web.service.web.internal;
 
 import com.liferay.petra.memory.DeleteFileFinalizeAction;
 import com.liferay.petra.memory.FinalizeManager;
-import com.liferay.portal.kernel.jsonwebservice.JSONWebServiceAction;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.servlet.HttpMethods;
 import com.liferay.portal.kernel.test.FinalizeManagerUtil;
 import com.liferay.portal.kernel.test.GCUtil;
@@ -16,7 +16,11 @@ import com.liferay.portal.kernel.upload.UploadServletRequest;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.util.ProxyUtil;
+import com.liferay.portal.remote.json.web.service.JSONWebServiceAction;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.File;
 
@@ -26,8 +30,6 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -53,7 +55,8 @@ public class JSONWebServiceServiceActionTest
 	public static void setUpClass() throws Exception {
 		initPortalServices();
 
-		_jsonWebServiceServiceAction = new JSONWebServiceServiceAction();
+		_jsonWebServiceServiceAction = new JSONWebServiceServiceAction(
+			jsonWebServiceActionsManager);
 	}
 
 	@After
@@ -178,6 +181,13 @@ public class JSONWebServiceServiceActionTest
 		testServletContextURL(
 			"somectx", false,
 			"/somectx.foo/hello-world/user-id/173/world-name/Jupiter");
+	}
+
+	@Test
+	public void testStatusNotFound() throws Exception {
+		_testStatusNotFound("/foo/no-such-model-exception");
+		_testStatusNotFound("/foo/principal-exception");
+		_testStatusNotFound("/foo/security-exception");
 	}
 
 	protected MockHttpServletRequest createInvokerHttpServletRequest(
@@ -311,6 +321,29 @@ public class JSONWebServiceServiceActionTest
 
 				return method.invoke(httpServletRequest, args);
 			});
+	}
+
+	private void _testStatusNotFound(String path) throws Exception {
+		registerActionClass(FooService.class);
+
+		MockHttpServletRequest mockHttpServletRequest =
+			createInvokerHttpServletRequest(
+				toJSON(
+					LinkedHashMapBuilder.<String, Object>put(
+						path, new LinkedHashMap<>()
+					).build()));
+
+		MockHttpServletResponse mockHttpServletResponse =
+			new MockHttpServletResponse();
+
+		String json = _jsonWebServiceServiceAction.getJSON(
+			mockHttpServletRequest, mockHttpServletResponse);
+
+		Assert.assertEquals(
+			HttpServletResponse.SC_NOT_FOUND,
+			mockHttpServletResponse.getStatus());
+
+		Assert.assertEquals(JSONFactoryUtil.getNullJSON(), json);
 	}
 
 	private static JSONWebServiceServiceAction _jsonWebServiceServiceAction;

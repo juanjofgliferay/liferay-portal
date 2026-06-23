@@ -67,7 +67,7 @@ if (analyticsConfiguration != null) {
 
 <clay:sheet>
 	<h2>
-		<liferay-ui:message key="connect-analytics-cloud" />
+		<liferay-ui:message key="connect-to-analytics-cloud" />
 	</h2>
 
 	<aui:form action="<%= editWorkspaceConnectionURL %>" data-senna-off="true" method="post" name="fm" onSubmit='<%= liferayPortletResponse.getNamespace() + "confirmation(event);" %>'>
@@ -165,7 +165,7 @@ if (analyticsConfiguration != null) {
 	</aui:fieldset>
 </clay:sheet>
 
-<script>
+<aui:script>
 	function <portlet:namespace />confirmation(event) {
 		<c:if test="<%= connected %>">
 			Liferay.Util.openConfirmModal({
@@ -194,4 +194,4 @@ if (analyticsConfiguration != null) {
 	<c:if test="<%= !connected %>">
 		<portlet:namespace />validateTokenButton();
 	</c:if>
-</script>
+</aui:script>

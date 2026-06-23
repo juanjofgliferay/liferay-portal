@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -50,30 +49,40 @@ public class EmptyCollectionConfig implements Serializable {
 			EmptyCollectionConfig.class, json);
 	}
 
-	@Schema(
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "Whether to display a message when the collection is empty or no results match the applied filters (true by default)."
 	)
 	public Boolean getDisplayMessage() {
+		if (_displayMessageSupplier != null) {
+			displayMessage = _displayMessageSupplier.get();
+
+			_displayMessageSupplier = null;
+		}
+
 		return displayMessage;
 	}
 
 	public void setDisplayMessage(Boolean displayMessage) {
 		this.displayMessage = displayMessage;
+
+		_displayMessageSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDisplayMessage(
 		UnsafeSupplier<Boolean, Exception> displayMessageUnsafeSupplier) {
 
-		try {
-			displayMessage = displayMessageUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_displayMessageSupplier = () -> {
+			try {
+				return displayMessageUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -82,16 +91,27 @@ public class EmptyCollectionConfig implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean displayMessage;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<Boolean> _displayMessageSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The localized message to display when the collection is empty or no results match the applied filters ('No Results Found' by default)."
 	)
 	@Valid
 	public Map<String, String> getMessage_i18n() {
+		if (_message_i18nSupplier != null) {
+			message_i18n = _message_i18nSupplier.get();
+
+			_message_i18nSupplier = null;
+		}
+
 		return message_i18n;
 	}
 
 	public void setMessage_i18n(Map<String, String> message_i18n) {
 		this.message_i18n = message_i18n;
+
+		_message_i18nSupplier = null;
 	}
 
 	@JsonIgnore
@@ -99,15 +119,17 @@ public class EmptyCollectionConfig implements Serializable {
 		UnsafeSupplier<Map<String, String>, Exception>
 			message_i18nUnsafeSupplier) {
 
-		try {
-			message_i18n = message_i18nUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_message_i18nSupplier = () -> {
+			try {
+				return message_i18nUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -115,6 +137,9 @@ public class EmptyCollectionConfig implements Serializable {
 	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, String> message_i18n;
+
+	@JsonIgnore
+	private Supplier<Map<String, String>> _message_i18nSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -144,6 +169,8 @@ public class EmptyCollectionConfig implements Serializable {
 
 		sb.append("{");
 
+		Boolean displayMessage = getDisplayMessage();
+
 		if (displayMessage != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -153,6 +180,8 @@ public class EmptyCollectionConfig implements Serializable {
 
 			sb.append(displayMessage);
 		}
+
+		Map<String, String> message_i18n = getMessage_i18n();
 
 		if (message_i18n != null) {
 			if (sb.length() > 1) {
@@ -169,8 +198,8 @@ public class EmptyCollectionConfig implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.EmptyCollectionConfig",
 		name = "x-class-name"
 	)
@@ -216,7 +245,10 @@ public class EmptyCollectionConfig implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -262,3 +294,4 @@ public class EmptyCollectionConfig implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:1222843822

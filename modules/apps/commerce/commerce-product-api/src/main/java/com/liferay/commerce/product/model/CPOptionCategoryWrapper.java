@@ -39,6 +39,7 @@ public class CPOptionCategoryWrapper
 		attributes.put("mvccVersion", getMvccVersion());
 		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("CPOptionCategoryId", getCPOptionCategoryId());
 		attributes.put("companyId", getCompanyId());
 		attributes.put("userId", getUserId());
@@ -72,6 +73,13 @@ public class CPOptionCategoryWrapper
 
 		if (uuid != null) {
 			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long CPOptionCategoryId = (Long)attributes.get("CPOptionCategoryId");
@@ -270,6 +278,16 @@ public class CPOptionCategoryWrapper
 	@Override
 	public Map<java.util.Locale, String> getDescriptionMap() {
 		return model.getDescriptionMap();
+	}
+
+	/**
+	 * Returns the external reference code of this cp option category.
+	 *
+	 * @return the external reference code of this cp option category
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
 	}
 
 	/**
@@ -576,6 +594,16 @@ public class CPOptionCategoryWrapper
 	}
 
 	/**
+	 * Sets the external reference code of this cp option category.
+	 *
+	 * @param externalReferenceCode the external reference code of this cp option category
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
 	 * Sets the key of this cp option category.
 	 *
 	 * @param key the key of this cp option category
@@ -769,3 +797,4 @@ public class CPOptionCategoryWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-354345055

@@ -30,16 +30,26 @@ public class JIRAUtil {
 
 			String commitMessageTitle = parts[1];
 
+			if (Character.isWhitespace(commitMessageTitle.charAt(0))) {
+				throw new Exception(
+					StringBundler.concat(
+						"Found formatting issue in SHA ", parts[0], "\n",
+						"The commit message should not start with whitespace"));
+			}
+
 			int x = parts[1].indexOf("\n");
 
 			if (x != -1) {
 				commitMessageTitle = commitMessageTitle.substring(0, x);
 			}
 
-			if (commitMessageTitle.startsWith("Revert ") ||
+			if (commitMessageTitle.endsWith("/ci-merge.") ||
+				commitMessageTitle.matches(
+					"\\d(\\.\\d+)+ (GA|Update )\\d+ Release Apps:.+") ||
 				commitMessageTitle.startsWith("artifact:ignore") ||
 				commitMessageTitle.startsWith("build.gradle auto SF") ||
-				commitMessageTitle.endsWith("/ci-merge.")) {
+				commitMessageTitle.startsWith("Reapply ") ||
+				commitMessageTitle.startsWith("Revert ")) {
 
 				continue;
 			}
@@ -52,7 +62,7 @@ public class JIRAUtil {
 
 			throw new Exception(
 				StringBundler.concat(
-					"Found formatting issues in SHA ", parts[0], "\n",
+					"Found formatting issue in SHA ", parts[0], "\n",
 					"The commit message is missing a reference to a required ",
 					"JIRA project: ",
 					StringUtil.merge(projectNames, StringPool.COMMA_AND_SPACE),

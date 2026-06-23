@@ -44,6 +44,7 @@ import java.math.BigDecimal;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -195,6 +196,7 @@ public class CommerceInventoryBookedQuantityLocalServiceImpl
 			companyId, sku, unitOfMeasureKey);
 	}
 
+	@Override
 	public int getCommerceInventoryBookedQuantitiesCount(
 			long companyId, String keywords, String sku,
 			String unitOfMeasureKey)
@@ -213,7 +215,7 @@ public class CommerceInventoryBookedQuantityLocalServiceImpl
 		long companyId, long commerceChannelGroupId, String sku,
 		String unitOfMeasureKey) {
 
-		List<BigDecimal> result = dslQuery(
+		Iterable<BigDecimal> iterable = dslQuery(
 			DSLQueryFactoryUtil.select(
 				DSLFunctionFactoryUtil.sum(
 					CommerceInventoryBookedQuantityTable.INSTANCE.quantity
@@ -255,18 +257,22 @@ public class CommerceInventoryBookedQuantityLocalServiceImpl
 				)
 			));
 
-		if (result.get(0) == null) {
+		Iterator<BigDecimal> iterator = iterable.iterator();
+
+		BigDecimal bookedQuantity = iterator.next();
+
+		if (bookedQuantity == null) {
 			return BigDecimal.ZERO;
 		}
 
-		return result.get(0);
+		return bookedQuantity;
 	}
 
 	@Override
 	public BigDecimal getCommerceInventoryBookedQuantity(
 		long companyId, String sku, String unitOfMeasureKey) {
 
-		List<BigDecimal> result = dslQuery(
+		Iterable<BigDecimal> iterable = dslQuery(
 			DSLQueryFactoryUtil.select(
 				DSLFunctionFactoryUtil.sum(
 					CommerceInventoryBookedQuantityTable.INSTANCE.quantity
@@ -292,11 +298,15 @@ public class CommerceInventoryBookedQuantityLocalServiceImpl
 				)
 			));
 
-		if (result.get(0) == null) {
+		Iterator<BigDecimal> iterator = iterable.iterator();
+
+		BigDecimal bookedQuantity = iterator.next();
+
+		if (bookedQuantity == null) {
 			return BigDecimal.ZERO;
 		}
 
-		return result.get(0);
+		return bookedQuantity;
 	}
 
 	@Override
@@ -305,6 +315,10 @@ public class CommerceInventoryBookedQuantityLocalServiceImpl
 			Date expirationDate, BigDecimal quantity, String sku,
 			String unitOfMeasureKey, Map<String, String> context)
 		throws PortalException {
+
+		if (commerceInventoryBookedQuantityId < 1) {
+			return null;
+		}
 
 		CommerceInventoryBookedQuantity commerceInventoryBookedQuantity =
 			commerceInventoryBookedQuantityPersistence.fetchByPrimaryKey(
@@ -374,6 +388,7 @@ public class CommerceInventoryBookedQuantityLocalServiceImpl
 		return commerceInventoryBookedQuantity;
 	}
 
+	@Override
 	public BaseModelSearchResult<CommerceInventoryBookedQuantity>
 			searchCommerceInventoryBookedQuantities(SearchContext searchContext)
 		throws PortalException {

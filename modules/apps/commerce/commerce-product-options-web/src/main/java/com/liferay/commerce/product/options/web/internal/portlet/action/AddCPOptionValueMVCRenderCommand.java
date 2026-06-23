@@ -6,16 +6,19 @@
 package com.liferay.commerce.product.options.web.internal.portlet.action;
 
 import com.liferay.commerce.product.constants.CPPortletKeys;
+import com.liferay.commerce.product.model.CPOption;
 import com.liferay.commerce.product.option.CommerceOptionTypeRegistry;
 import com.liferay.commerce.product.options.web.internal.display.context.CPOptionDisplayContext;
+import com.liferay.commerce.product.service.CPOptionService;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCRenderCommand;
+import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -25,7 +28,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + CPPortletKeys.CP_OPTIONS,
+		"jakarta.portlet.name=" + CPPortletKeys.CP_OPTIONS,
 		"mvc.command.name=/cp_options/add_cp_option_value"
 	},
 	service = MVCRenderCommand.class
@@ -37,11 +40,15 @@ public class AddCPOptionValueMVCRenderCommand implements MVCRenderCommand {
 			RenderRequest renderRequest, RenderResponse renderResponse)
 		throws PortletException {
 
+		long cpOptionId = ParamUtil.getLong(renderRequest, "cpOptionId");
+
 		try {
+			CPOption cpOption = _cpOptionService.getCPOption(cpOptionId);
+
 			CPOptionDisplayContext cpOptionDisplayContext =
 				new CPOptionDisplayContext(
-					_commerceOptionTypeRegistry, _configurationProvider, null,
-					_portal.getHttpServletRequest(renderRequest));
+					_commerceOptionTypeRegistry, _configurationProvider,
+					cpOption, _portal.getHttpServletRequest(renderRequest));
 
 			renderRequest.setAttribute(
 				WebKeys.PORTLET_DISPLAY_CONTEXT, cpOptionDisplayContext);
@@ -58,6 +65,9 @@ public class AddCPOptionValueMVCRenderCommand implements MVCRenderCommand {
 
 	@Reference
 	private ConfigurationProvider _configurationProvider;
+
+	@Reference
+	private CPOptionService _cpOptionService;
 
 	@Reference
 	private Portal _portal;

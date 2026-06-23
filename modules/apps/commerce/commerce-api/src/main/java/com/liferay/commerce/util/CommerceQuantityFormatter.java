@@ -10,10 +10,14 @@ import com.liferay.commerce.product.model.CPInstanceUnitOfMeasure;
 
 import java.math.BigDecimal;
 
+import java.util.Locale;
+
 /**
  * @author Alessio Antonio Rendina
  */
 public interface CommerceQuantityFormatter {
+
+	public String format(BigDecimal quantity, Locale locale) throws Exception;
 
 	public BigDecimal format(
 		CPInstance cpInstance, BigDecimal quantity, String unitOfMeasureKey);

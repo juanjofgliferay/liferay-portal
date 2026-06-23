@@ -23,7 +23,6 @@ if (!ddlDisplayContext.isAdminPortlet()) {
 
 <c:if test="<%= ddlViewRecordsDisplayContext.isAdminPortlet() %>">
 	<clay:navigation-bar
-		inverted="<%= true %>"
 		navigationItems="<%= ddlViewRecordsDisplayContext.getNavigationItems() %>"
 	/>
 </c:if>
@@ -43,9 +42,9 @@ if (!ddlDisplayContext.isAdminPortlet()) {
 	clearResultsURL="<%= ddlViewRecordsDisplayContext.getClearResultsURL() %>"
 	creationMenu="<%= ddlViewRecordsDisplayContext.getCreationMenu() %>"
 	disabled="<%= ddlViewRecordsDisplayContext.isDisabledManagementBar() %>"
-	filterDropdownItems="<%= ddlViewRecordsDisplayContext.getFilterItemsDropdownItems() %>"
 	itemsTotal="<%= ddlViewRecordsDisplayContext.getTotalItems() %>"
-	propsTransformer="js/ViewRecordsManagementToolbarPropsTransformer"
+	orderDropdownItems="<%= ddlViewRecordsDisplayContext.getOrderItemsDropdownItems() %>"
+	propsTransformer="{ViewRecordsManagementToolbarPropsTransformer} from dynamic-data-lists-web"
 	searchActionURL="<%= ddlViewRecordsDisplayContext.getSearchActionURL() %>"
 	searchContainerId="<%= ddlViewRecordsDisplayContext.getSearchContainerId() %>"
 	searchFormName="fm1"

@@ -6,9 +6,11 @@
 package com.liferay.portal.repository.liferayrepository;
 
 import com.liferay.document.library.kernel.model.DLFileEntry;
+import com.liferay.document.library.kernel.model.DLFileEntryType;
 import com.liferay.document.library.kernel.model.DLFileShortcut;
 import com.liferay.document.library.kernel.model.DLFileVersion;
 import com.liferay.document.library.kernel.model.DLFolder;
+import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.kernel.model.DLVersionNumberIncrease;
 import com.liferay.document.library.kernel.service.DLAppHelperLocalService;
 import com.liferay.document.library.kernel.service.DLFileEntryLocalService;
@@ -38,11 +40,19 @@ import com.liferay.portal.kernel.search.IndexerRegistryUtil;
 import com.liferay.portal.kernel.search.Query;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.SearchException;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
+import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
+import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermissionRegistryUtil;
+import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermissionUtil;
 import com.liferay.portal.kernel.service.RepositoryLocalService;
 import com.liferay.portal.kernel.service.RepositoryService;
 import com.liferay.portal.kernel.service.ResourceLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
@@ -98,7 +108,8 @@ public class LiferayRepository
 			String externalReferenceCode, long userId, long folderId,
 			String sourceFileName, String mimeType, String title,
 			String urlTitle, String description, String changeLog, File file,
-			Date expirationDate, Date reviewDate, ServiceContext serviceContext)
+			Date displayDate, Date expirationDate, Date reviewDate,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		long fileEntryTypeId = ParamUtil.getLong(
@@ -118,7 +129,8 @@ public class LiferayRepository
 			externalReferenceCode, getGroupId(), getRepositoryId(),
 			toFolderId(folderId), sourceFileName, mimeType, title, urlTitle,
 			description, changeLog, fileEntryTypeId, ddmFormValuesMap, file,
-			null, size, expirationDate, reviewDate, serviceContext);
+			null, size, displayDate, expirationDate, reviewDate,
+			serviceContext);
 
 		return new LiferayFileEntry(dlFileEntry);
 	}
@@ -128,8 +140,8 @@ public class LiferayRepository
 			String externalReferenceCode, long userId, long folderId,
 			String sourceFileName, String mimeType, String title,
 			String urlTitle, String description, String changeLog,
-			InputStream inputStream, long size, Date expirationDate,
-			Date reviewDate, ServiceContext serviceContext)
+			InputStream inputStream, long size, Date displayDate,
+			Date expirationDate, Date reviewDate, ServiceContext serviceContext)
 		throws PortalException {
 
 		long fileEntryTypeId = ParamUtil.getLong(
@@ -143,20 +155,21 @@ public class LiferayRepository
 			externalReferenceCode, getGroupId(), getRepositoryId(),
 			toFolderId(folderId), sourceFileName, mimeType, title, urlTitle,
 			description, changeLog, fileEntryTypeId, ddmFormValuesMap, null,
-			inputStream, size, expirationDate, reviewDate, serviceContext);
+			inputStream, size, displayDate, expirationDate, reviewDate,
+			serviceContext);
 
 		return new LiferayFileEntry(dlFileEntry);
 	}
 
 	@Override
 	public FileShortcut addFileShortcut(
-			long userId, long folderId, long toFileEntryId,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long folderId,
+			long toFileEntryId, ServiceContext serviceContext)
 		throws PortalException {
 
 		DLFileShortcut dlFileShortcut = dlFileShortcutService.addFileShortcut(
-			getGroupId(), getRepositoryId(), folderId, toFileEntryId,
-			serviceContext);
+			externalReferenceCode, getGroupId(), getRepositoryId(), folderId,
+			toFileEntryId, serviceContext);
 
 		return new LiferayFileShortcut(dlFileShortcut);
 	}
@@ -296,6 +309,18 @@ public class LiferayRepository
 
 		dlFolderService.deleteFolder(
 			getGroupId(), toFolderId(parentFolderId), name);
+	}
+
+	@Override
+	public FileEntry fetchFileEntry(long fileEntryId) throws PortalException {
+		DLFileEntry dlFileEntry = dlFileEntryService.fetchFileEntry(
+			fileEntryId);
+
+		if (dlFileEntry == null) {
+			return null;
+		}
+
+		return new LiferayFileEntry(dlFileEntry);
 	}
 
 	@Override
@@ -469,7 +494,7 @@ public class LiferayRepository
 
 		DLFileEntry dlFileEntry =
 			dlFileEntryService.getFileEntryByExternalReferenceCode(
-				getGroupId(), externalReferenceCode);
+				externalReferenceCode, getGroupId());
 
 		return new LiferayFileEntry(dlFileEntry);
 	}
@@ -502,6 +527,18 @@ public class LiferayRepository
 
 		DLFileShortcut dlFileShortcut = dlFileShortcutService.getFileShortcut(
 			fileShortcutId);
+
+		return new LiferayFileShortcut(dlFileShortcut);
+	}
+
+	@Override
+	public FileShortcut getFileShortcutByExternalReferenceCode(
+			String externalReferenceCode)
+		throws PortalException {
+
+		DLFileShortcut dlFileShortcut =
+			dlFileShortcutService.getDLFileShortcutByExternalReferenceCode(
+				externalReferenceCode, getGroupId());
 
 		return new LiferayFileShortcut(dlFileShortcut);
 	}
@@ -756,6 +793,14 @@ public class LiferayRepository
 	}
 
 	@Override
+	public List<FileShortcut> getRepositoryFileShortcuts(long groupId) {
+		List<DLFileShortcut> dlFileShortcuts =
+			dlFileShortcutService.getGroupFileShortcuts(groupId);
+
+		return RepositoryModelUtil.toFileShortcuts(dlFileShortcuts);
+	}
+
+	@Override
 	public void getSubfolderIds(List<Long> folderIds, long folderId)
 		throws PortalException {
 
@@ -898,7 +943,7 @@ public class LiferayRepository
 			long userId, long fileEntryId, String sourceFileName,
 			String mimeType, String title, String urlTitle, String description,
 			String changeLog, DLVersionNumberIncrease dlVersionNumberIncrease,
-			File file, Date expirationDate, Date reviewDate,
+			File file, Date displayDate, Date expirationDate, Date reviewDate,
 			ServiceContext serviceContext)
 		throws PortalException {
 
@@ -917,8 +962,8 @@ public class LiferayRepository
 		DLFileEntry dlFileEntry = dlFileEntryService.updateFileEntry(
 			fileEntryId, sourceFileName, mimeType, title, urlTitle, description,
 			changeLog, dlVersionNumberIncrease, fileEntryTypeId,
-			ddmFormValuesMap, file, null, size, expirationDate, reviewDate,
-			serviceContext);
+			ddmFormValuesMap, file, null, size, displayDate, expirationDate,
+			reviewDate, serviceContext);
 
 		return new LiferayFileEntry(dlFileEntry);
 	}
@@ -928,8 +973,8 @@ public class LiferayRepository
 			long userId, long fileEntryId, String sourceFileName,
 			String mimeType, String title, String urlTitle, String description,
 			String changeLog, DLVersionNumberIncrease dlVersionNumberIncrease,
-			InputStream inputStream, long size, Date expirationDate,
-			Date reviewDate, ServiceContext serviceContext)
+			InputStream inputStream, long size, Date displayDate,
+			Date expirationDate, Date reviewDate, ServiceContext serviceContext)
 		throws PortalException {
 
 		long fileEntryTypeId = ParamUtil.getLong(
@@ -941,8 +986,8 @@ public class LiferayRepository
 		DLFileEntry dlFileEntry = dlFileEntryService.updateFileEntry(
 			fileEntryId, sourceFileName, mimeType, title, urlTitle, description,
 			changeLog, dlVersionNumberIncrease, fileEntryTypeId,
-			ddmFormValuesMap, null, inputStream, size, expirationDate,
-			reviewDate, serviceContext);
+			ddmFormValuesMap, null, inputStream, size, displayDate,
+			expirationDate, reviewDate, serviceContext);
 
 		return new LiferayFileEntry(dlFileEntry);
 	}
@@ -1004,11 +1049,69 @@ public class LiferayRepository
 		int restrictionType = ParamUtil.getInteger(
 			serviceContext, "restrictionType");
 
-		DLFolder dlFolder = dlFolderService.updateFolder(
-			toFolderId(folderId), name, description, defaultFileEntryTypeId,
-			fileEntryTypeIds, restrictionType, serviceContext);
+		ModelResourcePermission<DLFolder> modelResourcePermission =
+			ModelResourcePermissionRegistryUtil.
+				<DLFolder>getModelResourcePermission(DLFolder.class.getName());
+		PermissionChecker permissionChecker =
+			PermissionThreadLocal.getPermissionChecker();
 
-		return new LiferayFolder(dlFolder);
+		if (ModelResourcePermissionUtil.contains(
+				modelResourcePermission, permissionChecker,
+				serviceContext.getScopeGroupId(), folderId,
+				ActionKeys.ADVANCED_UPDATE) ||
+			ModelResourcePermissionUtil.contains(
+				modelResourcePermission, permissionChecker,
+				serviceContext.getScopeGroupId(), folderId,
+				ActionKeys.UPDATE)) {
+
+			if (folderId == DLFolderConstants.DEFAULT_PARENT_FOLDER_ID) {
+				DLFolder dlFolder = dlFolderService.updateFolder(
+					toFolderId(folderId), name, description,
+					defaultFileEntryTypeId, fileEntryTypeIds, restrictionType,
+					serviceContext);
+
+				return new LiferayFolder(dlFolder);
+			}
+
+			DLFolder dlFolder = dlFolderService.getFolder(toFolderId(folderId));
+
+			if (!ModelResourcePermissionUtil.contains(
+					modelResourcePermission, permissionChecker,
+					serviceContext.getScopeGroupId(), folderId,
+					ActionKeys.ADVANCED_UPDATE)) {
+
+				defaultFileEntryTypeId = dlFolder.getDefaultFileEntryTypeId();
+
+				fileEntryTypeIds = ListUtil.toList(
+					dlFileEntryTypeLocalService.getFolderFileEntryTypes(
+						new long[] {dlFolder.getGroupId()}, folderId, true),
+					DLFileEntryType.FILE_ENTRY_TYPE_ID_ACCESSOR);
+
+				restrictionType = dlFolder.getRestrictionType();
+
+				serviceContext.setAttribute(
+					"updateWorkflowDefinitionLinks", Boolean.FALSE);
+			}
+
+			if (!ModelResourcePermissionUtil.contains(
+					modelResourcePermission, permissionChecker,
+					serviceContext.getScopeGroupId(), folderId,
+					ActionKeys.UPDATE)) {
+
+				name = dlFolder.getName();
+				description = dlFolder.getDescription();
+			}
+
+			dlFolder = dlFolderService.updateFolder(
+				toFolderId(folderId), name, description, defaultFileEntryTypeId,
+				fileEntryTypeIds, restrictionType, serviceContext);
+
+			return new LiferayFolder(dlFolder);
+		}
+
+		throw new PrincipalException.MustHavePermission(
+			permissionChecker, Folder.class.getName(), folderId,
+			ActionKeys.ADVANCED_UPDATE, ActionKeys.UPDATE);
 	}
 
 	@Override

@@ -100,23 +100,13 @@ public class MySQLSQLTransformerLogicTest
 	}
 
 	@Override
+	protected String getBitwiseOrTransformedSQL() {
+		return "select (foo | bar) from Foo";
+	}
+
+	@Override
 	protected String getBooleanTransformedSQL() {
 		return "select * from Foo where foo = 0 and bar = 1";
-	}
-
-	@Override
-	protected String getCastClobTextTransformedSQL() {
-		return "select foo from Foo";
-	}
-
-	@Override
-	protected String getCastLongOriginalSQL() {
-		return "select CAST_LONG(foo) from Foo";
-	}
-
-	@Override
-	protected String getCastLongTransformedSQL() {
-		return "select foo from Foo";
 	}
 
 	@Override

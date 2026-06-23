@@ -21,7 +21,7 @@ import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermi
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.security.permission.resource.StagedModelPermissionLogic;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
-import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.kernel.util.PropsValues;
 
 import java.util.Dictionary;
 
@@ -43,6 +43,8 @@ public class MBCategoryPermissionRegistrar {
 		Dictionary<String, Object> properties =
 			HashMapDictionaryBuilder.<String, Object>put(
 				"model.class.name", MBCategory.class.getName()
+			).put(
+				"permissions.view.dynamic.inheritance.checking", "true"
 			).build();
 
 		_serviceRegistration = bundleContext.registerService(

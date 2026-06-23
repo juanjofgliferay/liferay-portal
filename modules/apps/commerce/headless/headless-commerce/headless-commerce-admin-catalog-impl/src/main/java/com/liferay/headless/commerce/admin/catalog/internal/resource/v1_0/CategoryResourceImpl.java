@@ -14,7 +14,7 @@ import com.liferay.commerce.product.service.CPDefinitionService;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.Category;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.Product;
 import com.liferay.headless.commerce.admin.catalog.resource.v1_0.CategoryResource;
-import com.liferay.headless.commerce.core.util.ServiceContextHelper;
+import com.liferay.headless.commerce.core.helper.ServiceContextHelper;
 import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -26,11 +26,10 @@ import com.liferay.portal.vulcan.fields.NestedFieldId;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 
-import java.util.ArrayList;
+import jakarta.ws.rs.core.Response;
+
 import java.util.List;
 import java.util.Locale;
-
-import javax.ws.rs.core.Response;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -55,7 +54,8 @@ public class CategoryResourceImpl extends BaseCategoryResourceImpl {
 		CPDefinition cpDefinition =
 			_cpDefinitionService.
 				fetchCPDefinitionByCProductExternalReferenceCode(
-					externalReferenceCode, contextCompany.getCompanyId());
+					externalReferenceCode, contextCompany.getCompanyId(),
+					false);
 
 		if (cpDefinition == null) {
 			throw new NoSuchCPDefinitionException(
@@ -70,14 +70,14 @@ public class CategoryResourceImpl extends BaseCategoryResourceImpl {
 				cpDefinition.getCPDefinitionId(), pagination.getStartPosition(),
 				pagination.getEndPosition());
 
-		int totalItems = _assetCategoryService.getCategoriesCount(
+		int totalCount = _assetCategoryService.getCategoriesCount(
 			_classNameLocalService.getClassNameId(cpDefinition.getModelClass()),
 			cpDefinition.getCPDefinitionId());
 
 		return Page.of(
 			_toProductCategories(
 				assetCategories, contextAcceptLanguage.getPreferredLocale()),
-			pagination, totalItems);
+			pagination, totalCount);
 	}
 
 	@NestedField(parentClass = Product.class, value = "categories")
@@ -87,7 +87,7 @@ public class CategoryResourceImpl extends BaseCategoryResourceImpl {
 		throws Exception {
 
 		CPDefinition cpDefinition =
-			_cpDefinitionService.fetchCPDefinitionByCProductId(id);
+			_cpDefinitionService.fetchCPDefinitionByCProductId(id, false);
 
 		if (cpDefinition == null) {
 			throw new NoSuchCPDefinitionException(
@@ -101,14 +101,14 @@ public class CategoryResourceImpl extends BaseCategoryResourceImpl {
 				cpDefinition.getCPDefinitionId(), pagination.getStartPosition(),
 				pagination.getEndPosition());
 
-		int totalItems = _assetCategoryService.getCategoriesCount(
+		int totalCount = _assetCategoryService.getCategoriesCount(
 			_classNameLocalService.getClassNameId(cpDefinition.getModelClass()),
 			cpDefinition.getCPDefinitionId());
 
 		return Page.of(
 			_toProductCategories(
 				assetCategories, contextAcceptLanguage.getPreferredLocale()),
-			pagination, totalItems);
+			pagination, totalCount);
 	}
 
 	@Override
@@ -119,7 +119,8 @@ public class CategoryResourceImpl extends BaseCategoryResourceImpl {
 		CPDefinition cpDefinition =
 			_cpDefinitionService.
 				fetchCPDefinitionByCProductExternalReferenceCode(
-					externalReferenceCode, contextCompany.getCompanyId());
+					externalReferenceCode, contextCompany.getCompanyId(),
+					false);
 
 		if (cpDefinition == null) {
 			throw new NoSuchCPDefinitionException(
@@ -139,7 +140,7 @@ public class CategoryResourceImpl extends BaseCategoryResourceImpl {
 		throws Exception {
 
 		CPDefinition cpDefinition =
-			_cpDefinitionService.fetchCPDefinitionByCProductId(id);
+			_cpDefinitionService.fetchCPDefinitionByCProductId(id, false);
 
 		if (cpDefinition == null) {
 			throw new NoSuchCPDefinitionException(
@@ -157,16 +158,11 @@ public class CategoryResourceImpl extends BaseCategoryResourceImpl {
 			List<AssetCategory> assetCategories, Locale locale)
 		throws Exception {
 
-		List<Category> categories = new ArrayList<>();
-
-		for (AssetCategory category : assetCategories) {
-			categories.add(
-				_categoryDTOConverter.toDTO(
-					new DefaultDTOConverterContext(
-						category.getCategoryId(), locale)));
-		}
-
-		return categories;
+		return transform(
+			assetCategories,
+			category -> _categoryDTOConverter.toDTO(
+				new DefaultDTOConverterContext(
+					category.getCategoryId(), locale)));
 	}
 
 	private void _updateProductCategories(

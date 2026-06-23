@@ -27,6 +27,9 @@ import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.SetUtil;
+import com.liferay.portal.kernel.util.Validator;
+
+import jakarta.ws.rs.BadRequestException;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -37,8 +40,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.ws.rs.BadRequestException;
 
 /**
  * @author Víctor Galán
@@ -86,8 +87,7 @@ public class DDMFormValuesUtil {
 					_flattenDDMFormFieldValues(
 						rootDDMFormFields,
 						ddmFormField -> _toDDMFormFieldValues(
-							contentFieldMap.get(
-								ddmFormField.getFieldReference()),
+							_getContentFields(contentFieldMap, ddmFormField),
 							ddmFormField, dlAppService, groupId,
 							journalArticleService, layoutLocalService,
 							locale)));
@@ -143,6 +143,20 @@ public class DDMFormValuesUtil {
 		return locales;
 	}
 
+	private static List<ContentField> _getContentFields(
+		Map<String, List<ContentField>> contentFieldMap,
+		DDMFormField ddmFormField) {
+
+		List<ContentField> contentFields = contentFieldMap.get(
+			ddmFormField.getFieldReference());
+
+		if (contentFields != null) {
+			return contentFields;
+		}
+
+		return contentFieldMap.get(ddmFormField.getName());
+	}
+
 	private static Locale _getDefaultLocale(
 		DDMForm ddmForm, Locale defaultLocale) {
 
@@ -163,11 +177,15 @@ public class DDMFormValuesUtil {
 		Map<String, List<ContentField>> contentFieldsMap = new HashMap<>();
 
 		for (ContentField contentField : contentFields) {
-			String contentFieldName = contentField.getName();
+			String fieldReference = contentField.getFieldReference();
+
+			if (Validator.isNull(fieldReference)) {
+				fieldReference = contentField.getName();
+			}
 
 			List<ContentField> contentFieldsList =
 				contentFieldsMap.computeIfAbsent(
-					contentFieldName, key -> new ArrayList<>());
+					fieldReference, key -> new ArrayList<>());
 
 			contentFieldsList.add(contentField);
 		}
@@ -192,8 +210,8 @@ public class DDMFormValuesUtil {
 					_flattenDDMFormFieldValues(
 						ddmFormField.getNestedDDMFormFields(),
 						field -> _toDDMFormFieldValues(
-							contentFieldMap.get(field.getFieldReference()),
-							field, dlAppService, groupId, journalArticleService,
+							_getContentFields(contentFieldMap, field), field,
+							dlAppService, groupId, journalArticleService,
 							layoutLocalService, locale)));
 				setValue(value);
 			}
@@ -227,15 +245,18 @@ public class DDMFormValuesUtil {
 				dlAppService, groupId, journalArticleService,
 				layoutLocalService, locale,
 				DDMValueUtil.toDDMValue(
-					contentField, ddmFormField, dlAppService, groupId,
-					journalArticleService, layoutLocalService, locale)));
+					contentField.toString(), ddmFormField, dlAppService,
+					groupId, journalArticleService, layoutLocalService,
+					locale)));
 	}
 
 	private static Value _toPredefinedValue(
 		DDMFormField ddmFormField, Locale locale) {
 
 		if (Objects.equals(
-				DDMFormFieldTypeConstants.SEPARATOR, ddmFormField.getType())) {
+				ddmFormField.getType(), DDMFormFieldTypeConstants.FIELDSET) ||
+			Objects.equals(
+				ddmFormField.getType(), DDMFormFieldTypeConstants.SEPARATOR)) {
 
 			return null;
 		}

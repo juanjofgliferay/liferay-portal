@@ -55,7 +55,9 @@ renderResponse.setTitle((fileEntryType == null) ? LanguageUtil.get(request, "new
 	<aui:model-context bean="<%= fileEntryType %>" model="<%= DLFileEntryType.class %>" />
 
 	<nav class="component-tbar subnav-tbar-light tbar tbar-metadata-type">
-		<clay:container-fluid>
+		<clay:container-fluid
+			size="xxxl"
+		>
 			<ul class="tbar-nav">
 				<li class="tbar-item tbar-item-expand">
 					<aui:input cssClass="form-control-inline" defaultLanguageId="<%= LocaleUtil.toLanguageId(LocaleUtil.getSiteDefault()) %>" label='<%= LanguageUtil.get(request, "name") %>' labelCssClass="sr-only" name="name" placeholder='<%= LanguageUtil.format(request, "untitled", "structure") %>' wrapperCssClass="article-content-title mb-0" />
@@ -104,7 +106,7 @@ renderResponse.setTitle((fileEntryType == null) ? LanguageUtil.get(request, "new
 			"defaultLanguageId", defaultLanguageId
 		).build()
 	%>'
-	module="document_library/js/LocaleChangedHandler.es"
+	module="{LocaleChangedHandler} from document-library-web"
 	servletContext="<%= application %>"
 />
 
@@ -116,7 +118,7 @@ renderResponse.setTitle((fileEntryType == null) ? LanguageUtil.get(request, "new
 			"defaultLanguageId", defaultLanguageId
 		).build()
 	%>'
-	module="document_library/js/data-engine/DataEngineLayoutBuilderHandler.es"
+	module="{DataEngineLayoutBuilderHandler} from document-library-web"
 	servletContext="<%= application %>"
 />
 

@@ -11,6 +11,8 @@
 	<version>${version}</version>
 	<packaging>war</packaging>
 	<properties>
+		<java.compiler.source.version>1.8</java.compiler.source.version>
+		<java.compiler.target.version>1.8</java.compiler.target.version>
 #if (${liferayVersion.startsWith("7.0")})
 		<liferay.bom.version>7.0.10.17</liferay.bom.version>
 #elseif (${liferayVersion.startsWith("7.1")})
@@ -26,7 +28,11 @@
 #else
 		<spring.scope>provided</spring.scope>
 #end
-#if (${framework.equals("portletmvc4spring")})
+
+#if (${jakartaCompatible.equals("true")})
+		<spring.security.version>6.5.9</spring.security.version>
+		<spring.version>6.2.17</spring.version>
+#elseif (${framework.equals("portletmvc4spring")})
 		<spring.security.version>5.5.1</spring.security.version>
 		<spring.version>5.3.27</spring.version>
 #elseif (${framework.equals("springportletmvc")})
@@ -83,7 +89,7 @@
 			</exclusions>
 		</dependency>
 #end
-#if (${liferayVersion.startsWith("7.4")} and ${framework.equals("springportletmvc")})
+#if ((${liferayVersion.startsWith("20")} || ${liferayVersion.startsWith("7.4")}) and ${framework.equals("springportletmvc")})
 		<dependency>
 			<groupId>com.rometools</groupId>
 			<artifactId>rome</artifactId>
@@ -107,7 +113,7 @@
 			<groupId>javax.validation</groupId>
 			<artifactId>validation-api</artifactId>
 			<version>2.0.1.Final</version>
-#if (${liferayVersion.startsWith("7.2")} || ${liferayVersion.startsWith("7.3")} || ${liferayVersion.startsWith("7.4")})
+#if (${liferayVersion.startsWith("20")} || ${liferayVersion.startsWith("7.2")} || ${liferayVersion.startsWith("7.3")} || ${liferayVersion.startsWith("7.4")})
 			<scope>provided</scope>
 #end
 		</dependency>
@@ -223,7 +229,7 @@
 		<dependency>
 			<groupId>org.thymeleaf</groupId>
 			<artifactId>thymeleaf</artifactId>
-			<version>3.0.15.RELEASE</version>
+			<version>3.1.5.RELEASE</version>
 			<exclusions>
 				<exclusion>
 					<groupId>ognl</groupId>
@@ -239,10 +245,11 @@
 			<groupId>org.thymeleaf</groupId>
 #if (${framework.equals("portletmvc4spring")})
 			<artifactId>thymeleaf-spring5</artifactId>
+			<version>3.1.5.RELEASE</version>
 #elseif (${framework.equals("springportletmvc")})
 			<artifactId>thymeleaf-spring4</artifactId>
-#end
 			<version>3.0.15.RELEASE</version>
+#end
 			<exclusions>
 				<exclusion>
 					<groupId>org.slf4j</groupId>
@@ -258,8 +265,8 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.1</version>
 				<configuration>
-					<source>1.8</source>
-					<target>1.8</target>
+					<source>${java.compiler.source.version}</source>
+					<target>${java.compiler.target.version}</target>
 				</configuration>
 			</plugin>
 			<plugin>

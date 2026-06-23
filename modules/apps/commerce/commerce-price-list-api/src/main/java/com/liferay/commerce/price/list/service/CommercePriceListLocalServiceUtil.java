@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -37,27 +38,13 @@ public class CommercePriceListLocalServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.commerce.price.list.service.impl.CommercePriceListLocalServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static CommercePriceList addCatalogBaseCommercePriceList(
-			long groupId, long userId, long commerceCurrencyId, String type,
-			String name,
+			long userId, long groupId, String commerceCurrencyCode, String name,
+			String type,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addCatalogBaseCommercePriceList(
-			groupId, userId, commerceCurrencyId, type, name, serviceContext);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x)
-	 */
-	@Deprecated
-	public static CommercePriceList addCommerceCatalogBasePriceList(
-			long groupId, long userId, long commerceCurrencyId, String type,
-			String name,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().addCommerceCatalogBasePriceList(
-			groupId, userId, commerceCurrencyId, type, name, serviceContext);
+			userId, groupId, commerceCurrencyCode, name, type, serviceContext);
 	}
 
 	/**
@@ -77,48 +64,46 @@ public class CommercePriceListLocalServiceUtil {
 	}
 
 	public static CommercePriceList addCommercePriceList(
-			String externalReferenceCode, long groupId, long userId,
-			long commerceCurrencyId, boolean netPrice, String type,
+			String externalReferenceCode, long userId, long groupId,
 			long parentCommercePriceListId, boolean catalogBasePriceList,
-			String name, double priority, int displayDateMonth,
-			int displayDateDay, int displayDateYear, int displayDateHour,
-			int displayDateMinute, int expirationDateMonth,
-			int expirationDateDay, int expirationDateYear,
-			int expirationDateHour, int expirationDateMinute,
-			boolean neverExpire,
+			String commerceCurrencyCode, int displayDateDay,
+			int displayDateHour, int displayDateMinute, int displayDateMonth,
+			int displayDateYear, int expirationDateDay, int expirationDateHour,
+			int expirationDateMinute, int expirationDateMonth,
+			int expirationDateYear, String name, boolean netPrice,
+			boolean neverExpire, double priority, String type,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addCommercePriceList(
-			externalReferenceCode, groupId, userId, commerceCurrencyId,
-			netPrice, type, parentCommercePriceListId, catalogBasePriceList,
-			name, priority, displayDateMonth, displayDateDay, displayDateYear,
-			displayDateHour, displayDateMinute, expirationDateMonth,
-			expirationDateDay, expirationDateYear, expirationDateHour,
-			expirationDateMinute, neverExpire, serviceContext);
+			externalReferenceCode, userId, groupId, parentCommercePriceListId,
+			catalogBasePriceList, commerceCurrencyCode, displayDateDay,
+			displayDateHour, displayDateMinute, displayDateMonth,
+			displayDateYear, expirationDateDay, expirationDateHour,
+			expirationDateMinute, expirationDateMonth, expirationDateYear, name,
+			netPrice, neverExpire, priority, type, serviceContext);
 	}
 
 	public static CommercePriceList addOrUpdateCommercePriceList(
-			String externalReferenceCode, long groupId, long userId,
-			long commercePriceListId, long commerceCurrencyId, boolean netPrice,
-			String type, long parentCommercePriceListId,
-			boolean catalogBasePriceList, String name, double priority,
-			int displayDateMonth, int displayDateDay, int displayDateYear,
-			int displayDateHour, int displayDateMinute, int expirationDateMonth,
-			int expirationDateDay, int expirationDateYear,
+			String externalReferenceCode, long userId, long groupId,
+			long commercePriceListId, long parentCommercePriceListId,
+			boolean catalogBasePriceList, String commerceCurrencyCode,
+			int displayDateDay, int displayDateHour, int displayDateMinute,
+			int displayDateMonth, int displayDateYear, int expirationDateDay,
 			int expirationDateHour, int expirationDateMinute,
-			boolean neverExpire,
+			int expirationDateMonth, int expirationDateYear, String name,
+			boolean netPrice, boolean neverExpire, double priority, String type,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addOrUpdateCommercePriceList(
-			externalReferenceCode, groupId, userId, commercePriceListId,
-			commerceCurrencyId, netPrice, type, parentCommercePriceListId,
-			catalogBasePriceList, name, priority, displayDateMonth,
-			displayDateDay, displayDateYear, displayDateHour, displayDateMinute,
-			expirationDateMonth, expirationDateDay, expirationDateYear,
-			expirationDateHour, expirationDateMinute, neverExpire,
-			serviceContext);
+			externalReferenceCode, userId, groupId, commercePriceListId,
+			parentCommercePriceListId, catalogBasePriceList,
+			commerceCurrencyCode, displayDateDay, displayDateHour,
+			displayDateMinute, displayDateMonth, displayDateYear,
+			expirationDateDay, expirationDateHour, expirationDateMinute,
+			expirationDateMonth, expirationDateYear, name, netPrice,
+			neverExpire, priority, type, serviceContext);
 	}
 
 	public static void checkCommercePriceLists() throws PortalException {
@@ -288,48 +273,16 @@ public class CommercePriceListLocalServiceUtil {
 		return getService().dynamicQueryCount(dynamicQuery, projection);
 	}
 
-	public static CommercePriceList fetchByExternalReferenceCode(
-		String externalReferenceCode, long companyId) {
-
-		return getService().fetchByExternalReferenceCode(
-			externalReferenceCode, companyId);
-	}
-
 	public static CommercePriceList fetchCatalogBaseCommercePriceList(
-			long groupId)
-		throws PortalException {
+		long groupId) {
 
 		return getService().fetchCatalogBaseCommercePriceList(groupId);
 	}
 
 	public static CommercePriceList fetchCatalogBaseCommercePriceListByType(
-			long groupId, String type)
-		throws PortalException {
+		long groupId, String type) {
 
 		return getService().fetchCatalogBaseCommercePriceListByType(
-			groupId, type);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x)
-	 */
-	@Deprecated
-	public static CommercePriceList fetchCommerceCatalogBasePriceList(
-			long groupId)
-		throws PortalException {
-
-		return getService().fetchCommerceCatalogBasePriceList(groupId);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x)
-	 */
-	@Deprecated
-	public static CommercePriceList fetchCommerceCatalogBasePriceListByType(
-			long groupId, String type)
-		throws PortalException {
-
-		return getService().fetchCommerceCatalogBasePriceListByType(
 			groupId, type);
 	}
 
@@ -390,29 +343,6 @@ public class CommercePriceListLocalServiceUtil {
 	}
 
 	/**
-	 * @deprecated As of Athanasius (7.3.x)
-	 */
-	@Deprecated
-	public static CommercePriceList getCommerceCatalogBasePriceList(
-			long groupId)
-		throws PortalException {
-
-		return getService().getCommerceCatalogBasePriceList(groupId);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x)
-	 */
-	@Deprecated
-	public static CommercePriceList getCommerceCatalogBasePriceListByType(
-			long groupId, String type)
-		throws PortalException {
-
-		return getService().getCommerceCatalogBasePriceListByType(
-			groupId, type);
-	}
-
-	/**
 	 * Returns the commerce price list with the primary key.
 	 *
 	 * @param commercePriceListId the primary key of the commerce price list
@@ -439,21 +369,6 @@ public class CommercePriceListLocalServiceUtil {
 	 * @deprecated As of Cavanaugh (7.4.x)
 	 */
 	@Deprecated
-	public static CommercePriceList
-		getCommercePriceListByAccountAndChannelAndOrderTypeId(
-			long groupId, long commerceAccountId, long commerceChannelId,
-			long commerceOrderTypeId, String type) {
-
-		return getService().
-			getCommercePriceListByAccountAndChannelAndOrderTypeId(
-				groupId, commerceAccountId, commerceChannelId,
-				commerceOrderTypeId, type);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x)
-	 */
-	@Deprecated
 	public static CommercePriceList getCommercePriceListByAccountAndChannelId(
 		long groupId, long commerceAccountId, long commerceChannelId,
 		String type) {
@@ -466,38 +381,11 @@ public class CommercePriceListLocalServiceUtil {
 	 * @deprecated As of Cavanaugh (7.4.x)
 	 */
 	@Deprecated
-	public static CommercePriceList getCommercePriceListByAccountAndOrderTypeId(
-		long groupId, long commerceAccountId, long commerceOrderTypeId,
-		String type) {
-
-		return getService().getCommercePriceListByAccountAndOrderTypeId(
-			groupId, commerceAccountId, commerceOrderTypeId, type);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x)
-	 */
-	@Deprecated
 	public static CommercePriceList getCommercePriceListByAccountGroupIds(
 		long groupId, long[] commerceAccountGroupIds, String type) {
 
 		return getService().getCommercePriceListByAccountGroupIds(
 			groupId, commerceAccountGroupIds, type);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x)
-	 */
-	@Deprecated
-	public static CommercePriceList
-		getCommercePriceListByAccountGroupsAndChannelAndOrderTypeId(
-			long groupId, long[] commerceAccountGroupIds,
-			long commerceChannelId, long commerceOrderTypeId, String type) {
-
-		return getService().
-			getCommercePriceListByAccountGroupsAndChannelAndOrderTypeId(
-				groupId, commerceAccountGroupIds, commerceChannelId,
-				commerceOrderTypeId, type);
 	}
 
 	/**
@@ -517,36 +405,11 @@ public class CommercePriceListLocalServiceUtil {
 	 * @deprecated As of Cavanaugh (7.4.x)
 	 */
 	@Deprecated
-	public static CommercePriceList
-		getCommercePriceListByAccountGroupsAndOrderTypeId(
-			long groupId, long[] commerceAccountGroupIds,
-			long commerceOrderTypeId, String type) {
-
-		return getService().getCommercePriceListByAccountGroupsAndOrderTypeId(
-			groupId, commerceAccountGroupIds, commerceOrderTypeId, type);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x)
-	 */
-	@Deprecated
 	public static CommercePriceList getCommercePriceListByAccountId(
 		long groupId, long commerceAccountId, String type) {
 
 		return getService().getCommercePriceListByAccountId(
 			groupId, commerceAccountId, type);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x)
-	 */
-	@Deprecated
-	public static CommercePriceList getCommercePriceListByChannelAndOrderTypeId(
-		long groupId, long commerceChannelId, long commerceOrderTypeId,
-		String type) {
-
-		return getService().getCommercePriceListByChannelAndOrderTypeId(
-			groupId, commerceChannelId, commerceOrderTypeId, type);
 	}
 
 	/**
@@ -571,25 +434,14 @@ public class CommercePriceListLocalServiceUtil {
 	public static CommercePriceList getCommercePriceListByLowestPrice(
 			long groupId, long commerceAccountId,
 			long[] commerceAccountGroupIds, long commerceChannelId,
-			long commerceOrderTypeId, String cPInstanceUuid, String type,
-			String unitOfMeasureKey)
+			long commerceOrderTypeId, String cpInstanceUuid,
+			String currencyCode, String type, String unitOfMeasureKey)
 		throws PortalException {
 
 		return getService().getCommercePriceListByLowestPrice(
 			groupId, commerceAccountId, commerceAccountGroupIds,
-			commerceChannelId, commerceOrderTypeId, cPInstanceUuid, type,
-			unitOfMeasureKey);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x)
-	 */
-	@Deprecated
-	public static CommercePriceList getCommercePriceListByOrderTypeId(
-		long groupId, long commerceOrderTypeId, String type) {
-
-		return getService().getCommercePriceListByOrderTypeId(
-			groupId, commerceOrderTypeId, type);
+			commerceChannelId, commerceOrderTypeId, cpInstanceUuid,
+			currencyCode, type, unitOfMeasureKey);
 	}
 
 	/**
@@ -658,103 +510,113 @@ public class CommercePriceListLocalServiceUtil {
 	public static List<CommercePriceList>
 		getCommercePriceListsByAccountAndChannelAndOrderTypeId(
 			long groupId, long commerceAccountId, long commerceChannelId,
-			long commerceOrderTypeId, String type) {
+			long commerceOrderTypeId, String currencyCode, String type) {
 
 		return getService().
 			getCommercePriceListsByAccountAndChannelAndOrderTypeId(
 				groupId, commerceAccountId, commerceChannelId,
-				commerceOrderTypeId, type);
+				commerceOrderTypeId, currencyCode, type);
 	}
 
 	public static List<CommercePriceList>
 		getCommercePriceListsByAccountAndChannelId(
 			long groupId, long commerceAccountId, long commerceChannelId,
-			String type) {
+			String currencyCode, String type) {
 
 		return getService().getCommercePriceListsByAccountAndChannelId(
-			groupId, commerceAccountId, commerceChannelId, type);
+			groupId, commerceAccountId, commerceChannelId, currencyCode, type);
 	}
 
 	public static List<CommercePriceList>
 		getCommercePriceListsByAccountAndOrderTypeId(
 			long groupId, long commerceAccountId, long commerceOrderTypeId,
-			String type) {
+			String currencyCode, String type) {
 
 		return getService().getCommercePriceListsByAccountAndOrderTypeId(
-			groupId, commerceAccountId, commerceOrderTypeId, type);
+			groupId, commerceAccountId, commerceOrderTypeId, currencyCode,
+			type);
 	}
 
 	public static List<CommercePriceList>
 		getCommercePriceListsByAccountGroupIds(
-			long groupId, long[] commerceAccountGroupIds, String type) {
+			long groupId, long[] commerceAccountGroupIds, String currencyCode,
+			String type) {
 
 		return getService().getCommercePriceListsByAccountGroupIds(
-			groupId, commerceAccountGroupIds, type);
+			groupId, commerceAccountGroupIds, currencyCode, type);
 	}
 
 	public static List<CommercePriceList>
 		getCommercePriceListsByAccountGroupsAndChannelAndOrderTypeId(
 			long groupId, long[] commerceAccountGroupIds,
-			long commerceChannelId, long commerceOrderTypeId, String type) {
+			long commerceChannelId, long commerceOrderTypeId,
+			String currencyCode, String type) {
 
 		return getService().
 			getCommercePriceListsByAccountGroupsAndChannelAndOrderTypeId(
 				groupId, commerceAccountGroupIds, commerceChannelId,
-				commerceOrderTypeId, type);
+				commerceOrderTypeId, currencyCode, type);
 	}
 
 	public static List<CommercePriceList>
 		getCommercePriceListsByAccountGroupsAndChannelId(
 			long groupId, long[] commerceAccountGroupIds,
-			long commerceChannelId, String type) {
+			long commerceChannelId, String currencyCode, String type) {
 
 		return getService().getCommercePriceListsByAccountGroupsAndChannelId(
-			groupId, commerceAccountGroupIds, commerceChannelId, type);
+			groupId, commerceAccountGroupIds, commerceChannelId, currencyCode,
+			type);
 	}
 
 	public static List<CommercePriceList>
 		getCommercePriceListsByAccountGroupsAndOrderTypeId(
 			long groupId, long[] commerceAccountGroupIds,
-			long commerceOrderTypeId, String type) {
+			long commerceOrderTypeId, String currencyCode, String type) {
 
 		return getService().getCommercePriceListsByAccountGroupsAndOrderTypeId(
-			groupId, commerceAccountGroupIds, commerceOrderTypeId, type);
+			groupId, commerceAccountGroupIds, commerceOrderTypeId, currencyCode,
+			type);
 	}
 
 	public static List<CommercePriceList> getCommercePriceListsByAccountId(
-		long groupId, long commerceAccountId, String type) {
+		long groupId, long commerceAccountId, String currencyCode,
+		String type) {
 
 		return getService().getCommercePriceListsByAccountId(
-			groupId, commerceAccountId, type);
+			groupId, commerceAccountId, currencyCode, type);
 	}
 
 	public static List<CommercePriceList>
 		getCommercePriceListsByChannelAndOrderTypeId(
 			long groupId, long commerceChannelId, long commerceOrderTypeId,
-			String type) {
+			String currencyCode, String type) {
 
 		return getService().getCommercePriceListsByChannelAndOrderTypeId(
-			groupId, commerceChannelId, commerceOrderTypeId, type);
+			groupId, commerceChannelId, commerceOrderTypeId, currencyCode,
+			type);
 	}
 
 	public static List<CommercePriceList> getCommercePriceListsByChannelId(
-		long groupId, long commerceChannelId, String type) {
+		long groupId, long commerceChannelId, String currencyCode,
+		String type) {
 
 		return getService().getCommercePriceListsByChannelId(
-			groupId, commerceChannelId, type);
+			groupId, commerceChannelId, currencyCode, type);
 	}
 
 	public static List<CommercePriceList> getCommercePriceListsByOrderTypeId(
-		long groupId, long commerceOrderTypeId, String type) {
+		long groupId, long commerceOrderTypeId, String currencyCode,
+		String type) {
 
 		return getService().getCommercePriceListsByOrderTypeId(
-			groupId, commerceOrderTypeId, type);
+			groupId, commerceOrderTypeId, currencyCode, type);
 	}
 
 	public static List<CommercePriceList> getCommercePriceListsByUnqualified(
-		long groupId, String type) {
+		long groupId, String currencyCode, String type) {
 
-		return getService().getCommercePriceListsByUnqualified(groupId, type);
+		return getService().getCommercePriceListsByUnqualified(
+			groupId, currencyCode, type);
 	}
 
 	/**
@@ -910,51 +772,32 @@ public class CommercePriceListLocalServiceUtil {
 	}
 
 	public static CommercePriceList updateCommercePriceList(
-			long commercePriceListId, long commerceCurrencyId, boolean netPrice,
-			long parentCommercePriceListId, String name, double priority,
-			int displayDateMonth, int displayDateDay, int displayDateYear,
-			int displayDateHour, int displayDateMinute, int expirationDateMonth,
-			int expirationDateDay, int expirationDateYear,
+			long commercePriceListId, long parentCommercePriceListId,
+			boolean catalogBasePriceList, String commerceCurrencyCode,
+			int displayDateDay, int displayDateHour, int displayDateMinute,
+			int displayDateMonth, int displayDateYear, int expirationDateDay,
 			int expirationDateHour, int expirationDateMinute,
-			boolean neverExpire,
+			int expirationDateMonth, int expirationDateYear, String name,
+			boolean netPrice, boolean neverExpire, double priority, String type,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateCommercePriceList(
-			commercePriceListId, commerceCurrencyId, netPrice,
-			parentCommercePriceListId, name, priority, displayDateMonth,
-			displayDateDay, displayDateYear, displayDateHour, displayDateMinute,
-			expirationDateMonth, expirationDateDay, expirationDateYear,
-			expirationDateHour, expirationDateMinute, neverExpire,
-			serviceContext);
-	}
-
-	public static CommercePriceList updateCommercePriceList(
-			long commercePriceListId, long commerceCurrencyId, boolean netPrice,
-			String type, long parentCommercePriceListId,
-			boolean catalogBasePriceList, String name, double priority,
-			int displayDateMonth, int displayDateDay, int displayDateYear,
-			int displayDateHour, int displayDateMinute, int expirationDateMonth,
-			int expirationDateDay, int expirationDateYear,
-			int expirationDateHour, int expirationDateMinute,
-			boolean neverExpire,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().updateCommercePriceList(
-			commercePriceListId, commerceCurrencyId, netPrice, type,
-			parentCommercePriceListId, catalogBasePriceList, name, priority,
-			displayDateMonth, displayDateDay, displayDateYear, displayDateHour,
-			displayDateMinute, expirationDateMonth, expirationDateDay,
-			expirationDateYear, expirationDateHour, expirationDateMinute,
-			neverExpire, serviceContext);
+			commercePriceListId, parentCommercePriceListId,
+			catalogBasePriceList, commerceCurrencyCode, displayDateDay,
+			displayDateHour, displayDateMinute, displayDateMonth,
+			displayDateYear, expirationDateDay, expirationDateHour,
+			expirationDateMinute, expirationDateMonth, expirationDateYear, name,
+			netPrice, neverExpire, priority, type, serviceContext);
 	}
 
 	public static void updateCommercePriceListCurrencies(
-			long commerceCurrencyId)
+			long companyId, String oldCommerceCurrencyCode,
+			String newCommerceCurrencyCode)
 		throws PortalException {
 
-		getService().updateCommercePriceListCurrencies(commerceCurrencyId);
+		getService().updateCommercePriceListCurrencies(
+			companyId, oldCommerceCurrencyCode, newCommerceCurrencyCode);
 	}
 
 	public static CommercePriceList updateExternalReferenceCode(
@@ -977,13 +820,13 @@ public class CommercePriceListLocalServiceUtil {
 	}
 
 	public static CommercePriceListLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(CommercePriceListLocalService service) {
-		_service = service;
-	}
-
-	private static volatile CommercePriceListLocalService _service;
+	private static final Snapshot<CommercePriceListLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CommercePriceListLocalServiceUtil.class,
+			CommercePriceListLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:732155070

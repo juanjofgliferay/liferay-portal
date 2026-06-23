@@ -5,6 +5,7 @@
 
 package com.liferay.portal.search.solr8.internal;
 
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
@@ -16,11 +17,11 @@ import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.IndexWriter;
 import com.liferay.portal.kernel.search.SearchContext;
-import com.liferay.portal.kernel.search.generic.BooleanQueryImpl;
-import com.liferay.portal.kernel.search.generic.TermQueryImpl;
+import com.liferay.portal.kernel.search.TermQuery;
 import com.liferay.portal.kernel.search.suggest.SpellCheckIndexWriter;
 import com.liferay.portal.kernel.util.PortalRunMode;
 import com.liferay.portal.search.engine.adapter.SearchEngineAdapter;
+import com.liferay.portal.search.engine.adapter.document.BulkDocumentItemResponse;
 import com.liferay.portal.search.engine.adapter.document.BulkDocumentRequest;
 import com.liferay.portal.search.engine.adapter.document.BulkDocumentResponse;
 import com.liferay.portal.search.engine.adapter.document.DeleteByQueryDocumentRequest;
@@ -206,19 +207,18 @@ public class SolrIndexWriter extends BaseIndexWriter {
 		SearchContext searchContext, String className) {
 
 		try {
-			BooleanQuery booleanQuery = new BooleanQueryImpl();
+			BooleanQuery booleanQuery = new BooleanQuery();
 
 			long companyId = searchContext.getCompanyId();
 
 			if (companyId > 0) {
 				booleanQuery.add(
-					new TermQueryImpl(
-						Field.COMPANY_ID, String.valueOf(companyId)),
+					new TermQuery(Field.COMPANY_ID, String.valueOf(companyId)),
 					BooleanClauseOccur.MUST);
 			}
 
 			booleanQuery.add(
-				new TermQueryImpl(Field.ENTRY_CLASS_NAME, className),
+				new TermQuery(Field.ENTRY_CLASS_NAME, className),
 				BooleanClauseOccur.MUST);
 
 			DeleteByQueryDocumentRequest deleteByQueryDocumentRequest =
@@ -357,11 +357,18 @@ public class SolrIndexWriter extends BaseIndexWriter {
 				_searchEngineAdapter.execute(bulkDocumentRequest);
 
 			if (bulkDocumentResponse.hasErrors()) {
+				String bulkDocumentResponseFailureMessages =
+					_getBulkDocumentResponseFailureMessages(
+						bulkDocumentResponse);
+
+				String errorMessage =
+					"Update failed: " + bulkDocumentResponseFailureMessages;
+
 				if (_logExceptionsOnly) {
-					_log.error("Update failed");
+					_log.error(errorMessage);
 				}
 				else {
-					throw new SystemException("Update failed");
+					throw new SystemException(errorMessage);
 				}
 			}
 		}
@@ -388,6 +395,26 @@ public class SolrIndexWriter extends BaseIndexWriter {
 	@Override
 	protected SpellCheckIndexWriter getSpellCheckIndexWriter() {
 		return _spellCheckIndexWriter;
+	}
+
+	private String _getBulkDocumentResponseFailureMessages(
+		BulkDocumentResponse bulkDocumentResponse) {
+
+		StringBundler sb = new StringBundler();
+
+		for (BulkDocumentItemResponse bulkDocumentItemResponse :
+				bulkDocumentResponse.getBulkDocumentItemResponses()) {
+
+			if (bulkDocumentItemResponse.getFailureMessage() != null) {
+				if (sb.length() > 0) {
+					sb.append(", ");
+				}
+
+				sb.append(bulkDocumentItemResponse.getFailureMessage());
+			}
+		}
+
+		return sb.toString();
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

@@ -7,18 +7,16 @@ package com.liferay.osb.faro.web.internal.model.display.contacts;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.type.TypeReference;
 
 import com.liferay.osb.faro.engine.client.model.Field;
 import com.liferay.osb.faro.engine.client.model.Individual;
 import com.liferay.osb.faro.web.internal.constants.FaroConstants;
 import com.liferay.osb.faro.web.internal.model.display.main.FaroEntityDisplay;
-import com.liferay.osb.faro.web.internal.util.JSONUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
-import com.liferay.portal.kernel.util.MapUtil;
+import com.liferay.portal.kernel.util.Validator;
 
 import java.util.Arrays;
 import java.util.Date;
@@ -36,23 +34,24 @@ public class IndividualDisplay implements FaroEntityDisplay {
 	}
 
 	public IndividualDisplay(Individual individual) {
-		Map<String, Object> embeddedResources =
-			individual.getEmbeddedResources();
+		List<Individual.Account> accounts = individual.getAccounts();
 
-		if (MapUtil.isNotEmpty(embeddedResources)) {
-			_accountNames = JSONUtil.convertValue(
-				embeddedResources.get("account-names"),
-				new TypeReference<List<String>>() {
-				});
+		if (accounts != null) {
+			_accounts = accounts;
 		}
 
 		_individual = individual;
 
+		_accountName = individual.getAccountName();
 		_activitiesCount = individual.getActivitiesCount();
+		_activityStatus = individual.getActivityStatus();
+		_context = individual.getContext();
 		_dataSourceIndividualPKs = individual.getDataSourceIndividualPKs();
 		_dateCreated = individual.getDateCreated();
+		_firstActivityDate = individual.getFirstActivityDate();
 		_id = individual.getId();
 		_lastActivityDate = individual.getLastActivityDate();
+		_lastSessionCountry = individual.getLastSessionCountry();
 
 		StringBundler sb = new StringBundler(3);
 
@@ -66,6 +65,11 @@ public class IndividualDisplay implements FaroEntityDisplay {
 
 		_name = sb.toString();
 
+		if (Validator.isBlank(_name)) {
+			_name = _id;
+		}
+
+		_profileType = individual.getProfileType();
 		_type = FaroConstants.TYPE_INDIVIDUAL;
 
 		addProperties(_propertyNames);
@@ -113,19 +117,30 @@ public class IndividualDisplay implements FaroEntityDisplay {
 	}
 
 	private static final List<String> _propertyNames = Arrays.asList(
-		"email", "familyName", "givenName", "image", "jobTitle", "worksFor");
+		"additionalName", "birthDate", "country", "email", "familyName",
+		"givenName", "image", "jobTitle", "languageId", "prefix", "screenName",
+		"suffix", "userId", "uuid", "worksFor");
 
-	private List<String> _accountNames;
-	private long _activitiesCount;
+	private String _accountName;
+	private List<Individual.Account> _accounts;
+	private Long _activitiesCount;
+	private String _activityStatus;
+
+	@JsonProperty("context")
+	private Map<String, String> _context = new HashMap<>();
+
 	private List<Individual.DataSourceIndividualPK> _dataSourceIndividualPKs;
 	private Date _dateCreated;
+	private Date _firstActivityDate;
 	private String _id;
 
 	@JsonIgnore
 	private Individual _individual;
 
 	private Date _lastActivityDate;
+	private String _lastSessionCountry;
 	private String _name;
+	private String _profileType;
 
 	@JsonProperty("properties")
 	private Map<String, Object> _propertiesMap = new HashMap<>();

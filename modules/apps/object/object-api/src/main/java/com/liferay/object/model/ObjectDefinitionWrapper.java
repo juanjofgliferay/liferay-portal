@@ -49,19 +49,29 @@ public class ObjectDefinitionWrapper
 		attributes.put(
 			"descriptionObjectFieldId", getDescriptionObjectFieldId());
 		attributes.put("objectFolderId", getObjectFolderId());
-		attributes.put("rootObjectDefinitionId", getRootObjectDefinitionId());
 		attributes.put("titleObjectFieldId", getTitleObjectFieldId());
 		attributes.put("accountEntryRestricted", isAccountEntryRestricted());
 		attributes.put("active", isActive());
-		attributes.put("dbTableName", getDBTableName());
-		attributes.put("label", getLabel());
 		attributes.put("className", getClassName());
+		attributes.put("dbTableName", getDBTableName());
 		attributes.put("enableCategorization", isEnableCategorization());
 		attributes.put("enableComments", isEnableComments());
-		attributes.put("enableLocalization", isEnableLocalization());
+		attributes.put("enableFormContainer", isEnableFormContainer());
+		attributes.put(
+			"enableFriendlyURLCustomization",
+			isEnableFriendlyURLCustomization());
+		attributes.put("enableIndexSearch", isEnableIndexSearch());
 		attributes.put("enableObjectEntryDraft", isEnableObjectEntryDraft());
 		attributes.put(
 			"enableObjectEntryHistory", isEnableObjectEntryHistory());
+		attributes.put(
+			"enableObjectEntrySchedule", isEnableObjectEntrySchedule());
+		attributes.put(
+			"enableObjectEntrySubscription", isEnableObjectEntrySubscription());
+		attributes.put(
+			"enableObjectEntryVersioning", isEnableObjectEntryVersioning());
+		attributes.put("friendlyURLSeparator", getFriendlyURLSeparator());
+		attributes.put("label", getLabel());
 		attributes.put("modifiable", isModifiable());
 		attributes.put("name", getName());
 		attributes.put("panelAppOrder", getPanelAppOrder());
@@ -158,13 +168,6 @@ public class ObjectDefinitionWrapper
 			setObjectFolderId(objectFolderId);
 		}
 
-		Long rootObjectDefinitionId = (Long)attributes.get(
-			"rootObjectDefinitionId");
-
-		if (rootObjectDefinitionId != null) {
-			setRootObjectDefinitionId(rootObjectDefinitionId);
-		}
-
 		Long titleObjectFieldId = (Long)attributes.get("titleObjectFieldId");
 
 		if (titleObjectFieldId != null) {
@@ -184,22 +187,16 @@ public class ObjectDefinitionWrapper
 			setActive(active);
 		}
 
-		String dbTableName = (String)attributes.get("dbTableName");
-
-		if (dbTableName != null) {
-			setDBTableName(dbTableName);
-		}
-
-		String label = (String)attributes.get("label");
-
-		if (label != null) {
-			setLabel(label);
-		}
-
 		String className = (String)attributes.get("className");
 
 		if (className != null) {
 			setClassName(className);
+		}
+
+		String dbTableName = (String)attributes.get("dbTableName");
+
+		if (dbTableName != null) {
+			setDBTableName(dbTableName);
 		}
 
 		Boolean enableCategorization = (Boolean)attributes.get(
@@ -215,11 +212,25 @@ public class ObjectDefinitionWrapper
 			setEnableComments(enableComments);
 		}
 
-		Boolean enableLocalization = (Boolean)attributes.get(
-			"enableLocalization");
+		Boolean enableFormContainer = (Boolean)attributes.get(
+			"enableFormContainer");
 
-		if (enableLocalization != null) {
-			setEnableLocalization(enableLocalization);
+		if (enableFormContainer != null) {
+			setEnableFormContainer(enableFormContainer);
+		}
+
+		Boolean enableFriendlyURLCustomization = (Boolean)attributes.get(
+			"enableFriendlyURLCustomization");
+
+		if (enableFriendlyURLCustomization != null) {
+			setEnableFriendlyURLCustomization(enableFriendlyURLCustomization);
+		}
+
+		Boolean enableIndexSearch = (Boolean)attributes.get(
+			"enableIndexSearch");
+
+		if (enableIndexSearch != null) {
+			setEnableIndexSearch(enableIndexSearch);
 		}
 
 		Boolean enableObjectEntryDraft = (Boolean)attributes.get(
@@ -234,6 +245,40 @@ public class ObjectDefinitionWrapper
 
 		if (enableObjectEntryHistory != null) {
 			setEnableObjectEntryHistory(enableObjectEntryHistory);
+		}
+
+		Boolean enableObjectEntrySchedule = (Boolean)attributes.get(
+			"enableObjectEntrySchedule");
+
+		if (enableObjectEntrySchedule != null) {
+			setEnableObjectEntrySchedule(enableObjectEntrySchedule);
+		}
+
+		Boolean enableObjectEntrySubscription = (Boolean)attributes.get(
+			"enableObjectEntrySubscription");
+
+		if (enableObjectEntrySubscription != null) {
+			setEnableObjectEntrySubscription(enableObjectEntrySubscription);
+		}
+
+		Boolean enableObjectEntryVersioning = (Boolean)attributes.get(
+			"enableObjectEntryVersioning");
+
+		if (enableObjectEntryVersioning != null) {
+			setEnableObjectEntryVersioning(enableObjectEntryVersioning);
+		}
+
+		String friendlyURLSeparator = (String)attributes.get(
+			"friendlyURLSeparator");
+
+		if (friendlyURLSeparator != null) {
+			setFriendlyURLSeparator(friendlyURLSeparator);
+		}
+
+		String label = (String)attributes.get("label");
+
+		if (label != null) {
+			setLabel(label);
 		}
 
 		Boolean modifiable = (Boolean)attributes.get("modifiable");
@@ -401,6 +446,11 @@ public class ObjectDefinitionWrapper
 		return model.getDefaultLanguageId();
 	}
 
+	@Override
+	public java.util.Locale getDefaultLocale() {
+		return model.getDefaultLocale();
+	}
+
 	/**
 	 * Returns the description object field ID of this object definition.
 	 *
@@ -437,13 +487,33 @@ public class ObjectDefinitionWrapper
 	}
 
 	/**
-	 * Returns the enable localization of this object definition.
+	 * Returns the enable form container of this object definition.
 	 *
-	 * @return the enable localization of this object definition
+	 * @return the enable form container of this object definition
 	 */
 	@Override
-	public boolean getEnableLocalization() {
-		return model.getEnableLocalization();
+	public boolean getEnableFormContainer() {
+		return model.getEnableFormContainer();
+	}
+
+	/**
+	 * Returns the enable friendly url customization of this object definition.
+	 *
+	 * @return the enable friendly url customization of this object definition
+	 */
+	@Override
+	public boolean getEnableFriendlyURLCustomization() {
+		return model.getEnableFriendlyURLCustomization();
+	}
+
+	/**
+	 * Returns the enable index search of this object definition.
+	 *
+	 * @return the enable index search of this object definition
+	 */
+	@Override
+	public boolean getEnableIndexSearch() {
+		return model.getEnableIndexSearch();
 	}
 
 	/**
@@ -466,6 +536,36 @@ public class ObjectDefinitionWrapper
 		return model.getEnableObjectEntryHistory();
 	}
 
+	/**
+	 * Returns the enable object entry schedule of this object definition.
+	 *
+	 * @return the enable object entry schedule of this object definition
+	 */
+	@Override
+	public boolean getEnableObjectEntrySchedule() {
+		return model.getEnableObjectEntrySchedule();
+	}
+
+	/**
+	 * Returns the enable object entry subscription of this object definition.
+	 *
+	 * @return the enable object entry subscription of this object definition
+	 */
+	@Override
+	public boolean getEnableObjectEntrySubscription() {
+		return model.getEnableObjectEntrySubscription();
+	}
+
+	/**
+	 * Returns the enable object entry versioning of this object definition.
+	 *
+	 * @return the enable object entry versioning of this object definition
+	 */
+	@Override
+	public boolean getEnableObjectEntryVersioning() {
+		return model.getEnableObjectEntryVersioning();
+	}
+
 	@Override
 	public String getExtensionDBTableName() {
 		return model.getExtensionDBTableName();
@@ -479,6 +579,16 @@ public class ObjectDefinitionWrapper
 	@Override
 	public String getExternalReferenceCode() {
 		return model.getExternalReferenceCode();
+	}
+
+	/**
+	 * Returns the friendly url separator of this object definition.
+	 *
+	 * @return the friendly url separator of this object definition
+	 */
+	@Override
+	public String getFriendlyURLSeparator() {
+		return model.getFriendlyURLSeparator();
 	}
 
 	/**
@@ -610,6 +720,23 @@ public class ObjectDefinitionWrapper
 	@Override
 	public long getObjectDefinitionId() {
 		return model.getObjectDefinitionId();
+	}
+
+	@Override
+	public java.util.List<ObjectDefinitionSetting>
+		getObjectDefinitionSettings() {
+
+		return model.getObjectDefinitionSettings();
+	}
+
+	@Override
+	public com.liferay.object.model.bag.ObjectFieldBag getObjectFieldBag() {
+		return model.getObjectFieldBag();
+	}
+
+	@Override
+	public ObjectFolder getObjectFolder() {
+		return model.getObjectFolder();
 	}
 
 	@Override
@@ -788,14 +915,19 @@ public class ObjectDefinitionWrapper
 		return model.getRESTContextPath();
 	}
 
-	/**
-	 * Returns the root object definition ID of this object definition.
-	 *
-	 * @return the root object definition ID of this object definition
-	 */
+	@Override
+	public String getRootObjectDefinitionExternalReferenceCode() {
+		return model.getRootObjectDefinitionExternalReferenceCode();
+	}
+
 	@Override
 	public long getRootObjectDefinitionId() {
 		return model.getRootObjectDefinitionId();
+	}
+
+	@Override
+	public long[] getRootObjectDefinitionIds() {
+		return model.getRootObjectDefinitionIds();
 	}
 
 	/**
@@ -924,8 +1056,23 @@ public class ObjectDefinitionWrapper
 	}
 
 	@Override
+	public boolean isAllowStandaloneObjectEntry() {
+		return model.isAllowStandaloneObjectEntry();
+	}
+
+	@Override
 	public boolean isApproved() {
 		return model.isApproved();
+	}
+
+	@Override
+	public boolean isCMP() {
+		return model.isCMP();
+	}
+
+	@Override
+	public boolean isCMS() {
+		return model.isCMS();
 	}
 
 	@Override
@@ -954,13 +1101,33 @@ public class ObjectDefinitionWrapper
 	}
 
 	/**
-	 * Returns <code>true</code> if this object definition is enable localization.
+	 * Returns <code>true</code> if this object definition is enable form container.
 	 *
-	 * @return <code>true</code> if this object definition is enable localization; <code>false</code> otherwise
+	 * @return <code>true</code> if this object definition is enable form container; <code>false</code> otherwise
 	 */
 	@Override
-	public boolean isEnableLocalization() {
-		return model.isEnableLocalization();
+	public boolean isEnableFormContainer() {
+		return model.isEnableFormContainer();
+	}
+
+	/**
+	 * Returns <code>true</code> if this object definition is enable friendly url customization.
+	 *
+	 * @return <code>true</code> if this object definition is enable friendly url customization; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isEnableFriendlyURLCustomization() {
+		return model.isEnableFriendlyURLCustomization();
+	}
+
+	/**
+	 * Returns <code>true</code> if this object definition is enable index search.
+	 *
+	 * @return <code>true</code> if this object definition is enable index search; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isEnableIndexSearch() {
+		return model.isEnableIndexSearch();
 	}
 
 	/**
@@ -983,6 +1150,36 @@ public class ObjectDefinitionWrapper
 		return model.isEnableObjectEntryHistory();
 	}
 
+	/**
+	 * Returns <code>true</code> if this object definition is enable object entry schedule.
+	 *
+	 * @return <code>true</code> if this object definition is enable object entry schedule; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isEnableObjectEntrySchedule() {
+		return model.isEnableObjectEntrySchedule();
+	}
+
+	/**
+	 * Returns <code>true</code> if this object definition is enable object entry subscription.
+	 *
+	 * @return <code>true</code> if this object definition is enable object entry subscription; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isEnableObjectEntrySubscription() {
+		return model.isEnableObjectEntrySubscription();
+	}
+
+	/**
+	 * Returns <code>true</code> if this object definition is enable object entry versioning.
+	 *
+	 * @return <code>true</code> if this object definition is enable object entry versioning; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isEnableObjectEntryVersioning() {
+		return model.isEnableObjectEntryVersioning();
+	}
+
 	@Override
 	public boolean isLinkedToObjectFolder(long objectFolderId) {
 		return model.isLinkedToObjectFolder(objectFolderId);
@@ -999,8 +1196,8 @@ public class ObjectDefinitionWrapper
 	}
 
 	@Override
-	public boolean isNodeCandidate() {
-		return model.isNodeCandidate();
+	public boolean isModifiableAndSystem() {
+		return model.isModifiableAndSystem();
 	}
 
 	/**
@@ -1016,6 +1213,11 @@ public class ObjectDefinitionWrapper
 	@Override
 	public boolean isRootDescendantNode() {
 		return model.isRootDescendantNode();
+	}
+
+	@Override
+	public boolean isRootDescendantNode(long rootObjectDefinitionId) {
+		return model.isRootDescendantNode(rootObjectDefinitionId);
 	}
 
 	@Override
@@ -1036,6 +1238,11 @@ public class ObjectDefinitionWrapper
 	@Override
 	public boolean isUnmodifiableSystemObject() {
 		return model.isUnmodifiableSystemObject();
+	}
+
+	@Override
+	public boolean isVisible() {
+		return model.isVisible();
 	}
 
 	@Override
@@ -1162,13 +1369,35 @@ public class ObjectDefinitionWrapper
 	}
 
 	/**
-	 * Sets whether this object definition is enable localization.
+	 * Sets whether this object definition is enable form container.
 	 *
-	 * @param enableLocalization the enable localization of this object definition
+	 * @param enableFormContainer the enable form container of this object definition
 	 */
 	@Override
-	public void setEnableLocalization(boolean enableLocalization) {
-		model.setEnableLocalization(enableLocalization);
+	public void setEnableFormContainer(boolean enableFormContainer) {
+		model.setEnableFormContainer(enableFormContainer);
+	}
+
+	/**
+	 * Sets whether this object definition is enable friendly url customization.
+	 *
+	 * @param enableFriendlyURLCustomization the enable friendly url customization of this object definition
+	 */
+	@Override
+	public void setEnableFriendlyURLCustomization(
+		boolean enableFriendlyURLCustomization) {
+
+		model.setEnableFriendlyURLCustomization(enableFriendlyURLCustomization);
+	}
+
+	/**
+	 * Sets whether this object definition is enable index search.
+	 *
+	 * @param enableIndexSearch the enable index search of this object definition
+	 */
+	@Override
+	public void setEnableIndexSearch(boolean enableIndexSearch) {
+		model.setEnableIndexSearch(enableIndexSearch);
 	}
 
 	/**
@@ -1192,6 +1421,42 @@ public class ObjectDefinitionWrapper
 	}
 
 	/**
+	 * Sets whether this object definition is enable object entry schedule.
+	 *
+	 * @param enableObjectEntrySchedule the enable object entry schedule of this object definition
+	 */
+	@Override
+	public void setEnableObjectEntrySchedule(
+		boolean enableObjectEntrySchedule) {
+
+		model.setEnableObjectEntrySchedule(enableObjectEntrySchedule);
+	}
+
+	/**
+	 * Sets whether this object definition is enable object entry subscription.
+	 *
+	 * @param enableObjectEntrySubscription the enable object entry subscription of this object definition
+	 */
+	@Override
+	public void setEnableObjectEntrySubscription(
+		boolean enableObjectEntrySubscription) {
+
+		model.setEnableObjectEntrySubscription(enableObjectEntrySubscription);
+	}
+
+	/**
+	 * Sets whether this object definition is enable object entry versioning.
+	 *
+	 * @param enableObjectEntryVersioning the enable object entry versioning of this object definition
+	 */
+	@Override
+	public void setEnableObjectEntryVersioning(
+		boolean enableObjectEntryVersioning) {
+
+		model.setEnableObjectEntryVersioning(enableObjectEntryVersioning);
+	}
+
+	/**
 	 * Sets the external reference code of this object definition.
 	 *
 	 * @param externalReferenceCode the external reference code of this object definition
@@ -1199,6 +1464,16 @@ public class ObjectDefinitionWrapper
 	@Override
 	public void setExternalReferenceCode(String externalReferenceCode) {
 		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
+	 * Sets the friendly url separator of this object definition.
+	 *
+	 * @param friendlyURLSeparator the friendly url separator of this object definition
+	 */
+	@Override
+	public void setFriendlyURLSeparator(String friendlyURLSeparator) {
+		model.setFriendlyURLSeparator(friendlyURLSeparator);
 	}
 
 	/**
@@ -1313,6 +1588,25 @@ public class ObjectDefinitionWrapper
 	@Override
 	public void setObjectDefinitionId(long objectDefinitionId) {
 		model.setObjectDefinitionId(objectDefinitionId);
+	}
+
+	@Override
+	public void setObjectDefinitionSettings(
+		java.util.List<ObjectDefinitionSetting> objectDefinitionSettings) {
+
+		model.setObjectDefinitionSettings(objectDefinitionSettings);
+	}
+
+	@Override
+	public void setObjectFieldBag(
+		com.liferay.object.model.bag.ObjectFieldBag objectFieldBag) {
+
+		model.setObjectFieldBag(objectFieldBag);
+	}
+
+	@Override
+	public void setObjectFolder(ObjectFolder objectFolder) {
+		model.setObjectFolder(objectFolder);
 	}
 
 	/**
@@ -1453,16 +1747,6 @@ public class ObjectDefinitionWrapper
 	}
 
 	/**
-	 * Sets the root object definition ID of this object definition.
-	 *
-	 * @param rootObjectDefinitionId the root object definition ID of this object definition
-	 */
-	@Override
-	public void setRootObjectDefinitionId(long rootObjectDefinitionId) {
-		model.setRootObjectDefinitionId(rootObjectDefinitionId);
-	}
-
-	/**
 	 * Sets the scope of this object definition.
 	 *
 	 * @param scope the scope of this object definition
@@ -1578,3 +1862,4 @@ public class ObjectDefinitionWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-269929950

@@ -1,0 +1,27 @@
+{
+	"externalReferenceCode": "C_BANNED_EMAIL_DOMAIN",
+	"friendlyURLSeparator": "cpbed",
+	"label": {
+		"en_US": "Banned Email Domain"
+	},
+	"name": "BannedEmailDomain",
+	"objectFields": [
+		{
+			"DBType": "String",
+			"externalReferenceCode": "C_BANNED_EMAIL_DOMAIN_domain",
+			"indexed": true,
+			"indexedAsKeyword": false,
+			"label": {
+				"en_US": "Domain"
+			},
+			"name": "domain",
+			"required": true
+		}
+	],
+	"panelAppOrder": 180,
+	"pluralLabel": {
+		"en_US": "Banned Email Domains"
+	},
+	"scope": "company",
+	"system": false
+}

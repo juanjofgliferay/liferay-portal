@@ -181,6 +181,14 @@
 					],
 					"description": "Description for customElement"
 				},
+				"editorConfigContributor": {
+					"allOf": [
+						{
+							"$ref": "#/definitions/propertySets/properties/url"
+						}
+					],
+					"description": "Description for editorConfigContributor"
+				},
 				"fdsCellRenderer": {
 					"allOf": [
 						{
@@ -201,6 +209,17 @@
 					"allOf": [
 						{
 							"$ref": "#/definitions/propertySets/properties/url"
+						},
+						{
+							"properties": {
+								"scope": {
+									"default": "layout",
+									"enum": [
+										"company",
+										"layout"
+									]
+								}
+							}
 						}
 					],
 					"description": "Description for globalCSS"
@@ -209,6 +228,38 @@
 					"allOf": [
 						{
 							"$ref": "#/definitions/propertySets/properties/url"
+						},
+						{
+							"properties": {
+								"scope": {
+									"default": "layout",
+									"enum": [
+										"company",
+										"layout"
+									]
+								},
+								"scriptElementAttributes": {
+									"additionalProperties": {
+										"type": [
+											"boolean",
+											"integer",
+											"number",
+											"string"
+										]
+									},
+									"description": "",
+									"properties": {
+										"src": false
+									},
+									"title": "Script Element Attributes",
+									"type": "object"
+								},
+								"scriptLocation": {
+									"description": "",
+									"type": "string"
+								}
+							},
+							"type": "object"
 						}
 					],
 					"description": "Description for globalJS"
@@ -230,19 +281,7 @@
 					"description": "Description for iframe"
 				},
 				"instanceSettings": {
-					"allOf": [
-						{
-							"properties": {
-								"pid": {
-									"type": "string"
-								}
-							},
-							"required": [
-								"pid"
-							],
-							"type": "object"
-						}
-					],
+					"$ref": "./client-extension-type-instance-settings.schema.json",
 					"description": "Description for instanceSettings"
 				},
 				"jsImportMapsEntry": {
@@ -367,11 +406,24 @@
 					"allOf": [
 						{
 							"properties": {
+								"clayRTLURL": {
+									"type": "string"
+								},
 								"clayURL": {
+									"type": "string"
+								},
+								"mainRTLURL": {
 									"type": "string"
 								},
 								"mainURL": {
 									"type": "string"
+								},
+								"scope": {
+									"default": "layout",
+									"enum": [
+										"controlPanel",
+										"layout"
+									]
 								}
 							},
 							"type": "object"
@@ -423,6 +475,14 @@
 					"properties": {
 						"type": {
 							"const": "customElement"
+						}
+					}
+				},
+				{
+					"$ref": "#/definitions/types/properties/editorConfigContributor",
+					"properties": {
+						"type": {
+							"const": "editorConfigContributor"
 						}
 					}
 				},
@@ -590,6 +650,7 @@
 					"enum": [
 						"batch",
 						"customElement",
+						"editorConfigContributor",
 						"fdsCellRenderer",
 						"fdsFilter",
 						"globalCSS",

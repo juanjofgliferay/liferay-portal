@@ -8,13 +8,13 @@ package com.liferay.headless.commerce.machine.learning.client.dto.v1_0;
 import com.liferay.headless.commerce.machine.learning.client.function.UnsafeSupplier;
 import com.liferay.headless.commerce.machine.learning.client.serdes.v1_0.ProductSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Riccardo Ferrari
@@ -567,3 +567,4 @@ public class Product implements Cloneable, Serializable {
 	}
 
 }
+// LIFERAY-REST-BUILDER-HASH:2110274039

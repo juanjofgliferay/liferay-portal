@@ -25,7 +25,6 @@ import com.liferay.message.boards.web.internal.security.permission.MBMessagePerm
 import com.liferay.message.boards.web.internal.util.MBUtil;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
@@ -45,15 +44,15 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.trash.TrashHelper;
 
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.portlet.PortletException;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Sergio González
@@ -245,17 +244,7 @@ public class MBEntriesManagementToolbarDisplayContext {
 				dropdownGroupItem.setDropdownItems(
 					_getFilterNavigationDropdownItems());
 				dropdownGroupItem.setLabel(
-					LanguageUtil.get(
-						_httpServletRequest, "filter-by-navigation"));
-			}
-		).addGroup(
-			() ->
-				Objects.equals(_getEntriesNavigation(), "all") &&
-				!FeatureFlagManagerUtil.isEnabled("LPS-144527"),
-			dropdownGroupItem -> {
-				dropdownGroupItem.setDropdownItems(getOrderByDropdownItems());
-				dropdownGroupItem.setLabel(
-					LanguageUtil.get(_httpServletRequest, "order-by"));
+					LanguageUtil.get(_httpServletRequest, "filter-by"));
 			}
 		).build();
 	}
@@ -412,24 +401,26 @@ public class MBEntriesManagementToolbarDisplayContext {
 		String entriesNavigation = _getEntriesNavigation();
 
 		if (entriesNavigation.equals("all")) {
-			orderByComparator = new MBObjectsComparator(orderByAsc);
+			orderByComparator = MBObjectsComparator.getInstance(orderByAsc);
 		}
 		else if (entriesNavigation.equals("threads")) {
 			if (orderByCol.equals("modified-date")) {
-				orderByComparator = new ThreadModifiedDateComparator(
+				orderByComparator = ThreadModifiedDateComparator.getInstance(
 					orderByAsc);
 			}
 			else if (orderByCol.equals("title")) {
-				orderByComparator = new ThreadTitleComparator<>(orderByAsc);
+				orderByComparator = ThreadTitleComparator.getInstance(
+					orderByAsc);
 			}
 		}
 		else if (entriesNavigation.equals("categories")) {
 			if (orderByCol.equals("modified-date")) {
-				orderByComparator = new CategoryModifiedDateComparator(
+				orderByComparator = CategoryModifiedDateComparator.getInstance(
 					orderByAsc);
 			}
 			else if (orderByCol.equals("title")) {
-				orderByComparator = new CategoryTitleComparator<>(orderByAsc);
+				orderByComparator = CategoryTitleComparator.getInstance(
+					orderByAsc);
 			}
 		}
 

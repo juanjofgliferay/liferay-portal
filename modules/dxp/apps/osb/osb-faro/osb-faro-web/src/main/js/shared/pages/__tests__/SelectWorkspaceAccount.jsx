@@ -1,20 +1,22 @@
 import * as data from 'test/data';
 import mockStore from 'test/mock-store';
 import React from 'react';
+import SelectWorkspaceAccount, {routingFn} from '../SelectWorkspaceAccount';
 import {BrowserRouter} from 'react-router-dom';
 import {DataSourceStates} from 'shared/util/constants';
 import {fromJS} from 'immutable';
-import {Project, User} from 'shared/util/records';
+import {Project} from 'shared/util/records';
 import {Provider} from 'react-redux';
 import {render} from '@testing-library/react';
 import {Routes, setUriQueryValue, toRoute} from 'shared/util/router';
-import {routingFn, SelectWorkspaceAccount} from '../SelectWorkspaceAccount';
+import {SubscriptionNames} from 'shared/util/subscriptions';
+import {useFetchProjects} from 'shared/hooks/useProjects';
 
 const mockBusinessProject = new Project(
 	data.mockProject(123, {
 		faroSubscription: fromJS(
 			data.mockSubscription({
-				name: 'Liferay Analytics Cloud Business'
+				name: SubscriptionNames.LiferayAnalyticsCloudBusiness
 			})
 		),
 		name: 'Project A'
@@ -22,8 +24,18 @@ const mockBusinessProject = new Project(
 );
 
 const mockBasicSubscription = data.mockSubscription({
-	name: 'Liferay Analytics Cloud Basic'
+	name: SubscriptionNames.LiferayAnalyticsCloudBasic
 });
+
+jest.mock('shared/hooks/useCurrentUser', () => ({
+	useCurrentUser: () => ({
+		emailAddress: 'test@liferay.com'
+	})
+}));
+
+jest.mock('shared/hooks/useProjects', () => ({
+	useFetchProjects: jest.fn()
+}));
 
 jest.unmock('react-dom');
 
@@ -33,31 +45,36 @@ describe('SelectWorkspaceAccount', () => {
 			new Project(
 				data.mockProject(126, {
 					faroSubscription: fromJS(mockBasicSubscription),
+					groupId: null,
 					name: 'Project C'
 				})
 			),
 			new Project(
 				data.mockProject(123, {
 					faroSubscription: fromJS(mockBasicSubscription),
+					groupId: null,
 					name: '',
 					state: DataSourceStates.Unconfigured
 				})
 			)
 		];
 
-		const {container} = render(
+		useFetchProjects.mockImplementation(() => ({
+			data: mockProjects,
+			loading: false
+		}));
+
+		const {getByText} = render(
 			<Provider store={mockStore()}>
 				<BrowserRouter>
-					<SelectWorkspaceAccount
-						currentUser={data.getImmutableMock(User, data.mockUser)}
-						projects={mockProjects}
-					/>
+					<SelectWorkspaceAccount />
 				</BrowserRouter>
 			</Provider>
 		);
 
 		jest.runAllTimers();
-		expect(container).toMatchSnapshot();
+
+		expect(getByText('Select Account')).toBeInTheDocument();
 	});
 });
 

@@ -1,0 +1,14 @@
+apiDir: ../cookies-rest-api/src/main/java
+apiPackagePath: com.liferay.cookies.rest
+application:
+    baseURI: /cookies
+    className: CookiesRESTApplication
+    name: Liferay.Cookies.REST
+author: Christopher Kian
+clientDir: ../cookies-rest-client/src/main/java
+compatibilityVersion: 14
+forcePredictableOperationId: true
+forcePredictableSchemaPropertyName: true
+generateBatch: false
+javaEEPackage: jakarta
+testDir: ../cookies-rest-test/src/testIntegration/java

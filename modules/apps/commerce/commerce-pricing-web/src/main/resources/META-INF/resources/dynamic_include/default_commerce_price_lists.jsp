@@ -28,7 +28,7 @@ AccountEntry accountEntry = commerceChannelAccountEntryRelDisplayContext.getAcco
 		</clay:content-col>
 	</clay:content-row>
 
-	<div id="<portlet:namespace />defaultCommercePriceLists">
+	<div data-qa-id="defaultCommercePriceLists" id="<portlet:namespace />defaultCommercePriceLists">
 		<frontend-data-set:classic-display
 			contextParams='<%=
 				HashMapBuilder.<String, String>put(
@@ -40,7 +40,6 @@ AccountEntry accountEntry = commerceChannelAccountEntryRelDisplayContext.getAcco
 			creationMenu="<%= commerceChannelAccountEntryRelDisplayContext.getCreationMenu(CommerceChannelAccountEntryRelConstants.TYPE_PRICE_LIST) %>"
 			dataProviderKey="<%= CommercePricingFDSNames.ACCOUNT_ENTRY_PRICE_LISTS %>"
 			id="<%= CommercePricingFDSNames.ACCOUNT_ENTRY_PRICE_LISTS %>"
-			itemsPerPage="<%= 10 %>"
 			showSearch="<%= false %>"
 			style="fluid"
 		/>

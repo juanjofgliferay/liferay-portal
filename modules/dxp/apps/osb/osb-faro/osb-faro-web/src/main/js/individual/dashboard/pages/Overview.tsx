@@ -10,12 +10,12 @@ import React, {useEffect, useState} from 'react';
 import StatesRenderer from 'shared/components/states-renderer/StatesRenderer';
 import TypeTrendCard from '../hocs/TypeTrendCard';
 import URLConstants from 'shared/util/url-constants';
-import {DataSource, User} from 'shared/util/records';
+import {DataSource} from 'shared/util/records';
 import {fromJS} from 'immutable';
 import {Routes, toRoute} from 'shared/util/router';
-import {useDataSource} from 'shared/hooks/useDataSource';
+import {useCurrentUser} from 'shared/hooks/useCurrentUser';
+import {useDataSources} from 'shared/context/dataSources';
 import {useParams} from 'react-router-dom';
-import {withCurrentUser} from 'shared/hoc';
 
 const {
 	pagination: {cur}
@@ -23,15 +23,15 @@ const {
 
 const MAX_DELTA = 500;
 
-interface IOverviewProps extends React.HTMLAttributes<HTMLElement> {
-	currentUser: User;
-}
-
-const Overview: React.FC<IOverviewProps> = ({currentUser}) => {
-	const [dataSources, setDataSources] = useState(null);
-	const {channelId, groupId} = useParams();
+const Overview = () => {
+	const [dataSources, setDataSources] = useState<DataSource[] | null>(null);
+	const {channelId = '', groupId = ''} = useParams<{
+		channelId: string;
+		groupId: string;
+	}>();
+	const currentUser = useCurrentUser();
 	const authorized = currentUser.isAdmin();
-	const dataSourceStates = useDataSource();
+	const dataSourceStates = useDataSources();
 
 	useEffect(() => {
 		API.dataSource
@@ -42,7 +42,7 @@ const Overview: React.FC<IOverviewProps> = ({currentUser}) => {
 				page: cur,
 				query: ''
 			})
-			.then(({items}) => {
+			.then(({items}: {items: unknown[]}) => {
 				setDataSources(items.map(item => new DataSource(fromJS(item))));
 			});
 	}, []);
@@ -53,11 +53,15 @@ const Overview: React.FC<IOverviewProps> = ({currentUser}) => {
 				<StatesRenderer.Empty
 					description={
 						<>
-							{Liferay.Language.get(
-								'connect-a-data-source-with-sites-data'
-							)}
+							{authorized
+								? Liferay.Language.get(
+										'connect-a-data-source-with-sites-data'
+								  )
+								: Liferay.Language.get(
+										'please-contact-your-workspace-administrator-to-add-data-sources'
+								  )}
 
-							<a
+							<ClayLink
 								className='d-block mb-3'
 								href={URLConstants.DataSourceConnection}
 								key='DOCUMENTATION'
@@ -66,7 +70,7 @@ const Overview: React.FC<IOverviewProps> = ({currentUser}) => {
 								{Liferay.Language.get(
 									'access-our-documentation-to-learn-more'
 								)}
-							</a>
+							</ClayLink>
 
 							{authorized && (
 								<ClayLink
@@ -74,7 +78,7 @@ const Overview: React.FC<IOverviewProps> = ({currentUser}) => {
 									className='button-root'
 									displayType='primary'
 									href={toRoute(
-										Routes.SETTINGS_ADD_DATA_SOURCE,
+										Routes.SETTINGS_DATA_SOURCE_LIST,
 										{
 											groupId
 										}
@@ -102,7 +106,7 @@ const Overview: React.FC<IOverviewProps> = ({currentUser}) => {
 
 							<div className='col-xl-4'>
 								<EnrichedProfilesCard
-									dataSources={dataSources}
+									dataSources={dataSources ?? []}
 								/>
 							</div>
 						</div>
@@ -135,4 +139,4 @@ const Overview: React.FC<IOverviewProps> = ({currentUser}) => {
 	);
 };
 
-export default withCurrentUser(Overview);
+export default Overview;

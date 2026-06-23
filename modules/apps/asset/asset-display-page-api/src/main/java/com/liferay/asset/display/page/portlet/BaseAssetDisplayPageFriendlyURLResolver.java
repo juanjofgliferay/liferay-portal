@@ -14,6 +14,7 @@ import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.model.AssetRendererFactory;
 import com.liferay.asset.kernel.service.AssetEntryService;
 import com.liferay.asset.util.LinkedAssetEntryIdsUtil;
+import com.liferay.friendly.url.provider.FriendlyURLSeparatorProvider;
 import com.liferay.info.constants.InfoDisplayWebKeys;
 import com.liferay.info.exception.NoSuchInfoItemException;
 import com.liferay.info.item.ClassPKInfoItemIdentifier;
@@ -42,22 +43,26 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutFriendlyURLComposite;
 import com.liferay.portal.kernel.model.LayoutQueryStringComposite;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.portlet.FriendlyURLResolver;
+import com.liferay.portal.kernel.portlet.FriendlyURLResolverRegistryUtil;
 import com.liferay.portal.kernel.service.LayoutLocalService;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 
 import org.osgi.service.component.annotations.Reference;
 
@@ -84,7 +89,7 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 			(HttpServletRequest)requestContext.get("request");
 
 		LayoutDisplayPageProvider<?> layoutDisplayPageProvider =
-			getLayoutDisplayPageProvider(friendlyURL);
+			getLayoutDisplayPageProvider(companyId, friendlyURL);
 
 		LayoutDisplayPageObjectProvider<?> layoutDisplayPageObjectProvider =
 			getLayoutDisplayPageObjectProvider(
@@ -110,7 +115,8 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 			LayoutDisplayPageWebKeys.LAYOUT_DISPLAY_PAGE_PROVIDER,
 			layoutDisplayPageProvider);
 
-		AssetEntry assetEntry = _getAssetEntry(layoutDisplayPageObjectProvider);
+		AssetEntry assetEntry = _getAssetEntry(
+			infoItem, layoutDisplayPageObjectProvider);
 
 		httpServletRequest.setAttribute(WebKeys.LAYOUT_ASSET_ENTRY, assetEntry);
 
@@ -172,7 +178,7 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 		throws PortalException {
 
 		LayoutDisplayPageProvider<?> layoutDisplayPageProvider =
-			getLayoutDisplayPageProvider(friendlyURL);
+			getLayoutDisplayPageProvider(companyId, friendlyURL);
 
 		LayoutDisplayPageObjectProvider<?> layoutDisplayPageObjectProvider =
 			getLayoutDisplayPageObjectProvider(
@@ -197,12 +203,43 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 			localizedFriendlyURL = getURLSeparator() + urlTitle;
 		}
 
-		if (!Objects.equals(originalFriendlyURL, localizedFriendlyURL)) {
+		if (!isSameFriendlyURL(originalFriendlyURL, localizedFriendlyURL)) {
 			return new LayoutFriendlyURLComposite(
 				layout, localizedFriendlyURL, true);
 		}
 
 		return new LayoutFriendlyURLComposite(layout, friendlyURL, false);
+	}
+
+	@Override
+	public String getURLSeparator() {
+		if (!isURLSeparatorConfigurable()) {
+			return getDefaultURLSeparator();
+		}
+
+		FriendlyURLSeparatorProvider friendlyURLSeparatorProvider =
+			_friendlyURLSeparatorProviderSnapshot.get();
+
+		if (friendlyURLSeparatorProvider == null) {
+			return getDefaultURLSeparator();
+		}
+
+		ServiceContext serviceContext =
+			ServiceContextThreadLocal.getServiceContext();
+
+		if (serviceContext == null) {
+			return getDefaultURLSeparator();
+		}
+
+		String urlSeparator =
+			friendlyURLSeparatorProvider.getFriendlyURLSeparator(
+				serviceContext.getCompanyId(), getKey());
+
+		if (Validator.isNull(urlSeparator)) {
+			return getDefaultURLSeparator();
+		}
+
+		return urlSeparator;
 	}
 
 	protected AssetDisplayPageEntry getAssetDisplayPageEntry(
@@ -221,7 +258,7 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 
 		return _getLayoutDisplayPageObjectProvider(
 			layoutDisplayPageProvider, groupId, friendlyURL,
-			_getVersion(params));
+			getVersion(params));
 	}
 
 	protected Layout getLayoutDisplayPageObjectProviderLayout(
@@ -235,10 +272,10 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 	}
 
 	protected LayoutDisplayPageProvider<?> getLayoutDisplayPageProvider(
-			String friendlyURL)
+			long companyId, String friendlyURL)
 		throws PortalException {
 
-		return _getLayoutDisplayPageProvider(friendlyURL);
+		return _getLayoutDisplayPageProvider(companyId, friendlyURL);
 	}
 
 	protected Locale getLocale(Map<String, Object> requestContext) {
@@ -258,6 +295,20 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 		}
 
 		return locale;
+	}
+
+	protected String getVersion(Map<String, String[]> params) {
+		String[] versions = params.get("version");
+
+		if (ArrayUtil.isEmpty(versions)) {
+			return StringPool.BLANK;
+		}
+
+		return versions[0];
+	}
+
+	protected boolean isSameFriendlyURL(String url1, String url2) {
+		return Objects.equals(url1, url2);
 	}
 
 	protected boolean useOriginalFriendlyURL() {
@@ -293,13 +344,14 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 	@Reference
 	protected Portal portal;
 
-	private AssetEntry _getAssetEntry(
+	private <T> AssetEntry _getAssetEntry(
+		T infoItem,
 		LayoutDisplayPageObjectProvider<?> layoutDisplayPageObjectProvider) {
 
 		String className = infoSearchClassMapperRegistry.getSearchClassName(
 			layoutDisplayPageObjectProvider.getClassName());
 
-		AssetRendererFactory<?> assetRendererFactory =
+		AssetRendererFactory<T> assetRendererFactory =
 			AssetRendererFactoryRegistryUtil.getAssetRendererFactoryByClassName(
 				className);
 
@@ -307,7 +359,11 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 			return null;
 		}
 
-		long classPK = layoutDisplayPageObjectProvider.getClassPK();
+		long classPK = assetRendererFactory.getAssetEntryClassPK(infoItem);
+
+		if (classPK == 0) {
+			return null;
+		}
 
 		try {
 			AssetEntry assetEntry = assetRendererFactory.getAssetEntry(
@@ -339,7 +395,7 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 			Map<String, String[]> params)
 		throws NoSuchInfoItemException {
 
-		String version = _getVersion(params);
+		String version = getVersion(params);
 
 		if (Validator.isNull(version)) {
 			return layoutDisplayPageObjectProvider.getDisplayObject();
@@ -418,23 +474,34 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 				groupId, layoutDisplayPageObjectProvider.getClassNameId(),
 				layoutDisplayPageObjectProvider.getClassTypeId());
 
-		if (layoutPageTemplateEntry != null) {
-			return layoutLocalService.fetchLayout(
-				layoutPageTemplateEntry.getPlid());
+		if (layoutPageTemplateEntry == null) {
+			return null;
 		}
 
-		return null;
+		return layoutLocalService.fetchLayout(
+			layoutPageTemplateEntry.getPlid());
 	}
 
 	private LayoutDisplayPageProvider<?> _getLayoutDisplayPageProvider(
-			String friendlyURL)
+			long companyId, String friendlyURL)
 		throws PortalException {
 
 		String urlSeparator = _getURLSeparator(friendlyURL);
 
+		FriendlyURLResolver friendlyURLResolver =
+			FriendlyURLResolverRegistryUtil.getFriendlyURLResolver(
+				companyId, urlSeparator);
+
+		if ((friendlyURLResolver != null) &&
+			friendlyURLResolver.isURLSeparatorConfigurable()) {
+
+			urlSeparator = friendlyURLResolver.getDefaultURLSeparator();
+		}
+
 		LayoutDisplayPageProvider<?> layoutDisplayPageProvider =
 			layoutDisplayPageProviderRegistry.
-				getLayoutDisplayPageProviderByURLSeparator(urlSeparator);
+				getLayoutDisplayPageProviderByURLSeparator(
+					companyId, urlSeparator);
 
 		if (layoutDisplayPageProvider == null) {
 			throw new PortalException(
@@ -493,17 +560,12 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 		return StringPool.BLANK;
 	}
 
-	private String _getVersion(Map<String, String[]> params) {
-		String[] versions = params.get("version");
-
-		if (ArrayUtil.isEmpty(versions)) {
-			return StringPool.BLANK;
-		}
-
-		return versions[0];
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		BaseAssetDisplayPageFriendlyURLResolver.class);
+
+	private static final Snapshot<FriendlyURLSeparatorProvider>
+		_friendlyURLSeparatorProviderSnapshot = new Snapshot<>(
+			BaseAssetDisplayPageFriendlyURLResolver.class,
+			FriendlyURLSeparatorProvider.class);
 
 }

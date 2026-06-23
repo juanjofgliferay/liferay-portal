@@ -28,13 +28,19 @@ const acceptedDragTypes = [
 const canDrop = (
 	{
 		criteriaGroupId: destGroupId,
+		disabled,
 		dropIndex: destIndex
 	}: {
 		criteriaGroupId: string;
+		disabled?: boolean;
 		dropIndex: number;
 	},
 	monitor: DropTargetMonitor
 ): boolean => {
+	if (disabled) {
+		return false;
+	}
+
 	const {
 		childGroupIds = [],
 		criteriaGroupId: startGroupId,
@@ -83,21 +89,11 @@ const drop = (
 	const {
 		criteriaGroupId: startGroupId,
 		criterion,
-		id,
 		index: startIndex,
 		property
 	} = monitor.getItem();
 
 	const itemType = monitor.getItemType();
-
-	if (itemType === DragTypes.Property && !id) {
-		const {entityName, type} = property;
-
-		analytics.track('Dynamic Segment Creation - Added Attribute', {
-			entityName,
-			type
-		});
-	}
 
 	if (property) {
 		addProperty(property);
@@ -119,6 +115,7 @@ interface IDropZoneProps {
 	canDrop: boolean;
 	connectDropTarget: ConnectDropTarget;
 	criteriaGroupId: string;
+	disabled?: boolean;
 	dropIndex: number;
 	hover?: boolean;
 	onCriterionAdd: OnCriterionAdd;
@@ -144,7 +141,7 @@ const DropZone: React.FC<IDropZoneProps> = ({
 	</div>
 );
 
-export default compose(
+export default compose<React.ComponentType<any>>(
 	withReferencedObjectsConsumer,
 	dropTarget(
 		acceptedDragTypes,

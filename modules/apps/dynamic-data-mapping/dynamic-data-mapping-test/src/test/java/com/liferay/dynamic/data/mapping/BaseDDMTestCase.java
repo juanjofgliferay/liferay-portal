@@ -10,7 +10,10 @@ import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldRenderer;
 import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldType;
 import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesRegistry;
 import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeSettings;
+import com.liferay.dynamic.data.mapping.form.field.type.internal.checkbox.CheckboxDDMFormFieldType;
+import com.liferay.dynamic.data.mapping.form.field.type.internal.checkbox.multiple.CheckboxMultipleDDMFormFieldType;
 import com.liferay.dynamic.data.mapping.form.field.type.internal.fieldset.FieldSetDDMFormFieldType;
+import com.liferay.dynamic.data.mapping.form.field.type.internal.image.ImageDDMFormFieldType;
 import com.liferay.dynamic.data.mapping.form.field.type.internal.radio.RadioDDMFormFieldType;
 import com.liferay.dynamic.data.mapping.form.field.type.internal.select.SelectDDMFormFieldType;
 import com.liferay.dynamic.data.mapping.form.field.type.internal.text.TextDDMFormFieldType;
@@ -50,6 +53,7 @@ import com.liferay.dynamic.data.mapping.storage.Field;
 import com.liferay.dynamic.data.mapping.storage.Fields;
 import com.liferay.dynamic.data.mapping.test.util.DDMFormFieldTypeSettingsTestUtil;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.json.JSONFactoryImpl;
 import com.liferay.portal.kernel.configuration.Configuration;
 import com.liferay.portal.kernel.configuration.ConfigurationFactory;
@@ -59,6 +63,7 @@ import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.resource.bundle.ResourceBundleLoader;
 import com.liferay.portal.kernel.resource.bundle.ResourceBundleLoaderUtil;
@@ -70,21 +75,18 @@ import com.liferay.portal.kernel.util.LocalizationUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
-import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.ProxyFactory;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
 import com.liferay.portal.kernel.xml.UnsecureSAXReaderUtil;
 import com.liferay.portal.util.LocalizationImpl;
-import com.liferay.portal.util.PropsImpl;
 import com.liferay.portal.xml.SAXReaderImpl;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 
-import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -148,7 +150,6 @@ public abstract class BaseDDMTestCase {
 	public void setUp() throws Exception {
 		setUpPortalClassLoaderUtil();
 		setUpPortalUtil();
-		setUpPropsUtil();
 		setUpResourceBundleUtil();
 	}
 
@@ -157,9 +158,9 @@ public abstract class BaseDDMTestCase {
 
 		List<DDMFormField> ddmFormFields = ddmForm.getDDMFormFields();
 
-		for (DDMFormField ddmFormField : ddmFormFieldsArray) {
-			ddmFormFields.add(ddmFormField);
-		}
+		ddmFormFields.addAll(
+			TransformUtil.transformToList(
+				ddmFormFieldsArray, ddmFormField -> ddmFormField));
 	}
 
 	protected void addNestedTextDDMFormFields(
@@ -168,17 +169,17 @@ public abstract class BaseDDMTestCase {
 		List<DDMFormField> nestedDDMFormFields =
 			ddmFormField.getNestedDDMFormFields();
 
-		for (String fieldName : fieldNames) {
-			nestedDDMFormFields.add(createTextDDMFormField(fieldName));
-		}
+		nestedDDMFormFields.addAll(
+			TransformUtil.transformToList(
+				fieldNames, fieldName -> createTextDDMFormField(fieldName)));
 	}
 
 	protected void addTextDDMFormFields(DDMForm ddmForm, String... fieldNames) {
 		List<DDMFormField> ddmFormFields = ddmForm.getDDMFormFields();
 
-		for (String fieldName : fieldNames) {
-			ddmFormFields.add(createTextDDMFormField(fieldName));
-		}
+		ddmFormFields.addAll(
+			TransformUtil.transformToList(
+				fieldNames, fieldName -> createTextDDMFormField(fieldName)));
 	}
 
 	protected Set<Locale> createAvailableLocales(Locale... locales) {
@@ -239,10 +240,9 @@ public abstract class BaseDDMTestCase {
 	protected DDMFormFieldValue createDDMFormFieldValue(
 		String instanceId, String name, Value value) {
 
-		DDMFormFieldValue ddmFormFieldValue = new DDMFormFieldValue();
+		DDMFormFieldValue ddmFormFieldValue = new DDMFormFieldValue(instanceId);
 
 		ddmFormFieldValue.setFieldReference(name);
-		ddmFormFieldValue.setInstanceId(instanceId);
 		ddmFormFieldValue.setName(name);
 		ddmFormFieldValue.setValue(value);
 
@@ -355,13 +355,13 @@ public abstract class BaseDDMTestCase {
 	}
 
 	protected DDMStructure createStructure(String name, String definition) {
+		DDMStructure structure = new DDMStructureImpl();
+
 		ReflectionTestUtil.setFieldValue(
 			_ddmFormDeserializer, "_ddmFormFieldTypeServicesRegistry",
 			getMockedDDMFormFieldTypeServicesRegistry());
 		ReflectionTestUtil.setFieldValue(
 			_ddmFormDeserializer, "_jsonFactory", jsonFactory);
-
-		DDMStructure structure = new DDMStructureImpl();
 
 		structure.setStructureId(RandomTestUtil.randomLong());
 		structure.setName(name);
@@ -416,13 +416,8 @@ public abstract class BaseDDMTestCase {
 	}
 
 	protected List<Serializable> createValuesList(String... valuesString) {
-		List<Serializable> values = new ArrayList<>();
-
-		for (String valueString : valuesString) {
-			values.add(valueString);
-		}
-
-		return values;
+		return TransformUtil.transformToList(
+			valuesString, valueString -> valueString);
 	}
 
 	protected Map<Locale, List<Serializable>> createValuesMap(
@@ -480,9 +475,30 @@ public abstract class BaseDDMTestCase {
 
 		Mockito.when(
 			ddmFormFieldTypeServicesRegistry.getDDMFormFieldType(
+				Mockito.eq("checkbox"))
+		).thenReturn(
+			new CheckboxDDMFormFieldType()
+		);
+
+		Mockito.when(
+			ddmFormFieldTypeServicesRegistry.getDDMFormFieldType(
+				Mockito.eq("checkbox_multiple"))
+		).thenReturn(
+			new CheckboxMultipleDDMFormFieldType()
+		);
+
+		Mockito.when(
+			ddmFormFieldTypeServicesRegistry.getDDMFormFieldType(
 				Mockito.eq("fieldset"))
 		).thenReturn(
 			new FieldSetDDMFormFieldType()
+		);
+
+		Mockito.when(
+			ddmFormFieldTypeServicesRegistry.getDDMFormFieldType(
+				Mockito.eq("image"))
+		).thenReturn(
+			new ImageDDMFormFieldType()
 		);
 
 		Mockito.when(
@@ -603,8 +619,17 @@ public abstract class BaseDDMTestCase {
 			DDMStructureLocalService.class);
 
 		ReflectionTestUtil.setFieldValue(
-			DDMStructureLocalServiceUtil.class, "_service",
-			ddmStructureLocalService);
+			DDMStructureLocalServiceUtil.class, "_serviceSnapshot",
+			new Snapshot<DDMStructureLocalService>(
+				DDMStructureLocalServiceUtil.class,
+				DDMStructureLocalService.class) {
+
+				@Override
+				public DDMStructureLocalService get() {
+					return ddmStructureLocalService;
+				}
+
+			});
 
 		Mockito.when(
 			ddmStructureLocalService.getStructure(Mockito.anyLong())
@@ -645,8 +670,17 @@ public abstract class BaseDDMTestCase {
 			DDMTemplateLocalService.class);
 
 		ReflectionTestUtil.setFieldValue(
-			DDMTemplateLocalServiceUtil.class, "_service",
-			ddmTemplateLocalService);
+			DDMTemplateLocalServiceUtil.class, "_serviceSnapshot",
+			new Snapshot<DDMTemplateLocalService>(
+				DDMTemplateLocalServiceUtil.class,
+				DDMTemplateLocalService.class) {
+
+				@Override
+				public DDMTemplateLocalService get() {
+					return ddmTemplateLocalService;
+				}
+
+			});
 
 		Mockito.when(
 			ddmTemplateLocalService.getTemplate(Mockito.anyLong())
@@ -751,10 +785,6 @@ public abstract class BaseDDMTestCase {
 		);
 
 		portalUtil.setPortal(portal);
-	}
-
-	protected void setUpPropsUtil() {
-		PropsUtil.setProps(new PropsImpl());
 	}
 
 	protected void setUpResourceBundleUtil() {

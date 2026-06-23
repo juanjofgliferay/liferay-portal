@@ -1,6 +1,10 @@
-import Constants, {SegmentTypes, TimeIntervals} from 'shared/util/constants';
+import Constants, {TimeIntervals} from 'shared/util/constants';
 import sendRequest from 'shared/util/request';
-import {buildOrderByFields, NAME} from 'shared/util/pagination';
+import {
+	buildOrderByFields,
+	createOrderByField,
+	NAME
+} from 'shared/util/pagination';
 import {INDIVIDUALS, SEGMENTS} from 'shared/util/router';
 
 const {
@@ -21,10 +25,13 @@ export function addIndividuals({groupId, individualIds, selectedSegmentId}) {
 	});
 }
 
-function delete$({groupId, id}) {
+function delete$({groupId, ids}) {
 	return sendRequest({
+		data: {
+			ids
+		},
 		method: 'DELETE',
-		path: `contacts/${groupId}/individual_segment/${id}`
+		path: `contacts/${groupId}/individual_segment`
 	});
 }
 
@@ -41,30 +48,32 @@ export function fetch({groupId, includeReferencedObjects = false, segmentId}) {
 	}));
 }
 
+export function fetchMembershipMetrics({groupId, individualSegmentId}) {
+	return sendRequest({
+		method: 'GET',
+		path: `contacts/${groupId}/individual_segment/${individualSegmentId}/real-time-membership-metric`
+	});
+}
+
 export function create({
 	channelId = '',
 	criteriaString = '',
+	externalReferenceCode = '',
 	groupId,
 	includeAnonymousUsers = false,
-	individualIds = [],
 	name,
-	segmentType
+	segmentType,
+	sequential = false
 }) {
-	const data =
-		segmentType === SegmentTypes.Dynamic
-			? {
-					channelId,
-					filter: criteriaString,
-					includeAnonymousUsers,
-					name,
-					segmentType
-			  }
-			: {
-					channelId,
-					individualIds,
-					name,
-					segmentType
-			  };
+	const data = {
+		channelId,
+		externalReferenceCode,
+		filter: criteriaString,
+		includeAnonymousUsers,
+		name,
+		segmentType,
+		sequential
+	};
 
 	return sendRequest({
 		data,
@@ -76,26 +85,23 @@ export function create({
 export function update({
 	channelId = '',
 	criteriaString = '',
+	externalReferenceCode = '',
 	groupId,
 	id,
 	includeAnonymousUsers = false,
 	name,
-	segmentType
+	segmentType,
+	sequential = false
 }) {
-	const data =
-		segmentType === SegmentTypes.Dynamic
-			? {
-					channelId,
-					filter: criteriaString,
-					includeAnonymousUsers,
-					name,
-					segmentType
-			  }
-			: {
-					channelId,
-					name,
-					segmentType
-			  };
+	const data = {
+		channelId,
+		externalReferenceCode,
+		filter: criteriaString,
+		includeAnonymousUsers,
+		name,
+		segmentType,
+		sequential
+	};
 
 	return sendRequest({
 		data,
@@ -159,6 +165,44 @@ export function fetchMembershipChanges({
 	});
 }
 
+export function fetchRealTimeMembershipChanges({
+	date,
+	delta,
+	filters,
+	groupId,
+	orderIOMap,
+	query,
+	segmentId
+}) {
+	const orderParams = orderIOMap.first();
+	const orderByFields = [
+		createOrderByField(orderParams.field, orderParams.sortOrder)
+	];
+
+	const {profileTypes, types} = filters;
+
+	const data = {
+		day: date,
+		delta,
+		orderByFields,
+		query
+	};
+
+	if (profileTypes.length) {
+		data.profileTypes = profileTypes;
+	}
+
+	if (types.length) {
+		data.types = types;
+	}
+
+	return sendRequest({
+		data,
+		method: 'GET',
+		path: `contacts/${groupId}/individual_segment/${segmentId}/real-time-memberships`
+	});
+}
+
 export function fetchMembershipChangesAggregations({
 	channelId = '',
 	groupId,
@@ -214,5 +258,29 @@ export function searchUnassigned({
 		data: {cur: page, delta, orderByFields, query, ...otherParams},
 		method: 'GET',
 		path: `contacts/${groupId}/individual_segment/unassigned`
+	});
+}
+
+export function updateSegmentActivation({
+	groupId,
+	segmentActivation,
+	segmentId
+}) {
+	const {frequencyType, scheduleEndDate, scheduleStartDate, scheduleType} =
+		segmentActivation;
+
+	const data = {
+		frequencyType,
+		scheduleType,
+		...(scheduleEndDate && {scheduleEndDate: Date.parse(scheduleEndDate)}),
+		...(scheduleStartDate && {
+			scheduleStartDate: Date.parse(scheduleStartDate)
+		})
+	};
+
+	return sendRequest({
+		data,
+		method: 'PUT',
+		path: `contacts/${groupId}/individual_segment/${segmentId}/activation`
 	});
 }

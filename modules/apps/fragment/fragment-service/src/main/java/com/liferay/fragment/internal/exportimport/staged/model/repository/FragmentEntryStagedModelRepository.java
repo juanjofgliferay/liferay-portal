@@ -58,13 +58,14 @@ public class FragmentEntryStagedModelRepository
 		}
 
 		return _fragmentEntryLocalService.addFragmentEntry(
-			userId, fragmentEntry.getGroupId(),
-			fragmentEntry.getFragmentCollectionId(),
+			fragmentEntry.getExternalReferenceCode(), userId,
+			fragmentEntry.getGroupId(), fragmentEntry.getFragmentCollectionId(),
 			fragmentEntry.getFragmentEntryKey(), fragmentEntry.getName(),
 			fragmentEntry.getCss(), fragmentEntry.getHtml(),
 			fragmentEntry.getJs(), fragmentEntry.isCacheable(),
 			fragmentEntry.getConfiguration(), fragmentEntry.getIcon(),
-			fragmentEntry.getPreviewFileEntryId(), fragmentEntry.getType(),
+			fragmentEntry.getPreviewFileEntryId(), false,
+			fragmentEntry.isReadOnly(), fragmentEntry.getType(),
 			fragmentEntry.getTypeOptions(), fragmentEntry.getStatus(),
 			serviceContext);
 	}
@@ -152,7 +153,7 @@ public class FragmentEntryStagedModelRepository
 			fragmentEntry.getCss(), fragmentEntry.getHtml(),
 			fragmentEntry.getJs(), fragmentEntry.isCacheable(),
 			fragmentEntry.getConfiguration(), fragmentEntry.getIcon(),
-			fragmentEntry.getPreviewFileEntryId(),
+			fragmentEntry.getPreviewFileEntryId(), fragmentEntry.isReadOnly(),
 			fragmentEntry.getTypeOptions(), fragmentEntry.getStatus());
 	}
 
@@ -165,9 +166,8 @@ public class FragmentEntryStagedModelRepository
 		}
 
 		List<FragmentEntryLink> fragmentEntryLinks =
-			_fragmentEntryLinkLocalService.
-				getFragmentEntryLinksByFragmentEntryId(
-					fragmentEntry.getFragmentEntryId());
+			_fragmentEntryLinkLocalService.getFragmentEntryLinksByFragmentEntry(
+				groupId, fragmentEntry);
 
 		if (ListUtil.isEmpty(fragmentEntryLinks)) {
 			return;

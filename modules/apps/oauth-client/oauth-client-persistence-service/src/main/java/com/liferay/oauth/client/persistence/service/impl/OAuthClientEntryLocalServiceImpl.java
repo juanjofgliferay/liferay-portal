@@ -23,6 +23,7 @@ import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.ResourceLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
@@ -31,13 +32,11 @@ import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.oauth2.sdk.Scope;
 import com.nimbusds.oauth2.sdk.client.ClientInformation;
 import com.nimbusds.oauth2.sdk.client.ClientMetadata;
-import com.nimbusds.oauth2.sdk.http.HTTPRequest;
-import com.nimbusds.oauth2.sdk.http.HTTPResponse;
 import com.nimbusds.oauth2.sdk.util.JSONObjectUtils;
 import com.nimbusds.openid.connect.sdk.rp.OIDCClientInformation;
 
+import java.net.HttpURLConnection;
 import java.net.URI;
-import java.net.URL;
 
 import java.util.List;
 
@@ -59,14 +58,17 @@ public class OAuthClientEntryLocalServiceImpl
 
 	@Override
 	public OAuthClientEntry addOAuthClientEntry(
-			long userId, String authRequestParametersJSON,
-			String authServerWellKnownURI, String infoJSON,
-			String oidcUserInfoMapperJSON, String tokenRequestParametersJSON)
+			String externalReferenceCode, long userId,
+			String authRequestParametersJSON, String authServerWellKnownURI,
+			String customClaimsJSON, String infoJSON, String matcherField,
+			long metadataCacheTime, String oidcUserInfoMapperJSON,
+			String tokenRequestParametersJSON)
 		throws PortalException {
 
 		User user = _userLocalService.getUser(userId);
 
-		_validateAuthServerWellKnownURI(authServerWellKnownURI);
+		_validateAuthServerWellKnownURI(
+			user.getCompanyId(), authServerWellKnownURI);
 
 		ClientInformation clientInformation = _parseClientInformation(
 			authServerWellKnownURI, infoJSON);
@@ -85,6 +87,14 @@ public class OAuthClientEntryLocalServiceImpl
 		}
 		else {
 			_validateAuthRequestParametersJSON(authRequestParametersJSON);
+		}
+
+		if (customClaimsJSON == null) {
+			customClaimsJSON = "{}";
+		}
+
+		if (Validator.isNull(matcherField)) {
+			matcherField = "email";
 		}
 
 		if (Validator.isNull(tokenRequestParametersJSON)) {
@@ -107,6 +117,7 @@ public class OAuthClientEntryLocalServiceImpl
 		OAuthClientEntry oAuthClientEntry = oAuthClientEntryPersistence.create(
 			counterLocalService.increment());
 
+		oAuthClientEntry.setExternalReferenceCode(externalReferenceCode);
 		oAuthClientEntry.setCompanyId(user.getCompanyId());
 		oAuthClientEntry.setUserId(user.getUserId());
 		oAuthClientEntry.setUserName(user.getFullName());
@@ -114,7 +125,10 @@ public class OAuthClientEntryLocalServiceImpl
 			authRequestParametersJSON);
 		oAuthClientEntry.setAuthServerWellKnownURI(authServerWellKnownURI);
 		oAuthClientEntry.setClientId(clientId);
+		oAuthClientEntry.setCustomClaimsJSON(customClaimsJSON);
 		oAuthClientEntry.setInfoJSON(clientInformationJSONObject.toString());
+		oAuthClientEntry.setMatcherField(matcherField);
+		oAuthClientEntry.setMetadataCacheTime(metadataCacheTime);
 		oAuthClientEntry.setOIDCUserInfoMapperJSON(oidcUserInfoMapperJSON);
 		oAuthClientEntry.setTokenRequestParametersJSON(
 			tokenRequestParametersJSON);
@@ -217,7 +231,8 @@ public class OAuthClientEntryLocalServiceImpl
 	@Override
 	public OAuthClientEntry updateOAuthClientEntry(
 			long oAuthClientEntryId, String authRequestParametersJSON,
-			String authServerWellKnownURI, String infoJSON,
+			String authServerWellKnownURI, String customClaimsJSON,
+			String infoJSON, String matcherField, long metadataCacheTime,
 			String oidcUserInfoMapperJSON, String tokenRequestParametersJSON)
 		throws PortalException {
 
@@ -225,7 +240,8 @@ public class OAuthClientEntryLocalServiceImpl
 			oAuthClientEntryLocalService.getOAuthClientEntry(
 				oAuthClientEntryId);
 
-		_validateAuthServerWellKnownURI(authServerWellKnownURI);
+		_validateAuthServerWellKnownURI(
+			oAuthClientEntry.getCompanyId(), authServerWellKnownURI);
 
 		ClientInformation clientInformation = _parseClientInformation(
 			authServerWellKnownURI, infoJSON);
@@ -245,6 +261,14 @@ public class OAuthClientEntryLocalServiceImpl
 		}
 		else {
 			_validateAuthRequestParametersJSON(authRequestParametersJSON);
+		}
+
+		if (Validator.isNotNull(customClaimsJSON)) {
+			oAuthClientEntry.setCustomClaimsJSON(customClaimsJSON);
+		}
+
+		if (Validator.isNotNull(matcherField)) {
+			oAuthClientEntry.setMatcherField(matcherField);
 		}
 
 		if (Validator.isNull(tokenRequestParametersJSON)) {
@@ -269,6 +293,7 @@ public class OAuthClientEntryLocalServiceImpl
 		oAuthClientEntry.setAuthServerWellKnownURI(authServerWellKnownURI);
 		oAuthClientEntry.setClientId(clientId);
 		oAuthClientEntry.setInfoJSON(clientInformationJSONObject.toString());
+		oAuthClientEntry.setMetadataCacheTime(metadataCacheTime);
 		oAuthClientEntry.setOIDCUserInfoMapperJSON(oidcUserInfoMapperJSON);
 		oAuthClientEntry.setTokenRequestParametersJSON(
 			tokenRequestParametersJSON);
@@ -307,25 +332,31 @@ public class OAuthClientEntryLocalServiceImpl
 		}
 	}
 
-	private void _validateAuthServerWellKnownURI(String authServerWellKnownURI)
+	private void _validateAuthServerWellKnownURI(
+			long companyId, String authServerWellKnownURI)
 		throws PortalException {
 
 		try {
 			if (authServerWellKnownURI.endsWith("local")) {
 				_oAuthClientASLocalMetadataLocalService.
-					getOAuthClientASLocalMetadata(authServerWellKnownURI);
+					getOAuthClientASLocalMetadata(
+						companyId, authServerWellKnownURI);
 
 				return;
 			}
 
-			HTTPRequest httpRequest = new HTTPRequest(
-				HTTPRequest.Method.GET, new URL(authServerWellKnownURI));
+			Http.Options httpOptions = new Http.Options();
 
-			HTTPResponse httpResponse = httpRequest.send();
+			httpOptions.setCookieSpec(Http.CookieSpec.STANDARD);
+			httpOptions.setLocation(authServerWellKnownURI);
 
-			if (httpResponse.getStatusCode() != HTTPResponse.SC_OK) {
+			_http.URLtoString(httpOptions);
+
+			Http.Response httpResponse = httpOptions.getResponse();
+
+			if (httpResponse.getResponseCode() != HttpURLConnection.HTTP_OK) {
 				throw new OAuthClientEntryAuthServerWellKnownURIException(
-					httpResponse.getStatusMessage());
+					"Response code: " + httpResponse.getResponseCode());
 			}
 		}
 		catch (Exception exception) {
@@ -503,6 +534,9 @@ public class OAuthClientEntryLocalServiceImpl
 				exception.getMessage(), exception);
 		}
 	}
+
+	@Reference
+	private Http _http;
 
 	@Reference
 	private OAuthClientASLocalMetadataLocalService

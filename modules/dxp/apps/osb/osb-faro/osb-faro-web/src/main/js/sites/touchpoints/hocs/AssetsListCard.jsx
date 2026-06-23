@@ -1,10 +1,11 @@
 import AssetsListCard from '../components/AssetsListCard';
 import AssetsQuery from 'shared/queries/AssetsQuery';
 import BaseCard from 'shared/components/base-card';
+import ClayLink from '@clayui/link';
 import React from 'react';
 import URLConstants from 'shared/util/url-constants';
 import {compose} from 'redux';
-import {graphql} from '@apollo/react-hoc';
+import {graphql} from '@apollo/client/react/hoc';
 import {HOC_CARD_PROPTYPES} from 'shared/util/proptypes';
 import {
 	mapPropsToOptions,
@@ -29,13 +30,13 @@ const AssetsListWithData = compose(
 					)}
 				</span>
 
-				<a
+				<ClayLink
 					href={URLConstants.SitesDashboardPagesAssets}
 					key='DOCUMENTATION'
 					target='_blank'
 				>
 					{Liferay.Language.get('learn-more-about-display-assets')}
-				</a>
+				</ClayLink>
 			</>
 		),
 		emptyTitle: Liferay.Language.get(

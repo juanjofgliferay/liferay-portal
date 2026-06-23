@@ -7,8 +7,8 @@ package com.liferay.dynamic.data.mapping.form.field.type.internal.checkbox.multi
 
 import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldValueAccessor;
 import com.liferay.dynamic.data.mapping.form.field.type.constants.DDMFormFieldTypeConstants;
-import com.liferay.dynamic.data.mapping.form.field.type.internal.util.DDMFormFieldValueUtil;
 import com.liferay.dynamic.data.mapping.storage.DDMFormFieldValue;
+import com.liferay.dynamic.data.mapping.util.DDMFormFieldValueUtil;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
@@ -66,12 +66,15 @@ public class CheckboxMultipleDDMFormFieldValueAccessor
 				optionsValuesJSONArray.getString(i));
 
 			if (matcher.matches()) {
-				return DDMFormFieldValueUtil.createJSONArray(
-					StringBundler.concat(
-						StringPool.OPEN_BRACKET,
-						DDMFormFieldValueUtil.getOptionsLabels(
-							ddmFormFieldValue, locale),
-						StringPool.CLOSE_BRACKET));
+				JSONArray jsonArray = DDMFormFieldValueUtil.createJSONArray(
+					"[]");
+
+				jsonArray.put(
+					DDMFormFieldValueUtil.getOptionsLabels(
+						ddmFormFieldValue, locale,
+						DDMFormFieldValueUtil::isManualDataSourceType));
+
+				return jsonArray;
 			}
 		}
 

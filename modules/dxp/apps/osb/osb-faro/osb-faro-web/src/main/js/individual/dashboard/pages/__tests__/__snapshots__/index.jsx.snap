@@ -25,7 +25,7 @@ exports[`Individuals Dashboard renders 1`] = `
             >
               <a
                 class="breadcrumb-text-truncate breadcrumb-link"
-                href="/workspace/123/sites"
+                href="/workspace/123/456/sites"
               >
                 Channel 1
               </a>
@@ -62,12 +62,16 @@ exports[`Individuals Dashboard renders 1`] = `
             >
               <button
                 aria-expanded="false"
+                aria-label="Open Menu, Current Page: Overview"
                 class="navbar-toggler navbar-toggler-link collapsed btn btn-unstyled"
+                data-testid="navbarToggler"
                 type="button"
               >
                 <span
                   class="navbar-text-truncate"
-                />
+                >
+                  Overview
+                </span>
                 <svg
                   class="lexicon-icon lexicon-icon-caret-bottom"
                   role="presentation"
@@ -91,11 +95,9 @@ exports[`Individuals Dashboard renders 1`] = `
                     >
                       <a
                         class="nav-link"
-                        href="/workspace/123/contacts/individuals"
+                        href="/workspace/123/456/contacts/individuals"
                       >
-                        <span
-                          class="navbar-text-truncate"
-                        >
+                        <span>
                           Overview
                         </span>
                       </a>
@@ -105,11 +107,9 @@ exports[`Individuals Dashboard renders 1`] = `
                     >
                       <a
                         class="nav-link"
-                        href="/workspace/123/contacts/individuals/known-individuals"
+                        href="/workspace/123/456/contacts/individuals/known-individuals"
                       >
-                        <span
-                          class="navbar-text-truncate"
-                        >
+                        <span>
                           Known Individuals
                         </span>
                       </a>
@@ -119,11 +119,9 @@ exports[`Individuals Dashboard renders 1`] = `
                     >
                       <a
                         class="nav-link"
-                        href="/workspace/123/contacts/individuals/interests"
+                        href="/workspace/123/456/contacts/individuals/interests"
                       >
-                        <span
-                          class="navbar-text-truncate"
-                        >
+                        <span>
                           Interests
                         </span>
                       </a>
@@ -133,11 +131,9 @@ exports[`Individuals Dashboard renders 1`] = `
                     >
                       <a
                         class="nav-link"
-                        href="/workspace/123/contacts/individuals/distribution"
+                        href="/workspace/123/456/contacts/individuals/distribution"
                       >
-                        <span
-                          class="navbar-text-truncate"
-                        >
+                        <span>
                           Distribution
                         </span>
                       </a>

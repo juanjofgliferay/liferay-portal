@@ -6,10 +6,11 @@
 package com.liferay.oauth.client.persistence.model;
 
 import com.liferay.portal.kernel.bean.AutoEscape;
-import com.liferay.portal.kernel.model.AuditedModel;
 import com.liferay.portal.kernel.model.BaseModel;
+import com.liferay.portal.kernel.model.ExternalReferenceCodeModel;
 import com.liferay.portal.kernel.model.MVCCModel;
 import com.liferay.portal.kernel.model.ShardedModel;
+import com.liferay.portal.kernel.model.StagedAuditedModel;
 
 import java.util.Date;
 
@@ -28,8 +29,8 @@ import org.osgi.annotation.versioning.ProviderType;
  */
 @ProviderType
 public interface OAuthClientASLocalMetadataModel
-	extends AuditedModel, BaseModel<OAuthClientASLocalMetadata>, MVCCModel,
-			ShardedModel {
+	extends BaseModel<OAuthClientASLocalMetadata>, ExternalReferenceCodeModel,
+			MVCCModel, ShardedModel, StagedAuditedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -66,6 +67,40 @@ public interface OAuthClientASLocalMetadataModel
 	 */
 	@Override
 	public void setMvccVersion(long mvccVersion);
+
+	/**
+	 * Returns the uuid of this o auth client as local metadata.
+	 *
+	 * @return the uuid of this o auth client as local metadata
+	 */
+	@AutoEscape
+	@Override
+	public String getUuid();
+
+	/**
+	 * Sets the uuid of this o auth client as local metadata.
+	 *
+	 * @param uuid the uuid of this o auth client as local metadata
+	 */
+	@Override
+	public void setUuid(String uuid);
+
+	/**
+	 * Returns the external reference code of this o auth client as local metadata.
+	 *
+	 * @return the external reference code of this o auth client as local metadata
+	 */
+	@AutoEscape
+	@Override
+	public String getExternalReferenceCode();
+
+	/**
+	 * Sets the external reference code of this o auth client as local metadata.
+	 *
+	 * @param externalReferenceCode the external reference code of this o auth client as local metadata
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode);
 
 	/**
 	 * Returns the o auth client as local metadata ID of this o auth client as local metadata.
@@ -180,6 +215,42 @@ public interface OAuthClientASLocalMetadataModel
 	public void setModifiedDate(Date modifiedDate);
 
 	/**
+	 * Returns the issuer of this o auth client as local metadata.
+	 *
+	 * @return the issuer of this o auth client as local metadata
+	 */
+	@AutoEscape
+	public String getIssuer();
+
+	/**
+	 * Sets the issuer of this o auth client as local metadata.
+	 *
+	 * @param issuer the issuer of this o auth client as local metadata
+	 */
+	public void setIssuer(String issuer);
+
+	/**
+	 * Returns the local well known enabled of this o auth client as local metadata.
+	 *
+	 * @return the local well known enabled of this o auth client as local metadata
+	 */
+	public boolean getLocalWellKnownEnabled();
+
+	/**
+	 * Returns <code>true</code> if this o auth client as local metadata is local well known enabled.
+	 *
+	 * @return <code>true</code> if this o auth client as local metadata is local well known enabled; <code>false</code> otherwise
+	 */
+	public boolean isLocalWellKnownEnabled();
+
+	/**
+	 * Sets whether this o auth client as local metadata is local well known enabled.
+	 *
+	 * @param localWellKnownEnabled the local well known enabled of this o auth client as local metadata
+	 */
+	public void setLocalWellKnownEnabled(boolean localWellKnownEnabled);
+
+	/**
 	 * Returns the local well known uri of this o auth client as local metadata.
 	 *
 	 * @return the local well known uri of this o auth client as local metadata
@@ -209,6 +280,36 @@ public interface OAuthClientASLocalMetadataModel
 	 */
 	public void setMetadataJSON(String metadataJSON);
 
+	/**
+	 * Returns the o auth as local well known uri of this o auth client as local metadata.
+	 *
+	 * @return the o auth as local well known uri of this o auth client as local metadata
+	 */
+	@AutoEscape
+	public String getOAuthASLocalWellKnownURI();
+
+	/**
+	 * Sets the o auth as local well known uri of this o auth client as local metadata.
+	 *
+	 * @param oAuthASLocalWellKnownURI the o auth as local well known uri of this o auth client as local metadata
+	 */
+	public void setOAuthASLocalWellKnownURI(String oAuthASLocalWellKnownURI);
+
+	/**
+	 * Returns the o auth as metadata json of this o auth client as local metadata.
+	 *
+	 * @return the o auth as metadata json of this o auth client as local metadata
+	 */
+	@AutoEscape
+	public String getOAuthASMetadataJSON();
+
+	/**
+	 * Sets the o auth as metadata json of this o auth client as local metadata.
+	 *
+	 * @param oAuthASMetadataJSON the o auth as metadata json of this o auth client as local metadata
+	 */
+	public void setOAuthASMetadataJSON(String oAuthASMetadataJSON);
+
 	@Override
 	public OAuthClientASLocalMetadata cloneWithOriginalValues();
 
@@ -217,3 +318,4 @@ public interface OAuthClientASLocalMetadataModel
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-833101794

@@ -1,14 +1,3 @@
-const COLORS = [
-	'#59adf6',
-	'#42d6a4',
-	'#ff6961',
-	'#ffb480',
-	'#f8f38d',
-	'#08cad1',
-	'#9d94ff',
-	'#c780e8'
-];
-
 function createBuildCountLineChart(timelineData, elementID) {
 	let datasets = getDatasets(timelineData, 'buildCounts');
 
@@ -31,7 +20,7 @@ function createBuildCountLineChart(timelineData, elementID) {
 
 		        label += ' (';
 
-		        label += Math.round(tooltipItem.yLabel * 10000 / 1800) / 100;
+		        label += Math.round(tooltipItem.yLabel * 10000 / (maxWeeklyServerDurationMillis || MAX_WEEKLY_SERVER_DURATION_MILLIS)) / 100;
 
 		        label += '%)'
 
@@ -82,10 +71,6 @@ function createQueueDurationLineChart(timelineData, elementID) {
 	let datasets = getDatasets(timelineData, 'averageQueueTime');
 
 	createDurationLineChart('Average Queue Duration', datasets, elementID);
-}
-
-function getColor(index) {
-	return COLORS[index % COLORS.length];
 }
 
 function getDataPoints(xDataPoints, yDataPoints) {
@@ -177,6 +162,8 @@ function getLineChart(chartTitle, datasets, elementID, yLabel) {
 	});
 }
 
+addDateText(document.getElementById("build-history-data-date"), dataGeneratedDate);
+
 let buttonElements = document.getElementsByClassName('accordion');
 
 for (let i = 0; i < buttonElements.length; i++) {
@@ -210,7 +197,9 @@ if ((typeof timelineData !== 'undefined') && timelineData) {
 }
 
 if ((typeof tableData !== 'undefined') && tableData) {
-	createTable(tableData, 'build-history-table');
+	let tableElement = createTable(tableData, 'build-history-table');
+
+	addTotalColumn(tableElement);
 
 	Sortable.init();
 }

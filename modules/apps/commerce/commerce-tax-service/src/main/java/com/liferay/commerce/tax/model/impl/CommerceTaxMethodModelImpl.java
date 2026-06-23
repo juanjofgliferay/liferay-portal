@@ -76,7 +76,7 @@ public class CommerceTaxMethodModelImpl
 		{"createDate", Types.TIMESTAMP}, {"modifiedDate", Types.TIMESTAMP},
 		{"name", Types.VARCHAR}, {"description", Types.VARCHAR},
 		{"engineKey", Types.VARCHAR}, {"percentage", Types.BOOLEAN},
-		{"active_", Types.BOOLEAN}
+		{"active_", Types.BOOLEAN}, {"typeSettings", Types.CLOB}
 	};
 
 	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
@@ -96,12 +96,15 @@ public class CommerceTaxMethodModelImpl
 		TABLE_COLUMNS_MAP.put("engineKey", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("percentage", Types.BOOLEAN);
 		TABLE_COLUMNS_MAP.put("active_", Types.BOOLEAN);
+		TABLE_COLUMNS_MAP.put("typeSettings", Types.CLOB);
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table CommerceTaxMethod (mvccVersion LONG default 0 not null,commerceTaxMethodId LONG not null primary key,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,name STRING null,description STRING null,engineKey VARCHAR(75) null,percentage BOOLEAN,active_ BOOLEAN)";
+		"create table CommerceTaxMethod (mvccVersion LONG default 0 not null,commerceTaxMethodId LONG not null primary key,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,name STRING null,description STRING null,engineKey VARCHAR(75) null,percentage BOOLEAN,active_ BOOLEAN,typeSettings TEXT null)";
 
 	public static final String TABLE_SQL_DROP = "drop table CommerceTaxMethod";
+
+	public static final String ENTITY_ALIAS = "commerceTaxMethod";
 
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY commerceTaxMethod.createDate DESC";
@@ -276,6 +279,8 @@ public class CommerceTaxMethodModelImpl
 				"percentage", CommerceTaxMethod::getPercentage);
 			attributeGetterFunctions.put(
 				"active", CommerceTaxMethod::getActive);
+			attributeGetterFunctions.put(
+				"typeSettings", CommerceTaxMethod::getTypeSettings);
 
 			_attributeGetterFunctions = Collections.unmodifiableMap(
 				attributeGetterFunctions);
@@ -346,6 +351,10 @@ public class CommerceTaxMethodModelImpl
 				"active",
 				(BiConsumer<CommerceTaxMethod, Boolean>)
 					CommerceTaxMethod::setActive);
+			attributeSetterBiConsumers.put(
+				"typeSettings",
+				(BiConsumer<CommerceTaxMethod, String>)
+					CommerceTaxMethod::setTypeSettings);
 
 			_attributeSetterBiConsumers = Collections.unmodifiableMap(
 				(Map)attributeSetterBiConsumers);
@@ -809,6 +818,26 @@ public class CommerceTaxMethodModelImpl
 			this.<Boolean>getColumnOriginalValue("active_"));
 	}
 
+	@JSON
+	@Override
+	public String getTypeSettings() {
+		if (_typeSettings == null) {
+			return "";
+		}
+		else {
+			return _typeSettings;
+		}
+	}
+
+	@Override
+	public void setTypeSettings(String typeSettings) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_typeSettings = typeSettings;
+	}
+
 	public long getColumnBitmask() {
 		if (_columnBitmask > 0) {
 			return _columnBitmask;
@@ -967,6 +996,7 @@ public class CommerceTaxMethodModelImpl
 		commerceTaxMethodImpl.setEngineKey(getEngineKey());
 		commerceTaxMethodImpl.setPercentage(isPercentage());
 		commerceTaxMethodImpl.setActive(isActive());
+		commerceTaxMethodImpl.setTypeSettings(getTypeSettings());
 
 		commerceTaxMethodImpl.resetOriginalValues();
 
@@ -1004,6 +1034,8 @@ public class CommerceTaxMethodModelImpl
 			this.<Boolean>getColumnOriginalValue("percentage"));
 		commerceTaxMethodImpl.setActive(
 			this.<Boolean>getColumnOriginalValue("active_"));
+		commerceTaxMethodImpl.setTypeSettings(
+			this.<String>getColumnOriginalValue("typeSettings"));
 
 		return commerceTaxMethodImpl;
 	}
@@ -1148,6 +1180,14 @@ public class CommerceTaxMethodModelImpl
 
 		commerceTaxMethodCacheModel.active = isActive();
 
+		commerceTaxMethodCacheModel.typeSettings = getTypeSettings();
+
+		String typeSettings = commerceTaxMethodCacheModel.typeSettings;
+
+		if ((typeSettings != null) && (typeSettings.length() == 0)) {
+			commerceTaxMethodCacheModel.typeSettings = null;
+		}
+
 		return commerceTaxMethodCacheModel;
 	}
 
@@ -1226,6 +1266,7 @@ public class CommerceTaxMethodModelImpl
 	private String _engineKey;
 	private boolean _percentage;
 	private boolean _active;
+	private String _typeSettings;
 
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
@@ -1270,6 +1311,7 @@ public class CommerceTaxMethodModelImpl
 		_columnOriginalValues.put("engineKey", _engineKey);
 		_columnOriginalValues.put("percentage", _percentage);
 		_columnOriginalValues.put("active_", _active);
+		_columnOriginalValues.put("typeSettings", _typeSettings);
 	}
 
 	private static final Map<String, String> _attributeNames;
@@ -1319,6 +1361,8 @@ public class CommerceTaxMethodModelImpl
 
 		columnBitmasks.put("active_", 4096L);
 
+		columnBitmasks.put("typeSettings", 8192L);
+
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}
 
@@ -1326,3 +1370,4 @@ public class CommerceTaxMethodModelImpl
 	private CommerceTaxMethod _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1514547795

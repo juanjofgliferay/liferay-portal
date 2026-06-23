@@ -27,6 +27,11 @@ import org.osgi.service.component.annotations.Reference;
 public class CustomFieldsPanelApp extends BasePanelApp {
 
 	@Override
+	public String getIcon() {
+		return "custom-field";
+	}
+
+	@Override
 	public Portlet getPortlet() {
 		return _portlet;
 	}
@@ -37,7 +42,7 @@ public class CustomFieldsPanelApp extends BasePanelApp {
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + ExpandoPortletKeys.EXPANDO + ")"
+		target = "(jakarta.portlet.name=" + ExpandoPortletKeys.EXPANDO + ")"
 	)
 	private Portlet _portlet;
 

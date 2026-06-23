@@ -16,7 +16,12 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -26,20 +31,20 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.DecimalMin;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Zoltán Takács
  * @generated
  */
 @Generated("")
-@GraphQLName("TierPrice")
+@GraphQLName(
+	description = "Quantity-break override on a price entry. Backed by tier price; the DTO's `minimumQuantity` maps to the backend `minQuantity` BigDecimal threshold above which `price` (and optional `promoPrice`) supersede the parent price entry.",
+	value = "TierPrice"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "Quantity-break override on a price entry. Backed by tier price; the DTO's `minimumQuantity` maps to the backend `minQuantity` BigDecimal threshold above which `price` (and optional `promoPrice`) supersede the parent price entry."
+)
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "TierPrice")
 public class TierPrice implements Serializable {
@@ -52,151 +57,251 @@ public class TierPrice implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(TierPrice.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Free-form Expando custom fields attached to the underlying tier price entity. Keys are Expando attribute names; values follow each attribute's declared column type.",
+		example = "{customField1=value1}"
+	)
 	@Valid
 	public Map<String, ?> getCustomFields() {
+		if (_customFieldsSupplier != null) {
+			customFields = _customFieldsSupplier.get();
+
+			_customFieldsSupplier = null;
+		}
+
 		return customFields;
 	}
 
 	public void setCustomFields(Map<String, ?> customFields) {
 		this.customFields = customFields;
+
+		_customFieldsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCustomFields(
 		UnsafeSupplier<Map<String, ?>, Exception> customFieldsUnsafeSupplier) {
 
-		try {
-			customFields = customFieldsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_customFieldsSupplier = () -> {
+			try {
+				return customFieldsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Free-form Expando custom fields attached to the underlying tier price entity. Keys are Expando attribute names; values follow each attribute's declared column type."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, ?> customFields;
 
-	@Schema(example = "AB-34098-789-N")
+	@JsonIgnore
+	private Supplier<Map<String, ?>> _customFieldsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Idempotency key for create and update. Must be unique per tier price within the company; matched on the persisted record.",
+		example = "TP-HAND-SAW-Q10"
+	)
 	public String getExternalReferenceCode() {
+		if (_externalReferenceCodeSupplier != null) {
+			externalReferenceCode = _externalReferenceCodeSupplier.get();
+
+			_externalReferenceCodeSupplier = null;
+		}
+
 		return externalReferenceCode;
 	}
 
 	public void setExternalReferenceCode(String externalReferenceCode) {
 		this.externalReferenceCode = externalReferenceCode;
+
+		_externalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setExternalReferenceCode(
 		UnsafeSupplier<String, Exception> externalReferenceCodeUnsafeSupplier) {
 
-		try {
-			externalReferenceCode = externalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_externalReferenceCodeSupplier = () -> {
+			try {
+				return externalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Idempotency key for create and update. Must be unique per tier price within the company; matched on the persisted record."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String externalReferenceCode;
 
+	@JsonIgnore
+	private Supplier<String> _externalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "31130")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Internal numeric identifier of the tier price; read-only and assigned by the service on create.",
+		example = "31130"
+	)
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Internal numeric identifier of the tier price; read-only and assigned by the service on create."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long id;
 
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "5")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Quantity threshold above which the tier `price` (and optional `promoPrice`) supersedes the parent price entry. Maps to tier price.minQuantity (BigDecimal); supplied as integer in the DTO and converted on persistence.",
+		example = "10"
+	)
 	public Integer getMinimumQuantity() {
+		if (_minimumQuantitySupplier != null) {
+			minimumQuantity = _minimumQuantitySupplier.get();
+
+			_minimumQuantitySupplier = null;
+		}
+
 		return minimumQuantity;
 	}
 
 	public void setMinimumQuantity(Integer minimumQuantity) {
 		this.minimumQuantity = minimumQuantity;
+
+		_minimumQuantitySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setMinimumQuantity(
 		UnsafeSupplier<Integer, Exception> minimumQuantityUnsafeSupplier) {
 
-		try {
-			minimumQuantity = minimumQuantityUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_minimumQuantitySupplier = () -> {
+			try {
+				return minimumQuantityUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Quantity threshold above which the tier `price` (and optional `promoPrice`) supersedes the parent price entry. Maps to tier price.minQuantity (BigDecimal); supplied as integer in the DTO and converted on persistence."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Integer minimumQuantity;
 
+	@JsonIgnore
+	private Supplier<Integer> _minimumQuantitySupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "25")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Override price applied at or above `minimumQuantity`. Expressed in the parent price list's currency with the price-list scale; rejected when negative.",
+		example = "89.99"
+	)
 	@Valid
 	public BigDecimal getPrice() {
+		if (_priceSupplier != null) {
+			price = _priceSupplier.get();
+
+			_priceSupplier = null;
+		}
+
 		return price;
 	}
 
 	public void setPrice(BigDecimal price) {
 		this.price = price;
+
+		_priceSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPrice(
 		UnsafeSupplier<BigDecimal, Exception> priceUnsafeSupplier) {
 
-		try {
-			price = priceUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_priceSupplier = () -> {
+			try {
+				return priceUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Override price applied at or above `minimumQuantity`. Expressed in the parent price list's currency with the price-list scale; rejected when negative."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected BigDecimal price;
 
-	@Schema(example = "CAB-34098-789-N")
+	@JsonIgnore
+	private Supplier<BigDecimal> _priceSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "External reference code of the parent price entry. Populated by the server on response; on create the parent is resolved from the URL path.",
+		example = "PE-HAND-SAW-DEFAULT"
+	)
 	public String getPriceEntryExternalReferenceCode() {
+		if (_priceEntryExternalReferenceCodeSupplier != null) {
+			priceEntryExternalReferenceCode =
+				_priceEntryExternalReferenceCodeSupplier.get();
+
+			_priceEntryExternalReferenceCodeSupplier = null;
+		}
+
 		return priceEntryExternalReferenceCode;
 	}
 
@@ -204,6 +309,8 @@ public class TierPrice implements Serializable {
 		String priceEntryExternalReferenceCode) {
 
 		this.priceEntryExternalReferenceCode = priceEntryExternalReferenceCode;
+
+		_priceEntryExternalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
@@ -211,80 +318,122 @@ public class TierPrice implements Serializable {
 		UnsafeSupplier<String, Exception>
 			priceEntryExternalReferenceCodeUnsafeSupplier) {
 
-		try {
-			priceEntryExternalReferenceCode =
-				priceEntryExternalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_priceEntryExternalReferenceCodeSupplier = () -> {
+			try {
+				return priceEntryExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "External reference code of the parent price entry. Populated by the server on response; on create the parent is resolved from the URL path."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String priceEntryExternalReferenceCode;
 
+	@JsonIgnore
+	private Supplier<String> _priceEntryExternalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30130")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Internal numeric identifier of the parent price entry. Populated by the server on response; on create the parent is resolved from the URL path.",
+		example = "30130"
+	)
 	public Long getPriceEntryId() {
+		if (_priceEntryIdSupplier != null) {
+			priceEntryId = _priceEntryIdSupplier.get();
+
+			_priceEntryIdSupplier = null;
+		}
+
 		return priceEntryId;
 	}
 
 	public void setPriceEntryId(Long priceEntryId) {
 		this.priceEntryId = priceEntryId;
+
+		_priceEntryIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPriceEntryId(
 		UnsafeSupplier<Long, Exception> priceEntryIdUnsafeSupplier) {
 
-		try {
-			priceEntryId = priceEntryIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_priceEntryIdSupplier = () -> {
+			try {
+				return priceEntryIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Internal numeric identifier of the parent price entry. Populated by the server on response; on create the parent is resolved from the URL path."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long priceEntryId;
 
+	@JsonIgnore
+	private Supplier<Long> _priceEntryIdSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "20")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Promotional override price applied at or above `minimumQuantity` when a promotion is active. Expressed in the parent price list's currency; rejected when negative.",
+		example = "79.99"
+	)
 	@Valid
 	public BigDecimal getPromoPrice() {
+		if (_promoPriceSupplier != null) {
+			promoPrice = _promoPriceSupplier.get();
+
+			_promoPriceSupplier = null;
+		}
+
 		return promoPrice;
 	}
 
 	public void setPromoPrice(BigDecimal promoPrice) {
 		this.promoPrice = promoPrice;
+
+		_promoPriceSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPromoPrice(
 		UnsafeSupplier<BigDecimal, Exception> promoPriceUnsafeSupplier) {
 
-		try {
-			promoPrice = promoPriceUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_promoPriceSupplier = () -> {
+			try {
+				return promoPriceUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Promotional override price applied at or above `minimumQuantity` when a promotion is active. Expressed in the parent price list's currency; rejected when negative."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected BigDecimal promoPrice;
+
+	@JsonIgnore
+	private Supplier<BigDecimal> _promoPriceSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -313,6 +462,8 @@ public class TierPrice implements Serializable {
 
 		sb.append("{");
 
+		Map<String, ?> customFields = getCustomFields();
+
 		if (customFields != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -322,6 +473,8 @@ public class TierPrice implements Serializable {
 
 			sb.append(_toJSON(customFields));
 		}
+
+		String externalReferenceCode = getExternalReferenceCode();
 
 		if (externalReferenceCode != null) {
 			if (sb.length() > 1) {
@@ -337,6 +490,8 @@ public class TierPrice implements Serializable {
 			sb.append("\"");
 		}
 
+		Long id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -346,6 +501,8 @@ public class TierPrice implements Serializable {
 
 			sb.append(id);
 		}
+
+		Integer minimumQuantity = getMinimumQuantity();
 
 		if (minimumQuantity != null) {
 			if (sb.length() > 1) {
@@ -357,6 +514,8 @@ public class TierPrice implements Serializable {
 			sb.append(minimumQuantity);
 		}
 
+		BigDecimal price = getPrice();
+
 		if (price != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -366,6 +525,9 @@ public class TierPrice implements Serializable {
 
 			sb.append(price);
 		}
+
+		String priceEntryExternalReferenceCode =
+			getPriceEntryExternalReferenceCode();
 
 		if (priceEntryExternalReferenceCode != null) {
 			if (sb.length() > 1) {
@@ -381,6 +543,8 @@ public class TierPrice implements Serializable {
 			sb.append("\"");
 		}
 
+		Long priceEntryId = getPriceEntryId();
+
 		if (priceEntryId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -390,6 +554,8 @@ public class TierPrice implements Serializable {
 
 			sb.append(priceEntryId);
 		}
+
+		BigDecimal promoPrice = getPromoPrice();
 
 		if (promoPrice != null) {
 			if (sb.length() > 1) {
@@ -406,8 +572,8 @@ public class TierPrice implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.admin.pricing.dto.v1_0.TierPrice",
 		name = "x-class-name"
 	)
@@ -453,7 +619,10 @@ public class TierPrice implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -499,3 +668,4 @@ public class TierPrice implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1728381861

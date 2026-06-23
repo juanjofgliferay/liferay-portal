@@ -10,14 +10,14 @@ import com.liferay.portal.kernel.content.security.policy.ContentSecurityPolicyNo
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.util.HtmlUtil;
 
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.Encoded;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.Encoded;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -39,7 +39,8 @@ public class OAuth2ProviderApplicationRedirect {
 	@Produces(MediaType.TEXT_HTML)
 	public Response redirect(
 		@DefaultValue("") @Encoded @QueryParam("code") String code,
-		@DefaultValue("") @Encoded @QueryParam("error") String error) {
+		@DefaultValue("") @Encoded @QueryParam("error") String error,
+		@DefaultValue("") @Encoded @QueryParam("state") String state) {
 
 		return Response.ok(
 			StringBundler.concat(
@@ -51,6 +52,8 @@ public class OAuth2ProviderApplicationRedirect {
 					"code", HtmlUtil.escapeJS(code)
 				).put(
 					"error", HtmlUtil.escapeJS(error)
+				).put(
+					"state", HtmlUtil.escapeJS(state)
 				),
 				", document.location.href);</script></body></html>")
 		).build();

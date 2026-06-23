@@ -10,14 +10,13 @@ package com.liferay.jenkins.results.parser;
  */
 public class PullRequestSubrepositoryTopLevelBuild
 	extends DefaultTopLevelBuild
-	implements AnalyticsCloudBranchInformationBuild,
-			   PluginsBranchInformationBuild, PortalBranchInformationBuild,
+	implements PluginsBranchInformationBuild, PortalBranchInformationBuild,
 			   PullRequestBuild, WorkspaceBuild {
 
 	public PullRequestSubrepositoryTopLevelBuild(
-		String url, TopLevelBuild topLevelBuild) {
+		String buildURL, TopLevelBuild topLevelBuild) {
 
-		super(url, topLevelBuild);
+		super(buildURL, topLevelBuild);
 	}
 
 	@Override
@@ -29,15 +28,6 @@ public class PullRequestSubrepositoryTopLevelBuild
 		}
 
 		return getBranchName();
-	}
-
-	@Override
-	public BranchInformation getOSBAsahBranchInformation() {
-		Workspace workspace = getWorkspace();
-
-		return new WorkspaceBranchInformation(
-			workspace.getWorkspaceGitRepository(
-				"com-liferay-osb-asah-private"));
 	}
 
 	@Override

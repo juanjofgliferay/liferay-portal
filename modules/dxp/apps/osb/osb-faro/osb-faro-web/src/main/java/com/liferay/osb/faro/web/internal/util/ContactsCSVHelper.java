@@ -15,10 +15,10 @@ import com.liferay.osb.faro.contacts.model.constants.ContactsConstants;
 import com.liferay.osb.faro.engine.client.model.DataSource;
 import com.liferay.osb.faro.engine.client.model.DataSourceField;
 import com.liferay.osb.faro.web.internal.exception.FaroException;
+import com.liferay.petra.io.unsync.UnsyncBufferedReader;
+import com.liferay.petra.io.unsync.UnsyncBufferedWriter;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
-import com.liferay.portal.kernel.io.unsync.UnsyncBufferedWriter;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Repository;
@@ -80,10 +80,13 @@ public class ContactsCSVHelper {
 
 		try (Reader reader = new InputStreamReader(
 				new FileInputStream(file), charset);
+
 			UnsyncBufferedReader unsyncBufferedReader =
 				new UnsyncBufferedReader(reader);
+
 			Writer writer = new OutputStreamWriter(
 				new FileOutputStream(tempFile), StandardCharsets.UTF_8);
+
 			UnsyncBufferedWriter unsyncBufferedWriter =
 				new UnsyncBufferedWriter(writer)) {
 
@@ -316,8 +319,9 @@ public class ContactsCSVHelper {
 				dlFileEntry.getFileEntryTypeId(),
 				dlFileEntry.getDDMFormValuesMap(
 					dlFileVersion.getFileVersionId()),
-				file, null, file.length(), dlFileEntry.getExpirationDate(),
-				dlFileEntry.getReviewDate(), serviceContext);
+				file, null, file.length(), dlFileEntry.getDisplayDate(),
+				dlFileEntry.getExpirationDate(), dlFileEntry.getReviewDate(),
+				serviceContext);
 		}
 		else {
 			Repository repository = _portletFileRepository.addPortletRepository(
@@ -328,7 +332,7 @@ public class ContactsCSVHelper {
 				repository.getDlFolderId(), fileName, ContentTypes.TEXT_CSV,
 				file.getName(), fileName, repository.getDescription(), null,
 				DLFileEntryTypeConstants.FILE_ENTRY_TYPE_ID_ALL, null, file,
-				null, file.length(), null, null, serviceContext);
+				null, file.length(), null, null, null, serviceContext);
 		}
 
 		return dlFileEntry.getLatestFileVersion(true);

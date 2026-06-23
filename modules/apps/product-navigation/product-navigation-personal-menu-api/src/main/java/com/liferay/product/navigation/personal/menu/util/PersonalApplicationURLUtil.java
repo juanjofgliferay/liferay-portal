@@ -30,14 +30,14 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.FriendlyURLNormalizerUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.product.navigation.personal.menu.configuration.PersonalMenuConfiguration;
 import com.liferay.product.navigation.personal.menu.configuration.PersonalMenuConfigurationRegistry;
 
-import javax.portlet.PortletRequest;
+import jakarta.portlet.PortletRequest;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
@@ -135,7 +135,8 @@ public class PersonalApplicationURLUtil {
 		LiferayPortletURL liferayPortletURL = PortletURLFactoryUtil.create(
 			httpServletRequest, portletId, layout, PortletRequest.RENDER_PHASE);
 
-		String backURL = ParamUtil.getString(httpServletRequest, "currentURL");
+		String backURL = ParamUtil.getString(
+			httpServletRequest, "currentURL", themeDisplay.getURLCurrent());
 
 		liferayPortletURL.setParameter("backURL", backURL);
 
@@ -159,7 +160,7 @@ public class PersonalApplicationURLUtil {
 					group.getCtCollectionId())) {
 
 			Layout layout = LayoutLocalServiceUtil.addLayout(
-				userId, group.getGroupId(), privateLayout,
+				null, userId, group.getGroupId(), privateLayout,
 				LayoutConstants.DEFAULT_PARENT_LAYOUT_ID,
 				PropsValues.CONTROL_PANEL_LAYOUT_NAME, StringPool.BLANK,
 				StringPool.BLANK, LayoutConstants.TYPE_PORTLET, true, true,
@@ -171,7 +172,7 @@ public class PersonalApplicationURLUtil {
 			layoutTypePortlet.setLayoutTemplateId(
 				userId, "1_column_dynamic", false);
 
-			return LayoutLocalServiceUtil.updateLayout(
+			return LayoutLocalServiceUtil.updateTypeSettings(
 				layout.getGroupId(), layout.isPrivateLayout(),
 				layout.getLayoutId(), layout.getTypeSettings());
 		}

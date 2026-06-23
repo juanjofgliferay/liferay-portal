@@ -12,6 +12,7 @@ import com.liferay.asset.kernel.model.AssetVocabularyConstants;
 import com.liferay.asset.kernel.service.AssetCategoryLocalServiceUtil;
 import com.liferay.asset.kernel.service.AssetVocabularyLocalServiceUtil;
 import com.liferay.asset.kernel.service.persistence.AssetEntryQuery;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.CharPool;
 import com.liferay.portal.kernel.search.BaseSearcher;
 import com.liferay.portal.kernel.search.BooleanClauseOccur;
@@ -20,11 +21,10 @@ import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.Query;
 import com.liferay.portal.kernel.search.SearchContext;
+import com.liferay.portal.kernel.search.StringQuery;
 import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.search.filter.QueryFilter;
 import com.liferay.portal.kernel.search.filter.TermsFilter;
-import com.liferay.portal.kernel.search.generic.BooleanQueryImpl;
-import com.liferay.portal.kernel.search.generic.StringQuery;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -89,7 +89,7 @@ public class AssetSearcher extends BaseSearcher {
 			return;
 		}
 
-		BooleanQuery keywordsQuery = new BooleanQueryImpl();
+		BooleanQuery keywordsQuery = new BooleanQuery();
 
 		for (String keyword : allKeywords) {
 			if (keyword.contains(" ")) {
@@ -143,7 +143,7 @@ public class AssetSearcher extends BaseSearcher {
 			return;
 		}
 
-		BooleanQuery keywordsQuery = new BooleanQueryImpl();
+		BooleanQuery keywordsQuery = new BooleanQuery();
 
 		for (String keyword : anyKeywords) {
 			if (keyword.contains(" ")) {
@@ -251,7 +251,7 @@ public class AssetSearcher extends BaseSearcher {
 			return;
 		}
 
-		BooleanQuery keywordsQuery = new BooleanQueryImpl();
+		BooleanQuery keywordsQuery = new BooleanQuery();
 
 		for (String keyword : notAllKeywords) {
 			if (keyword.contains(" ")) {
@@ -305,7 +305,7 @@ public class AssetSearcher extends BaseSearcher {
 			return;
 		}
 
-		BooleanQuery keywordsQuery = new BooleanQueryImpl();
+		BooleanQuery keywordsQuery = new BooleanQuery();
 
 		for (String keyword : notAnyKeywords) {
 			if (keyword.contains(" ")) {
@@ -466,40 +466,37 @@ public class AssetSearcher extends BaseSearcher {
 	private long[] _filterCategoryIdsByVisibilityType(
 		long[] assetCategoryIds, String fieldName) {
 
-		List<Long> filteredCategoryIds = new ArrayList<>();
+		return ArrayUtil.toLongArray(
+			TransformUtil.transformToList(
+				assetCategoryIds,
+				assetCategoryId -> {
+					AssetCategory assetCategory =
+						AssetCategoryLocalServiceUtil.fetchAssetCategory(
+							assetCategoryId);
 
-		for (long assetCategoryId : assetCategoryIds) {
-			AssetCategory assetCategory =
-				AssetCategoryLocalServiceUtil.fetchAssetCategory(
-					assetCategoryId);
+					if (assetCategory == null) {
+						return null;
+					}
 
-			if (assetCategory == null) {
-				continue;
-			}
+					AssetVocabulary assetVocabulary =
+						AssetVocabularyLocalServiceUtil.fetchAssetVocabulary(
+							assetCategory.getVocabularyId());
 
-			AssetVocabulary assetVocabulary =
-				AssetVocabularyLocalServiceUtil.fetchAssetVocabulary(
-					assetCategory.getVocabularyId());
+					if ((assetVocabulary == null) ||
+						((assetVocabulary.getVisibilityType() ==
+							AssetVocabularyConstants.
+								VISIBILITY_TYPE_INTERNAL) &&
+						 Objects.equals(fieldName, Field.ASSET_CATEGORY_IDS)) ||
+						((assetVocabulary.getVisibilityType() ==
+							AssetVocabularyConstants.VISIBILITY_TYPE_PUBLIC) &&
+						 Objects.equals(
+							 fieldName, Field.ASSET_INTERNAL_CATEGORY_IDS))) {
 
-			if ((assetVocabulary == null) ||
-				((assetVocabulary.getVisibilityType() ==
-					AssetVocabularyConstants.VISIBILITY_TYPE_INTERNAL) &&
-				 Objects.equals(fieldName, Field.ASSET_CATEGORY_IDS))) {
+						return null;
+					}
 
-				continue;
-			}
-
-			if ((assetVocabulary.getVisibilityType() ==
-					AssetVocabularyConstants.VISIBILITY_TYPE_PUBLIC) &&
-				Objects.equals(fieldName, Field.ASSET_INTERNAL_CATEGORY_IDS)) {
-
-				continue;
-			}
-
-			filteredCategoryIds.add(assetCategoryId);
-		}
-
-		return ArrayUtil.toArray(filteredCategoryIds.toArray(new Long[0]));
+					return assetCategoryId;
+				}));
 	}
 
 	private BooleanFilter _getCategoryIdsBooleanFilter(

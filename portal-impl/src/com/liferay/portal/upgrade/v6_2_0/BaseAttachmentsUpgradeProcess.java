@@ -454,7 +454,7 @@ public abstract class BaseAttachmentsUpgradeProcess extends UpgradeProcess {
 
 			try (ResultSet resultSet = preparedStatement.executeQuery()) {
 				while (resultSet.next()) {
-					return resultSet.getLong(1);
+					return resultSet.getLong("folderId");
 				}
 			}
 		}
@@ -481,7 +481,7 @@ public abstract class BaseAttachmentsUpgradeProcess extends UpgradeProcess {
 
 			try (ResultSet resultSet = preparedStatement.executeQuery()) {
 				while (resultSet.next()) {
-					return resultSet.getLong(1);
+					return resultSet.getLong("repositoryId");
 				}
 			}
 		}
@@ -603,7 +603,7 @@ public abstract class BaseAttachmentsUpgradeProcess extends UpgradeProcess {
 			}
 
 			try {
-				DLStoreUtil.deleteDirectory(
+				DLStoreUtil.deleteFile(
 					companyId, CompanyConstants.SYSTEM, attachment);
 			}
 			catch (Exception exception) {

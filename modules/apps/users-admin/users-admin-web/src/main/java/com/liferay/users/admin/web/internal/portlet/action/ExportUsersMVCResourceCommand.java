@@ -32,11 +32,16 @@ import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.ProgressTracker;
+import com.liferay.portal.kernel.util.PropsValues;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.users.admin.constants.UsersAdminPortletKeys;
 import com.liferay.users.admin.search.UserSearch;
 import com.liferay.users.admin.search.UserSearchTerms;
+
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
 
 import java.io.Serializable;
 
@@ -47,10 +52,6 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 
-import javax.portlet.PortletURL;
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
-
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -60,7 +61,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + UsersAdminPortletKeys.USERS_ADMIN,
+		"jakarta.portlet.name=" + UsersAdminPortletKeys.USERS_ADMIN,
 		"mvc.command.name=/users_admin/export_users"
 	},
 	service = MVCResourceCommand.class
@@ -200,6 +201,12 @@ public class ExportUsersMVCResourceCommand extends BaseMVCResourceCommand {
 
 		if (userGroupId > 0) {
 			params.put("usersUserGroups", Long.valueOf(userGroupId));
+		}
+
+		if (params.isEmpty() && Validator.isNull(searchTerms.getKeywords())) {
+			return _userLocalService.getUsers(
+				themeDisplay.getCompanyId(), searchTerms.getStatus(),
+				QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
 		}
 
 		if (searchTerms.isAdvancedSearch()) {

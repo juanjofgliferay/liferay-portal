@@ -1,23 +1,18 @@
 import * as API from 'shared/api';
 import * as data from 'test/data';
-import {
-	CredentialTypes,
-	DataSourceStates,
-	DataSourceStatuses
-} from 'shared/util/constants';
 import {DataSource} from 'shared/util/records';
 import {
 	dataSourceRedirectFn,
 	getDataSourceDisplayObject,
 	getIdsFromConfiguration,
 	getServiceAlertConfig,
-	hasLegacyDXPConnection,
 	isDataSourceValid,
 	STATUS_DISPLAY,
 	validAnalyticsConfig,
 	validateUniqueName,
 	validContactsConfig
 } from '../data-sources';
+import {DataSourceStates, DataSourceStatuses} from 'shared/util/constants';
 import {fromJS} from 'immutable';
 import {noop, range} from 'lodash';
 import {Routes, toRoute} from 'shared/util/router';
@@ -180,7 +175,11 @@ describe('data-sources', () => {
 				})
 			);
 
-			expect(result).toMatchSnapshot();
+			expect(result).toMatchObject({
+				display: 'warning',
+				label: 'Inactive'
+			});
+			expect(Array.isArray(result.message)).toBe(true);
 		});
 
 		it('should return the disconnected state display object if the state is DISCONNECTED', () => {
@@ -191,33 +190,10 @@ describe('data-sources', () => {
 				})
 			);
 
-			expect(result).toMatchSnapshot();
-		});
-
-		xit('should return the "action needed" state display object if the data source state is in oAuth1 Authentication', () => {
-			const result = getDataSourceDisplayObject(
-				getMockLiferayDataSource(1, {
-					credentials: {type: CredentialTypes.OAuth1}
-				}),
-				true
-			);
-
-			expect(result).toEqual(
-				STATUS_DISPLAY[DataSourceStates.ActionNeeded]
-			);
-		});
-
-		xit('should return the "action needed" state display object if the data source state is in oAuth2 Authentication', () => {
-			const result = getDataSourceDisplayObject(
-				getMockLiferayDataSource(1, {
-					credentials: {type: CredentialTypes.OAuth2}
-				}),
-				true
-			);
-
-			expect(result).toEqual(
-				STATUS_DISPLAY[DataSourceStates.ActionNeeded]
-			);
+			expect(result).toMatchObject({
+				display: 'secondary',
+				label: 'Disconnected'
+			});
 		});
 	});
 
@@ -239,59 +215,28 @@ describe('data-sources', () => {
 
 	describe('getServiceAlertConfig', () => {
 		it('should return a service permission related alert props', () => {
-			expect(getServiceAlertConfig(403)).toMatchSnapshot();
+			const result = getServiceAlertConfig(403);
+
+			expect(result).toMatchObject({
+				alertType: 'WARNING',
+				timeout: 7000
+			});
+			expect(typeof result.message).toBe('string');
+			expect(result.message.length).toBeGreaterThan(0);
 		});
 
 		it('should return a service unresponsive related alert props', () => {
-			expect(getServiceAlertConfig(404)).toMatchSnapshot();
+			const result = getServiceAlertConfig(404);
+
+			expect(result).toMatchObject({
+				alertType: 'WARNING',
+				timeout: 7000
+			});
+			expect(typeof result.message).toBe('string');
+			expect(result.message.length).toBeGreaterThan(0);
 		});
 	});
 
-	describe('hasLegacyDXPConnection', () => {
-		it('should return true if the DataSource has a credential type other than "token"', () => {
-			expect(
-				hasLegacyDXPConnection(
-					getMockLiferayDataSource(0, {
-						credentials: {type: CredentialTypes.OAuth1}
-					})
-				)
-			).toBeTrue();
-			expect(
-				hasLegacyDXPConnection(
-					getMockLiferayDataSource(0, {
-						credentials: {type: CredentialTypes.OAuth2}
-					})
-				)
-			).toBeTrue();
-		});
-
-		it('should return false if the DataSource type is not Liferay', () => {
-			expect(
-				hasLegacyDXPConnection(
-					data.getImmutableMock(DataSource, data.mockCSVDataSource)
-				)
-			).toBeFalse();
-
-			expect(
-				hasLegacyDXPConnection(
-					data.getImmutableMock(
-						DataSource,
-						data.mockSalesforceDataSource
-					)
-				)
-			).toBeFalse();
-		});
-
-		it('should return false if the Liferay DataSource has a credential type of "token"', () => {
-			expect(
-				hasLegacyDXPConnection(
-					getMockLiferayDataSource(0, {
-						credentials: {type: CredentialTypes.Token}
-					})
-				)
-			).toBeFalse();
-		});
-	});
 	describe('validateUniqueName', () => {
 		it('should return a success assertion if the data source name does NOT already exist', () => {
 			expect.assertions(1);
@@ -330,7 +275,9 @@ describe('data-sources', () => {
 					groupId: '23',
 					value: `${existingDataSourceName}1`
 				})
-			).rejects.toMatchSnapshot();
+			).resolves.toEqual(
+				'A Data Source already exists with that name. Please enter a different name.'
+			);
 		});
 	});
 

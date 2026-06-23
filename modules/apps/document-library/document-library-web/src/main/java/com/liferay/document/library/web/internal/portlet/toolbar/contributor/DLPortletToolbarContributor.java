@@ -6,12 +6,12 @@
 package com.liferay.document.library.web.internal.portlet.toolbar.contributor;
 
 import com.liferay.document.library.constants.DLPortletKeys;
+import com.liferay.document.library.kernel.service.DLAppLocalService;
 import com.liferay.document.library.portlet.toolbar.contributor.DLPortletToolbarContributorContext;
-import com.liferay.document.library.web.internal.portlet.toolbar.contributor.helper.DLPortletToolbarContributorHelper;
 import com.liferay.document.library.web.internal.portlet.toolbar.contributor.helper.MenuItemProvider;
+import com.liferay.document.library.web.internal.portlet.toolbar.contributor.util.DLPortletToolbarContributorUtil;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerList;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFactory;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManager;
 import com.liferay.portal.kernel.portlet.toolbar.contributor.BasePortletToolbarContributor;
 import com.liferay.portal.kernel.portlet.toolbar.contributor.PortletToolbarContributor;
 import com.liferay.portal.kernel.repository.model.Folder;
@@ -20,12 +20,12 @@ import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
@@ -40,7 +40,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY,
+		"jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY,
 		"mvc.render.command.name=-",
 		"mvc.render.command.name=/document_library/view",
 		"mvc.render.command.name=/document_library/view_folder"
@@ -68,14 +68,14 @@ public class DLPortletToolbarContributor extends BasePortletToolbarContributor {
 			WebKeys.THEME_DISPLAY);
 
 		if (_isDLPortlet(themeDisplay) &&
-			!_dlPortletToolbarContributorHelper.isShowActionsEnabled(
-				themeDisplay, portletRequest)) {
+			!DLPortletToolbarContributorUtil.isShowActionsEnabled(
+				themeDisplay)) {
 
 			return null;
 		}
 
-		Folder folder = _dlPortletToolbarContributorHelper.getFolder(
-			themeDisplay, portletRequest);
+		Folder folder = DLPortletToolbarContributorUtil.getFolder(
+			_dlAppLocalService, themeDisplay, portletRequest);
 
 		List<MenuItem> menuItems = new ArrayList<>();
 
@@ -119,12 +119,10 @@ public class DLPortletToolbarContributor extends BasePortletToolbarContributor {
 				portletResponse);
 		}
 
-		if (_featureFlagManager.isEnabled("LPS-196648")) {
-			_add(
-				menuItems,
-				_menuItemProvider.getAICreatorMenuItem(
-					folder, themeDisplay, portletRequest));
-		}
+		_add(
+			menuItems,
+			_menuItemProvider.getAICreatorMenuItem(
+				folder, themeDisplay, portletRequest));
 
 		MenuItem lastExtensionMenuItem = null;
 
@@ -173,15 +171,11 @@ public class DLPortletToolbarContributor extends BasePortletToolbarContributor {
 		return false;
 	}
 
+	@Reference
+	private DLAppLocalService _dlAppLocalService;
+
 	private ServiceTrackerList<DLPortletToolbarContributorContext>
 		_dlPortletToolbarContributorContexts;
-
-	@Reference
-	private DLPortletToolbarContributorHelper
-		_dlPortletToolbarContributorHelper;
-
-	@Reference
-	private FeatureFlagManager _featureFlagManager;
 
 	@Reference
 	private MenuItemProvider _menuItemProvider;

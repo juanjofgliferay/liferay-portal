@@ -1,0 +1,82 @@
+@import 'atlas-custom-properties/_variables';
+
+.form-rule-builder-timeline {
+	margin: 0;
+
+	&.timeline-first {
+		.timeline-item:first-child:before {
+			top: 31px;
+		}
+	}
+
+	.timeline-item {
+		color: $gray-500;
+		position: relative;
+
+		&:hover > .container-trash {
+			display: block;
+		}
+
+		&:not(:nth-of-type(1)) .timeline-icon {
+			background-color: $gray-600;
+		}
+
+		.timeline-icon {
+			border: 2px solid $gray-600;
+			margin-right: 2px;
+		}
+
+		.container-trash {
+			cursor: pointer;
+			display: none;
+			padding: 10px;
+			position: absolute;
+			right: 10px;
+			top: 13px;
+
+			&:hover {
+				color: $blue-l1;
+			}
+		}
+
+		.timeline-dropdown {
+			position: absolute;
+			right: 4px;
+			top: 4px;
+		}
+
+		.operator {
+			font-size: 14px;
+			margin-top: 10px;
+
+			.panel-body {
+				padding: 5px 17px;
+			}
+		}
+	}
+
+	.timeline-increment-action-button {
+		&:after {
+			content: '';
+			display: block;
+			height: 22px;
+		}
+
+		.timeline-increment {
+			left: 1px;
+		}
+	}
+
+	.form-group,
+	.form-group-autofit {
+		margin: 0;
+
+		label {
+			align-self: stretch;
+		}
+	}
+
+	.form-group-item:not(.form-group-item-shrink) {
+		max-width: 200px;
+	}
+}

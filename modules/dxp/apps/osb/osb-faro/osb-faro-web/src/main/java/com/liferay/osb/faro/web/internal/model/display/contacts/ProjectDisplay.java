@@ -7,22 +7,15 @@ package com.liferay.osb.faro.web.internal.model.display.contacts;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
-import com.liferay.osb.faro.constants.FaroProjectConstants;
-import com.liferay.osb.faro.engine.client.CerebroEngineClient;
-import com.liferay.osb.faro.engine.client.ContactsEngineClient;
 import com.liferay.osb.faro.model.FaroProject;
 import com.liferay.osb.faro.model.FaroUser;
-import com.liferay.osb.faro.provisioning.client.ProvisioningClient;
 import com.liferay.osb.faro.provisioning.client.model.OSBAccountEntry;
-import com.liferay.osb.faro.service.FaroProjectLocalServiceUtil;
+import com.liferay.osb.faro.provisioning.client.model.display.main.FaroSubscriptionDisplay;
 import com.liferay.osb.faro.service.FaroUserLocalServiceUtil;
-import com.liferay.osb.faro.web.internal.model.display.main.FaroSubscriptionDisplay;
 import com.liferay.osb.faro.web.internal.util.JSONUtil;
 import com.liferay.osb.faro.web.internal.util.TimeZoneUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.Time;
-import com.liferay.portal.kernel.util.Validator;
 
 import java.util.Date;
 import java.util.List;
@@ -38,18 +31,6 @@ public class ProjectDisplay {
 
 	public ProjectDisplay(FaroProject faroProject) {
 		this(faroProject, null);
-	}
-
-	public ProjectDisplay(
-		FaroProject faroProject, CerebroEngineClient cerebroEngineClient,
-		ContactsEngineClient contactsEngineClient,
-		ProvisioningClient provisioningClient) {
-
-		this(faroProject);
-
-		_faroSubscriptionDisplay = getFaroSubscriptionDisplay(
-			faroProject, cerebroEngineClient, contactsEngineClient,
-			provisioningClient);
 	}
 
 	public ProjectDisplay(FaroProject faroProject, String friendlyURL) {
@@ -109,12 +90,20 @@ public class ProjectDisplay {
 		return _corpProjectUuid;
 	}
 
+	public String getDataSourceAccessToken() {
+		return _dataSourceAccessToken;
+	}
+
 	public FaroSubscriptionDisplay getFaroSubscriptionDisplay() {
 		return _faroSubscriptionDisplay;
 	}
 
 	public String getState() {
 		return _state;
+	}
+
+	public void setDataSourceAccessToken(String dataSourceAccessToken) {
+		_dataSourceAccessToken = dataSourceAccessToken;
 	}
 
 	public void setFriendlyURL(String friendlyURL) {
@@ -137,64 +126,13 @@ public class ProjectDisplay {
 		}
 	}
 
-	protected FaroSubscriptionDisplay getFaroSubscriptionDisplay(
-		FaroProject faroProject, CerebroEngineClient cerebroEngineClient,
-		ContactsEngineClient contactsEngineClient,
-		ProvisioningClient provisioningClient) {
-
-		FaroSubscriptionDisplay faroSubscriptionDisplay = null;
-
-		if (Validator.isNotNull(faroProject.getCorpProjectUuid()) &&
-			(Validator.isNull(faroProject.getSubscription()) ||
-			 ((System.currentTimeMillis() - faroProject.getModifiedTime()) >
-				 Time.DAY))) {
-
-			try {
-				faroSubscriptionDisplay = new FaroSubscriptionDisplay(
-					provisioningClient.getOSBAccountEntry(
-						faroProject.getCorpProjectUuid()));
-
-				FaroProjectLocalServiceUtil.updateSubscription(
-					faroProject.getFaroProjectId(),
-					JSONUtil.writeValueAsString(faroSubscriptionDisplay));
-			}
-			catch (Exception exception) {
-				_log.error(exception);
-			}
-		}
-
-		if (faroSubscriptionDisplay == null) {
-			try {
-				faroSubscriptionDisplay = JSONUtil.readValue(
-					faroProject.getSubscription(),
-					FaroSubscriptionDisplay.class);
-			}
-			catch (Exception exception) {
-				_log.error(exception);
-
-				return null;
-			}
-		}
-
-		try {
-			faroSubscriptionDisplay.setCounts(
-				faroProject, cerebroEngineClient, contactsEngineClient);
-		}
-		catch (Exception exception) {
-			_log.error(exception);
-
-			_state = FaroProjectConstants.STATE_UNAVAILABLE;
-		}
-
-		return faroSubscriptionDisplay;
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(ProjectDisplay.class);
 
 	private String _accountKey;
 	private String _accountName;
 	private String _corpProjectName;
 	private String _corpProjectUuid;
+	private String _dataSourceAccessToken;
 	private FaroSubscriptionDisplay _faroSubscriptionDisplay;
 	private String _friendlyURL;
 	private long _groupId;

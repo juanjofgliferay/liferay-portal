@@ -5,6 +5,22 @@
 
 export const defaultLanguageId = Liferay.ThemeDisplay.getDefaultLanguageId();
 
+export const DEFAULT_VALUE_SUPPORTED_BUSINESS_TYPES = [
+	'Boolean',
+	'Date',
+	'DateTime',
+	'Decimal',
+	'EmailAddress',
+	'Integer',
+	'LongInteger',
+	'LongText',
+	'PhoneNumber',
+	'Picklist',
+	'PrecisionDecimal',
+	'RichText',
+	'Text',
+];
+
 export const HEADERS = new Headers({
 	'Accept': 'application/json',
 	'Accept-Language': Liferay.ThemeDisplay.getBCP47LanguageId(),

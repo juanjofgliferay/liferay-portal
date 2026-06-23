@@ -8,10 +8,10 @@ package com.liferay.commerce.internal.model.listener;
 import com.liferay.commerce.constants.CommerceOrderConstants;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.model.CommerceOrderItem;
-import com.liferay.commerce.order.CommerceOrderThreadLocal;
 import com.liferay.commerce.order.engine.CommerceOrderEngine;
 import com.liferay.commerce.service.CommerceOrderItemLocalService;
 import com.liferay.commerce.service.CommerceOrderLocalService;
+import com.liferay.commerce.util.CommerceOrderThreadLocal;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -38,32 +38,6 @@ public class CommerceOrderItemModelListener
 	extends BaseModelListener<CommerceOrderItem> {
 
 	@Override
-	public void onAfterCreate(CommerceOrderItem commerceOrderItem) {
-		try {
-			CommerceOrder commerceOrder = commerceOrderItem.getCommerceOrder();
-
-			boolean commerceOrderShippable = commerceOrder.isShippable();
-
-			if (!commerceOrderShippable) {
-				boolean commerceOrderItemShippable =
-					commerceOrderItem.isShippable();
-
-				if (commerceOrderItemShippable) {
-					commerceOrder.setShippable(true);
-
-					_commerceOrderLocalService.updateCommerceOrder(
-						commerceOrder);
-				}
-			}
-		}
-		catch (PortalException portalException) {
-			if (_log.isWarnEnabled()) {
-				_log.warn(portalException);
-			}
-		}
-	}
-
-	@Override
 	public void onAfterRemove(CommerceOrderItem commerceOrderItem) {
 		try {
 			if (CommerceOrderThreadLocal.isDeleteInProcess()) {
@@ -77,6 +51,13 @@ public class CommerceOrderItemModelListener
 					public CommerceOrder call() throws Exception {
 						CommerceOrder commerceOrder =
 							commerceOrderItem.getCommerceOrder();
+
+						if (commerceOrder.isManuallyAdjusted() &&
+							commerceOrder.isOpen()) {
+
+							commerceOrder.setManuallyAdjusted(false);
+						}
+
 						boolean shippable = false;
 
 						for (CommerceOrderItem curCommerceOrderItem :
@@ -119,6 +100,13 @@ public class CommerceOrderItemModelListener
 		try {
 			CommerceOrder commerceOrder = commerceOrderItem.getCommerceOrder();
 
+			if (commerceOrder.isManuallyAdjusted() && commerceOrder.isOpen()) {
+				commerceOrder.setManuallyAdjusted(false);
+
+				commerceOrder = _commerceOrderLocalService.updateCommerceOrder(
+					commerceOrder);
+			}
+
 			if ((commerceOrder.getOrderStatus() ==
 					CommerceOrderConstants.ORDER_STATUS_PARTIALLY_SHIPPED) ||
 				(commerceOrder.getOrderStatus() ==
@@ -147,12 +135,12 @@ public class CommerceOrderItemModelListener
 					BigDecimal commerceShippedQuantity =
 						customerCommerceOrderItem.getShippedQuantity();
 
-					customerCommerceOrderItem.setShippedQuantity(
+					BigDecimal shippedQuantityBalance =
 						commerceShippedQuantity.subtract(
-							originalShippedQuantity
-						).add(
-							newShippedQuantity
-						));
+							originalShippedQuantity);
+
+					customerCommerceOrderItem.setShippedQuantity(
+						shippedQuantityBalance.add(newShippedQuantity));
 
 					update = true;
 				}

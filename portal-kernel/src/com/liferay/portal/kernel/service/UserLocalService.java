@@ -17,6 +17,7 @@ import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.UserGroupRole;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
@@ -27,10 +28,10 @@ import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.service.change.tracking.CTService;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
+import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.Transactional;
-import com.liferay.portal.kernel.util.KeyValuePair;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -562,10 +563,8 @@ public interface UserLocalService
 	 * the confirmation email.
 	 *
 	 * @param user the user
-	 * @param serviceContext the service context to be applied. You can specify
-	 an unencrypted custom password for the user via attribute
-	 <code>passwordUnencrypted</code>. You automatically generate a
-	 password for the user by setting attribute
+	 * @param serviceContext the service context to be applied. You
+	 automatically generate a password for the user by setting attribute
 	 <code>autoPassword</code> to <code>true</code>. You can send a
 	 confirmation email to the user by setting attribute
 	 <code>sendEmail</code> to <code>true</code>.
@@ -588,20 +587,6 @@ public interface UserLocalService
 	 */
 	@Transactional(enabled = false)
 	public User createUser(long userId);
-
-	/**
-	 * Decrypts the user's primary key and password from their encrypted forms.
-	 * Used for decrypting a user's credentials from the values stored in an
-	 * automatic login cookie.
-	 *
-	 * @param companyId the primary key of the user's company
-	 * @param name the encrypted primary key of the user
-	 * @param password the encrypted password of the user
-	 * @return the user's primary key and password
-	 */
-	public KeyValuePair decryptUserId(
-			long companyId, String name, String password)
-		throws PortalException;
 
 	public void deleteGroupUser(long groupId, long userId);
 
@@ -681,6 +666,7 @@ public interface UserLocalService
 	 * @throws PortalException
 	 */
 	@Indexable(type = IndexableType.DELETE)
+	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
 	public User deleteUser(User user) throws PortalException;
 
 	/**
@@ -826,22 +812,9 @@ public interface UserLocalService
 	 * @param facebookId the user's Facebook ID
 	 * @return the user with the Facebook ID, or <code>null</code> if a user
 	 with the Facebook ID could not be found
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
 	 */
-	@Deprecated
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public User fetchUserByFacebookId(long companyId, long facebookId);
-
-	/**
-	 * Returns the user with the Google user ID.
-	 *
-	 * @param companyId the primary key of the user's company
-	 * @param googleUserId the user's Google user ID
-	 * @return the user with the Google user ID, or <code>null</code> if a user
-	 with the Google user ID could not be found
-	 */
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public User fetchUserByGoogleUserId(long companyId, String googleUserId);
 
 	/**
 	 * Returns the user with the primary key.
@@ -852,19 +825,6 @@ public interface UserLocalService
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public User fetchUserById(long userId);
-
-	/**
-	 * Returns the user with the OpenID.
-	 *
-	 * @param companyId the primary key of the user's company
-	 * @param openId the user's OpenID
-	 * @return the user with the OpenID, or <code>null</code> if a user with
-	 the OpenID could not be found
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public User fetchUserByOpenId(long companyId, String openId);
 
 	/**
 	 * Returns the user with the portrait ID.
@@ -1385,30 +1345,6 @@ public interface UserLocalService
 		throws PortalException;
 
 	/**
-	 * Returns the user with the Facebook ID.
-	 *
-	 * @param companyId the primary key of the user's company
-	 * @param facebookId the user's Facebook ID
-	 * @return the user with the Facebook ID
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public User getUserByFacebookId(long companyId, long facebookId)
-		throws PortalException;
-
-	/**
-	 * Returns the user with the Google user ID.
-	 *
-	 * @param companyId the primary key of the user's company
-	 * @param googleUserId the user's Google user ID
-	 * @return the user with the Google user ID
-	 */
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public User getUserByGoogleUserId(long companyId, String googleUserId)
-		throws PortalException;
-
-	/**
 	 * Returns the user with the primary key.
 	 *
 	 * @param userId the primary key of the user
@@ -1426,28 +1362,6 @@ public interface UserLocalService
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public User getUserById(long companyId, long userId) throws PortalException;
-
-	/**
-	 * Returns the user with the OpenID.
-	 *
-	 * @param companyId the primary key of the user's company
-	 * @param openId the user's OpenID
-	 * @return the user with the OpenID
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public User getUserByOpenId(long companyId, String openId)
-		throws PortalException;
-
-	/**
-	 * Returns the user with the portrait ID.
-	 *
-	 * @param portraitId the user's portrait ID
-	 * @return the user with the portrait ID
-	 */
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public User getUserByPortraitId(long portraitId) throws PortalException;
 
 	/**
 	 * Returns the user with the screen name.
@@ -1546,6 +1460,15 @@ public interface UserLocalService
 	public List<User> getUsers(
 		long companyId, int status, int start, int end,
 		OrderByComparator<User> orderByComparator);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<User> getUsersByRoleId(long roleId, int start, int end)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<User> getUsersByRoleName(
+			long companyId, String roleName, int start, int end)
+		throws PortalException;
 
 	/**
 	 * Returns the number of users.
@@ -1870,6 +1793,10 @@ public interface UserLocalService
 		LinkedHashMap<String, Object> params, boolean andSearch);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int searchCountBySocial(
+		long companyId, long[] groupIds, long[] userGroupIds, String keywords);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public Map<Long, Integer> searchCounts(
 		long companyId, int status, long[] groupIds);
 
@@ -1915,22 +1842,12 @@ public interface UserLocalService
 			User user, String emailAddress, ServiceContext serviceContext)
 		throws PortalException;
 
-	/**
-	 * Sends the password email to the user with the email address. The content
-	 * of this email can be specified in <code>portal.properties</code> with the
-	 * <code>admin.email.password</code> keys.
-	 *
-	 * @param companyId the primary key of the user's company
-	 * @param emailAddress the user's email address
-	 * @param fromName the name of the individual that the email should be from
-	 * @param fromAddress the address of the individual that the email should be
-	 from
-	 * @param subject the email subject. If <code>null</code>, the subject
-	 specified in <code>portal.properties</code> will be used.
-	 * @param body the email body. If <code>null</code>, the body specified in
-	 <code>portal.properties</code> will be used.
-	 * @param serviceContext the service context to be applied
-	 */
+	public boolean sendEmailUserCreationAttempt(
+			long companyId, String emailAddress, String fromName,
+			String fromAddress, String subject, String body,
+			ServiceContext serviceContext)
+		throws PortalException;
+
 	public boolean sendPassword(
 			long companyId, String emailAddress, String fromName,
 			String fromAddress, String subject, String body,
@@ -2002,6 +1919,12 @@ public interface UserLocalService
 	 contains a reset link
 	 */
 	public boolean sendPasswordByUserId(long userId) throws PortalException;
+
+	public boolean sendPasswordLockout(
+			long companyId, String emailAddress, String fromName,
+			String fromAddress, String subject, String body,
+			ServiceContext serviceContext)
+		throws PortalException;
 
 	public void setGroupUsers(long groupId, long[] userIds);
 
@@ -2177,26 +2100,14 @@ public interface UserLocalService
 			long userId, boolean emailAddressVerified)
 		throws PortalException;
 
-	/**
-	 * Updates the user's Facebook ID.
-	 *
-	 * @param userId the primary key of the user
-	 * @param facebookId the user's new Facebook ID
-	 * @return the user
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public User updateFacebookId(long userId, long facebookId)
+	@Indexable(type = IndexableType.REINDEX)
+	public User updateExternalReferenceCode(
+			long userId, String externalReferenceCode)
 		throws PortalException;
 
-	/**
-	 * Updates the user's Google user ID.
-	 *
-	 * @param userId the primary key of the user
-	 * @param googleUserId the new Google user ID
-	 * @return the user
-	 */
-	public User updateGoogleUserId(long userId, String googleUserId)
+	@Indexable(type = IndexableType.REINDEX)
+	public User updateExternalReferenceCode(
+			User user, String externalReferenceCode)
 		throws PortalException;
 
 	/**
@@ -2268,6 +2179,10 @@ public interface UserLocalService
 	public User updateJobTitle(long userId, String jobTitle)
 		throws PortalException;
 
+	@CTAware(onProduction = true)
+	public User updateLanguageId(long userId, String languageId)
+		throws PortalException;
+
 	/**
 	 * Updates the user's last login with the current time and the IP address.
 	 *
@@ -2275,9 +2190,20 @@ public interface UserLocalService
 	 * @param loginIP the IP address the user logged in from
 	 * @return the user
 	 */
-	@CTAware(onProduction = true)
-	@Indexable(type = IndexableType.REINDEX)
+	@Indexable(
+		callbackKey = "com.liferay.portal.kernel.model.User#lastLoginDate",
+		type = IndexableType.REINDEX
+	)
+	@Transactional(enabled = false)
 	public User updateLastLogin(long userId, String loginIP)
+		throws PortalException;
+
+	@Indexable(
+		callbackKey = "com.liferay.portal.kernel.model.User#lastLoginDate",
+		type = IndexableType.REINDEX
+	)
+	@Transactional(enabled = false)
+	public User updateLastLogin(User user, String loginIP)
 		throws PortalException;
 
 	/**
@@ -2334,17 +2260,6 @@ public interface UserLocalService
 	@Indexable(type = IndexableType.REINDEX)
 	public User updateModifiedDate(long userId, Date modifiedDate)
 		throws PortalException;
-
-	/**
-	 * Updates the user's OpenID.
-	 *
-	 * @param userId the primary key of the user
-	 * @param openId the new OpenID
-	 * @return the user
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public User updateOpenId(long userId, String openId) throws PortalException;
 
 	/**
 	 * Sets the organizations that the user is in, removing and adding
@@ -2472,6 +2387,10 @@ public interface UserLocalService
 			long userId, int status, ServiceContext serviceContext)
 		throws PortalException;
 
+	public User updateStatus(
+			User user, int status, ServiceContext serviceContext)
+		throws PortalException;
+
 	/**
 	 * Updates the user.
 	 *
@@ -2573,3 +2492,4 @@ public interface UserLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:90030289

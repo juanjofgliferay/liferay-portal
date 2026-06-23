@@ -12,12 +12,12 @@ import com.liferay.portal.vulcan.dto.action.DTOActionProvider;
 import com.liferay.portal.vulcan.util.ActionUtil;
 import com.liferay.portal.vulcan.util.UriInfoUtil;
 
+import jakarta.annotation.Generated;
+
+import jakarta.ws.rs.core.UriInfo;
+
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.annotation.Generated;
-
-import javax.ws.rs.core.UriInfo;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -94,3 +94,4 @@ public class KeywordDTOActionProvider implements DTOActionProvider {
 	private ScopeChecker _scopeChecker;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1303572043

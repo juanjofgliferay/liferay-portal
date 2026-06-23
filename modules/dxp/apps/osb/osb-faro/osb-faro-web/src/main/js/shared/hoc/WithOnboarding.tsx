@@ -1,12 +1,12 @@
 import React, {useContext, useEffect} from 'react';
 import SitesDashboardQuery from 'shared/queries/SitesDashboardQuery';
-import withCurrentUser from './WithCurrentUser';
 import {close, modalTypes, open} from 'shared/actions/modals';
 import {compose} from 'redux';
 import {connect} from 'react-redux';
-import {graphql} from '@apollo/react-hoc';
+import {graphql} from '@apollo/client/react/hoc';
 import {isArray} from 'lodash';
 import {OnboardingContext} from 'shared/context/onboarding';
+import {useCurrentUser} from 'shared/hooks/useCurrentUser';
 import {User} from 'shared/util/records';
 
 const withOnboarding = (
@@ -17,37 +17,54 @@ const withOnboarding = (
 ) =>
 	compose<any>(
 		connect(null, {close, open}),
-		withCurrentUser,
 		graphql(SitesDashboardQuery, {options: {variables: {type: null}}})
-	)(({close, currentUser, data, groupId, open, ...otherProps}) => {
-		const {onboardingTriggered, setOnboardingTriggered} = useContext(
-			OnboardingContext
-		);
+	)(
+		({
+			close,
+			data,
+			groupId,
+			open,
+			...otherProps
+		}: {
+			close: () => void;
+			data: {dataSources?: unknown; loading: boolean};
+			groupId: string;
+			open: (
+				type: string,
+				props: {[key: string]: any},
+				options?: {closeOnBlur?: boolean}
+			) => void;
+			[key: string]: any;
+		}) => {
+			const {onboardingTriggered, setOnboardingTriggered} =
+				useContext(OnboardingContext);
+			const currentUser = useCurrentUser();
 
-		useEffect(() => {
-			const {dataSources, loading} = data;
+			useEffect(() => {
+				const {dataSources, loading} = data;
 
-			if (!onboardingTriggered && currentUser.isAdmin()) {
-				const triggerCondition =
-					!loading && isArray(dataSources) && !dataSources.length;
+				if (!onboardingTriggered && currentUser.isAdmin()) {
+					const triggerCondition =
+						!loading && isArray(dataSources) && !dataSources.length;
 
-				if (triggerCondition) {
-					open(modalTypes.ONBOARDING_MODAL, {
-						groupId,
-						onClose: close
-					});
-					setOnboardingTriggered();
+					if (triggerCondition) {
+						open(modalTypes.ONBOARDING_MODAL, {
+							groupId,
+							onClose: close
+						});
+						setOnboardingTriggered();
+					}
 				}
-			}
-		}, [data]);
+			}, [data]);
 
-		return (
-			<WrappedComponent
-				currentUser={currentUser}
-				groupId={groupId}
-				{...otherProps}
-			/>
-		);
-	});
+			return (
+				<WrappedComponent
+					currentUser={currentUser}
+					groupId={groupId}
+					{...otherProps}
+				/>
+			);
+		}
+	);
 
 export default withOnboarding;

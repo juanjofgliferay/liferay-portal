@@ -37,7 +37,7 @@ if (Validator.isNotNull(emailPasswordSentSubject) || Validator.isNotNull(emailPa
 
 	<liferay-frontend:edit-form-body>
 		<liferay-ui:tabs
-			names='<%= "general,email-from," + passwordChangedNotification + "password-reset-notification" %>'
+			names="general"
 			refresh="<%= false %>"
 		>
 			<liferay-ui:error key="emailFromAddress" message="please-enter-a-valid-email-address" />
@@ -102,23 +102,23 @@ if (Validator.isNotNull(emailPasswordSentSubject) || Validator.isNotNull(emailPa
 						</c:if>
 					</liferay-frontend:fieldset>
 				</liferay-ui:section>
+
+				<liferay-ui:section>
+					<div class="alert alert-info">
+						<liferay-ui:message key="enter-custom-values-or-leave-it-blank-to-use-the-default-portal-settings" />
+					</div>
+
+					<liferay-frontend:fieldset>
+						<liferay-frontend:email-notification-settings
+							emailBody="<%= emailPasswordResetBody %>"
+							emailDefinitionTerms="<%= LoginUtil.getEmailDefinitionTerms(renderRequest, emailFromAddress, emailFromName, true) %>"
+							emailParam="emailPasswordReset"
+							emailSubject="<%= emailPasswordResetSubject %>"
+							showEmailEnabled="<%= false %>"
+						/>
+					</liferay-frontend:fieldset>
+				</liferay-ui:section>
 			</c:if>
-
-			<liferay-ui:section>
-				<div class="alert alert-info">
-					<liferay-ui:message key="enter-custom-values-or-leave-it-blank-to-use-the-default-portal-settings" />
-				</div>
-
-				<liferay-frontend:fieldset>
-					<liferay-frontend:email-notification-settings
-						emailBody="<%= emailPasswordResetBody %>"
-						emailDefinitionTerms="<%= LoginUtil.getEmailDefinitionTerms(renderRequest, emailFromAddress, emailFromName, true) %>"
-						emailParam="emailPasswordReset"
-						emailSubject="<%= emailPasswordResetSubject %>"
-						showEmailEnabled="<%= false %>"
-					/>
-				</liferay-frontend:fieldset>
-			</liferay-ui:section>
 		</liferay-ui:tabs>
 	</liferay-frontend:edit-form-body>
 

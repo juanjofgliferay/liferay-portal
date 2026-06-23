@@ -8,13 +8,13 @@ package com.liferay.change.tracking.rest.client.dto.v1_0;
 import com.liferay.change.tracking.rest.client.function.UnsafeSupplier;
 import com.liferay.change.tracking.rest.client.serdes.v1_0.CTEntrySerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author David Truong
@@ -91,6 +91,94 @@ public class CTEntry implements Cloneable, Serializable {
 
 	protected Long ctCollectionId;
 
+	public String getCtCollectionName() {
+		return ctCollectionName;
+	}
+
+	public void setCtCollectionName(String ctCollectionName) {
+		this.ctCollectionName = ctCollectionName;
+	}
+
+	public void setCtCollectionName(
+		UnsafeSupplier<String, Exception> ctCollectionNameUnsafeSupplier) {
+
+		try {
+			ctCollectionName = ctCollectionNameUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String ctCollectionName;
+
+	public Status getCtCollectionStatus() {
+		return ctCollectionStatus;
+	}
+
+	public void setCtCollectionStatus(Status ctCollectionStatus) {
+		this.ctCollectionStatus = ctCollectionStatus;
+	}
+
+	public void setCtCollectionStatus(
+		UnsafeSupplier<Status, Exception> ctCollectionStatusUnsafeSupplier) {
+
+		try {
+			ctCollectionStatus = ctCollectionStatusUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Status ctCollectionStatus;
+
+	public Date getCtCollectionStatusDate() {
+		return ctCollectionStatusDate;
+	}
+
+	public void setCtCollectionStatusDate(Date ctCollectionStatusDate) {
+		this.ctCollectionStatusDate = ctCollectionStatusDate;
+	}
+
+	public void setCtCollectionStatusDate(
+		UnsafeSupplier<Date, Exception> ctCollectionStatusDateUnsafeSupplier) {
+
+		try {
+			ctCollectionStatusDate = ctCollectionStatusDateUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Date ctCollectionStatusDate;
+
+	public String getCtCollectionStatusUserName() {
+		return ctCollectionStatusUserName;
+	}
+
+	public void setCtCollectionStatusUserName(
+		String ctCollectionStatusUserName) {
+
+		this.ctCollectionStatusUserName = ctCollectionStatusUserName;
+	}
+
+	public void setCtCollectionStatusUserName(
+		UnsafeSupplier<String, Exception>
+			ctCollectionStatusUserNameUnsafeSupplier) {
+
+		try {
+			ctCollectionStatusUserName =
+				ctCollectionStatusUserNameUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String ctCollectionStatusUserName;
+
 	public Date getDateCreated() {
 		return dateCreated;
 	}
@@ -132,6 +220,27 @@ public class CTEntry implements Cloneable, Serializable {
 	}
 
 	protected Date dateModified;
+
+	public String getEditURL() {
+		return editURL;
+	}
+
+	public void setEditURL(String editURL) {
+		this.editURL = editURL;
+	}
+
+	public void setEditURL(
+		UnsafeSupplier<String, Exception> editURLUnsafeSupplier) {
+
+		try {
+			editURL = editURLUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String editURL;
 
 	public Boolean getHideable() {
 		return hideable;
@@ -320,6 +429,27 @@ public class CTEntry implements Cloneable, Serializable {
 
 	protected Status status;
 
+	public String getStatusMessage() {
+		return statusMessage;
+	}
+
+	public void setStatusMessage(String statusMessage) {
+		this.statusMessage = statusMessage;
+	}
+
+	public void setStatusMessage(
+		UnsafeSupplier<String, Exception> statusMessageUnsafeSupplier) {
+
+		try {
+			statusMessage = statusMessageUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String statusMessage;
+
 	public String getTitle() {
 		return title;
 	}
@@ -394,3 +524,4 @@ public class CTEntry implements Cloneable, Serializable {
 	}
 
 }
+// LIFERAY-REST-BUILDER-HASH:1753145406

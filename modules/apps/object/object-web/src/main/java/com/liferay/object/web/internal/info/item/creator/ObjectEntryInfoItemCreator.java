@@ -5,9 +5,12 @@
 
 package com.liferay.object.web.internal.info.item.creator;
 
+import com.liferay.info.field.InfoFieldValue;
+import com.liferay.info.field.RelatedInfoFieldValue;
 import com.liferay.info.item.InfoItemFieldValues;
 import com.liferay.info.item.creator.InfoItemCreator;
 import com.liferay.info.item.provider.InfoItemFormProvider;
+import com.liferay.object.info.item.util.ObjectEntryInfoItemUtil;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.model.ObjectEntry;
 import com.liferay.object.rest.dto.v1_0.Status;
@@ -22,8 +25,13 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
+
+import java.text.DateFormat;
+
+import java.util.Map;
 
 /**
  * @author Rubén Pulido
@@ -47,12 +55,17 @@ public class ObjectEntryInfoItemCreator
 
 	@Override
 	public ObjectEntry createFromInfoItemFieldValues(
-			long groupId, InfoItemFieldValues infoItemFieldValues, int status)
+			long groupId, InfoItemFieldValues infoItemFieldValues,
+			int statusInt)
 		throws InfoFormException {
 
 		try {
+			DateFormat dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
+				"yyyy-MM-dd HH:mm");
+
 			ObjectEntryManager objectEntryManager =
 				_objectEntryManagerRegistry.getObjectEntryManager(
+					_objectDefinition.getCompanyId(),
 					_objectDefinition.getStorageType());
 
 			ServiceContext serviceContext =
@@ -60,7 +73,8 @@ public class ObjectEntryInfoItemCreator
 
 			ThemeDisplay themeDisplay = serviceContext.getThemeDisplay();
 
-			int objectEntryStatus = status;
+			Map<String, Object> curProperties = _getProperties(
+				infoItemFieldValues, themeDisplay);
 
 			com.liferay.object.rest.dto.v1_0.ObjectEntry objectEntry =
 				objectEntryManager.addObjectEntry(
@@ -70,19 +84,39 @@ public class ObjectEntryInfoItemCreator
 					_objectDefinition,
 					new com.liferay.object.rest.dto.v1_0.ObjectEntry() {
 						{
-							keywords = serviceContext.getAssetTagNames();
-							properties = ObjectEntryUtil.toProperties(
-								infoItemFieldValues);
-							status = new Status() {
-								{
-									code = objectEntryStatus;
-								}
-							};
-							taxonomyCategoryIds = ArrayUtil.toLongArray(
-								serviceContext.getAssetCategoryIds());
+							setDisplayDate(
+								() -> GetterUtil.getDate(
+									curProperties.get("displayDate"),
+									dateFormat, null));
+							setExpirationDate(
+								() -> GetterUtil.getDate(
+									curProperties.get("expirationDate"),
+									dateFormat, null));
+							setFriendlyUrlPath(
+								() -> GetterUtil.getString(
+									curProperties.get("objectEntryFriendlyURL"),
+									null));
+							setFriendlyUrlPath_i18n(
+								() -> (Map<String, String>)curProperties.get(
+									"objectEntryFriendlyURL_i18n"));
+							setKeywords(serviceContext::getAssetTagNames);
+							setProperties(() -> curProperties);
+							setReviewDate(
+								() -> GetterUtil.getDate(
+									curProperties.get("reviewDate"), dateFormat,
+									null));
+							setStatus(
+								() -> new Status() {
+									{
+										setCode(() -> statusInt);
+									}
+								});
+							setTaxonomyCategoryIds(
+								() -> ArrayUtil.toLongArray(
+									serviceContext.getAssetCategoryIds()));
 						}
 					},
-					ObjectEntryUtil.getScopeKey(
+					ObjectEntryInfoItemUtil.getScopeKey(
 						groupId, _objectDefinition,
 						_objectScopeProviderRegistry));
 
@@ -103,6 +137,22 @@ public class ObjectEntryInfoItemCreator
 		}
 
 		return null;
+	}
+
+	private Map<String, Object> _getProperties(
+		InfoItemFieldValues infoItemFieldValues, ThemeDisplay themeDisplay) {
+
+		for (InfoFieldValue<Object> infoFieldValue :
+				infoItemFieldValues.getInfoFieldValues()) {
+
+			if (infoFieldValue.getValue() instanceof RelatedInfoFieldValue) {
+				return ObjectEntryUtil.toProperties(
+					infoItemFieldValues, _objectDefinition, null);
+			}
+		}
+
+		return ObjectEntryUtil.toProperties(
+			themeDisplay.getCompanyId(), infoItemFieldValues, null);
 	}
 
 	private final InfoItemFormProvider<ObjectEntry> _infoItemFormProvider;

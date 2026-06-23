@@ -11,15 +11,15 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.repository.model.FileVersion;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Iván Zaera
@@ -92,6 +92,11 @@ public class BaseDLViewFileVersionDisplayContext
 	@Override
 	public String getIconFileMimeType() {
 		return parentDisplayContext.getIconFileMimeType();
+	}
+
+	@Override
+	public boolean hasApprovedVersion() {
+		return parentDisplayContext.hasApprovedVersion();
 	}
 
 	@Override

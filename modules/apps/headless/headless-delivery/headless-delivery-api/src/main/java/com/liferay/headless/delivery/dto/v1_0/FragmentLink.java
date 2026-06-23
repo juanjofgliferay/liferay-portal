@@ -7,6 +7,7 @@ package com.liferay.headless.delivery.dto.v1_0;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFilter;
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
@@ -19,7 +20,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -27,12 +32,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -41,6 +41,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @Generated("")
 @GraphQLName(
 	description = "Represents a fragment link.", value = "FragmentLink"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "Represents a fragment link."
 )
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "FragmentLink")
@@ -54,27 +57,37 @@ public class FragmentLink implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(FragmentLink.class, json);
 	}
 
-	@Schema(deprecated = true)
+	@io.swagger.v3.oas.annotations.media.Schema(deprecated = true)
 	@Valid
 	public Object getHref() {
+		if (_hrefSupplier != null) {
+			href = _hrefSupplier.get();
+
+			_hrefSupplier = null;
+		}
+
 		return href;
 	}
 
 	public void setHref(Object href) {
 		this.href = href;
+
+		_hrefSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setHref(UnsafeSupplier<Object, Exception> hrefUnsafeSupplier) {
-		try {
-			href = hrefUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_hrefSupplier = () -> {
+			try {
+				return hrefUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@Deprecated
@@ -82,14 +95,26 @@ public class FragmentLink implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Object href;
 
-	@Schema(deprecated = true)
+	@JsonIgnore
+	private Supplier<Object> _hrefSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(deprecated = true)
+	@JsonGetter("target")
 	@Valid
 	public Target getTarget() {
+		if (_targetSupplier != null) {
+			target = _targetSupplier.get();
+
+			_targetSupplier = null;
+		}
+
 		return target;
 	}
 
 	@JsonIgnore
 	public String getTargetAsString() {
+		Target target = getTarget();
+
 		if (target == null) {
 			return null;
 		}
@@ -99,21 +124,25 @@ public class FragmentLink implements Serializable {
 
 	public void setTarget(Target target) {
 		this.target = target;
+
+		_targetSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setTarget(
 		UnsafeSupplier<Target, Exception> targetUnsafeSupplier) {
 
-		try {
-			target = targetUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_targetSupplier = () -> {
+			try {
+				return targetUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@Deprecated
@@ -121,43 +150,71 @@ public class FragmentLink implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Target target;
 
-	@Schema(description = "The fragment link's value.")
+	@JsonIgnore
+	private Supplier<Target> _targetSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The fragment link's value."
+	)
 	@Valid
 	public FragmentLinkValue getValue() {
+		if (_valueSupplier != null) {
+			value = _valueSupplier.get();
+
+			_valueSupplier = null;
+		}
+
 		return value;
 	}
 
 	public void setValue(FragmentLinkValue value) {
 		this.value = value;
+
+		_valueSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setValue(
 		UnsafeSupplier<FragmentLinkValue, Exception> valueUnsafeSupplier) {
 
-		try {
-			value = valueUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_valueSupplier = () -> {
+			try {
+				return valueUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The fragment link's value.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected FragmentLinkValue value;
 
-	@Schema(description = "The localized fragment link's values.")
+	@JsonIgnore
+	private Supplier<FragmentLinkValue> _valueSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The localized fragment link's values."
+	)
 	@Valid
 	public Map<String, FragmentLinkValue> getValue_i18n() {
+		if (_value_i18nSupplier != null) {
+			value_i18n = _value_i18nSupplier.get();
+
+			_value_i18nSupplier = null;
+		}
+
 		return value_i18n;
 	}
 
 	public void setValue_i18n(Map<String, FragmentLinkValue> value_i18n) {
 		this.value_i18n = value_i18n;
+
+		_value_i18nSupplier = null;
 	}
 
 	@JsonIgnore
@@ -165,20 +222,25 @@ public class FragmentLink implements Serializable {
 		UnsafeSupplier<Map<String, FragmentLinkValue>, Exception>
 			value_i18nUnsafeSupplier) {
 
-		try {
-			value_i18n = value_i18nUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_value_i18nSupplier = () -> {
+			try {
+				return value_i18nUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The localized fragment link's values.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, FragmentLinkValue> value_i18n;
+
+	@JsonIgnore
+	private Supplier<Map<String, FragmentLinkValue>> _value_i18nSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -207,6 +269,8 @@ public class FragmentLink implements Serializable {
 
 		sb.append("{");
 
+		Object href = getHref();
+
 		if (href != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -227,6 +291,8 @@ public class FragmentLink implements Serializable {
 			}
 		}
 
+		Target target = getTarget();
+
 		if (target != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -235,11 +301,11 @@ public class FragmentLink implements Serializable {
 			sb.append("\"target\": ");
 
 			sb.append("\"");
-
 			sb.append(target);
-
 			sb.append("\"");
 		}
+
+		FragmentLinkValue value = getValue();
 
 		if (value != null) {
 			if (sb.length() > 1) {
@@ -250,6 +316,8 @@ public class FragmentLink implements Serializable {
 
 			sb.append(String.valueOf(value));
 		}
+
+		Map<String, FragmentLinkValue> value_i18n = getValue_i18n();
 
 		if (value_i18n != null) {
 			if (sb.length() > 1) {
@@ -266,8 +334,8 @@ public class FragmentLink implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.FragmentLink",
 		name = "x-class-name"
 	)
@@ -351,7 +419,10 @@ public class FragmentLink implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -397,3 +468,4 @@ public class FragmentLink implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-40131402

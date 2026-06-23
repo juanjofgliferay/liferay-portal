@@ -207,6 +207,17 @@ public class CommerceShippingMethodServiceWrapper
 	@Override
 	public com.liferay.commerce.model.CommerceShippingMethod
 			updateCommerceShippingMethod(
+				com.liferay.commerce.model.CommerceShippingMethod
+					commerceShippingMethod)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commerceShippingMethodService.updateCommerceShippingMethod(
+			commerceShippingMethod);
+	}
+
+	@Override
+	public com.liferay.commerce.model.CommerceShippingMethod
+			updateCommerceShippingMethod(
 				long commerceShippingMethodId,
 				java.util.Map<java.util.Locale, String> nameMap,
 				java.util.Map<java.util.Locale, String> descriptionMap,
@@ -234,3 +245,4 @@ public class CommerceShippingMethodServiceWrapper
 	private CommerceShippingMethodService _commerceShippingMethodService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:614153344

@@ -15,18 +15,17 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuil
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
-import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
-
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Albert Lee
@@ -52,17 +51,10 @@ public class AccountUserActionDropdownItemsProvider {
 
 	public List<DropdownItem> getActionDropdownItems() throws Exception {
 		return DropdownItemListBuilder.add(
-			() -> {
-				if (AccountUserPermission.hasEditUserPermission(
-						_permissionChecker,
-						PortalUtil.getPortletId(_httpServletRequest),
-						_accountEntryDisplay, _accountUserDisplay.getUser())) {
-
-					return true;
-				}
-
-				return false;
-			},
+			() -> AccountUserPermission.hasEditUserPermission(
+				_permissionChecker,
+				PortalUtil.getPortletId(_httpServletRequest),
+				_accountEntryDisplay, _accountUserDisplay.getUser()),
 			dropdownItem -> {
 				dropdownItem.setHref(getEditAccountUserURL());
 				dropdownItem.setLabel(
@@ -73,7 +65,7 @@ public class AccountUserActionDropdownItemsProvider {
 				AccountEntryPermission.contains(
 					_permissionChecker,
 					_accountEntryDisplay.getAccountEntryId(),
-					ActionKeys.MANAGE_USERS) &&
+					AccountActionKeys.ASSIGN_USERS) &&
 				AccountEntryPermission.contains(
 					_permissionChecker,
 					_accountEntryDisplay.getAccountEntryId(),
@@ -116,7 +108,7 @@ public class AccountUserActionDropdownItemsProvider {
 		).add(
 			() -> AccountEntryPermission.contains(
 				_permissionChecker, _accountEntryDisplay.getAccountEntryId(),
-				ActionKeys.MANAGE_USERS),
+				AccountActionKeys.UNASSIGN_USERS),
 			dropdownItem -> {
 				dropdownItem.putData("action", "removeAccountUsers");
 				dropdownItem.putData(

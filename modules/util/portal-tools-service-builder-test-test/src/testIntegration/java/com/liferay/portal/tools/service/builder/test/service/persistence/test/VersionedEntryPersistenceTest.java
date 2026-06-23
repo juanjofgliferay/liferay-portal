@@ -115,8 +115,6 @@ public class VersionedEntryPersistenceTest {
 
 		VersionedEntry newVersionedEntry = _persistence.create(pk);
 
-		newVersionedEntry.setMvccVersion(RandomTestUtil.nextLong());
-
 		newVersionedEntry.setHeadId(RandomTestUtil.nextLong());
 
 		newVersionedEntry.setGroupId(RandomTestUtil.nextLong());
@@ -467,9 +465,7 @@ public class VersionedEntryPersistenceTest {
 
 		VersionedEntry versionedEntry = _persistence.create(pk);
 
-		versionedEntry.setMvccVersion(RandomTestUtil.nextLong());
-
-		versionedEntry.setHeadId(RandomTestUtil.nextLong());
+		versionedEntry.setHeadId(-pk);
 
 		versionedEntry.setGroupId(RandomTestUtil.nextLong());
 
@@ -484,3 +480,4 @@ public class VersionedEntryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:654524484

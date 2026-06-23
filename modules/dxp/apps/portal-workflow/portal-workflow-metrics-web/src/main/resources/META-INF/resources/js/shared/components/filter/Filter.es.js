@@ -15,7 +15,6 @@ import {FilterSearch} from './FilterSearch.es';
 import {
 	getCapitalizedFilterKey,
 	getSelectedItemsQuery,
-	replaceHistory,
 } from './util/filterUtil.es';
 
 const Filter = ({
@@ -42,7 +41,7 @@ const Filter = ({
 	const [changed, setChanged] = useState(false);
 
 	const prefixedFilterKey = getCapitalizedFilterKey(prefixKey, filterKey);
-	const routerProps = useRouter();
+	const {location, navigate} = useRouter();
 
 	const getSelectedItems = (items) => items.filter((item) => item.active);
 
@@ -51,16 +50,17 @@ const Filter = ({
 			const query = getSelectedItemsQuery(
 				items,
 				prefixedFilterKey,
-				routerProps.location.search
+				location.search
 			);
 
-			replaceHistory(query, routerProps);
+			navigate({search: query}, {replace: true});
 		}
 		else {
 			dispatchFilter(prefixedFilterKey, getSelectedItems(items));
 		}
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [items, routerProps]);
+	}, [items, location]);
 
 	const closeDropdown = () => {
 		setExpanded(false);
@@ -91,6 +91,7 @@ const Filter = ({
 				}
 			}
 		},
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 		[applyFilterChanges, items]
 	);
@@ -114,11 +115,13 @@ const Filter = ({
 				}
 			}
 		}
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [applyFilterChanges, defaultItem, items]);
 
 	useEffect(() => {
 		selectDefaultItem();
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [defaultItem, getSelectedItems(items).length]);
 
@@ -129,7 +132,7 @@ const Filter = ({
 						item[labelPropertyName]
 							.toLowerCase()
 							.includes(searchTerm.toLowerCase())
-				  )
+					)
 				: items
 		);
 	}, [items, labelPropertyName, searchTerm]);
@@ -142,6 +145,7 @@ const Filter = ({
 		else if (!expanded && !multiple && childrenVisibility) {
 			setExpanded(true);
 		}
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [expanded]);
 

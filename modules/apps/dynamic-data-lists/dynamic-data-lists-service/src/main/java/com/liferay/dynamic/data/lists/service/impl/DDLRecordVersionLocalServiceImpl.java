@@ -8,6 +8,7 @@ package com.liferay.dynamic.data.lists.service.impl;
 import com.liferay.dynamic.data.lists.exception.NoSuchRecordVersionException;
 import com.liferay.dynamic.data.lists.model.DDLRecordVersion;
 import com.liferay.dynamic.data.lists.service.base.DDLRecordVersionLocalServiceBaseImpl;
+import com.liferay.dynamic.data.lists.util.comparator.DDLRecordVersionIdComparator;
 import com.liferay.dynamic.data.lists.util.comparator.DDLRecordVersionVersionComparator;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -46,8 +47,9 @@ public class DDLRecordVersionLocalServiceImpl
 	public DDLRecordVersion fetchLatestRecordVersion(
 		long userId, long recordSetId, String recordSetVersion, int status) {
 
-		return ddlRecordVersionPersistence.fetchByU_R_R_S_Last(
-			userId, recordSetId, recordSetVersion, status, null);
+		return ddlRecordVersionPersistence.fetchByU_R_R_S_First(
+			userId, recordSetId, recordSetVersion, status,
+			DDLRecordVersionIdComparator.getInstance(false));
 	}
 
 	/**
@@ -61,20 +63,20 @@ public class DDLRecordVersionLocalServiceImpl
 	public DDLRecordVersion getLatestRecordVersion(long recordId)
 		throws PortalException {
 
-		List<DDLRecordVersion> recordVersions =
+		List<DDLRecordVersion> ddlRecordVersions =
 			ddlRecordVersionPersistence.findByRecordId(recordId);
 
-		if (recordVersions.isEmpty()) {
+		if (ddlRecordVersions.isEmpty()) {
 			throw new NoSuchRecordVersionException(
 				"No record versions found for record ID " + recordId);
 		}
 
-		recordVersions = ListUtil.copy(recordVersions);
+		ddlRecordVersions = ListUtil.copy(ddlRecordVersions);
 
 		Collections.sort(
-			recordVersions, new DDLRecordVersionVersionComparator());
+			ddlRecordVersions, new DDLRecordVersionVersionComparator());
 
-		return recordVersions.get(0);
+		return ddlRecordVersions.get(0);
 	}
 
 	/**

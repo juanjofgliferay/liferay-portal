@@ -10,6 +10,7 @@ import com.liferay.portal.configuration.module.configuration.ConfigurationProvid
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
+import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.facet.Facet;
 import com.liferay.portal.kernel.search.facet.collector.FacetCollector;
 import com.liferay.portal.kernel.search.facet.collector.TermCollector;
@@ -19,13 +20,18 @@ import com.liferay.portal.kernel.util.CalendarFactoryUtil;
 import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.search.web.internal.facet.display.context.BucketDisplayContext;
 import com.liferay.portal.search.web.internal.modified.facet.configuration.ModifiedFacetPortletInstanceConfiguration;
 import com.liferay.portal.search.web.internal.modified.facet.display.context.ModifiedFacetCalendarDisplayContext;
 import com.liferay.portal.search.web.internal.modified.facet.display.context.ModifiedFacetDisplayContext;
+import com.liferay.portal.search.web.internal.util.DateRangeFactoryUtil;
+import com.liferay.portal.search.web.internal.util.DisplayContextHelperUtil;
 import com.liferay.portal.search.web.internal.util.comparator.BucketDisplayContextComparatorFactoryUtil;
+
+import jakarta.portlet.RenderRequest;
 
 import java.io.Serializable;
 
@@ -37,8 +43,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
-
-import javax.portlet.RenderRequest;
 
 /**
  * @author Lino Alves
@@ -138,14 +142,10 @@ public class ModifiedFacetDisplayContextBuilder implements Serializable {
 	}
 
 	protected long getDisplayStyleGroupId() {
-		long displayStyleGroupId =
-			_modifiedFacetPortletInstanceConfiguration.displayStyleGroupId();
-
-		if (displayStyleGroupId <= 0) {
-			displayStyleGroupId = _themeDisplay.getScopeGroupId();
-		}
-
-		return displayStyleGroupId;
+		return DisplayContextHelperUtil.getDisplayStyleGroupId(
+			_modifiedFacetPortletInstanceConfiguration.
+				displayStyleGroupExternalReferenceCode(),
+			_themeDisplay);
 	}
 
 	protected int getFrequency(TermCollector termCollector) {
@@ -156,7 +156,7 @@ public class ModifiedFacetDisplayContextBuilder implements Serializable {
 		return 0;
 	}
 
-	protected TermCollector getTermCollector(String key) {
+	protected TermCollector getTermCollector(String range) {
 		if (_facet == null) {
 			return null;
 		}
@@ -167,7 +167,7 @@ public class ModifiedFacetDisplayContextBuilder implements Serializable {
 			return null;
 		}
 
-		return facetCollector.getTermCollector(key);
+		return facetCollector.getTermCollector(range);
 	}
 
 	protected boolean isNothingSelected() {
@@ -188,14 +188,17 @@ public class ModifiedFacetDisplayContextBuilder implements Serializable {
 		return isNothingSelected();
 	}
 
-	private BucketDisplayContext _buildBucketDisplayContext(String label) {
+	private BucketDisplayContext _buildBucketDisplayContext(
+		String label, String range) {
+
 		BucketDisplayContext bucketDisplayContext = new BucketDisplayContext();
 
 		bucketDisplayContext.setBucketText(label);
 		bucketDisplayContext.setFilterValue(_getLabeledRangeURL(label));
 		bucketDisplayContext.setFrequency(
-			getFrequency(getTermCollector(label)));
+			getFrequency(getTermCollector(range)));
 		bucketDisplayContext.setFrequencyVisible(_frequenciesVisible);
+		bucketDisplayContext.setLocale(_locale);
 		bucketDisplayContext.setSelected(_selectedRanges.contains(label));
 
 		return bucketDisplayContext;
@@ -227,7 +230,7 @@ public class ModifiedFacetDisplayContextBuilder implements Serializable {
 				continue;
 			}
 
-			bucketDisplayContexts.add(_buildBucketDisplayContext(label));
+			bucketDisplayContexts.add(_buildBucketDisplayContext(label, range));
 		}
 
 		if (!_order.equals("rangesConfiguration")) {
@@ -297,32 +300,37 @@ public class ModifiedFacetDisplayContextBuilder implements Serializable {
 		}
 
 		FacetCollector facetCollector = _facet.getFacetCollector();
+		SearchContext searchContext = _facet.getSearchContext();
 
-		return facetCollector.getTermCollector("custom-range");
+		return facetCollector.getTermCollector(
+			DateRangeFactoryUtil.getRangeString(
+				_from, _to, searchContext.getTimeZone()));
 	}
 
 	private String _getCustomRangeURL() {
-		DateFormat format = DateFormatFactoryUtil.getSimpleDateFormat(
-			"yyyy-MM-dd");
-
-		Calendar calendar = CalendarFactoryUtil.getCalendar(_timeZone);
-
-		String to = format.format(calendar.getTime());
-
-		calendar.add(Calendar.DATE, -1);
-
-		String from = format.format(calendar.getTime());
-
 		String rangeURL = HttpComponentsUtil.removeParameter(
 			_currentURL, "modified");
 
 		rangeURL = HttpComponentsUtil.removeParameter(
 			rangeURL, _paginationStartParameterName);
 
+		DateFormat dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
+			"yyyy-MM-dd", LocaleUtil.US);
+
+		Calendar calendar = CalendarFactoryUtil.getCalendar(_timeZone);
+
+		String to = dateFormat.format(calendar.getTime());
+
+		calendar.add(Calendar.DATE, -1);
+
+		String from = dateFormat.format(calendar.getTime());
+
 		rangeURL = HttpComponentsUtil.setParameter(
 			rangeURL, "modifiedFrom", from);
 
-		return HttpComponentsUtil.setParameter(rangeURL, "modifiedTo", to);
+		rangeURL = HttpComponentsUtil.setParameter(rangeURL, "modifiedTo", to);
+
+		return HttpComponentsUtil.sortParameters(rangeURL);
 	}
 
 	private String _getLabeledRangeURL(String label) {
@@ -330,11 +338,11 @@ public class ModifiedFacetDisplayContextBuilder implements Serializable {
 			_currentURL, "modifiedFrom");
 
 		rangeURL = HttpComponentsUtil.removeParameter(rangeURL, "modifiedTo");
-
 		rangeURL = HttpComponentsUtil.removeParameter(
 			rangeURL, _paginationStartParameterName);
+		rangeURL = HttpComponentsUtil.setParameter(rangeURL, "modified", label);
 
-		return HttpComponentsUtil.setParameter(rangeURL, "modified", label);
+		return HttpComponentsUtil.sortParameters(rangeURL);
 	}
 
 	private JSONArray _getRangesJSONArray() {

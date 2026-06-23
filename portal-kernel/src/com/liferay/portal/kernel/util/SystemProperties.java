@@ -5,12 +5,11 @@
 
 package com.liferay.portal.kernel.util;
 
+import com.liferay.petra.io.unsync.UnsyncBufferedReader;
+import com.liferay.petra.io.unsync.UnsyncStringReader;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
-import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
-import com.liferay.portal.kernel.model.CompanyConstants;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -190,8 +189,7 @@ public class SystemProperties {
 		PropertiesUtil.fromProperties(properties, _properties);
 
 		EnvPropertiesUtil.loadEnvOverrides(
-			SYSTEM_ENV_OVERRIDE_PREFIX, CompanyConstants.SYSTEM,
-			SystemProperties::set);
+			SYSTEM_ENV_OVERRIDE_PREFIX, SystemProperties::set);
 
 		if (urls != null) {
 			for (URL url : urls) {
@@ -210,8 +208,10 @@ public class SystemProperties {
 		throws IOException {
 
 		try (InputStream inputStream = url.openStream();
+
 			InputStreamReader inputStreamReader = new InputStreamReader(
 				inputStream);
+
 			UnsyncBufferedReader unsyncBufferedReader =
 				new UnsyncBufferedReader(inputStreamReader)) {
 

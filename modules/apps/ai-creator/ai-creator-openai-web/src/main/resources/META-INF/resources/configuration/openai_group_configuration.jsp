@@ -14,6 +14,12 @@ boolean companyChatGPTEnabled = aiCreatorOpenAIGroupConfigurationDisplayContext.
 boolean companyDALLEEnabled = aiCreatorOpenAIGroupConfigurationDisplayContext.isCompanyDALLEEnabled();
 %>
 
+<liferay-util:html-top
+	outputKey="com.liferay.ai.creator.openai.web#/configuration/openai_group_configuration.jsp"
+>
+	<aui:link hashedFile="<%= true %>" href="ai-creator-openai-web/css/configuration.css" rel="stylesheet" type="text/css" />
+</liferay-util:html-top>
+
 <clay:content-row>
 	<clay:content-col
 		expand="<%= true %>"
@@ -29,7 +35,7 @@ boolean companyDALLEEnabled = aiCreatorOpenAIGroupConfigurationDisplayContext.is
 					message="to-enable-chatgpt-for-this-site,-first-enable-it-for-your-instance"
 				/>
 			</c:when>
-			<c:when test='<%= FeatureFlagManagerUtil.isEnabled("LPS-196648") && companyChatGPTEnabled && !companyDALLEEnabled %>'>
+			<c:when test="<%= companyChatGPTEnabled && !companyDALLEEnabled %>">
 				<clay:alert
 					message="to-enable-dalle-for-this-site,-first-enable-it-for-your-instance"
 				/>
@@ -53,7 +59,7 @@ boolean companyDALLEEnabled = aiCreatorOpenAIGroupConfigurationDisplayContext.is
 </clay:content-row>
 
 <clay:content-row
-	cssClass="c-mt-2"
+	cssClass="c-my-4"
 >
 	<clay:content-col
 		expand="<%= true %>"
@@ -64,6 +70,7 @@ boolean companyDALLEEnabled = aiCreatorOpenAIGroupConfigurationDisplayContext.is
 
 <clay:content-row>
 	<clay:content-col
+		cssClass="ai-creator-config-checkbox"
 		expand="<%= true %>"
 	>
 		<c:choose>
@@ -88,34 +95,33 @@ boolean companyDALLEEnabled = aiCreatorOpenAIGroupConfigurationDisplayContext.is
 	</clay:content-col>
 </clay:content-row>
 
-<c:if test='<%= FeatureFlagManagerUtil.isEnabled("LPS-196648") %>'>
-	<clay:content-row
-		cssClass="c-mt-2"
+<clay:content-row
+	cssClass="c-mt-5"
+>
+	<clay:content-col
+		cssClass="ai-creator-config-checkbox"
+		expand="<%= true %>"
 	>
-		<clay:content-col
-			expand="<%= true %>"
-		>
-			<c:choose>
-				<c:when test="<%= companyDALLEEnabled %>">
-					<clay:checkbox
-						checked="<%= aiCreatorOpenAIGroupConfigurationDisplayContext.isDALLEEnabled() %>"
-						id='<%= liferayPortletResponse.getNamespace() + "enableDALLE" %>'
-						label='<%= LanguageUtil.get(request, "enable-dalle-to-create-images") %>'
-						name='<%= liferayPortletResponse.getNamespace() + "enableDALLE" %>'
-					/>
-				</c:when>
-				<c:otherwise>
-					<clay:checkbox
-						checked="<%= false %>"
-						disabled="<%= true %>"
-						id='<%= liferayPortletResponse.getNamespace() + "enableDALLE" %>'
-						label='<%= LanguageUtil.get(request, "enable-dalle-to-create-images") %>'
-						name='<%= liferayPortletResponse.getNamespace() + "enableDALLE" %>'
-					/>
-				</c:otherwise>
-			</c:choose>
-		</clay:content-col>
-	</clay:content-row>
-</c:if>
+		<c:choose>
+			<c:when test="<%= companyDALLEEnabled %>">
+				<clay:checkbox
+					checked="<%= aiCreatorOpenAIGroupConfigurationDisplayContext.isDALLEEnabled() %>"
+					id='<%= liferayPortletResponse.getNamespace() + "enableDALLE" %>'
+					label='<%= LanguageUtil.get(request, "enable-dalle-to-create-images") %>'
+					name='<%= liferayPortletResponse.getNamespace() + "enableDALLE" %>'
+				/>
+			</c:when>
+			<c:otherwise>
+				<clay:checkbox
+					checked="<%= false %>"
+					disabled="<%= true %>"
+					id='<%= liferayPortletResponse.getNamespace() + "enableDALLE" %>'
+					label='<%= LanguageUtil.get(request, "enable-dalle-to-create-images") %>'
+					name='<%= liferayPortletResponse.getNamespace() + "enableDALLE" %>'
+				/>
+			</c:otherwise>
+		</c:choose>
+	</clay:content-col>
+</clay:content-row>
 
 <%@ include file="/configuration/error_ai_creator_openai_client_exception.jspf" %>

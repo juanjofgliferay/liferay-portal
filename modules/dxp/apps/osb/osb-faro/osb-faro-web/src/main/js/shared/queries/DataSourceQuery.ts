@@ -1,4 +1,4 @@
-import {gql} from 'apollo-boost';
+import {gql} from '@apollo/client';
 
 export interface DataSourceData {
 	data: {
@@ -11,6 +11,7 @@ export interface DataSourceData {
 export interface DataSource {
 	contactsSyncDetails: {selected: boolean};
 	sitesSyncDetails: {selected: boolean};
+	id: string;
 }
 
 export interface DataSourceSyncData {
@@ -18,18 +19,8 @@ export interface DataSourceSyncData {
 }
 
 export default gql`
-	query DataSource(
-		$credentialsType: String
-		$size: Int
-		$sort: Sort
-		$type: String
-	) {
-		dataSources(
-			credentialsType: $credentialsType
-			size: $size
-			sort: $sort
-			type: $type
-		) {
+	query DataSource($size: Int, $sort: Sort, $type: String) {
+		dataSources(size: $size, sort: $sort, type: $type) {
 			contactsSyncDetails {
 				selected
 			}

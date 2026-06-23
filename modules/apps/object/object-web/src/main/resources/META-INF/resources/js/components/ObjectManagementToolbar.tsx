@@ -7,13 +7,16 @@ import {API, ManagementToolbar} from '@liferay/object-js-components-web';
 import React from 'react';
 
 interface ObjectManagementToolbarProps {
+	allowStandaloneObjectEntry: boolean;
 	backURL: string;
-	externalReferenceCode: string;
 	hasPublishObjectPermission: boolean;
 	hasUpdateObjectDefinitionPermission: boolean;
 	isApproved: boolean;
 	isRootDescendantNode: boolean;
+	isRootNode: boolean;
 	label: string;
+	loading: boolean;
+	objectDefinitionExternalReferenceCode: string;
 	objectDefinitionId: number;
 	onSubmit: (draft: boolean) => void;
 	portletNamespace: string;
@@ -22,19 +25,28 @@ interface ObjectManagementToolbarProps {
 }
 
 export default function ObjectManagementToolbar({
+	allowStandaloneObjectEntry,
 	backURL,
-	externalReferenceCode,
 	hasPublishObjectPermission,
 	hasUpdateObjectDefinitionPermission,
 	isApproved,
 	isRootDescendantNode,
+	isRootNode,
 	label,
+	loading,
+	objectDefinitionExternalReferenceCode,
 	objectDefinitionId,
 	onSubmit,
 	portletNamespace,
 	screenNavigationCategoryKey,
 	system,
 }: ObjectManagementToolbarProps) {
+	const inheritanceLabel = isRootDescendantNode
+		? Liferay.Language.get('inherited')
+		: isRootNode
+			? Liferay.Language.get('root-object')
+			: Liferay.Language.get('standard');
+
 	return (
 		<ManagementToolbar
 			backURL={backURL}
@@ -47,16 +59,39 @@ export default function ObjectManagementToolbar({
 			className="border-bottom"
 			enableBoxShadow={false}
 			entityId={objectDefinitionId}
-			externalReferenceCode={externalReferenceCode}
-			externalReferenceCodeSaveURL={`/o/object-admin/v1.0/object-definitions/${objectDefinitionId}`}
 			hasPublishPermission={hasPublishObjectPermission}
 			hasUpdatePermission={hasUpdateObjectDefinitionPermission}
 			helpMessage={Liferay.Language.get(
 				'unique-key-for-referencing-the-object-definition'
 			)}
+			inheritanceClassName={
+				isRootDescendantNode || isRootNode
+					? 'label-inverse-info'
+					: 'label-inverse-secondary'
+			}
+			inheritanceIconSymbol={
+				Liferay.FeatureFlags['LPD-69877'] && isRootDescendantNode
+					? allowStandaloneObjectEntry
+						? 'unlock'
+						: 'lock'
+					: undefined
+			}
+			inheritanceLabel={inheritanceLabel}
+			inheritanceTitle={
+				Liferay.FeatureFlags['LPD-69877'] && isRootDescendantNode
+					? allowStandaloneObjectEntry
+						? Liferay.Language.get('flexible-inheritance-tooltip')
+						: Liferay.Language.get('strict-inheritance-tooltip')
+					: undefined
+			}
 			isApproved={isApproved}
 			isRootDescendantNode={isRootDescendantNode}
 			label={label}
+			loading={loading}
+			objectDefinitionExternalReferenceCode={
+				objectDefinitionExternalReferenceCode
+			}
+			objectDefinitionExternalReferenceCodeSaveURL={`/o/object-admin/v1.0/object-definitions/${objectDefinitionId}`}
 			onGetEntity={() => API.getObjectDefinitionById(objectDefinitionId)}
 			onSubmit={onSubmit}
 			portletNamespace={portletNamespace}

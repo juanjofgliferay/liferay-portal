@@ -8,15 +8,12 @@ package com.liferay.portal.search.engine.adapter.document;
 import com.liferay.portal.search.document.Document;
 import com.liferay.portal.search.engine.adapter.ccr.CrossClusterRequest;
 
-import java.util.function.Consumer;
-
 /**
  * @author Michael C. Han
  */
 public class IndexDocumentRequest
 	extends CrossClusterRequest
-	implements BulkableDocumentRequest<IndexDocumentRequest>,
-			   DocumentRequest<IndexDocumentResponse> {
+	implements BulkableDocumentRequest<IndexDocumentResponse> {
 
 	/**
 	 * @deprecated As of Mueller (7.2.x), replaced by
@@ -61,11 +58,6 @@ public class IndexDocumentRequest
 	}
 
 	@Override
-	public void accept(Consumer<IndexDocumentRequest> consumer) {
-		consumer.accept(this);
-	}
-
-	@Override
 	public IndexDocumentResponse accept(
 		DocumentRequestExecutor documentRequestExecutor) {
 
@@ -88,6 +80,10 @@ public class IndexDocumentRequest
 		return _indexName;
 	}
 
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
+	 */
+	@Deprecated
 	public String getType() {
 		return _type;
 	}
@@ -104,6 +100,10 @@ public class IndexDocumentRequest
 		_refresh = refresh;
 	}
 
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
+	 */
+	@Deprecated
 	public void setType(String type) {
 		_type = type;
 	}

@@ -68,8 +68,7 @@ public interface Company extends CompanyModel, PersistedModel {
 	public Group getGroup()
 		throws com.liferay.portal.kernel.exception.PortalException;
 
-	public long getGroupId()
-		throws com.liferay.portal.kernel.exception.PortalException;
+	public long getGroupId();
 
 	public User getGuestUser()
 		throws com.liferay.portal.kernel.exception.PortalException;
@@ -111,6 +110,8 @@ public interface Company extends CompanyModel, PersistedModel {
 
 	public boolean isUpdatePasswordRequired();
 
+	public void setGroupId(long groupId);
+
 	public void setKey(String key);
 
 	public void setKeyObj(java.security.Key keyObj);
@@ -118,3 +119,4 @@ public interface Company extends CompanyModel, PersistedModel {
 	public void setVirtualHostname(String virtualHostname);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1558084506

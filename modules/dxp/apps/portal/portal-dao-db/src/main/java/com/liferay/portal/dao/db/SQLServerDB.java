@@ -5,14 +5,14 @@
 
 package com.liferay.portal.dao.db;
 
+import com.liferay.petra.io.unsync.UnsyncBufferedReader;
+import com.liferay.petra.io.unsync.UnsyncStringReader;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.db.DBInspector;
 import com.liferay.portal.kernel.dao.db.DBType;
 import com.liferay.portal.kernel.dao.db.Index;
 import com.liferay.portal.kernel.dao.db.IndexMetadata;
-import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
-import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -104,6 +104,21 @@ public class SQLServerDB extends BaseDB {
 	}
 
 	@Override
+	public String getCharacterSet(Connection connection) throws SQLException {
+		try (PreparedStatement preparedStatement = connection.prepareStatement(
+				"select serverproperty('collation') as collation")) {
+
+			try (ResultSet resultSet = preparedStatement.executeQuery()) {
+				if (resultSet.next()) {
+					return resultSet.getString("collation");
+				}
+			}
+		}
+
+		return StringPool.BLANK;
+	}
+
+	@Override
 	public String getDefaultValue(String columnDef) {
 		Matcher matcher = _defaultValuePattern.matcher(columnDef);
 
@@ -135,12 +150,13 @@ public class SQLServerDB extends BaseDB {
 					"sys.tables on sys.tables.object_id = ",
 					"sys.indexes.object_id where sys.indexes.name like ",
 					"'LIFERAY_%' or sys.indexes.name like 'IX_%'"));
+
 			ResultSet resultSet = preparedStatement.executeQuery()) {
 
 			while (resultSet.next()) {
 				String indexName = resultSet.getString("index_name");
 				String tableName = resultSet.getString("table_name");
-				boolean unique = !resultSet.getBoolean("is_unique");
+				boolean unique = resultSet.getBoolean("is_unique");
 
 				indexes.add(new Index(indexName, tableName, unique));
 			}
@@ -162,13 +178,18 @@ public class SQLServerDB extends BaseDB {
 	@Override
 	public String getRecreateSQL(String databaseName) {
 		return StringBundler.concat(
-			"drop database ", databaseName, ";\n", "create database ",
-			databaseName, ";\n\n", "go\n\n");
+			"drop database ", databaseName, ";\ncreate database ", databaseName,
+			";\n\ngo\n\n");
+	}
+
+	@Override
+	public boolean isSupportsCharacterSet(Connection connection) {
+		return true;
 	}
 
 	@Override
 	public boolean isSupportsNewUuidFunction() {
-		return _SUPPORTS_NEW_UUID_FUNCTION;
+		return true;
 	}
 
 	@Override
@@ -192,7 +213,7 @@ public class SQLServerDB extends BaseDB {
 
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
 				"select name from sys.key_constraints where type = 'PK' and " +
-					"OBJECT_NAME(parent_object_id) = ?")) {
+					"parent_object_id = OBJECT_ID(?)")) {
 
 			preparedStatement.setString(1, normalizedTableName);
 
@@ -212,6 +233,7 @@ public class SQLServerDB extends BaseDB {
 				normalizedTableName, primaryKeyConstraintName)) {
 
 			runSQL(
+				connection,
 				StringBundler.concat(
 					"alter table ", normalizedTableName, " drop constraint ",
 					primaryKeyConstraintName));
@@ -414,6 +436,7 @@ public class SQLServerDB extends BaseDB {
 		runSQL(connection, sb.toString());
 	}
 
+	@Override
 	protected String getCopyTableStructureSQL(
 		String tableName, String newTableName) {
 
@@ -422,6 +445,42 @@ public class SQLServerDB extends BaseDB {
 			" where 1 = 0");
 	}
 
+	@Override
+	protected String getLockedQueryInfosSQL() {
+		return StringBundler.concat(
+			"select sys.dm_exec_requests.total_elapsed_time as duration, ",
+			"sys.dm_exec_requests.session_id as id, substring(",
+			"input_buffer.event_info, 1, 4000) as query, db_name(",
+			"sys.dm_exec_requests.database_id) as schema_, ",
+			"sys.dm_exec_requests.wait_type as state from ",
+			"sys.dm_exec_requests cross apply sys.dm_exec_input_buffer(",
+			"sys.dm_exec_requests.session_id, ",
+			"sys.dm_exec_requests.request_id) as input_buffer where ",
+			"sys.dm_exec_requests.session_id != @@spid and ",
+			"sys.dm_exec_requests.session_id >= 50 and ",
+			"sys.dm_exec_requests.total_elapsed_time >= ? and ",
+			"sys.dm_exec_requests.wait_type like 'LCK\\_%' escape '\\'");
+	}
+
+	@Override
+	protected String getLongRunningQueryInfosSQL() {
+		return StringBundler.concat(
+			"select sys.dm_exec_requests.total_elapsed_time as duration, ",
+			"sys.dm_exec_requests.session_id as id, substring(",
+			"input_buffer.event_info, 1, 4000) as query, db_name(",
+			"sys.dm_exec_requests.database_id) as schema_, ",
+			"sys.dm_exec_requests.wait_type as state from ",
+			"sys.dm_exec_requests cross apply sys.dm_exec_input_buffer(",
+			"sys.dm_exec_requests.session_id, ",
+			"sys.dm_exec_requests.request_id) as input_buffer where ",
+			"sys.dm_exec_requests.session_id != @@spid and ",
+			"sys.dm_exec_requests.session_id >= 50 and ",
+			"sys.dm_exec_requests.total_elapsed_time >= ? and (",
+			"sys.dm_exec_requests.wait_type is null or ",
+			"sys.dm_exec_requests.wait_type not like 'LCK\\_%' escape '\\')");
+	}
+
+	@Override
 	protected String getRenameTableSQL(
 		String oldTableName, String newTableName) {
 
@@ -450,6 +509,10 @@ public class SQLServerDB extends BaseDB {
 
 	@Override
 	protected String reword(String data) throws IOException {
+		if (Validator.isNull(data)) {
+			return null;
+		}
+
 		try (UnsyncBufferedReader unsyncBufferedReader =
 				new UnsyncBufferedReader(new UnsyncStringReader(data))) {
 
@@ -570,8 +633,6 @@ public class SQLServerDB extends BaseDB {
 		Types.TIMESTAMP, Types.DOUBLE, Types.INTEGER, Types.BIGINT,
 		Types.NVARCHAR, Types.NVARCHAR, Types.NVARCHAR
 	};
-
-	private static final boolean _SUPPORTS_NEW_UUID_FUNCTION = true;
 
 	private static final Pattern _defaultValuePattern = Pattern.compile(
 		"^\\('(.*)'\\)|\\(\\((\\d*)\\)\\)", Pattern.CASE_INSENSITIVE);

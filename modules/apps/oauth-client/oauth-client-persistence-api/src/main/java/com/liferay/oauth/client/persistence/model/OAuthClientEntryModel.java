@@ -6,10 +6,11 @@
 package com.liferay.oauth.client.persistence.model;
 
 import com.liferay.portal.kernel.bean.AutoEscape;
-import com.liferay.portal.kernel.model.AuditedModel;
 import com.liferay.portal.kernel.model.BaseModel;
+import com.liferay.portal.kernel.model.ExternalReferenceCodeModel;
 import com.liferay.portal.kernel.model.MVCCModel;
 import com.liferay.portal.kernel.model.ShardedModel;
+import com.liferay.portal.kernel.model.StagedAuditedModel;
 
 import java.util.Date;
 
@@ -28,7 +29,8 @@ import org.osgi.annotation.versioning.ProviderType;
  */
 @ProviderType
 public interface OAuthClientEntryModel
-	extends AuditedModel, BaseModel<OAuthClientEntry>, MVCCModel, ShardedModel {
+	extends BaseModel<OAuthClientEntry>, ExternalReferenceCodeModel, MVCCModel,
+			ShardedModel, StagedAuditedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -65,6 +67,40 @@ public interface OAuthClientEntryModel
 	 */
 	@Override
 	public void setMvccVersion(long mvccVersion);
+
+	/**
+	 * Returns the uuid of this o auth client entry.
+	 *
+	 * @return the uuid of this o auth client entry
+	 */
+	@AutoEscape
+	@Override
+	public String getUuid();
+
+	/**
+	 * Sets the uuid of this o auth client entry.
+	 *
+	 * @param uuid the uuid of this o auth client entry
+	 */
+	@Override
+	public void setUuid(String uuid);
+
+	/**
+	 * Returns the external reference code of this o auth client entry.
+	 *
+	 * @return the external reference code of this o auth client entry
+	 */
+	@AutoEscape
+	@Override
+	public String getExternalReferenceCode();
+
+	/**
+	 * Sets the external reference code of this o auth client entry.
+	 *
+	 * @param externalReferenceCode the external reference code of this o auth client entry
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode);
 
 	/**
 	 * Returns the o auth client entry ID of this o auth client entry.
@@ -223,6 +259,21 @@ public interface OAuthClientEntryModel
 	public void setClientId(String clientId);
 
 	/**
+	 * Returns the custom claims json of this o auth client entry.
+	 *
+	 * @return the custom claims json of this o auth client entry
+	 */
+	@AutoEscape
+	public String getCustomClaimsJSON();
+
+	/**
+	 * Sets the custom claims json of this o auth client entry.
+	 *
+	 * @param customClaimsJSON the custom claims json of this o auth client entry
+	 */
+	public void setCustomClaimsJSON(String customClaimsJSON);
+
+	/**
 	 * Returns the info json of this o auth client entry.
 	 *
 	 * @return the info json of this o auth client entry
@@ -236,6 +287,35 @@ public interface OAuthClientEntryModel
 	 * @param infoJSON the info json of this o auth client entry
 	 */
 	public void setInfoJSON(String infoJSON);
+
+	/**
+	 * Returns the matcher field of this o auth client entry.
+	 *
+	 * @return the matcher field of this o auth client entry
+	 */
+	@AutoEscape
+	public String getMatcherField();
+
+	/**
+	 * Sets the matcher field of this o auth client entry.
+	 *
+	 * @param matcherField the matcher field of this o auth client entry
+	 */
+	public void setMatcherField(String matcherField);
+
+	/**
+	 * Returns the metadata cache time of this o auth client entry.
+	 *
+	 * @return the metadata cache time of this o auth client entry
+	 */
+	public long getMetadataCacheTime();
+
+	/**
+	 * Sets the metadata cache time of this o auth client entry.
+	 *
+	 * @param metadataCacheTime the metadata cache time of this o auth client entry
+	 */
+	public void setMetadataCacheTime(long metadataCacheTime);
 
 	/**
 	 * Returns the oidc user info mapper json of this o auth client entry.
@@ -276,3 +356,4 @@ public interface OAuthClientEntryModel
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-601502993

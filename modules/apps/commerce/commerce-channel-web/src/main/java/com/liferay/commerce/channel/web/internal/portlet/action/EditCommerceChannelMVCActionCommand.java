@@ -48,15 +48,14 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PropertiesParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.upload.UploadHandler;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -67,7 +66,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + CPPortletKeys.COMMERCE_CHANNELS,
+		"jakarta.portlet.name=" + CPPortletKeys.COMMERCE_CHANNELS,
 		"mvc.command.name=/commerce_channels/edit_commerce_channel"
 	},
 	service = MVCActionCommand.class
@@ -397,7 +396,7 @@ public class EditCommerceChannelMVCActionCommand
 		if (!Objects.equals(newFileEntry.getExtension(), "jrxml")) {
 			_dlAppLocalService.deleteFileEntry(newFileEntry.getFileEntryId());
 
-			throw new FileExtensionException();
+			throw new FileExtensionException.InvalidExtension();
 		}
 
 		if (!_commerceReportExporter.isValidJRXMLTemplate(
@@ -426,7 +425,8 @@ public class EditCommerceChannelMVCActionCommand
 					newFileEntry.getFileName(), newFileEntry.getMimeType(),
 					formattedFileName, StringPool.BLANK, StringPool.BLANK,
 					StringPool.BLANK, newFileEntry.getContentStream(),
-					newFileEntry.getSize(), null, null, new ServiceContext());
+					newFileEntry.getSize(), null, null, null,
+					new ServiceContext());
 			}
 			finally {
 				_dlAppLocalService.deleteFileEntry(fileEntryId);
@@ -439,7 +439,7 @@ public class EditCommerceChannelMVCActionCommand
 				existingFileEntry.getTitle(), StringPool.BLANK,
 				existingFileEntry.getDescription(), StringPool.BLANK,
 				DLVersionNumberIncrease.NONE, newFileEntry.getContentStream(),
-				newFileEntry.getSize(), null, null, new ServiceContext());
+				newFileEntry.getSize(), null, null, null, new ServiceContext());
 		}
 	}
 
@@ -463,9 +463,6 @@ public class EditCommerceChannelMVCActionCommand
 
 	@Reference
 	private Portal _portal;
-
-	@Reference
-	private UploadHandler _uploadHandler;
 
 	@Reference
 	private WorkflowDefinitionLinkLocalService

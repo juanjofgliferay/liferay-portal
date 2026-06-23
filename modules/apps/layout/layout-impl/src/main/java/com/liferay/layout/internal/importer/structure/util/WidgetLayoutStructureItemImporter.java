@@ -8,11 +8,12 @@ package com.liferay.layout.internal.importer.structure.util;
 import com.liferay.fragment.constants.FragmentConstants;
 import com.liferay.fragment.model.FragmentEntryLink;
 import com.liferay.fragment.processor.FragmentEntryProcessorRegistry;
+import com.liferay.fragment.processor.PortletRegistry;
 import com.liferay.fragment.service.FragmentEntryLinkLocalService;
 import com.liferay.headless.delivery.dto.v1_0.PageElement;
+import com.liferay.layout.importer.PortletPermissionsImporter;
 import com.liferay.layout.internal.importer.LayoutStructureItemImporterContext;
 import com.liferay.layout.internal.importer.helper.PortletConfigurationImporterHelper;
-import com.liferay.layout.internal.importer.helper.PortletPermissionsImporterHelper;
 import com.liferay.layout.util.structure.FragmentStyledLayoutStructureItem;
 import com.liferay.layout.util.structure.LayoutStructure;
 import com.liferay.layout.util.structure.LayoutStructureItem;
@@ -24,29 +25,41 @@ import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.portlet.PortletIdCodec;
 import com.liferay.portal.kernel.service.PortletLocalService;
-import com.liferay.portal.kernel.service.PortletPreferencesLocalService;
+import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.PortletKeys;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.segments.service.SegmentsExperienceLocalService;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
-
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Jürgen Kappler
  */
-@Component(service = LayoutStructureItemImporter.class)
 public class WidgetLayoutStructureItemImporter
 	extends BaseLayoutStructureItemImporter
 	implements LayoutStructureItemImporter {
+
+	public WidgetLayoutStructureItemImporter(
+		FragmentEntryLinkLocalService fragmentEntryLinkLocalService,
+		FragmentEntryProcessorRegistry fragmentEntryProcessorRegistry,
+		PortletConfigurationImporterHelper portletConfigurationImporterHelper,
+		PortletLocalService portletLocalService,
+		PortletPermissionsImporter portletPermissionsImporter,
+		PortletRegistry portletRegistry) {
+
+		_fragmentEntryLinkLocalService = fragmentEntryLinkLocalService;
+		_fragmentEntryProcessorRegistry = fragmentEntryProcessorRegistry;
+		_portletConfigurationImporterHelper =
+			portletConfigurationImporterHelper;
+		_portletLocalService = portletLocalService;
+		_portletPermissionsImporter = portletPermissionsImporter;
+		_portletRegistry = portletRegistry;
+	}
 
 	@Override
 	public LayoutStructureItem addLayoutStructureItem(
@@ -58,6 +71,7 @@ public class WidgetLayoutStructureItemImporter
 
 		FragmentEntryLink fragmentEntryLink = _addFragmentEntryLink(
 			layoutStructureItemImporterContext.getLayout(), pageElement,
+			layoutStructureItemImporterContext.getSegmentsExperienceId(),
 			warningMessages);
 
 		if (fragmentEntryLink == null) {
@@ -144,7 +158,8 @@ public class WidgetLayoutStructureItemImporter
 	}
 
 	private FragmentEntryLink _addFragmentEntryLink(
-			Layout layout, PageElement pageElement, Set<String> warningMessages)
+			Layout layout, PageElement pageElement, long segmentsExperienceId,
+			Set<String> warningMessages)
 		throws Exception {
 
 		Map<String, Object> definitionMap = getDefinitionMap(
@@ -179,14 +194,14 @@ public class WidgetLayoutStructureItemImporter
 
 		JSONObject editableValueJSONObject =
 			_fragmentEntryProcessorRegistry.getDefaultEditableValuesJSONObject(
-				StringPool.BLANK, StringPool.BLANK);
+				StringPool.BLANK, null);
 
 		if (Validator.isNull(widgetInstanceId)) {
 			widgetInstanceId = StringUtil.randomId();
 		}
 
 		widgetInstanceId = _getPortletInstanceId(
-			layout, portlet, widgetInstanceId);
+			layout, portlet, widgetInstanceId, segmentsExperienceId);
 
 		editableValueJSONObject.put(
 			"instanceId", widgetInstanceId
@@ -205,62 +220,60 @@ public class WidgetLayoutStructureItemImporter
 		List<Map<String, Object>> widgetPermissionsMaps =
 			(List<Map<String, Object>>)widgetInstance.get("widgetPermissions");
 
-		_portletPermissionsImporterHelper.importPortletPermissions(
+		_portletPermissionsImporter.importPortletPermissions(
 			layout.getPlid(),
 			PortletIdCodec.encode(widgetName, widgetInstanceId),
 			warningMessages, widgetPermissionsMaps);
 
+		ServiceContext serviceContext =
+			ServiceContextThreadLocal.getServiceContext();
+
 		return _fragmentEntryLinkLocalService.addFragmentEntryLink(
-			layout.getUserId(), layout.getGroupId(), 0, 0,
-			_segmentsExperienceLocalService.fetchDefaultSegmentsExperienceId(
-				layout.getPlid()),
-			layout.getPlid(), StringPool.BLANK, StringPool.BLANK,
-			StringPool.BLANK, StringPool.BLANK,
+			null, serviceContext.getUserId(), layout.getGroupId(), null, null,
+			null, segmentsExperienceId, layout.getPlid(), StringPool.BLANK,
+			StringPool.BLANK, StringPool.BLANK, StringPool.BLANK,
 			editableValueJSONObject.toString(), widgetInstanceId, 0, null,
-			FragmentConstants.TYPE_PORTLET,
-			ServiceContextThreadLocal.getServiceContext());
+			FragmentConstants.TYPE_PORTLET, serviceContext);
 	}
 
 	private String _getPortletInstanceId(
-			Layout layout, Portlet portlet, String portletInstanceId)
+			Layout layout, Portlet portlet, String portletInstanceId,
+			long segmentsExperienceId)
 		throws Exception {
 
 		if (portlet.isInstanceable()) {
 			return portletInstanceId;
 		}
 
-		long count = _portletPreferencesLocalService.getPortletPreferencesCount(
-			PortletKeys.PREFS_OWNER_TYPE_LAYOUT, layout.getPlid(),
-			portlet.getPortletId());
+		for (FragmentEntryLink fragmentEntryLink :
+				_fragmentEntryLinkLocalService.
+					getFragmentEntryLinksBySegmentsExperienceId(
+						layout.getGroupId(), segmentsExperienceId,
+						layout.getPlid(), false)) {
 
-		if (count > 0) {
-			throw new PortletIdException(
-				"Unable to add uninstanceable portlet more than once");
+			for (String portletId :
+					_portletRegistry.getFragmentEntryLinkPortletIds(
+						null, fragmentEntryLink)) {
+
+				if (Objects.equals(
+						PortletIdCodec.decodePortletName(portletId),
+						portlet.getPortletName())) {
+
+					throw new PortletIdException(portletId);
+				}
+			}
 		}
 
 		return StringPool.BLANK;
 	}
 
-	@Reference
-	private FragmentEntryLinkLocalService _fragmentEntryLinkLocalService;
-
-	@Reference
-	private FragmentEntryProcessorRegistry _fragmentEntryProcessorRegistry;
-
-	@Reference
-	private PortletConfigurationImporterHelper
+	private final FragmentEntryLinkLocalService _fragmentEntryLinkLocalService;
+	private final FragmentEntryProcessorRegistry
+		_fragmentEntryProcessorRegistry;
+	private final PortletConfigurationImporterHelper
 		_portletConfigurationImporterHelper;
-
-	@Reference
-	private PortletLocalService _portletLocalService;
-
-	@Reference
-	private PortletPermissionsImporterHelper _portletPermissionsImporterHelper;
-
-	@Reference
-	private PortletPreferencesLocalService _portletPreferencesLocalService;
-
-	@Reference
-	private SegmentsExperienceLocalService _segmentsExperienceLocalService;
+	private final PortletLocalService _portletLocalService;
+	private final PortletPermissionsImporter _portletPermissionsImporter;
+	private final PortletRegistry _portletRegistry;
 
 }

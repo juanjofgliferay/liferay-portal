@@ -3,8 +3,8 @@ import BaseCard from 'shared/components/base-card';
 import Card from '../Card';
 import React from 'react';
 import {AssetAudienceReportQuery, PageAudienceReportQuery} from './queries';
-import {Containers} from '../download-report/DownloadPDFReport';
 import {IAudienceReportBaseCardProps, Name} from './types';
+import {ReportContainer} from '../download-report/DownloadPDFReport';
 
 function AudienceReportBaseCard({
 	query: {metricName, name},
@@ -16,17 +16,18 @@ function AudienceReportBaseCard({
 	return (
 		<BaseCard
 			className='analytics-audience-report-card'
-			id={Containers.AudienceCard}
 			label={Liferay.Language.get('audience')}
 			legacyDropdownRangeKey={false}
 			minHeight={536}
+			reportContainer={ReportContainer.AudienceCard}
 		>
-			{({filters, rangeSelectors}) => (
+			{({experienceId, filters, rangeSelectors}) => (
 				<Card.Body>
 					<AudienceReport
 						{...props}
+						experienceId={experienceId}
 						filters={filters}
-						mapper={result => result?.[name]?.[metricName]}
+						mapper={(result: any) => result?.[name]?.[metricName]}
 						name={name}
 						Query={AudienceReportQuery({
 							metricName,

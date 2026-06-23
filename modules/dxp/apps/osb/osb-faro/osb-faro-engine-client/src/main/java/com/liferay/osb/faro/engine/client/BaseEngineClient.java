@@ -13,6 +13,7 @@ import com.liferay.osb.faro.engine.client.cache.FaroCache;
 import com.liferay.osb.faro.engine.client.exception.FaroEngineClientException;
 import com.liferay.osb.faro.engine.client.http.client.AuditClientHttpRequestInterceptor;
 import com.liferay.osb.faro.engine.client.http.client.AuthenticationClientHttpRequestInterceptor;
+import com.liferay.osb.faro.engine.client.http.client.AuthorClientHttpRequestInterceptor;
 import com.liferay.osb.faro.engine.client.http.client.CacheClientHttpRequestInterceptor;
 import com.liferay.osb.faro.engine.client.http.client.LoggingClientHttpRequestInterceptor;
 import com.liferay.osb.faro.engine.client.http.client.SSLHandshakeExceptionHttpRequestInterceptor;
@@ -381,6 +382,8 @@ public abstract class BaseEngineClient {
 			new AuditClientHttpRequestInterceptor());
 		clientHttpRequestInterceptors.add(
 			new AuthenticationClientHttpRequestInterceptor(faroProject));
+		clientHttpRequestInterceptors.add(
+			new AuthorClientHttpRequestInterceptor());
 
 		Cache cache = getCache();
 
@@ -582,6 +585,22 @@ public abstract class BaseEngineClient {
 		uriVariables.put("id", id);
 
 		return uriVariables;
+	}
+
+	protected <T> T patch(
+			FaroProject faroProject, Map<String, String> headers, String path,
+			Map<String, List<String>> queryParameters, Object requestBody,
+			Class<T> responseType, Map<String, Object> uriVariables)
+		throws Exception {
+
+		RestTemplate restTemplate = getRestTemplate(faroProject);
+
+		ResponseEntity<T> responseEntity = restTemplate.exchange(
+			getUriString(faroProject, path, queryParameters), HttpMethod.PATCH,
+			new HttpEntity<>(requestBody, createHttpHeaders(headers)),
+			responseType, uriVariables);
+
+		return responseEntity.getBody();
 	}
 
 	protected <T> T patch(

@@ -36,7 +36,7 @@ export default class DefinitionItem extends React.Component {
 	handleSubmit(values) {
 		const {name, onSubmit} = this.props;
 
-		const {setSubmitting} = this._formRef.current.getFormikActions();
+		const {setSubmitting} = this._formRef.current;
 
 		if (onSubmit) {
 			onSubmit(values[name], name)
@@ -72,14 +72,14 @@ export default class DefinitionItem extends React.Component {
 					this.props.className ? ` ${this.props.className}` : ''
 				}`}
 			>
-				{label && <h6>{label}</h6>}
+				{label && <div className='h6'>{label}</div>}
 
 				{editing ? (
 					<Form
 						initialValues={{[name]: value}}
+						innerRef={this._formRef}
 						key='EDITING'
 						onSubmit={this.handleSubmit}
-						ref={this._formRef}
 					>
 						{({handleSubmit, isSubmitting, isValid}) => (
 							<Form.Form

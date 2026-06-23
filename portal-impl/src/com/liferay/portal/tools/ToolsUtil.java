@@ -5,11 +5,11 @@
 
 package com.liferay.portal.tools;
 
+import com.liferay.petra.io.unsync.UnsyncBufferedReader;
+import com.liferay.petra.io.unsync.UnsyncStringReader;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
-import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -69,7 +69,7 @@ public class ToolsUtil {
 
 	public static final int PLUGINS_MAX_DIR_LEVEL = 3;
 
-	public static final int PORTAL_MAX_DIR_LEVEL = 7;
+	public static final int PORTAL_MAX_DIR_LEVEL = 10;
 
 	public static String encodeEnvironmentProperty(String property) {
 		StringBundler sb = new StringBundler();
@@ -247,14 +247,14 @@ public class ToolsUtil {
 
 		pos -= start;
 
-		char delimeter = CharPool.SPACE;
+		char delimiter = CharPool.SPACE;
 		boolean insideQuotes = false;
 
 		for (int i = 0; i < line.length(); i++) {
 			char c = line.charAt(i);
 
 			if (insideQuotes) {
-				if (c == delimeter) {
+				if (c == delimiter) {
 					if (!allowEscapedQuotes) {
 						insideQuotes = false;
 					}
@@ -279,7 +279,7 @@ public class ToolsUtil {
 				}
 			}
 			else if ((c == CharPool.APOSTROPHE) || (c == CharPool.QUOTE)) {
-				delimeter = c;
+				delimiter = c;
 				insideQuotes = true;
 			}
 
@@ -768,7 +768,7 @@ public class ToolsUtil {
 	}
 
 	/**
-	 * @see com.liferay.portal.configuration.ClassLoaderAggregatePropertiesUtil#_getCharPoolChars
+	 * @see com.liferay.portal.kernel.util.EnvPropertiesUtil#_getCharPoolChars
 	 */
 	private static final Map<Character, String> _charPoolChars =
 		new HashMap<Character, String>() {

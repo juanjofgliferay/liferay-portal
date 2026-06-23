@@ -17,16 +17,16 @@ import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.service.permission.GroupPermissionUtil;
 import com.liferay.product.navigation.site.administration.internal.constants.SiteAdministrationWebKeys;
-import com.liferay.site.util.GroupURLProvider;
-import com.liferay.site.util.RecentGroupManager;
+import com.liferay.site.manager.RecentGroupManager;
+import com.liferay.site.provider.GroupURLProvider;
+
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
 import java.util.Locale;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -102,14 +102,8 @@ public class SiteAdministrationPanelCategory extends BaseJSPPanelCategory {
 			return false;
 		}
 
-		if (GroupPermissionUtil.contains(
-				permissionChecker, group,
-				ActionKeys.VIEW_SITE_ADMINISTRATION)) {
-
-			return true;
-		}
-
-		return false;
+		return GroupPermissionUtil.contains(
+			permissionChecker, group, ActionKeys.VIEW_SITE_ADMINISTRATION);
 	}
 
 	@Override

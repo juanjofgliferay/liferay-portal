@@ -6,16 +6,19 @@
 import ClayButton from '@clayui/button';
 import ClayForm from '@clayui/form';
 import ClayModal from '@clayui/modal';
-import {fetch} from 'frontend-js-web';
-import React, {useState} from 'react';
+import {debounce, fetch} from 'frontend-js-web';
+import React, {useCallback, useMemo, useState} from 'react';
 
+import ServiceProvider from '../../../ServiceProvider/index';
 import AccountCreationModalBody from './AccountCreationModalBody';
 
-const ACCOUNTS_ROOT_ENDPOINT = '/o/headless-admin-user/v1.0/accounts';
+const DeliveryCatalogAPIServiceProvider =
+	ServiceProvider.DeliveryCatalogAPI('v1');
 
 export default function AccountCreationModal({
-	accountTypes,
+	accountEntryAllowedTypes,
 	closeModal,
+	commerceChannelId,
 	handleAccountChange,
 	observer,
 }) {
@@ -25,23 +28,28 @@ export default function AccountCreationModal({
 		name: '',
 		organizations: [],
 		taxId: '',
-		type: accountTypes[0],
+		type: accountEntryAllowedTypes[0],
 	});
 
-	const createAccount = (event) => {
-		event.preventDefault();
+	const apiUrl = new URL(
+		`${themeDisplay.getPathContext()}${DeliveryCatalogAPIServiceProvider.baseURL(
+			commerceChannelId
+		)}`,
+		themeDisplay.getPortalURL()
+	);
 
+	const createAccount = useCallback(() => {
 		const organizationIds = accountData.organizations.map(
 			({value}) => value
 		);
 
-		fetch(ACCOUNTS_ROOT_ENDPOINT, {
+		fetch(apiUrl, {
 			body: JSON.stringify({
 				description: accountData.description,
 				externalReferenceCode: accountData.externalReferenceCode,
-				id: accountData.taxId,
 				name: accountData.name,
 				organizationIds,
+				taxId: accountData.taxId,
 				type: accountData.type,
 			}),
 			headers: {
@@ -56,20 +64,51 @@ export default function AccountCreationModal({
 				closeModal();
 			})
 			.catch((error) => console.error(error));
-	};
+
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [
+		accountData.description,
+		accountData.externalReferenceCode,
+		accountData.name,
+		accountData.organizations,
+		accountData.taxId,
+		accountData.type,
+		closeModal,
+		handleAccountChange,
+	]);
+
+	const debouncedCreateAccount = useMemo(
+		() => debounce(async () => createAccount(), 500),
+		[createAccount]
+	);
 
 	return (
 		<ClayModal center className="commerce-modal" observer={observer}>
-			<ClayModal.Header>
-				{Liferay.Language.get('create-new-account')}
-			</ClayModal.Header>
+			<ClayForm
+				onSubmit={(event) => {
+					event.preventDefault();
 
-			<ClayForm onSubmit={createAccount}>
-				<AccountCreationModalBody
-					accountData={accountData}
-					accountTypes={accountTypes}
-					setAccountData={setAccountData}
-				/>
+					debouncedCreateAccount();
+				}}
+				style={{
+					display: 'inherit',
+					flexDirection: 'inherit',
+					maxHeight: 'inherit',
+				}}
+			>
+				<ClayModal.Header
+					closeButtonAriaLabel={Liferay.Language.get('close')}
+				>
+					{Liferay.Language.get('create-new-account')}
+				</ClayModal.Header>
+
+				<ClayModal.Body>
+					<AccountCreationModalBody
+						accountData={accountData}
+						accountEntryAllowedTypes={accountEntryAllowedTypes}
+						setAccountData={setAccountData}
+					/>
+				</ClayModal.Body>
 
 				<ClayModal.Footer
 					last={

@@ -5,7 +5,7 @@
 
 package com.liferay.oauth.client.admin.web.internal.portlet.action;
 
-import com.liferay.oauth.client.admin.web.internal.constants.OAuthClientAdminPortletKeys;
+import com.liferay.oauth.client.constants.OAuthClientAdminPortletKeys;
 import com.liferay.oauth.client.persistence.service.OAuthClientEntryService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
@@ -16,8 +16,8 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -27,7 +27,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + OAuthClientAdminPortletKeys.OAUTH_CLIENT_ADMIN,
+		"jakarta.portlet.name=" + OAuthClientAdminPortletKeys.OAUTH_CLIENT_ADMIN,
 		"mvc.command.name=/oauth_client_admin/delete_oauth_client_entry"
 	},
 	service = MVCActionCommand.class

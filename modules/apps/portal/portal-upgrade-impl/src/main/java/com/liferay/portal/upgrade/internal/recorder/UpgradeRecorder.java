@@ -10,11 +10,14 @@ import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.upgrade.ReleaseManager;
+import com.liferay.portal.kernel.upgrade.recorder.UpgradeSQLRecorder;
 import com.liferay.portal.kernel.util.InfrastructureUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.version.Version;
 import com.liferay.portal.tools.DBUpgrader;
-import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.verify.PreupgradeVerifyProcessSuite;
+import com.liferay.portal.verify.VerifyException;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -25,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 import javax.sql.DataSource;
 
@@ -41,6 +45,10 @@ import org.osgi.util.tracker.ServiceTracker;
  */
 @Component(service = UpgradeRecorder.class)
 public class UpgradeRecorder {
+
+	public Map<String, Map<String, Integer>> getDataCleanUpMessages() {
+		return _dataCleanUpMessages;
+	}
 
 	public Map<String, Map<String, Integer>> getErrorMessages() {
 		return _errorMessages;
@@ -84,7 +92,27 @@ public class UpgradeRecorder {
 		return _warningMessages;
 	}
 
-	public void recordErrorMessage(String loggerName, String message) {
+	public boolean isPreupgradeVerifyFailure() {
+		ReleaseManager releaseManager = _serviceTracker.getService();
+
+		if (releaseManager != null) {
+			return false;
+		}
+
+		return _errorMessages.containsKey(
+			PreupgradeVerifyProcessSuite.class.getName());
+	}
+
+	public void recordDataCleanupMessage(String loggerName, String message) {
+		Map<String, Integer> messages = _dataCleanUpMessages.computeIfAbsent(
+			loggerName, key -> new ConcurrentSkipListMap<>());
+
+		messages.put(message, messages.getOrDefault(message, 0) + 1);
+	}
+
+	public void recordErrorMessage(
+		String loggerName, String message, Throwable throwable) {
+
 		Map<String, Integer> messages = _errorMessages.computeIfAbsent(
 			loggerName, key -> new ConcurrentHashMap<>());
 
@@ -93,6 +121,13 @@ public class UpgradeRecorder {
 		occurrences++;
 
 		messages.put(message, occurrences);
+
+		if (!_verifyProcessError &&
+			(message.contains(VerifyException.class.getName()) ||
+			 (throwable instanceof VerifyException))) {
+
+			_verifyProcessError = true;
+		}
 	}
 
 	public void recordUpgradeProcessMessage(String loggerName, String message) {
@@ -114,6 +149,7 @@ public class UpgradeRecorder {
 	}
 
 	public void start() {
+		_dataCleanUpMessages.clear();
 		_errorMessages.clear();
 		_result = "running";
 		_schemaVersionsMap.clear();
@@ -124,14 +160,19 @@ public class UpgradeRecorder {
 		_processRelease(
 			(moduleSchemaVersions, schemaVersion) ->
 				moduleSchemaVersions._setInitial(schemaVersion));
+
+		UpgradeSQLRecorder.start();
 	}
 
 	public void stop() {
+		UpgradeSQLRecorder.stop();
+
 		_filter(_errorMessages);
 		_filter(_warningMessages);
 
 		_result = _calculateResult();
-		_type = _calculateType();
+
+		_type = _calculateType(_result);
 
 		if (PropsValues.UPGRADE_LOG_CONTEXT_ENABLED) {
 			ThreadContext.put("upgrade.type", _type);
@@ -139,23 +180,23 @@ public class UpgradeRecorder {
 		}
 
 		if (_log.isInfoEnabled()) {
-			if (_type.equals("no upgrade")) {
-				if (_result.equals("success")) {
-					_log.info("No pending upgrades to run");
-				}
-				else {
-					_log.info(
-						"Upgrade process failed or upgrade dependencies are " +
-							"not resolved");
-				}
+			if (_type.equals("no upgrade") && _result.equals("success")) {
+				_log.info("No pending upgrades to run");
 			}
-			else {
+			else if (!isPreupgradeVerifyFailure()) {
 				_log.info(
 					StringBundler.concat(
-						StringUtil.toUpperCase(_type.substring(0, 1)),
-						_type.substring(1), " upgrade finished with result ",
-						_result));
+						StringUtil.upperCaseFirstLetter(_type),
+						" upgrade finished with result ", _result));
 			}
+		}
+
+		if (_log.isWarnEnabled() && !_errorMessages.isEmpty() &&
+			!_result.equals("failure") && !isPreupgradeVerifyFailure()) {
+
+			_log.warn(
+				"Verify if the errors during the execution are related to " +
+					"the upgrade");
 		}
 
 		if (PropsValues.UPGRADE_LOG_CONTEXT_ENABLED) {
@@ -177,16 +218,18 @@ public class UpgradeRecorder {
 	}
 
 	private String _calculateResult() {
-		if (!_errorMessages.isEmpty()) {
+		if (_verifyProcessError) {
+			if (isPreupgradeVerifyFailure()) {
+				return "preupgrade verification failure";
+			}
+
 			return "failure";
 		}
 
 		try {
 			ReleaseManager releaseManager = _serviceTracker.getService();
 
-			if (!releaseManager.isUpgraded()) {
-				return "unresolved";
-			}
+			return releaseManager.getStatus();
 		}
 		catch (Exception exception) {
 			_log.error(
@@ -196,15 +239,9 @@ public class UpgradeRecorder {
 
 			return "failure";
 		}
-
-		if (!_warningMessages.isEmpty()) {
-			return "warning";
-		}
-
-		return "success";
 	}
 
-	private String _calculateType() {
+	private String _calculateType(String result) {
 		_processRelease(
 			(moduleSchemaVersions, schemaVersion) ->
 				moduleSchemaVersions._setFinal(schemaVersion));
@@ -217,7 +254,7 @@ public class UpgradeRecorder {
 			SchemaVersions schemaVersions = schemaVersionsEntry.getValue();
 
 			if (schemaVersions._getInitial() == null) {
-				continue;
+				return "major";
 			}
 
 			Version initialVersion = Version.parseVersion(
@@ -246,6 +283,10 @@ public class UpgradeRecorder {
 			type = "micro";
 		}
 
+		if (type.equals("no upgrade") && !result.equals("success")) {
+			return "major";
+		}
+
 		return type;
 	}
 
@@ -269,6 +310,7 @@ public class UpgradeRecorder {
 		}
 
 		try (Connection connection = dataSource.getConnection();
+
 			PreparedStatement preparedStatement = connection.prepareStatement(
 				"select servletContextName, schemaVersion from Release_")) {
 
@@ -301,13 +343,15 @@ public class UpgradeRecorder {
 	}
 
 	private static final String[] _FILTERED_CLASS_NAMES = {
-		"com.liferay.portal.search.elasticsearch7.internal.sidecar." +
+		"com.liferay.portal.search.elasticsearch8.internal.sidecar." +
 			"SidecarManager"
 	};
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		UpgradeRecorder.class);
 
+	private static final Map<String, Map<String, Integer>>
+		_dataCleanUpMessages = new ConcurrentHashMap<>();
 	private static final Map<String, Map<String, Integer>> _errorMessages =
 		new ConcurrentHashMap<>();
 	private static String _result;
@@ -316,13 +360,12 @@ public class UpgradeRecorder {
 	private static String _type;
 	private static final Map<String, ArrayList<String>>
 		_upgradeProcessMessages = new ConcurrentHashMap<>();
+	private static boolean _verifyProcessError;
 	private static final Map<String, Map<String, Integer>> _warningMessages =
 		new ConcurrentHashMap<>();
 
 	static {
-		if (DBUpgrader.isUpgradeDatabaseAutoRunEnabled() ||
-			DBUpgrader.isUpgradeClient()) {
-
+		if (DBUpgrader.isUpgradeDatabaseAutoRunEnabled()) {
 			_result = "pending";
 			_type = "pending";
 		}

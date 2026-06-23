@@ -51,7 +51,7 @@ public class ObjectRelationshipLocalServiceWrapper
 	public com.liferay.object.model.ObjectRelationship addObjectRelationship(
 			String externalReferenceCode, long userId, long objectDefinitionId1,
 			long objectDefinitionId2, long parameterObjectFieldId,
-			String deletionType,
+			String deletionType, boolean edge,
 			java.util.Map<java.util.Locale, String> labelMap, String name,
 			boolean system, String type,
 			com.liferay.object.model.ObjectField objectField)
@@ -59,8 +59,20 @@ public class ObjectRelationshipLocalServiceWrapper
 
 		return _objectRelationshipLocalService.addObjectRelationship(
 			externalReferenceCode, userId, objectDefinitionId1,
-			objectDefinitionId2, parameterObjectFieldId, deletionType, labelMap,
-			name, system, type, objectField);
+			objectDefinitionId2, parameterObjectFieldId, deletionType, edge,
+			labelMap, name, system, type, objectField);
+	}
+
+	@Override
+	public com.liferay.object.model.ObjectRelationship addObjectRelationship(
+			String externalReferenceCode, long userId, long objectDefinitionId1,
+			long objectDefinitionId2,
+			com.liferay.object.model.ObjectField objectField)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _objectRelationshipLocalService.addObjectRelationship(
+			externalReferenceCode, userId, objectDefinitionId1,
+			objectDefinitionId2, objectField);
 	}
 
 	@Override
@@ -313,6 +325,15 @@ public class ObjectRelationshipLocalServiceWrapper
 	}
 
 	@Override
+	public com.liferay.object.model.ObjectRelationship fetchObjectRelationship(
+			long objectDefinitionId1, String name)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _objectRelationshipLocalService.fetchObjectRelationship(
+			objectDefinitionId1, name);
+	}
+
+	@Override
 	public com.liferay.object.model.ObjectRelationship
 		fetchObjectRelationshipByExternalReferenceCode(
 			String externalReferenceCode, long objectDefinitionId1) {
@@ -460,7 +481,7 @@ public class ObjectRelationshipLocalServiceWrapper
 	public com.liferay.object.model.ObjectRelationship
 			getObjectRelationshipByObjectDefinitionId(
 				long objectDefinitionId, String name)
-		throws Exception {
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _objectRelationshipLocalService.
 			getObjectRelationshipByObjectDefinitionId(objectDefinitionId, name);
@@ -560,6 +581,26 @@ public class ObjectRelationshipLocalServiceWrapper
 			getObjectRelationshipsByObjectDefinitionId2(objectDefinitionId2);
 	}
 
+	@Override
+	public java.util.List<com.liferay.object.model.ObjectRelationship>
+		getObjectRelationshipsByObjectDefinitionId2(
+			long objectDefinitionId2, boolean edge) {
+
+		return _objectRelationshipLocalService.
+			getObjectRelationshipsByObjectDefinitionId2(
+				objectDefinitionId2, edge);
+	}
+
+	@Override
+	public java.util.List<com.liferay.object.model.ObjectRelationship>
+		getObjectRelationshipsByObjectDefinitionId2(
+			long objectDefinitionId2, String type) {
+
+		return _objectRelationshipLocalService.
+			getObjectRelationshipsByObjectDefinitionId2(
+				objectDefinitionId2, type);
+	}
+
 	/**
 	 * Returns the number of object relationships.
 	 *
@@ -568,6 +609,15 @@ public class ObjectRelationshipLocalServiceWrapper
 	@Override
 	public int getObjectRelationshipsCount() {
 		return _objectRelationshipLocalService.getObjectRelationshipsCount();
+	}
+
+	@Override
+	public java.util.Map
+		<Long, java.util.List<com.liferay.object.model.ObjectRelationship>>
+			getObjectRelationshipsMap(long companyId) {
+
+		return _objectRelationshipLocalService.getObjectRelationshipsMap(
+			companyId);
 	}
 
 	/**
@@ -594,11 +644,14 @@ public class ObjectRelationshipLocalServiceWrapper
 	@Override
 	public void registerObjectRelationshipsRelatedInfoCollectionProviders(
 		com.liferay.object.model.ObjectDefinition objectDefinition1,
-		ObjectDefinitionLocalService objectDefinitionLocalService) {
+		ObjectDefinitionLocalService objectDefinitionLocalService,
+		java.util.List<com.liferay.object.model.ObjectRelationship>
+			objectRelationships) {
 
 		_objectRelationshipLocalService.
 			registerObjectRelationshipsRelatedInfoCollectionProviders(
-				objectDefinition1, objectDefinitionLocalService);
+				objectDefinition1, objectDefinitionLocalService,
+				objectRelationships);
 	}
 
 	/**
@@ -633,6 +686,14 @@ public class ObjectRelationshipLocalServiceWrapper
 	}
 
 	@Override
+	public void updateUserId(long companyId, long oldUserId, long newUserId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_objectRelationshipLocalService.updateUserId(
+			companyId, oldUserId, newUserId);
+	}
+
+	@Override
 	public BasePersistence<?> getBasePersistence() {
 		return _objectRelationshipLocalService.getBasePersistence();
 	}
@@ -652,3 +713,4 @@ public class ObjectRelationshipLocalServiceWrapper
 	private ObjectRelationshipLocalService _objectRelationshipLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1131588211

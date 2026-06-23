@@ -113,9 +113,7 @@ public class SamlSpIdpConnectionPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		SamlSpIdpConnection newSamlSpIdpConnection = _persistence.create(pk);
+		SamlSpIdpConnection newSamlSpIdpConnection = addSamlSpIdpConnection();
 
 		newSamlSpIdpConnection.setCompanyId(RandomTestUtil.nextLong());
 
@@ -126,6 +124,9 @@ public class SamlSpIdpConnectionPersistenceTest {
 		newSamlSpIdpConnection.setCreateDate(RandomTestUtil.nextDate());
 
 		newSamlSpIdpConnection.setModifiedDate(RandomTestUtil.nextDate());
+
+		newSamlSpIdpConnection.setSamlIdpEntityId(
+			RandomTestUtil.randomString());
 
 		newSamlSpIdpConnection.setAssertionSignatureRequired(
 			RandomTestUtil.randomBoolean());
@@ -149,9 +150,6 @@ public class SamlSpIdpConnectionPersistenceTest {
 		newSamlSpIdpConnection.setName(RandomTestUtil.randomString());
 
 		newSamlSpIdpConnection.setNameIdFormat(RandomTestUtil.randomString());
-
-		newSamlSpIdpConnection.setSamlIdpEntityId(
-			RandomTestUtil.randomString());
 
 		newSamlSpIdpConnection.setSignAuthnRequest(
 			RandomTestUtil.randomBoolean());
@@ -191,6 +189,9 @@ public class SamlSpIdpConnectionPersistenceTest {
 				existingSamlSpIdpConnection.getModifiedDate()),
 			Time.getShortTimestamp(newSamlSpIdpConnection.getModifiedDate()));
 		Assert.assertEquals(
+			existingSamlSpIdpConnection.getSamlIdpEntityId(),
+			newSamlSpIdpConnection.getSamlIdpEntityId());
+		Assert.assertEquals(
 			existingSamlSpIdpConnection.isAssertionSignatureRequired(),
 			newSamlSpIdpConnection.isAssertionSignatureRequired());
 		Assert.assertEquals(
@@ -222,9 +223,6 @@ public class SamlSpIdpConnectionPersistenceTest {
 		Assert.assertEquals(
 			existingSamlSpIdpConnection.getNameIdFormat(),
 			newSamlSpIdpConnection.getNameIdFormat());
-		Assert.assertEquals(
-			existingSamlSpIdpConnection.getSamlIdpEntityId(),
-			newSamlSpIdpConnection.getSamlIdpEntityId());
 		Assert.assertEquals(
 			existingSamlSpIdpConnection.isSignAuthnRequest(),
 			newSamlSpIdpConnection.isSignAuthnRequest());
@@ -284,11 +282,11 @@ public class SamlSpIdpConnectionPersistenceTest {
 		return OrderByComparatorFactoryUtil.create(
 			"SamlSpIdpConnection", "samlSpIdpConnectionId", true, "companyId",
 			true, "userId", true, "userName", true, "createDate", true,
-			"modifiedDate", true, "assertionSignatureRequired", true,
-			"clockSkew", true, "enabled", true, "forceAuthn", true,
-			"ldapImportEnabled", true, "metadataUpdatedDate", true,
-			"metadataUrl", true, "name", true, "nameIdFormat", true,
-			"samlIdpEntityId", true, "signAuthnRequest", true,
+			"modifiedDate", true, "samlIdpEntityId", true,
+			"assertionSignatureRequired", true, "clockSkew", true, "enabled",
+			true, "forceAuthn", true, "ldapImportEnabled", true,
+			"metadataUpdatedDate", true, "metadataUrl", true, "name", true,
+			"nameIdFormat", true, "signAuthnRequest", true,
 			"unknownUsersAreStrangers", true, "userAttributeMappings", true,
 			"userIdentifierExpression", true);
 	}
@@ -600,6 +598,8 @@ public class SamlSpIdpConnectionPersistenceTest {
 
 		samlSpIdpConnection.setModifiedDate(RandomTestUtil.nextDate());
 
+		samlSpIdpConnection.setSamlIdpEntityId(RandomTestUtil.randomString());
+
 		samlSpIdpConnection.setAssertionSignatureRequired(
 			RandomTestUtil.randomBoolean());
 
@@ -621,8 +621,6 @@ public class SamlSpIdpConnectionPersistenceTest {
 		samlSpIdpConnection.setName(RandomTestUtil.randomString());
 
 		samlSpIdpConnection.setNameIdFormat(RandomTestUtil.randomString());
-
-		samlSpIdpConnection.setSamlIdpEntityId(RandomTestUtil.randomString());
 
 		samlSpIdpConnection.setSignAuthnRequest(RandomTestUtil.randomBoolean());
 
@@ -646,3 +644,4 @@ public class SamlSpIdpConnectionPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1116391275

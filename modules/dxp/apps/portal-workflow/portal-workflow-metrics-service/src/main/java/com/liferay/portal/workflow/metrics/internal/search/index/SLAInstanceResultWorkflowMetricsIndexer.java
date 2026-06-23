@@ -10,11 +10,17 @@ import com.liferay.portal.kernel.util.PortalRunMode;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.search.document.Document;
 import com.liferay.portal.search.document.DocumentBuilder;
+import com.liferay.portal.search.document.DocumentBuilderFactory;
 import com.liferay.portal.search.engine.adapter.document.UpdateByQueryDocumentRequest;
+import com.liferay.portal.search.index.IndexNameBuilder;
 import com.liferay.portal.search.query.BooleanQuery;
+import com.liferay.portal.search.query.QueriesUtil;
 import com.liferay.portal.search.script.ScriptBuilder;
 import com.liferay.portal.search.script.ScriptType;
+import com.liferay.portal.search.script.Scripts;
+import com.liferay.portal.workflow.metrics.internal.search.constants.WorkflowMetricsIndexTypeConstants;
 import com.liferay.portal.workflow.metrics.internal.sla.processor.WorkflowMetricsSLAInstanceResult;
+import com.liferay.portal.workflow.metrics.search.index.constants.WorkflowMetricsIndexNameConstants;
 import com.liferay.portal.workflow.metrics.sla.processor.WorkflowMetricsSLAStatus;
 
 import org.osgi.service.component.annotations.Component;
@@ -30,10 +36,10 @@ public class SLAInstanceResultWorkflowMetricsIndexer
 	public void blockDocuments(
 		long companyId, long processId, long slaDefinitionId) {
 
-		BooleanQuery booleanQuery = queries.booleanQuery();
+		BooleanQuery booleanQuery = QueriesUtil.booleanQuery();
 
 		booleanQuery.addMustNotQueryClauses(
-			queries.term("instanceCompleted", Boolean.TRUE));
+			QueriesUtil.term("instanceCompleted", Boolean.TRUE));
 
 		updateDocuments(
 			companyId,
@@ -41,9 +47,9 @@ public class SLAInstanceResultWorkflowMetricsIndexer
 				"blocked", Boolean.TRUE
 			).build(),
 			booleanQuery.addMustQueryClauses(
-				queries.term("companyId", companyId),
-				queries.term("processId", processId),
-				queries.term("slaDefinitionId", slaDefinitionId)));
+				QueriesUtil.term("companyId", companyId),
+				QueriesUtil.term("processId", processId),
+				QueriesUtil.term("slaDefinitionId", slaDefinitionId)));
 	}
 
 	public Document creatDefaultDocument(long companyId, long processId) {
@@ -59,7 +65,7 @@ public class SLAInstanceResultWorkflowMetricsIndexer
 	public Document createDocument(
 		WorkflowMetricsSLAInstanceResult workflowMetricsSLAInstanceResult) {
 
-		DocumentBuilder documentBuilder = documentBuilderFactory.builder();
+		DocumentBuilder documentBuilder = DocumentBuilderFactory.builder();
 
 		documentBuilder.setValue(
 			"active", true
@@ -152,23 +158,24 @@ public class SLAInstanceResultWorkflowMetricsIndexer
 
 		super.deleteDocuments(companyId, processId, slaDefinitionId);
 
-		BooleanQuery booleanQuery = queries.booleanQuery();
+		BooleanQuery booleanQuery = QueriesUtil.booleanQuery();
 
-		BooleanQuery filterBooleanQuery = queries.booleanQuery();
+		BooleanQuery filterBooleanQuery = QueriesUtil.booleanQuery();
 
 		filterBooleanQuery.addMustNotQueryClauses(
-			queries.term("instanceCompleted", Boolean.TRUE));
+			QueriesUtil.term("instanceCompleted", Boolean.TRUE));
 
 		filterBooleanQuery.addMustQueryClauses(
-			queries.term("completed", false),
-			queries.term("processId", processId),
-			queries.nested(
+			QueriesUtil.term("completed", false),
+			QueriesUtil.term("processId", processId),
+			QueriesUtil.nested(
 				"slaResults",
-				queries.term("slaResults.slaDefinitionId", slaDefinitionId)));
+				QueriesUtil.term(
+					"slaResults.slaDefinitionId", slaDefinitionId)));
 
 		booleanQuery.addFilterQueryClauses(filterBooleanQuery);
 
-		ScriptBuilder scriptBuilder = scripts.builder();
+		ScriptBuilder scriptBuilder = Scripts.INSTANCE.builder();
 
 		UpdateByQueryDocumentRequest updateByQueryDocumentRequest =
 			new UpdateByQueryDocumentRequest(
@@ -185,7 +192,10 @@ public class SLAInstanceResultWorkflowMetricsIndexer
 				).scriptType(
 					ScriptType.INLINE
 				).build(),
-				_instanceWorkflowMetricsIndex.getIndexName(companyId));
+				WorkflowMetricsIndex.getIndexName(
+					_indexNameBuilder,
+					WorkflowMetricsIndexNameConstants.SUFFIX_INSTANCE,
+					companyId));
 
 		if (PortalRunMode.isTestMode()) {
 			updateByQueryDocumentRequest.setRefresh(true);
@@ -196,20 +206,18 @@ public class SLAInstanceResultWorkflowMetricsIndexer
 
 	@Override
 	public String getIndexName(long companyId) {
-		return _slaInstanceResultWorkflowMetricsIndex.getIndexName(companyId);
+		return WorkflowMetricsIndex.getIndexName(
+			_indexNameBuilder,
+			WorkflowMetricsIndexNameConstants.SUFFIX_SLA_INSTANCE_RESULT,
+			companyId);
 	}
 
 	@Override
 	public String getIndexType() {
-		return _slaInstanceResultWorkflowMetricsIndex.getIndexType();
+		return WorkflowMetricsIndexTypeConstants.SLA_INSTANCE_RESULT_TYPE;
 	}
 
-	@Reference(target = "(workflow.metrics.index.entity.name=instance)")
-	private WorkflowMetricsIndex _instanceWorkflowMetricsIndex;
-
-	@Reference(
-		target = "(workflow.metrics.index.entity.name=sla-instance-result)"
-	)
-	private WorkflowMetricsIndex _slaInstanceResultWorkflowMetricsIndex;
+	@Reference
+	private IndexNameBuilder _indexNameBuilder;
 
 }

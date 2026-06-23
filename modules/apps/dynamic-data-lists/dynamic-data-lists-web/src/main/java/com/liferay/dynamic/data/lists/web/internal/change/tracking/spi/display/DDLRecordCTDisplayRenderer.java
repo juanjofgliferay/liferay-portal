@@ -27,11 +27,11 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -86,6 +86,11 @@ public class DDLRecordCTDisplayRenderer
 	}
 
 	@Override
+	public boolean isShowPreviewDiff() {
+		return true;
+	}
+
+	@Override
 	public String renderPreview(DisplayContext<DDLRecord> displayContext)
 		throws Exception {
 
@@ -119,11 +124,6 @@ public class DDLRecordCTDisplayRenderer
 		}
 
 		return null;
-	}
-
-	@Override
-	public boolean showPreviewDiff() {
-		return true;
 	}
 
 	@Override

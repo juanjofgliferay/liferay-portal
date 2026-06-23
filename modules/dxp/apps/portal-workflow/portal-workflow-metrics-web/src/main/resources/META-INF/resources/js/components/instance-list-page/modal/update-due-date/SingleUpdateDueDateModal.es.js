@@ -25,15 +25,10 @@ export default function SingleUpdateDueDateModal() {
 
 	const toaster = useToaster();
 
-	const {
-		closeModal,
-		setUpdateDueDate,
-		updateDueDate,
-		visibleModal,
-	} = useContext(ModalContext);
-	const {selectedInstance, setSelectedItems} = useContext(
-		InstanceListContext
-	);
+	const {closeModal, setUpdateDueDate, updateDueDate, visibleModal} =
+		useContext(ModalContext);
+	const {selectedInstance, setSelectedItems} =
+		useContext(InstanceListContext);
 
 	const {comment, dueDate} = updateDueDate;
 
@@ -129,7 +124,9 @@ export default function SingleUpdateDueDateModal() {
 			<PromisesResolver promises={promises}>
 				{visibleModal === 'updateDueDate' && (
 					<ClayModal observer={observer} size="md">
-						<ClayModal.Header>
+						<ClayModal.Header
+							closeButtonAriaLabel={Liferay.Language.get('close')}
+						>
 							{Liferay.Language.get('update-task-due-date')}
 						</ClayModal.Header>
 

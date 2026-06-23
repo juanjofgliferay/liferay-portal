@@ -6,54 +6,48 @@
 package com.liferay.layout.set.prototype.web.internal.portlet;
 
 import com.liferay.application.list.PanelAppRegistry;
-import com.liferay.application.list.PanelCategoryRegistry;
 import com.liferay.application.list.constants.ApplicationListWebKeys;
 import com.liferay.application.list.display.context.logic.PanelCategoryHelper;
-import com.liferay.layout.set.prototype.configuration.LayoutSetPrototypeConfiguration;
 import com.liferay.layout.set.prototype.constants.LayoutSetPrototypePortletKeys;
-import com.liferay.layout.set.prototype.helper.LayoutSetPrototypeHelper;
-import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.exception.NoSuchLayoutSetPrototypeException;
 import com.liferay.portal.kernel.exception.RequiredLayoutSetPrototypeException;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.model.LayoutSetPrototype;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.portlet.PortalPreferences;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
+import com.liferay.portal.kernel.service.LayoutSetLocalService;
 import com.liferay.portal.kernel.service.LayoutSetPrototypeService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.servlet.SessionErrors;
-import com.liferay.portal.kernel.servlet.SessionMessages;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
+import com.liferay.sites.kernel.util.Sites;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import java.io.IOException;
 
 import java.util.Locale;
 import java.util.Map;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Eudaldo Alonso
  */
 @Component(
-	configurationPid = "com.liferay.layout.set.prototype.configuration.LayoutSetPrototypeConfiguration",
 	property = {
 		"com.liferay.portlet.add-default-resource=true",
 		"com.liferay.portlet.css-class-wrapper=portlet-layout-set-prototype",
@@ -65,14 +59,14 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.render-weight=50",
 		"com.liferay.portlet.scopeable=true",
 		"com.liferay.portlet.use-default-template=true",
-		"javax.portlet.display-name=Site Templates",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.template-path=/META-INF/resources/",
-		"javax.portlet.init-param.view-template=/view.jsp",
-		"javax.portlet.name=" + LayoutSetPrototypePortletKeys.LAYOUT_SET_PROTOTYPE,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=administrator",
-		"javax.portlet.version=3.0"
+		"jakarta.portlet.display-name=Site Templates",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.template-path=/META-INF/resources/",
+		"jakarta.portlet.init-param.view-template=/view.jsp",
+		"jakarta.portlet.name=" + LayoutSetPrototypePortletKeys.LAYOUT_SET_PROTOTYPE,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=administrator",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -117,17 +111,32 @@ public class LayoutSetPrototypePortlet extends MVCPortlet {
 		}
 	}
 
-	public void resetMergeFailCount(
+	public void executeLayoutSetPrototypeSync(
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws Exception {
+
+		// TODO LPD-89751 Check permissions before proceeding with the sync
 
 		long layoutSetPrototypeId = ParamUtil.getLong(
 			actionRequest, "layoutSetPrototypeId");
 
-		layoutSetPrototypeHelper.setMergeFailCount(
-			layoutSetPrototypeService.getLayoutSetPrototype(
-				layoutSetPrototypeId),
-			0);
+		LayoutSetPrototype layoutSetPrototype =
+			layoutSetPrototypeService.fetchLayoutSetPrototype(
+				layoutSetPrototypeId);
+
+		if (layoutSetPrototype == null) {
+			return;
+		}
+
+		Sites sites = _sitesSnapshot.get();
+
+		for (LayoutSet layoutSet :
+				layoutSetLocalService.getLayoutSetsByLayoutSetPrototypeUuid(
+					layoutSetPrototype.getUuid())) {
+
+			sites.mergeLayoutSetPrototypeLayouts(
+				layoutSet.getGroup(), layoutSet);
+		}
 	}
 
 	public void updateLayoutSetPrototype(
@@ -144,8 +153,6 @@ public class LayoutSetPrototypePortlet extends MVCPortlet {
 		boolean active = ParamUtil.getBoolean(actionRequest, "active");
 		boolean layoutsUpdateable = ParamUtil.getBoolean(
 			actionRequest, "layoutsUpdateable");
-		boolean readyForPropagation = ParamUtil.getBoolean(
-			actionRequest, "readyForPropagation");
 
 		ServiceContext serviceContext = ServiceContextFactory.getInstance(
 			actionRequest);
@@ -159,30 +166,16 @@ public class LayoutSetPrototypePortlet extends MVCPortlet {
 			layoutSetPrototype =
 				layoutSetPrototypeService.addLayoutSetPrototype(
 					nameMap, descriptionMap, active, layoutsUpdateable,
-					readyForPropagation, serviceContext);
+					serviceContext);
 		}
 		else {
 
 			// Update layout prototoype
 
 			layoutSetPrototype =
-				layoutSetPrototypeService.getLayoutSetPrototype(
-					layoutSetPrototypeId);
-
-			UnicodeProperties oldSettingsUnicodeProperties =
-				layoutSetPrototype.getSettingsProperties();
-
-			boolean oldReadyForPropagation = GetterUtil.getBoolean(
-				oldSettingsUnicodeProperties.getProperty(
-					"readyForPropagation"));
-
-			_addSessionMessages(
-				actionRequest, oldReadyForPropagation, readyForPropagation);
-
-			layoutSetPrototype =
 				layoutSetPrototypeService.updateLayoutSetPrototype(
 					layoutSetPrototypeId, nameMap, descriptionMap, active,
-					layoutsUpdateable, readyForPropagation, serviceContext);
+					layoutsUpdateable, serviceContext);
 		}
 
 		// Custom JSPs
@@ -225,29 +218,13 @@ public class LayoutSetPrototypePortlet extends MVCPortlet {
 		boolean layoutsUpdateable = GetterUtil.getBoolean(
 			settingsUnicodeProperties.getProperty("layoutsUpdateable"));
 
-		boolean oldReadyForPropagation = GetterUtil.getBoolean(
-			settingsUnicodeProperties.getProperty("readyForPropagation"));
-
-		boolean readyForPropagation = ParamUtil.getBoolean(
-			actionRequest, "readyForPropagation", oldReadyForPropagation);
-
-		_addSessionMessages(
-			actionRequest, oldReadyForPropagation, readyForPropagation);
-
 		ServiceContext serviceContext = ServiceContextFactory.getInstance(
 			actionRequest);
 
 		layoutSetPrototypeService.updateLayoutSetPrototype(
 			layoutSetPrototypeId, layoutSetPrototype.getNameMap(),
 			layoutSetPrototype.getDescriptionMap(), active, layoutsUpdateable,
-			readyForPropagation, serviceContext);
-	}
-
-	@Activate
-	@Modified
-	protected void activate(Map<String, Object> properties) {
-		_layoutSetPrototypeConfiguration = ConfigurableUtil.createConfigurable(
-			LayoutSetPrototypeConfiguration.class, properties);
+			serviceContext);
 	}
 
 	@Override
@@ -256,7 +233,7 @@ public class LayoutSetPrototypePortlet extends MVCPortlet {
 		throws IOException, PortletException {
 
 		PanelCategoryHelper panelCategoryHelper = new PanelCategoryHelper(
-			panelAppRegistry, panelCategoryRegistry);
+			panelAppRegistry);
 
 		renderRequest.setAttribute(
 			ApplicationListWebKeys.PANEL_CATEGORY_HELPER, panelCategoryHelper);
@@ -283,19 +260,8 @@ public class LayoutSetPrototypePortlet extends MVCPortlet {
 		return false;
 	}
 
-	protected boolean isTriggerPropagation() {
-		try {
-			return _layoutSetPrototypeConfiguration.triggerPropagation();
-		}
-		catch (Exception exception) {
-			_log.error(exception);
-		}
-
-		return false;
-	}
-
 	@Reference
-	protected LayoutSetPrototypeHelper layoutSetPrototypeHelper;
+	protected LayoutSetLocalService layoutSetLocalService;
 
 	@Reference
 	protected LayoutSetPrototypeService layoutSetPrototypeService;
@@ -306,31 +272,7 @@ public class LayoutSetPrototypePortlet extends MVCPortlet {
 	@Reference
 	protected PanelAppRegistry panelAppRegistry;
 
-	@Reference
-	protected PanelCategoryRegistry panelCategoryRegistry;
-
-	private void _addSessionMessages(
-		ActionRequest actionRequest, boolean oldReadyForPropagation,
-		boolean readyForPropagation) {
-
-		if (oldReadyForPropagation && !readyForPropagation) {
-			SessionMessages.add(actionRequest, "disablePropagation");
-		}
-
-		if (!oldReadyForPropagation && readyForPropagation) {
-			if (isTriggerPropagation()) {
-				SessionMessages.add(actionRequest, "triggerPropagation");
-			}
-			else {
-				SessionMessages.add(actionRequest, "enablePropagation");
-			}
-		}
-	}
-
-	private static final Log _log = LogFactoryUtil.getLog(
-		LayoutSetPrototypePortlet.class);
-
-	private volatile LayoutSetPrototypeConfiguration
-		_layoutSetPrototypeConfiguration;
+	private static final Snapshot<Sites> _sitesSnapshot = new Snapshot<>(
+		LayoutSetPrototypePortlet.class, Sites.class);
 
 }

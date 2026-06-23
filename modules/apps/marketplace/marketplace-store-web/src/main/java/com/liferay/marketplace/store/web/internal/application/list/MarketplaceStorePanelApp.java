@@ -32,6 +32,11 @@ import org.osgi.service.component.annotations.Reference;
 public class MarketplaceStorePanelApp extends BasePanelApp {
 
 	@Override
+	public String getIcon() {
+		return "shopping-cart";
+	}
+
+	@Override
 	public Portlet getPortlet() {
 		return _portlet;
 	}
@@ -56,7 +61,7 @@ public class MarketplaceStorePanelApp extends BasePanelApp {
 	private Portal _portal;
 
 	@Reference(
-		target = "(javax.portlet.name=" + MarketplaceStorePortletKeys.MARKETPLACE_STORE + ")"
+		target = "(jakarta.portlet.name=" + MarketplaceStorePortletKeys.MARKETPLACE_STORE + ")"
 	)
 	private Portlet _portlet;
 

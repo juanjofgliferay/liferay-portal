@@ -5,6 +5,12 @@
 
 package com.liferay.portal.search.similar.results.web.internal.portlet.shared.search;
 
+import com.liferay.asset.kernel.service.AssetEntryLocalService;
+import com.liferay.blogs.service.BlogsEntryLocalService;
+import com.liferay.document.library.kernel.service.DLFileEntryLocalService;
+import com.liferay.document.library.kernel.service.DLFolderLocalService;
+import com.liferay.message.boards.service.MBCategoryLocalService;
+import com.liferay.message.boards.service.MBMessageLocalService;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
@@ -18,28 +24,32 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.search.filter.ComplexQueryPart;
 import com.liferay.portal.search.filter.ComplexQueryPartBuilderFactory;
+import com.liferay.portal.search.model.uid.UIDFactory;
 import com.liferay.portal.search.query.MoreLikeThisQuery;
-import com.liferay.portal.search.query.Queries;
+import com.liferay.portal.search.query.QueriesUtil;
 import com.liferay.portal.search.query.Query;
 import com.liferay.portal.search.searcher.SearchRequestBuilder;
 import com.liferay.portal.search.similar.results.web.internal.builder.SimilarResultsContributorsRegistry;
 import com.liferay.portal.search.similar.results.web.internal.builder.SimilarResultsRoute;
 import com.liferay.portal.search.similar.results.web.internal.constants.SimilarResultsPortletKeys;
+import com.liferay.portal.search.similar.results.web.internal.contributor.SimilarResultsContributor;
 import com.liferay.portal.search.similar.results.web.internal.portlet.SimilarResultsPortletPreferences;
 import com.liferay.portal.search.similar.results.web.internal.portlet.SimilarResultsPortletPreferencesImpl;
 import com.liferay.portal.search.similar.results.web.internal.util.SearchStringUtil;
-import com.liferay.portal.search.similar.results.web.spi.contributor.SimilarResultsContributor;
 import com.liferay.portal.search.similar.results.web.spi.contributor.helper.CriteriaHelper;
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchContributor;
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchSettings;
+import com.liferay.wiki.service.WikiNodeLocalService;
+import com.liferay.wiki.service.WikiPageLocalService;
+
+import jakarta.portlet.RenderRequest;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import javax.portlet.RenderRequest;
-
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -47,7 +57,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Wade Cao
  */
 @Component(
-	property = "javax.portlet.name=" + SimilarResultsPortletKeys.SIMILAR_RESULTS,
+	property = "jakarta.portlet.name=" + SimilarResultsPortletKeys.SIMILAR_RESULTS,
 	service = PortletSharedSearchContributor.class
 )
 public class SimilarResultsPortletSharedSearchContributor
@@ -58,7 +68,7 @@ public class SimilarResultsPortletSharedSearchContributor
 		PortletSharedSearchSettings portletSharedSearchSettings) {
 
 		SimilarResultsRoute similarResultsRoute =
-			similarResultsContributorsRegistry.detectRoute(
+			_similarResultsContributorsRegistry.detectRoute(
 				_getURLString(portletSharedSearchSettings));
 
 		if (similarResultsRoute == null) {
@@ -81,6 +91,16 @@ public class SimilarResultsPortletSharedSearchContributor
 		if (criteria != null) {
 			contribute(criteria, portletSharedSearchSettings);
 		}
+	}
+
+	@Activate
+	protected void activate() {
+		_similarResultsContributorsRegistry =
+			new SimilarResultsContributorsRegistry(
+				_assetEntryLocalService, _blogsEntryLocalService,
+				_dlFileEntryLocalService, _dlFolderLocalService,
+				_mbCategoryLocalService, _mbMessageLocalService, _uidFactory,
+				_wikiNodeLocalService, _wikiPageLocalService);
 	}
 
 	protected void contribute(
@@ -153,10 +173,6 @@ public class SimilarResultsPortletSharedSearchContributor
 		}
 	}
 
-	@Reference
-	protected SimilarResultsContributorsRegistry
-		similarResultsContributorsRegistry;
-
 	private void _filterByEntryClassName(
 		Criteria criteria,
 		PortletSharedSearchSettings portletSharedSearchSettings,
@@ -200,16 +216,16 @@ public class SimilarResultsPortletSharedSearchContributor
 	}
 
 	private Query _getEntryClassNameQuery(String entryClassName) {
-		return _queries.term(Field.ENTRY_CLASS_NAME, entryClassName);
+		return QueriesUtil.term(Field.ENTRY_CLASS_NAME, entryClassName);
 	}
 
 	private MoreLikeThisQuery _getMoreLikeThisQuery(
 		String uid,
 		SimilarResultsPortletPreferences similarResultsPortletPreferences) {
 
-		MoreLikeThisQuery moreLikeThisQuery = _queries.moreLikeThis(
+		MoreLikeThisQuery moreLikeThisQuery = QueriesUtil.moreLikeThis(
 			Collections.singleton(
-				_queries.documentIdentifier(
+				QueriesUtil.documentIdentifier(
 					similarResultsPortletPreferences.getIndexName(),
 					similarResultsPortletPreferences.getDocType(), uid)));
 
@@ -279,15 +295,42 @@ public class SimilarResultsPortletSharedSearchContributor
 		SimilarResultsPortletSharedSearchContributor.class);
 
 	@Reference
+	private AssetEntryLocalService _assetEntryLocalService;
+
+	@Reference
+	private BlogsEntryLocalService _blogsEntryLocalService;
+
+	@Reference
 	private ComplexQueryPartBuilderFactory _complexQueryPartBuilderFactory;
+
+	@Reference
+	private DLFileEntryLocalService _dlFileEntryLocalService;
+
+	@Reference
+	private DLFolderLocalService _dlFolderLocalService;
 
 	@Reference
 	private GroupLocalService _groupLocalService;
 
 	@Reference
-	private Portal _portal;
+	private MBCategoryLocalService _mbCategoryLocalService;
 
 	@Reference
-	private Queries _queries;
+	private MBMessageLocalService _mbMessageLocalService;
+
+	@Reference
+	private Portal _portal;
+
+	private SimilarResultsContributorsRegistry
+		_similarResultsContributorsRegistry;
+
+	@Reference
+	private UIDFactory _uidFactory;
+
+	@Reference
+	private WikiNodeLocalService _wikiNodeLocalService;
+
+	@Reference
+	private WikiPageLocalService _wikiPageLocalService;
 
 }

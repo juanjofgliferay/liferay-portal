@@ -19,14 +19,18 @@ import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.util.IntegerWrapper;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
 import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.security.permission.SimplePermissionChecker;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PersistenceTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
@@ -116,12 +120,8 @@ public class LayoutUtilityPageEntryPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		LayoutUtilityPageEntry newLayoutUtilityPageEntry = _persistence.create(
-			pk);
-
-		newLayoutUtilityPageEntry.setMvccVersion(RandomTestUtil.nextLong());
+		LayoutUtilityPageEntry newLayoutUtilityPageEntry =
+			addLayoutUtilityPageEntry();
 
 		newLayoutUtilityPageEntry.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -298,6 +298,15 @@ public class LayoutUtilityPageEntryPersistenceTest {
 	}
 
 	@Test
+	public void testCountByG_TArrayable() throws Exception {
+		_persistence.countByG_T(
+			RandomTestUtil.nextLong(),
+			new String[] {
+				RandomTestUtil.randomString(), "", "null", null, null
+			});
+	}
+
+	@Test
 	public void testCountByG_D_T() throws Exception {
 		_persistence.countByG_D_T(
 			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean(), "");
@@ -315,6 +324,24 @@ public class LayoutUtilityPageEntryPersistenceTest {
 		_persistence.countByG_N_T(0L, "null", "null");
 
 		_persistence.countByG_N_T(0L, (String)null, (String)null);
+	}
+
+	@Test
+	public void testCountByG_LikeN_T() throws Exception {
+		_persistence.countByG_LikeN_T(RandomTestUtil.nextLong(), "", "");
+
+		_persistence.countByG_LikeN_T(0L, "null", "null");
+
+		_persistence.countByG_LikeN_T(0L, (String)null, (String)null);
+	}
+
+	@Test
+	public void testCountByG_LikeN_TArrayable() throws Exception {
+		_persistence.countByG_LikeN_T(
+			RandomTestUtil.nextLong(), RandomTestUtil.randomString(),
+			new String[] {
+				RandomTestUtil.randomString(), "", "null", null, null
+			});
 	}
 
 	@Test
@@ -354,6 +381,24 @@ public class LayoutUtilityPageEntryPersistenceTest {
 
 	@Test
 	public void testFilterFindByGroupId() throws Exception {
+		PermissionThreadLocal.setPermissionChecker(
+			new SimplePermissionChecker() {
+				{
+					init(TestPropsValues.getUser());
+				}
+
+				@Override
+				public boolean isCompanyAdmin(long companyId) {
+					return false;
+				}
+
+			});
+
+		Assert.assertTrue(InlineSQLHelperUtil.isEnabled(0));
+
+		_persistence.filterFindByGroupId(
+			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+
 		_persistence.filterFindByGroupId(
 			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
 	}
@@ -714,8 +759,6 @@ public class LayoutUtilityPageEntryPersistenceTest {
 
 		LayoutUtilityPageEntry layoutUtilityPageEntry = _persistence.create(pk);
 
-		layoutUtilityPageEntry.setMvccVersion(RandomTestUtil.nextLong());
-
 		layoutUtilityPageEntry.setCtCollectionId(RandomTestUtil.nextLong());
 
 		layoutUtilityPageEntry.setUuid(RandomTestUtil.randomString());
@@ -760,3 +803,4 @@ public class LayoutUtilityPageEntryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1550664389

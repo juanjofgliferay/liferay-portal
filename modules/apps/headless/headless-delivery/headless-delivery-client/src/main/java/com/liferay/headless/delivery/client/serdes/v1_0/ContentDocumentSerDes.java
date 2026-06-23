@@ -8,13 +8,13 @@ package com.liferay.headless.delivery.client.serdes.v1_0;
 import com.liferay.headless.delivery.client.dto.v1_0.ContentDocument;
 import com.liferay.headless.delivery.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.annotation.Generated;
 
 /**
  * @author Javier Gamarra
@@ -126,6 +126,20 @@ public class ContentDocumentSerDes {
 			sb.append("\"");
 		}
 
+		if (contentDocument.getExternalReferenceCode() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"externalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(contentDocument.getExternalReferenceCode()));
+
+			sb.append("\"");
+		}
+
 		if (contentDocument.getFileExtension() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -148,6 +162,20 @@ public class ContentDocumentSerDes {
 			sb.append("\"id\": ");
 
 			sb.append(contentDocument.getId());
+		}
+
+		if (contentDocument.getScopeExternalReferenceCode() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"scopeExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(contentDocument.getScopeExternalReferenceCode()));
+
+			sb.append("\"");
 		}
 
 		if (contentDocument.getSizeInBytes() != null) {
@@ -244,6 +272,15 @@ public class ContentDocumentSerDes {
 				String.valueOf(contentDocument.getEncodingFormat()));
 		}
 
+		if (contentDocument.getExternalReferenceCode() == null) {
+			map.put("externalReferenceCode", null);
+		}
+		else {
+			map.put(
+				"externalReferenceCode",
+				String.valueOf(contentDocument.getExternalReferenceCode()));
+		}
+
 		if (contentDocument.getFileExtension() == null) {
 			map.put("fileExtension", null);
 		}
@@ -258,6 +295,16 @@ public class ContentDocumentSerDes {
 		}
 		else {
 			map.put("id", String.valueOf(contentDocument.getId()));
+		}
+
+		if (contentDocument.getScopeExternalReferenceCode() == null) {
+			map.put("scopeExternalReferenceCode", null);
+		}
+		else {
+			map.put(
+				"scopeExternalReferenceCode",
+				String.valueOf(
+					contentDocument.getScopeExternalReferenceCode()));
 		}
 
 		if (contentDocument.getSizeInBytes() == null) {
@@ -293,6 +340,52 @@ public class ContentDocumentSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "actions")) {
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "contentType")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "contentUrl")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "contentValue")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "description")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "encodingFormat")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "externalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "fileExtension")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "id")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "scopeExternalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "sizeInBytes")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "title")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			ContentDocument contentDocument, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
@@ -300,8 +393,7 @@ public class ContentDocumentSerDes {
 			if (Objects.equals(jsonParserFieldName, "actions")) {
 				if (jsonParserFieldValue != null) {
 					contentDocument.setActions(
-						(Map)ContentDocumentSerDes.toMap(
-							(String)jsonParserFieldValue));
+						(Map<String, Map<String, String>>)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "contentType")) {
@@ -333,6 +425,14 @@ public class ContentDocumentSerDes {
 						(String)jsonParserFieldValue);
 				}
 			}
+			else if (Objects.equals(
+						jsonParserFieldName, "externalReferenceCode")) {
+
+				if (jsonParserFieldValue != null) {
+					contentDocument.setExternalReferenceCode(
+						(String)jsonParserFieldValue);
+				}
+			}
 			else if (Objects.equals(jsonParserFieldName, "fileExtension")) {
 				if (jsonParserFieldValue != null) {
 					contentDocument.setFileExtension(
@@ -343,6 +443,14 @@ public class ContentDocumentSerDes {
 				if (jsonParserFieldValue != null) {
 					contentDocument.setId(
 						Long.valueOf((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "scopeExternalReferenceCode")) {
+
+				if (jsonParserFieldValue != null) {
+					contentDocument.setScopeExternalReferenceCode(
+						(String)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "sizeInBytes")) {
@@ -388,36 +496,7 @@ public class ContentDocumentSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -429,4 +508,41 @@ public class ContentDocumentSerDes {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
+	}
+
 }
+// LIFERAY-REST-BUILDER-HASH:1620234632

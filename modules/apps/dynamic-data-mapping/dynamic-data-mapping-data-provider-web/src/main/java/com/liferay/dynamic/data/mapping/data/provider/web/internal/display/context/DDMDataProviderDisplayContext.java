@@ -67,18 +67,18 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.portlet.PortletException;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -270,27 +270,6 @@ public class DDMDataProviderDisplayContext {
 			searchContainer.getEmptyResultsMessage());
 	}
 
-	public List<DropdownItem> getFilterItemsDropdownItems() {
-		HttpServletRequest httpServletRequest =
-			_ddmDataProviderRequestHelper.getRequest();
-
-		return DropdownItemListBuilder.addGroup(
-			dropdownGroupItem -> {
-				dropdownGroupItem.setDropdownItems(
-					_getFilterNavigationDropdownItems());
-				dropdownGroupItem.setLabel(
-					LanguageUtil.get(
-						httpServletRequest, "filter-by-navigation"));
-			}
-		).addGroup(
-			dropdownGroupItem -> {
-				dropdownGroupItem.setDropdownItems(_getOrderByDropdownItems());
-				dropdownGroupItem.setLabel(
-					LanguageUtil.get(httpServletRequest, "order-by"));
-			}
-		).build();
-	}
-
 	public List<NavigationItem> getNavigationItems(
 			LiferayPortletRequest liferayPortletRequest,
 			LiferayPortletResponse liferayPortletResponse)
@@ -359,6 +338,14 @@ public class DDMDataProviderDisplayContext {
 			"asc");
 
 		return _orderByType;
+	}
+
+	public List<DropdownItem> getOrderItemsDropdownItems() {
+		return DropdownItemListBuilder.add(
+			_getOrderByDropdownItem("modified-date")
+		).add(
+			_getOrderByDropdownItem("name")
+		).build();
 	}
 
 	public PortletURL getPortletURL() {
@@ -654,18 +641,6 @@ public class DDMDataProviderDisplayContext {
 		return _ddmDataProviderRegistry.getDDMDataProviderTypes();
 	}
 
-	private List<DropdownItem> _getFilterNavigationDropdownItems() {
-		return DropdownItemListBuilder.add(
-			dropdownItem -> {
-				dropdownItem.setActive(true);
-				dropdownItem.setHref(getPortletURL(), "navigation", "all");
-				dropdownItem.setLabel(
-					LanguageUtil.get(
-						_ddmDataProviderRequestHelper.getRequest(), "all"));
-			}
-		).build();
-	}
-
 	private long[] _getGroupIds() {
 		long scopeGroupId = _ddmDataProviderRequestHelper.getScopeGroupId();
 
@@ -697,14 +672,6 @@ public class DDMDataProviderDisplayContext {
 		};
 	}
 
-	private List<DropdownItem> _getOrderByDropdownItems() {
-		return DropdownItemListBuilder.add(
-			_getOrderByDropdownItem("modified-date")
-		).add(
-			_getOrderByDropdownItem("name")
-		).build();
-	}
-
 	private String _getRefererPortletName() {
 		return ParamUtil.getString(
 			_ddmDataProviderRequestHelper.getRequest(), "refererPortletName",
@@ -712,11 +679,7 @@ public class DDMDataProviderDisplayContext {
 	}
 
 	private boolean _isSearch() {
-		if (Validator.isNotNull(_getKeywords())) {
-			return true;
-		}
-
-		return false;
+		return Validator.isNotNull(_getKeywords());
 	}
 
 	private boolean _isShowAddDataProviderButton() {
@@ -765,7 +728,8 @@ public class DDMDataProviderDisplayContext {
 		BundleContext bundleContext = bundle.getBundleContext();
 
 		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
-			bundleContext, DDMDataProviderDisplay.class, "javax.portlet.name");
+			bundleContext, DDMDataProviderDisplay.class,
+			"jakarta.portlet.name");
 	}
 
 	private DDMDataProviderInstance _ddmDataProviderInstance;

@@ -5,6 +5,7 @@
 
 package com.liferay.portal.kernel.servlet;
 
+import com.liferay.petra.io.StreamUtil;
 import com.liferay.petra.nio.CharsetEncoderUtil;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
@@ -19,10 +20,13 @@ import com.liferay.portal.kernel.util.MimeTypesUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.RandomAccessInputStream;
-import com.liferay.portal.kernel.util.StreamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.URLCodec;
 import com.liferay.portal.kernel.util.Validator;
+
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -44,10 +48,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 /**
  * @author Brian Wing Shun Chan
  * @author Shuyang Zhou
@@ -59,11 +59,7 @@ public class ServletResponseUtil {
 
 		String className = clazz.getName();
 
-		if (className.equals(_CLIENT_ABORT_EXCEPTION)) {
-			return true;
-		}
-
-		return false;
+		return className.equals(_CLIENT_ABORT_EXCEPTION);
 	}
 
 	public static void sendFile(
@@ -820,7 +816,14 @@ public class ServletResponseUtil {
 			_checkSocketException(ioException);
 		}
 		finally {
-			StreamUtil.cleanUp(true, inputStream);
+			try {
+				inputStream.close();
+			}
+			catch (IOException ioException) {
+				if (_log.isWarnEnabled()) {
+					_log.warn(ioException);
+				}
+			}
 		}
 	}
 

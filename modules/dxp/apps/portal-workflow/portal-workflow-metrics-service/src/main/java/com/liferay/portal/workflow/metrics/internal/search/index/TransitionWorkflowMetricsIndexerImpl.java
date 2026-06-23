@@ -7,9 +7,13 @@ package com.liferay.portal.workflow.metrics.internal.search.index;
 
 import com.liferay.portal.search.document.Document;
 import com.liferay.portal.search.document.DocumentBuilder;
+import com.liferay.portal.search.document.DocumentBuilderFactory;
+import com.liferay.portal.search.index.IndexNameBuilder;
+import com.liferay.portal.workflow.metrics.internal.search.constants.WorkflowMetricsIndexTypeConstants;
 import com.liferay.portal.workflow.metrics.model.AddTransitionRequest;
 import com.liferay.portal.workflow.metrics.model.DeleteTransitionRequest;
 import com.liferay.portal.workflow.metrics.search.index.TransitionWorkflowMetricsIndexer;
+import com.liferay.portal.workflow.metrics.search.index.constants.WorkflowMetricsIndexNameConstants;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -24,7 +28,7 @@ public class TransitionWorkflowMetricsIndexerImpl
 
 	@Override
 	public Document addTransition(AddTransitionRequest addTransitionRequest) {
-		DocumentBuilder documentBuilder = documentBuilderFactory.builder();
+		DocumentBuilder documentBuilder = DocumentBuilderFactory.builder();
 
 		Document document = documentBuilder.setLong(
 			"companyId", addTransitionRequest.getCompanyId()
@@ -68,7 +72,7 @@ public class TransitionWorkflowMetricsIndexerImpl
 	public void deleteTransition(
 		DeleteTransitionRequest deleteTransitionRequest) {
 
-		DocumentBuilder documentBuilder = documentBuilderFactory.builder();
+		DocumentBuilder documentBuilder = DocumentBuilderFactory.builder();
 
 		documentBuilder.setLong(
 			"companyId", deleteTransitionRequest.getCompanyId()
@@ -87,15 +91,17 @@ public class TransitionWorkflowMetricsIndexerImpl
 
 	@Override
 	public String getIndexName(long companyId) {
-		return _transitionWorkflowMetricsIndex.getIndexName(companyId);
+		return WorkflowMetricsIndex.getIndexName(
+			_indexNameBuilder,
+			WorkflowMetricsIndexNameConstants.SUFFIX_TRANSITION, companyId);
 	}
 
 	@Override
 	public String getIndexType() {
-		return _transitionWorkflowMetricsIndex.getIndexType();
+		return WorkflowMetricsIndexTypeConstants.TRANSITION_TYPE;
 	}
 
-	@Reference(target = "(workflow.metrics.index.entity.name=transition)")
-	private WorkflowMetricsIndex _transitionWorkflowMetricsIndex;
+	@Reference
+	private IndexNameBuilder _indexNameBuilder;
 
 }

@@ -23,8 +23,6 @@ import com.liferay.headless.commerce.admin.account.resource.v1_0.AdminAccountGro
 import com.liferay.headless.commerce.admin.account.resource.v1_0.UserResource;
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.function.UnsafeFunction;
-import com.liferay.portal.kernel.search.Sort;
-import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
@@ -34,15 +32,15 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.multipart.MultipartBody;
 
+import jakarta.annotation.Generated;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
+
 import java.util.function.BiFunction;
-
-import javax.annotation.Generated;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
 
 import org.osgi.service.component.ComponentServiceObjects;
 
@@ -118,21 +116,47 @@ public class Mutation {
 			userResourceComponentServiceObjects;
 	}
 
+	@GraphQLField(
+		description = "Deletes an Account by its internal ID. Cascades to addresses, memberships, and channel overrides per the underlying service contract. Deprecated. Use `DELETE /o/headless-admin-user/v1.0/accounts/{accountId}` from the headless-admin-user module instead."
+	)
+	public Response deleteAccount(@GraphQLName("id") Long id) throws Exception {
+		return _applyComponentServiceObjects(
+			_accountResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			accountResource -> accountResource.deleteAccount(id));
+	}
+
 	@GraphQLField
-	public Response createAccountGroupByExternalReferenceCodeAccount(
-			@GraphQLName("externalReferenceCode") String externalReferenceCode,
-			@GraphQLName("account") Account account)
+	public Response deleteAccountBatch(
+			@GraphQLName("callbackURL") String callbackURL,
+			@GraphQLName("object") Object object)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_accountResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			accountResource -> accountResource.deleteAccountBatch(
+				callbackURL, object));
+	}
+
+	@GraphQLField(
+		description = "Deletes an Account by its external reference code. Cascades to addresses, memberships, and channel overrides per the underlying service contract. Deprecated. Use `DELETE /o/headless-admin-user/v1.0/accounts/by-external-reference-code/{externalReferenceCode}` from the headless-admin-user module instead."
+	)
+	public Response deleteAccountByExternalReferenceCode(
+			@GraphQLName("externalReferenceCode") String externalReferenceCode)
 		throws Exception {
 
 		return _applyComponentServiceObjects(
 			_accountResourceComponentServiceObjects,
 			this::_populateResourceContext,
 			accountResource ->
-				accountResource.postAccountGroupByExternalReferenceCodeAccount(
-					externalReferenceCode, account));
+				accountResource.deleteAccountByExternalReferenceCode(
+					externalReferenceCode));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Removes the link between an Account and an AccountGroup, both addressed by external reference code. Deprecated. Use `DELETE /o/headless-admin-user/v1.0/account-groups/by-external-reference-code/{accountGroupExternalReferenceCode}/accounts/by-external-reference-code/{externalReferenceCode}` from the headless-admin-user module instead."
+	)
 	public Response deleteAccountGroupByExternalReferenceCodeAccount(
 			@GraphQLName("accountExternalReferenceCode") String
 				accountExternalReferenceCode,
@@ -148,26 +172,38 @@ public class Mutation {
 						accountExternalReferenceCode, externalReferenceCode));
 	}
 
-	@GraphQLField
-	public Response createAccountsPageExportBatch(
-			@GraphQLName("search") String search,
-			@GraphQLName("filter") String filterString,
-			@GraphQLName("sort") String sortsString,
-			@GraphQLName("callbackURL") String callbackURL,
-			@GraphQLName("contentType") String contentType,
-			@GraphQLName("fieldNames") String fieldNames)
+	@GraphQLField(
+		description = "Partially updates an Account by its internal ID. JSON Merge Patch semantics; only the supplied fields (name, taxId, type, status, addresses, members, organizations, custom fields) are modified. Deprecated. Use `PATCH /o/headless-admin-user/v1.0/accounts/{accountId}` from the headless-admin-user module instead."
+	)
+	public Response patchAccount(
+			@GraphQLName("id") Long id, @GraphQLName("account") Account account)
 		throws Exception {
 
 		return _applyComponentServiceObjects(
 			_accountResourceComponentServiceObjects,
 			this::_populateResourceContext,
-			accountResource -> accountResource.postAccountsPageExportBatch(
-				search, _filterBiFunction.apply(accountResource, filterString),
-				_sortsBiFunction.apply(accountResource, sortsString),
-				callbackURL, contentType, fieldNames));
+			accountResource -> accountResource.patchAccount(id, account));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Partially updates an Account by its external reference code. JSON Merge Patch semantics; only the supplied fields (name, taxId, type, status, addresses, members, organizations, custom fields) are modified. Deprecated. Use `PATCH /o/headless-admin-user/v1.0/accounts/by-external-reference-code/{externalReferenceCode}` from the headless-admin-user module instead."
+	)
+	public Response patchAccountByExternalReferenceCode(
+			@GraphQLName("externalReferenceCode") String externalReferenceCode,
+			@GraphQLName("account") Account account)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_accountResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			accountResource ->
+				accountResource.patchAccountByExternalReferenceCode(
+					externalReferenceCode, account));
+	}
+
+	@GraphQLField(
+		description = "Creates or upserts an Account keyed by external reference code. Nested addresses, members, and organizations supplied in the body are persisted in the same transaction. When the ERC matches an existing account, the account is updated; otherwise a new account is created. Returns 201 with the created account, or 204 when an existing account is updated. Deprecated. Use `POST /o/headless-admin-user/v1.0/accounts` from the headless-admin-user module instead."
+	)
 	public Account createAccount(@GraphQLName("account") Account account)
 		throws Exception {
 
@@ -190,36 +226,11 @@ public class Mutation {
 				callbackURL, object));
 	}
 
-	@GraphQLField
-	public Response deleteAccountByExternalReferenceCode(
-			@GraphQLName("externalReferenceCode") String externalReferenceCode)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_accountResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			accountResource ->
-				accountResource.deleteAccountByExternalReferenceCode(
-					externalReferenceCode));
-	}
-
-	@GraphQLField
-	public Response patchAccountByExternalReferenceCode(
-			@GraphQLName("externalReferenceCode") String externalReferenceCode,
-			@GraphQLName("account") Account account)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_accountResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			accountResource ->
-				accountResource.patchAccountByExternalReferenceCode(
-					externalReferenceCode, account));
-	}
-
-	@GraphQLField
+	@GraphQLField(
+		description = "Uploads or replaces the logo of the Account identified by external reference code. The body is a multipart form upload with a single binary file field named logo. Deprecated. Set the account logo through `PATCH /o/headless-admin-user/v1.0/accounts/by-external-reference-code/{externalReferenceCode}` with the logoBase64 field in the headless-admin-user module instead."
+	)
 	@GraphQLName(
-		description = "null",
+		description = "Uploads or replaces the logo of the Account identified by external reference code. The body is a multipart form upload with a single binary file field named logo. Deprecated. Set the account logo through `PATCH /o/headless-admin-user/v1.0/accounts/by-external-reference-code/{externalReferenceCode}` with the logoBase64 field in the headless-admin-user module instead.",
 		value = "postAccountByExternalReferenceCodeLogoExternalReferenceCodeMultipartBody"
 	)
 	public Response createAccountByExternalReferenceCodeLogo(
@@ -235,40 +246,29 @@ public class Mutation {
 					externalReferenceCode, multipartBody));
 	}
 
-	@GraphQLField
-	public Response deleteAccount(@GraphQLName("id") Long id) throws Exception {
-		return _applyComponentServiceObjects(
-			_accountResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			accountResource -> accountResource.deleteAccount(id));
-	}
-
-	@GraphQLField
-	public Response deleteAccountBatch(
-			@GraphQLName("callbackURL") String callbackURL,
-			@GraphQLName("object") Object object)
+	@GraphQLField(
+		description = "Links an Account to an AccountGroup. The AccountGroup is identified by its external reference code; the Account is identified either by ID or by ERC inside the request body. Deprecated. Use `POST /o/headless-admin-user/v1.0/account-groups/by-external-reference-code/{accountGroupExternalReferenceCode}/accounts` from the headless-admin-user module instead."
+	)
+	public Response createAccountGroupByExternalReferenceCodeAccount(
+			@GraphQLName("externalReferenceCode") String externalReferenceCode,
+			@GraphQLName("account") Account account)
 		throws Exception {
 
 		return _applyComponentServiceObjects(
 			_accountResourceComponentServiceObjects,
 			this::_populateResourceContext,
-			accountResource -> accountResource.deleteAccountBatch(
-				callbackURL, object));
+			accountResource ->
+				accountResource.postAccountGroupByExternalReferenceCodeAccount(
+					externalReferenceCode, account));
 	}
 
-	@GraphQLField
-	public Response patchAccount(
-			@GraphQLName("id") Long id, @GraphQLName("account") Account account)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_accountResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			accountResource -> accountResource.patchAccount(id, account));
-	}
-
-	@GraphQLField
-	@GraphQLName(description = "null", value = "postAccountLogoIdMultipartBody")
+	@GraphQLField(
+		description = "Uploads or replaces the logo of the Account identified by internal ID. The body is a multipart form upload with a single binary file field named logo. Deprecated. Set the account logo through `PATCH /o/headless-admin-user/v1.0/accounts/{accountId}` with the logoBase64 field in the headless-admin-user module instead."
+	)
+	@GraphQLName(
+		description = "Uploads or replaces the logo of the Account identified by internal ID. The body is a multipart form upload with a single binary file field named logo. Deprecated. Set the account logo through `PATCH /o/headless-admin-user/v1.0/accounts/{accountId}` with the logoBase64 field in the headless-admin-user module instead.",
+		value = "postAccountLogoIdMultipartBody"
+	)
 	public Response createAccountLogo(
 			@GraphQLName("id") Long id,
 			@GraphQLName("multipartBody") MultipartBody multipartBody)
@@ -282,35 +282,27 @@ public class Mutation {
 	}
 
 	@GraphQLField
-	public Response deleteAccountAddressByExternalReferenceCode(
-			@GraphQLName("externalReferenceCode") String externalReferenceCode)
+	public Response createAccountsPageExportBatch(
+			@GraphQLName("search") String search,
+			@GraphQLName("filter") String filterString,
+			@GraphQLName("sort") String sortsString,
+			@GraphQLName("callbackURL") String callbackURL,
+			@GraphQLName("contentType") String contentType,
+			@GraphQLName("fieldNames") String fieldNames)
 		throws Exception {
 
 		return _applyComponentServiceObjects(
-			_accountAddressResourceComponentServiceObjects,
+			_accountResourceComponentServiceObjects,
 			this::_populateResourceContext,
-			accountAddressResource ->
-				accountAddressResource.
-					deleteAccountAddressByExternalReferenceCode(
-						externalReferenceCode));
+			accountResource -> accountResource.postAccountsPageExportBatch(
+				search, _filterBiFunction.apply(accountResource, filterString),
+				_sortsBiFunction.apply(accountResource, sortsString),
+				callbackURL, contentType, fieldNames));
 	}
 
-	@GraphQLField
-	public Response patchAccountAddressByExternalReferenceCode(
-			@GraphQLName("externalReferenceCode") String externalReferenceCode,
-			@GraphQLName("accountAddress") AccountAddress accountAddress)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_accountAddressResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			accountAddressResource ->
-				accountAddressResource.
-					patchAccountAddressByExternalReferenceCode(
-						externalReferenceCode, accountAddress));
-	}
-
-	@GraphQLField
+	@GraphQLField(
+		description = "Deletes an account address by its internal ID. Returns 204. Deprecated. Use `DELETE /o/headless-admin-user/v1.0/postal-addresses/{postalAddressId}` from the headless-admin-user module instead."
+	)
 	public Response deleteAccountAddress(@GraphQLName("id") Long id)
 		throws Exception {
 
@@ -335,7 +327,25 @@ public class Mutation {
 					callbackURL, object));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Deletes an account address by its external reference code. Returns 404 when no address exists with the supplied ERC. Deprecated. Use `DELETE /o/headless-admin-user/v1.0/postal-addresses/by-external-reference-code/{externalReferenceCode}` from the headless-admin-user module instead."
+	)
+	public Response deleteAccountAddressByExternalReferenceCode(
+			@GraphQLName("externalReferenceCode") String externalReferenceCode)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_accountAddressResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			accountAddressResource ->
+				accountAddressResource.
+					deleteAccountAddressByExternalReferenceCode(
+						externalReferenceCode));
+	}
+
+	@GraphQLField(
+		description = "Partially updates an account address by its internal ID. JSON Merge Patch semantics; only the supplied fields are modified. Side effect -- when defaultBilling or defaultShipping is set to true the previously default address on the same account is cleared. Deprecated. Use `PATCH /o/headless-admin-user/v1.0/postal-addresses/{postalAddressId}` from the headless-admin-user module instead."
+	)
 	public AccountAddress patchAccountAddress(
 			@GraphQLName("id") Long id,
 			@GraphQLName("accountAddress") AccountAddress accountAddress)
@@ -348,34 +358,26 @@ public class Mutation {
 				accountAddressResource.patchAccountAddress(id, accountAddress));
 	}
 
-	@GraphQLField
-	public AccountAddress updateAccountAddress(
-			@GraphQLName("id") Long id,
+	@GraphQLField(
+		description = "Partially updates an account address by its external reference code. JSON Merge Patch semantics; only the supplied fields are modified. Side effect -- when defaultBilling or defaultShipping is set to true the previously default address on the same account is cleared. Deprecated. Use `PATCH /o/headless-admin-user/v1.0/postal-addresses/by-external-reference-code/{externalReferenceCode}` from the headless-admin-user module instead."
+	)
+	public Response patchAccountAddressByExternalReferenceCode(
+			@GraphQLName("externalReferenceCode") String externalReferenceCode,
 			@GraphQLName("accountAddress") AccountAddress accountAddress)
 		throws Exception {
 
 		return _applyComponentServiceObjects(
 			_accountAddressResourceComponentServiceObjects,
 			this::_populateResourceContext,
-			accountAddressResource -> accountAddressResource.putAccountAddress(
-				id, accountAddress));
-	}
-
-	@GraphQLField
-	public Response updateAccountAddressBatch(
-			@GraphQLName("callbackURL") String callbackURL,
-			@GraphQLName("object") Object object)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_accountAddressResourceComponentServiceObjects,
-			this::_populateResourceContext,
 			accountAddressResource ->
-				accountAddressResource.putAccountAddressBatch(
-					callbackURL, object));
+				accountAddressResource.
+					patchAccountAddressByExternalReferenceCode(
+						externalReferenceCode, accountAddress));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Creates or upserts an account address under the Account identified by external reference code. When the supplied address ERC matches an existing address on the same account the address is updated; otherwise a new address is created. Side effect -- when defaultBilling or defaultShipping is true the previously default address on the same account is cleared. Deprecated. Use `POST /o/headless-admin-user/v1.0/accounts/by-external-reference-code/{externalReferenceCode}/postal-addresses` from the headless-admin-user module instead."
+	)
 	public AccountAddress createAccountByExternalReferenceCodeAccountAddress(
 			@GraphQLName("externalReferenceCode") String externalReferenceCode,
 			@GraphQLName("accountAddress") AccountAddress accountAddress)
@@ -390,7 +392,9 @@ public class Mutation {
 						externalReferenceCode, accountAddress));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Creates an account address under the Account identified by internal ID. Side effect -- when defaultBilling or defaultShipping is true the previously default address on the same account is cleared. Deprecated. Use `POST /o/headless-admin-user/v1.0/accounts/{accountId}/postal-addresses` from the headless-admin-user module instead."
+	)
 	public AccountAddress createAccountIdAccountAddress(
 			@GraphQLName("id") Long id,
 			@GraphQLName("accountAddress") AccountAddress accountAddress)
@@ -418,7 +422,38 @@ public class Mutation {
 					callbackURL, object));
 	}
 
+	@GraphQLField(
+		description = "Replaces an account address by its internal ID. Every supplied field overwrites the persisted value; omitted fields are reset to their defaults. Side effect -- when defaultBilling or defaultShipping is set to true the previously default address on the same account is cleared. Deprecated. Use `PUT /o/headless-admin-user/v1.0/postal-addresses/{postalAddressId}` from the headless-admin-user module instead."
+	)
+	public AccountAddress updateAccountAddress(
+			@GraphQLName("id") Long id,
+			@GraphQLName("accountAddress") AccountAddress accountAddress)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_accountAddressResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			accountAddressResource -> accountAddressResource.putAccountAddress(
+				id, accountAddress));
+	}
+
 	@GraphQLField
+	public Response updateAccountAddressBatch(
+			@GraphQLName("callbackURL") String callbackURL,
+			@GraphQLName("object") Object object)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_accountAddressResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			accountAddressResource ->
+				accountAddressResource.putAccountAddressBatch(
+					callbackURL, object));
+	}
+
+	@GraphQLField(
+		description = "Deletes the per-account billing address channel override identified by its internal ID. Returns 204 on success."
+	)
 	public boolean deleteAccountChannelBillingAddressId(
 			@GraphQLName("id") Long id)
 		throws Exception {
@@ -433,22 +468,9 @@ public class Mutation {
 		return true;
 	}
 
-	@GraphQLField
-	public AccountChannelEntry patchAccountChannelBillingAddressId(
-			@GraphQLName("id") Long id,
-			@GraphQLName("accountChannelEntry") AccountChannelEntry
-				accountChannelEntry)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_accountChannelEntryResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			accountChannelEntryResource ->
-				accountChannelEntryResource.patchAccountChannelBillingAddressId(
-					id, accountChannelEntry));
-	}
-
-	@GraphQLField
+	@GraphQLField(
+		description = "Deletes the per-account currency channel override identified by its internal ID. Returns 204 on success."
+	)
 	public boolean deleteAccountChannelCurrencyId(@GraphQLName("id") Long id)
 		throws Exception {
 
@@ -461,22 +483,9 @@ public class Mutation {
 		return true;
 	}
 
-	@GraphQLField
-	public AccountChannelEntry patchAccountChannelCurrencyId(
-			@GraphQLName("id") Long id,
-			@GraphQLName("accountChannelEntry") AccountChannelEntry
-				accountChannelEntry)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_accountChannelEntryResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			accountChannelEntryResource ->
-				accountChannelEntryResource.patchAccountChannelCurrencyId(
-					id, accountChannelEntry));
-	}
-
-	@GraphQLField
+	@GraphQLField(
+		description = "Deletes the per-account delivery term channel override identified by its internal ID. Returns 204 on success."
+	)
 	public boolean deleteAccountChannelDeliveryTermId(
 			@GraphQLName("id") Long id)
 		throws Exception {
@@ -491,22 +500,9 @@ public class Mutation {
 		return true;
 	}
 
-	@GraphQLField
-	public AccountChannelEntry patchAccountChannelDeliveryTermId(
-			@GraphQLName("id") Long id,
-			@GraphQLName("accountChannelEntry") AccountChannelEntry
-				accountChannelEntry)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_accountChannelEntryResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			accountChannelEntryResource ->
-				accountChannelEntryResource.patchAccountChannelDeliveryTermId(
-					id, accountChannelEntry));
-	}
-
-	@GraphQLField
+	@GraphQLField(
+		description = "Deletes the per-account discount channel override identified by its internal ID. Returns 204 on success."
+	)
 	public boolean deleteAccountChannelDiscountId(@GraphQLName("id") Long id)
 		throws Exception {
 
@@ -519,22 +515,9 @@ public class Mutation {
 		return true;
 	}
 
-	@GraphQLField
-	public AccountChannelEntry patchAccountChannelDiscountId(
-			@GraphQLName("id") Long id,
-			@GraphQLName("accountChannelEntry") AccountChannelEntry
-				accountChannelEntry)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_accountChannelEntryResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			accountChannelEntryResource ->
-				accountChannelEntryResource.patchAccountChannelDiscountId(
-					id, accountChannelEntry));
-	}
-
-	@GraphQLField
+	@GraphQLField(
+		description = "Deletes the per-account payment method channel override identified by its internal ID. Returns 204 on success."
+	)
 	public boolean deleteAccountChannelPaymentMethodId(
 			@GraphQLName("id") Long id)
 		throws Exception {
@@ -549,22 +532,9 @@ public class Mutation {
 		return true;
 	}
 
-	@GraphQLField
-	public AccountChannelEntry patchAccountChannelPaymentMethodId(
-			@GraphQLName("id") Long id,
-			@GraphQLName("accountChannelEntry") AccountChannelEntry
-				accountChannelEntry)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_accountChannelEntryResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			accountChannelEntryResource ->
-				accountChannelEntryResource.patchAccountChannelPaymentMethodId(
-					id, accountChannelEntry));
-	}
-
-	@GraphQLField
+	@GraphQLField(
+		description = "Deletes the per-account payment term channel override identified by its internal ID. Returns 204 on success."
+	)
 	public boolean deleteAccountChannelPaymentTermId(@GraphQLName("id") Long id)
 		throws Exception {
 
@@ -578,22 +548,9 @@ public class Mutation {
 		return true;
 	}
 
-	@GraphQLField
-	public AccountChannelEntry patchAccountChannelPaymentTermId(
-			@GraphQLName("id") Long id,
-			@GraphQLName("accountChannelEntry") AccountChannelEntry
-				accountChannelEntry)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_accountChannelEntryResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			accountChannelEntryResource ->
-				accountChannelEntryResource.patchAccountChannelPaymentTermId(
-					id, accountChannelEntry));
-	}
-
-	@GraphQLField
+	@GraphQLField(
+		description = "Deletes the per-account price list channel override identified by its internal ID. Returns 204 on success."
+	)
 	public boolean deleteAccountChannelPriceListId(@GraphQLName("id") Long id)
 		throws Exception {
 
@@ -607,22 +564,9 @@ public class Mutation {
 		return true;
 	}
 
-	@GraphQLField
-	public AccountChannelEntry patchAccountChannelPriceListId(
-			@GraphQLName("id") Long id,
-			@GraphQLName("accountChannelEntry") AccountChannelEntry
-				accountChannelEntry)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_accountChannelEntryResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			accountChannelEntryResource ->
-				accountChannelEntryResource.patchAccountChannelPriceListId(
-					id, accountChannelEntry));
-	}
-
-	@GraphQLField
+	@GraphQLField(
+		description = "Deletes the per-account shipping address channel override identified by its internal ID. Returns 204 on success."
+	)
 	public boolean deleteAccountChannelShippingAddressId(
 			@GraphQLName("id") Long id)
 		throws Exception {
@@ -637,7 +581,143 @@ public class Mutation {
 		return true;
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Deletes the per-account user channel override identified by its internal ID. Returns 204 on success."
+	)
+	public boolean deleteAccountChannelUserId(@GraphQLName("id") Long id)
+		throws Exception {
+
+		_applyVoidComponentServiceObjects(
+			_accountChannelEntryResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			accountChannelEntryResource ->
+				accountChannelEntryResource.deleteAccountChannelUserId(id));
+
+		return true;
+	}
+
+	@GraphQLField(
+		description = "Partially updates the per-account billing address channel override identified by its internal ID. JSON Merge Patch semantics; only the supplied fields (channel binding, priority, overrideEligibility) are modified."
+	)
+	public AccountChannelEntry patchAccountChannelBillingAddressId(
+			@GraphQLName("id") Long id,
+			@GraphQLName("accountChannelEntry") AccountChannelEntry
+				accountChannelEntry)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_accountChannelEntryResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			accountChannelEntryResource ->
+				accountChannelEntryResource.patchAccountChannelBillingAddressId(
+					id, accountChannelEntry));
+	}
+
+	@GraphQLField(
+		description = "Partially updates the per-account currency channel override identified by its internal ID. JSON Merge Patch semantics; only the supplied fields (channel binding, priority, overrideEligibility) are modified."
+	)
+	public AccountChannelEntry patchAccountChannelCurrencyId(
+			@GraphQLName("id") Long id,
+			@GraphQLName("accountChannelEntry") AccountChannelEntry
+				accountChannelEntry)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_accountChannelEntryResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			accountChannelEntryResource ->
+				accountChannelEntryResource.patchAccountChannelCurrencyId(
+					id, accountChannelEntry));
+	}
+
+	@GraphQLField(
+		description = "Partially updates the per-account delivery term channel override identified by its internal ID. JSON Merge Patch semantics; only the supplied fields (channel binding, priority, overrideEligibility) are modified."
+	)
+	public AccountChannelEntry patchAccountChannelDeliveryTermId(
+			@GraphQLName("id") Long id,
+			@GraphQLName("accountChannelEntry") AccountChannelEntry
+				accountChannelEntry)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_accountChannelEntryResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			accountChannelEntryResource ->
+				accountChannelEntryResource.patchAccountChannelDeliveryTermId(
+					id, accountChannelEntry));
+	}
+
+	@GraphQLField(
+		description = "Partially updates the per-account discount channel override identified by its internal ID. JSON Merge Patch semantics; only the supplied fields (channel binding, priority, overrideEligibility) are modified."
+	)
+	public AccountChannelEntry patchAccountChannelDiscountId(
+			@GraphQLName("id") Long id,
+			@GraphQLName("accountChannelEntry") AccountChannelEntry
+				accountChannelEntry)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_accountChannelEntryResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			accountChannelEntryResource ->
+				accountChannelEntryResource.patchAccountChannelDiscountId(
+					id, accountChannelEntry));
+	}
+
+	@GraphQLField(
+		description = "Partially updates the per-account payment method channel override identified by its internal ID. JSON Merge Patch semantics; only the supplied fields (channel binding, priority, overrideEligibility) are modified."
+	)
+	public AccountChannelEntry patchAccountChannelPaymentMethodId(
+			@GraphQLName("id") Long id,
+			@GraphQLName("accountChannelEntry") AccountChannelEntry
+				accountChannelEntry)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_accountChannelEntryResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			accountChannelEntryResource ->
+				accountChannelEntryResource.patchAccountChannelPaymentMethodId(
+					id, accountChannelEntry));
+	}
+
+	@GraphQLField(
+		description = "Partially updates the per-account payment term channel override identified by its internal ID. JSON Merge Patch semantics; only the supplied fields (channel binding, priority, overrideEligibility) are modified."
+	)
+	public AccountChannelEntry patchAccountChannelPaymentTermId(
+			@GraphQLName("id") Long id,
+			@GraphQLName("accountChannelEntry") AccountChannelEntry
+				accountChannelEntry)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_accountChannelEntryResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			accountChannelEntryResource ->
+				accountChannelEntryResource.patchAccountChannelPaymentTermId(
+					id, accountChannelEntry));
+	}
+
+	@GraphQLField(
+		description = "Partially updates the per-account price list channel override identified by its internal ID. JSON Merge Patch semantics; only the supplied fields (channel binding, priority, overrideEligibility) are modified."
+	)
+	public AccountChannelEntry patchAccountChannelPriceListId(
+			@GraphQLName("id") Long id,
+			@GraphQLName("accountChannelEntry") AccountChannelEntry
+				accountChannelEntry)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_accountChannelEntryResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			accountChannelEntryResource ->
+				accountChannelEntryResource.patchAccountChannelPriceListId(
+					id, accountChannelEntry));
+	}
+
+	@GraphQLField(
+		description = "Partially updates the per-account shipping address channel override identified by its internal ID. JSON Merge Patch semantics; only the supplied fields (channel binding, priority, overrideEligibility) are modified."
+	)
 	public AccountChannelEntry patchAccountChannelShippingAddressId(
 			@GraphQLName("id") Long id,
 			@GraphQLName("accountChannelEntry") AccountChannelEntry
@@ -653,20 +733,9 @@ public class Mutation {
 						id, accountChannelEntry));
 	}
 
-	@GraphQLField
-	public boolean deleteAccountChannelUserId(@GraphQLName("id") Long id)
-		throws Exception {
-
-		_applyVoidComponentServiceObjects(
-			_accountChannelEntryResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			accountChannelEntryResource ->
-				accountChannelEntryResource.deleteAccountChannelUserId(id));
-
-		return true;
-	}
-
-	@GraphQLField
+	@GraphQLField(
+		description = "Partially updates the per-account user channel override identified by its internal ID. JSON Merge Patch semantics; only the supplied fields (channel binding, priority, overrideEligibility) are modified."
+	)
 	public AccountChannelEntry patchAccountChannelUserId(
 			@GraphQLName("id") Long id,
 			@GraphQLName("accountChannelEntry") AccountChannelEntry
@@ -681,7 +750,9 @@ public class Mutation {
 					id, accountChannelEntry));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Creates a per-account billing address channel override under the Account identified by external reference code."
+	)
 	public AccountChannelEntry
 			createAccountByExternalReferenceCodeAccountChannelBillingAddress(
 				@GraphQLName("externalReferenceCode") String
@@ -699,7 +770,9 @@ public class Mutation {
 						externalReferenceCode, accountChannelEntry));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Creates a per-account currency channel override under the Account identified by external reference code."
+	)
 	public AccountChannelEntry
 			createAccountByExternalReferenceCodeAccountChannelCurrency(
 				@GraphQLName("externalReferenceCode") String
@@ -717,7 +790,9 @@ public class Mutation {
 						externalReferenceCode, accountChannelEntry));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Creates a per-account delivery term channel override under the Account identified by external reference code."
+	)
 	public AccountChannelEntry
 			createAccountByExternalReferenceCodeAccountChannelDeliveryTerm(
 				@GraphQLName("externalReferenceCode") String
@@ -735,7 +810,9 @@ public class Mutation {
 						externalReferenceCode, accountChannelEntry));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Creates a per-account discount channel override under the Account identified by external reference code."
+	)
 	public AccountChannelEntry
 			createAccountByExternalReferenceCodeAccountChannelDiscount(
 				@GraphQLName("externalReferenceCode") String
@@ -753,7 +830,9 @@ public class Mutation {
 						externalReferenceCode, accountChannelEntry));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Creates a per-account payment method channel override under the Account identified by external reference code."
+	)
 	public AccountChannelEntry
 			createAccountByExternalReferenceCodeAccountChannelPaymentMethod(
 				@GraphQLName("externalReferenceCode") String
@@ -771,7 +850,9 @@ public class Mutation {
 						externalReferenceCode, accountChannelEntry));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Creates a per-account payment term channel override under the Account identified by external reference code."
+	)
 	public AccountChannelEntry
 			createAccountByExternalReferenceCodeAccountChannelPaymentTerm(
 				@GraphQLName("externalReferenceCode") String
@@ -789,7 +870,9 @@ public class Mutation {
 						externalReferenceCode, accountChannelEntry));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Creates a per-account price list channel override under the Account identified by external reference code."
+	)
 	public AccountChannelEntry
 			createAccountByExternalReferenceCodeAccountChannelPriceList(
 				@GraphQLName("externalReferenceCode") String
@@ -807,7 +890,9 @@ public class Mutation {
 						externalReferenceCode, accountChannelEntry));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Creates a per-account shipping address channel override under the Account identified by external reference code."
+	)
 	public AccountChannelEntry
 			createAccountByExternalReferenceCodeAccountChannelShippingAddress(
 				@GraphQLName("externalReferenceCode") String
@@ -825,7 +910,9 @@ public class Mutation {
 						externalReferenceCode, accountChannelEntry));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Creates a per-account user channel override under the Account identified by external reference code."
+	)
 	public AccountChannelEntry
 			createAccountByExternalReferenceCodeAccountChannelUser(
 				@GraphQLName("externalReferenceCode") String
@@ -843,7 +930,9 @@ public class Mutation {
 						externalReferenceCode, accountChannelEntry));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Creates a per-account billing address channel override under the Account identified by internal ID."
+	)
 	public AccountChannelEntry createAccountIdAccountChannelBillingAddress(
 			@GraphQLName("id") Long id,
 			@GraphQLName("accountChannelEntry") AccountChannelEntry
@@ -859,7 +948,9 @@ public class Mutation {
 						id, accountChannelEntry));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Creates a per-account currency channel override under the Account identified by internal ID."
+	)
 	public AccountChannelEntry createAccountIdAccountChannelCurrency(
 			@GraphQLName("id") Long id,
 			@GraphQLName("accountChannelEntry") AccountChannelEntry
@@ -874,7 +965,9 @@ public class Mutation {
 					id, accountChannelEntry));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Creates a per-account delivery term channel override under the Account identified by internal ID."
+	)
 	public AccountChannelEntry createAccountIdAccountChannelDeliveryTerm(
 			@GraphQLName("id") Long id,
 			@GraphQLName("accountChannelEntry") AccountChannelEntry
@@ -890,7 +983,9 @@ public class Mutation {
 						id, accountChannelEntry));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Creates a per-account discount channel override under the Account identified by internal ID."
+	)
 	public AccountChannelEntry createAccountIdAccountChannelDiscount(
 			@GraphQLName("id") Long id,
 			@GraphQLName("accountChannelEntry") AccountChannelEntry
@@ -905,7 +1000,9 @@ public class Mutation {
 					id, accountChannelEntry));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Creates a per-account payment method channel override under the Account identified by internal ID."
+	)
 	public AccountChannelEntry createAccountIdAccountChannelPaymentMethod(
 			@GraphQLName("id") Long id,
 			@GraphQLName("accountChannelEntry") AccountChannelEntry
@@ -921,7 +1018,9 @@ public class Mutation {
 						id, accountChannelEntry));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Creates a per-account payment term channel override under the Account identified by internal ID."
+	)
 	public AccountChannelEntry createAccountIdAccountChannelPaymentTerm(
 			@GraphQLName("id") Long id,
 			@GraphQLName("accountChannelEntry") AccountChannelEntry
@@ -937,7 +1036,9 @@ public class Mutation {
 						id, accountChannelEntry));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Creates a per-account price list channel override under the Account identified by internal ID."
+	)
 	public AccountChannelEntry createAccountIdAccountChannelPriceList(
 			@GraphQLName("id") Long id,
 			@GraphQLName("accountChannelEntry") AccountChannelEntry
@@ -953,7 +1054,9 @@ public class Mutation {
 						id, accountChannelEntry));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Creates a per-account shipping address channel override under the Account identified by internal ID."
+	)
 	public AccountChannelEntry createAccountIdAccountChannelShippingAddress(
 			@GraphQLName("id") Long id,
 			@GraphQLName("accountChannelEntry") AccountChannelEntry
@@ -969,7 +1072,9 @@ public class Mutation {
 						id, accountChannelEntry));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Creates a per-account user channel override under the Account identified by internal ID."
+	)
 	public AccountChannelEntry createAccountIdAccountChannelUser(
 			@GraphQLName("id") Long id,
 			@GraphQLName("accountChannelEntry") AccountChannelEntry
@@ -984,7 +1089,9 @@ public class Mutation {
 					id, accountChannelEntry));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Deletes the per-account channel shipping option identified by its internal ID. Returns 204."
+	)
 	public boolean deleteAccountChannelShippingOption(
 			@GraphQLName("id") Long id)
 		throws Exception {
@@ -1014,7 +1121,9 @@ public class Mutation {
 						callbackURL, object));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Partially updates a per-account channel shipping option by its internal ID. JSON Merge Patch semantics; updates the channel binding, shipping method key, and shipping option key."
+	)
 	public AccountChannelShippingOption patchAccountChannelShippingOption(
 			@GraphQLName("id") Long id,
 			@GraphQLName("accountChannelShippingOption")
@@ -1030,7 +1139,9 @@ public class Mutation {
 						id, accountChannelShippingOption));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Creates or updates a per-account channel shipping option under the Account identified by external reference code. Validates the supplied shipping method key, fixed option key, and channel binding before persisting."
+	)
 	public AccountChannelShippingOption
 			createAccountByExternalReferenceCodeAccountChannelShippingOption(
 				@GraphQLName("externalReferenceCode") String
@@ -1048,7 +1159,9 @@ public class Mutation {
 						externalReferenceCode, accountChannelShippingOption));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Creates or updates a per-account channel shipping option under the Account identified by internal ID. Validates the supplied shipping method key, fixed option key, and channel binding before persisting."
+	)
 	public AccountChannelShippingOption
 			createAccountIdAccountChannelShippingOption(
 				@GraphQLName("id") Long id,
@@ -1080,22 +1193,9 @@ public class Mutation {
 						callbackURL, object));
 	}
 
-	@GraphQLField
-	public AccountMember createAccountByExternalReferenceCodeAccountMember(
-			@GraphQLName("externalReferenceCode") String externalReferenceCode,
-			@GraphQLName("accountMember") AccountMember accountMember)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_accountMemberResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			accountMemberResource ->
-				accountMemberResource.
-					postAccountByExternalReferenceCodeAccountMember(
-						externalReferenceCode, accountMember));
-	}
-
-	@GraphQLField
+	@GraphQLField(
+		description = "Removes a member from the Account, addressed by Account external reference code and User internal ID. Deprecated. Use `DELETE /o/headless-admin-user/v1.0/accounts/by-external-reference-code/{accountExternalReferenceCode}/user-accounts/by-external-reference-code/{externalReferenceCode}` from the headless-admin-user module instead."
+	)
 	public Response deleteAccountByExternalReferenceCodeAccountMember(
 			@GraphQLName("externalReferenceCode") String externalReferenceCode,
 			@GraphQLName("userId") Long userId)
@@ -1110,7 +1210,23 @@ public class Mutation {
 						externalReferenceCode, userId));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Removes a member from the Account, addressed by Account internal ID and User internal ID. Deprecated. Use `DELETE /o/headless-admin-user/v1.0/accounts/{accountId}/user-accounts/{userAccountId}` from the headless-admin-user module instead."
+	)
+	public Response deleteAccountIdAccountMember(
+			@GraphQLName("id") Long id, @GraphQLName("userId") Long userId)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_accountMemberResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			accountMemberResource ->
+				accountMemberResource.deleteAccountIdAccountMember(id, userId));
+	}
+
+	@GraphQLField(
+		description = "Updates the AccountRoles of a member, addressed by Account external reference code and User internal ID. Side effect -- the supplied accountRoles fully replace the user's previous account-scoped role set; roles not present in the body are removed. Deprecated. Assign or remove account-scoped roles through `POST` and `DELETE /o/headless-admin-user/v1.0/accounts/by-external-reference-code/{accountExternalReferenceCode}/account-roles/{accountRoleId}/user-accounts/by-external-reference-code/{externalReferenceCode}` in the headless-admin-user module instead."
+	)
 	public Response patchAccountByExternalReferenceCodeAccountMember(
 			@GraphQLName("externalReferenceCode") String externalReferenceCode,
 			@GraphQLName("userId") Long userId,
@@ -1126,7 +1242,42 @@ public class Mutation {
 						externalReferenceCode, userId, accountMember));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Updates the AccountRoles of a member, addressed by Account internal ID and User internal ID. Side effect -- the supplied accountRoles fully replace the user's previous account-scoped role set; roles not present in the body are removed. Deprecated. Assign or remove account-scoped roles through `POST` and `DELETE /o/headless-admin-user/v1.0/accounts/{accountId}/account-roles/{accountRoleId}/user-accounts/{userAccountId}` in the headless-admin-user module instead."
+	)
+	public Response patchAccountIdAccountMember(
+			@GraphQLName("id") Long id, @GraphQLName("userId") Long userId,
+			@GraphQLName("accountMember") AccountMember accountMember)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_accountMemberResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			accountMemberResource ->
+				accountMemberResource.patchAccountIdAccountMember(
+					id, userId, accountMember));
+	}
+
+	@GraphQLField(
+		description = "Adds an existing user as a member of the Account identified by external reference code. The user is referenced by userId or userExternalReferenceCode in the body; the supplied accountRoles become the user's account-scoped roles. Deprecated. Use `POST /o/headless-admin-user/v1.0/accounts/by-external-reference-code/{externalReferenceCode}/user-accounts` from the headless-admin-user module instead."
+	)
+	public AccountMember createAccountByExternalReferenceCodeAccountMember(
+			@GraphQLName("externalReferenceCode") String externalReferenceCode,
+			@GraphQLName("accountMember") AccountMember accountMember)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_accountMemberResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			accountMemberResource ->
+				accountMemberResource.
+					postAccountByExternalReferenceCodeAccountMember(
+						externalReferenceCode, accountMember));
+	}
+
+	@GraphQLField(
+		description = "Adds an existing user as a member of the Account identified by internal ID. The user is referenced by userId or userExternalReferenceCode in the body; the supplied accountRoles become the user's account-scoped roles. Deprecated. Use `POST /o/headless-admin-user/v1.0/accounts/{accountId}/user-accounts` from the headless-admin-user module instead."
+	)
 	public AccountMember createAccountIdAccountMember(
 			@GraphQLName("id") Long id,
 			@GraphQLName("accountMember") AccountMember accountMember)
@@ -1154,33 +1305,42 @@ public class Mutation {
 					callbackURL, object));
 	}
 
-	@GraphQLField
-	public Response deleteAccountIdAccountMember(
-			@GraphQLName("id") Long id, @GraphQLName("userId") Long userId)
+	@GraphQLField(
+		description = "Removes the link between the Account and a Liferay Organization, addressed by Account external reference code and Organization internal ID. Deprecated. Use `DELETE /o/headless-admin-user/v1.0/accounts/by-external-reference-code/{externalReferenceCode}/organizations/{organizationId}` from the headless-admin-user module instead."
+	)
+	public Response deleteAccountByExternalReferenceCodeAccountOrganization(
+			@GraphQLName("externalReferenceCode") String externalReferenceCode,
+			@GraphQLName("organizationId") Long organizationId)
 		throws Exception {
 
 		return _applyComponentServiceObjects(
-			_accountMemberResourceComponentServiceObjects,
+			_accountOrganizationResourceComponentServiceObjects,
 			this::_populateResourceContext,
-			accountMemberResource ->
-				accountMemberResource.deleteAccountIdAccountMember(id, userId));
+			accountOrganizationResource ->
+				accountOrganizationResource.
+					deleteAccountByExternalReferenceCodeAccountOrganization(
+						externalReferenceCode, organizationId));
 	}
 
-	@GraphQLField
-	public Response patchAccountIdAccountMember(
-			@GraphQLName("id") Long id, @GraphQLName("userId") Long userId,
-			@GraphQLName("accountMember") AccountMember accountMember)
+	@GraphQLField(
+		description = "Removes the link between the Account and a Liferay Organization, addressed by Account internal ID and Organization internal ID. Deprecated. Use `DELETE /o/headless-admin-user/v1.0/accounts/{accountId}/organizations/{organizationId}` from the headless-admin-user module instead."
+	)
+	public Response deleteAccountIdAccountOrganization(
+			@GraphQLName("id") Long id,
+			@GraphQLName("organizationId") Long organizationId)
 		throws Exception {
 
 		return _applyComponentServiceObjects(
-			_accountMemberResourceComponentServiceObjects,
+			_accountOrganizationResourceComponentServiceObjects,
 			this::_populateResourceContext,
-			accountMemberResource ->
-				accountMemberResource.patchAccountIdAccountMember(
-					id, userId, accountMember));
+			accountOrganizationResource ->
+				accountOrganizationResource.deleteAccountIdAccountOrganization(
+					id, organizationId));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Links a Liferay Organization to the Account, addressed by Account external reference code. The organization is referenced by organizationId or organizationExternalReferenceCode in the body. Deprecated. Use `POST /o/headless-admin-user/v1.0/accounts/by-external-reference-code/{externalReferenceCode}/organizations/{organizationId}` from the headless-admin-user module instead."
+	)
 	public AccountOrganization
 			createAccountByExternalReferenceCodeAccountOrganization(
 				@GraphQLName("externalReferenceCode") String
@@ -1198,22 +1358,9 @@ public class Mutation {
 						externalReferenceCode, accountOrganization));
 	}
 
-	@GraphQLField
-	public Response deleteAccountByExternalReferenceCodeAccountOrganization(
-			@GraphQLName("externalReferenceCode") String externalReferenceCode,
-			@GraphQLName("organizationId") Long organizationId)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_accountOrganizationResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			accountOrganizationResource ->
-				accountOrganizationResource.
-					deleteAccountByExternalReferenceCodeAccountOrganization(
-						externalReferenceCode, organizationId));
-	}
-
-	@GraphQLField
+	@GraphQLField(
+		description = "Links a Liferay Organization to the Account, addressed by Account internal ID. The organization is referenced by organizationId or organizationExternalReferenceCode in the body. Deprecated. Use `POST /o/headless-admin-user/v1.0/accounts/{accountId}/organizations/{organizationId}` from the headless-admin-user module instead."
+	)
 	public AccountOrganization createAccountIdAccountOrganization(
 			@GraphQLName("id") Long id,
 			@GraphQLName("accountOrganization") AccountOrganization
@@ -1242,34 +1389,22 @@ public class Mutation {
 					postAccountIdAccountOrganizationBatch(callbackURL, object));
 	}
 
-	@GraphQLField
-	public Response deleteAccountIdAccountOrganization(
-			@GraphQLName("id") Long id,
-			@GraphQLName("organizationId") Long organizationId)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_accountOrganizationResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			accountOrganizationResource ->
-				accountOrganizationResource.deleteAccountIdAccountOrganization(
-					id, organizationId));
-	}
-
-	@GraphQLField
-	public AdminAccountGroup createAccountGroup(
-			@GraphQLName("adminAccountGroup") AdminAccountGroup
-				adminAccountGroup)
+	@GraphQLField(
+		description = "Deletes an AccountGroup by its internal ID. Deprecated. Use `DELETE /o/headless-admin-user/v1.0/account-groups/{accountGroupId}` from the headless-admin-user module instead."
+	)
+	public Response deleteAccountGroup(@GraphQLName("id") Long id)
 		throws Exception {
 
 		return _applyComponentServiceObjects(
 			_adminAccountGroupResourceComponentServiceObjects,
 			this::_populateResourceContext,
 			adminAccountGroupResource ->
-				adminAccountGroupResource.postAccountGroup(adminAccountGroup));
+				adminAccountGroupResource.deleteAccountGroup(id));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Deletes an AccountGroup by its external reference code. Deprecated. Use `DELETE /o/headless-admin-user/v1.0/account-groups/by-external-reference-code/{externalReferenceCode}` from the headless-admin-user module instead."
+	)
 	public Response deleteAccountGroupByExternalReferenceCode(
 			@GraphQLName("externalReferenceCode") String externalReferenceCode)
 		throws Exception {
@@ -1283,7 +1418,26 @@ public class Mutation {
 						externalReferenceCode));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Partially updates an AccountGroup by its internal ID. JSON Merge Patch semantics; updates name, description, and custom fields. Deprecated. Use `PATCH /o/headless-admin-user/v1.0/account-groups/{accountGroupId}` from the headless-admin-user module instead."
+	)
+	public Response patchAccountGroup(
+			@GraphQLName("id") Long id,
+			@GraphQLName("adminAccountGroup") AdminAccountGroup
+				adminAccountGroup)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_adminAccountGroupResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			adminAccountGroupResource ->
+				adminAccountGroupResource.patchAccountGroup(
+					id, adminAccountGroup));
+	}
+
+	@GraphQLField(
+		description = "Partially updates an AccountGroup by its external reference code. JSON Merge Patch semantics; updates name, description, and custom fields. Deprecated. Use `PATCH /o/headless-admin-user/v1.0/account-groups/by-external-reference-code/{externalReferenceCode}` from the headless-admin-user module instead."
+	)
 	public Response patchAccountGroupByExternalReferenceCode(
 			@GraphQLName("externalReferenceCode") String externalReferenceCode,
 			@GraphQLName("adminAccountGroup") AdminAccountGroup
@@ -1299,20 +1453,10 @@ public class Mutation {
 						externalReferenceCode, adminAccountGroup));
 	}
 
-	@GraphQLField
-	public Response deleteAccountGroup(@GraphQLName("id") Long id)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_adminAccountGroupResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			adminAccountGroupResource ->
-				adminAccountGroupResource.deleteAccountGroup(id));
-	}
-
-	@GraphQLField
-	public Response patchAccountGroup(
-			@GraphQLName("id") Long id,
+	@GraphQLField(
+		description = "Creates or upserts an AccountGroup keyed by external reference code. When the supplied ERC matches an existing group, the group is updated; otherwise a new group is created. Returns 201 with the created group, or 204 when an existing group is updated. Deprecated. Use `POST /o/headless-admin-user/v1.0/account-groups` from the headless-admin-user module instead."
+	)
+	public AdminAccountGroup createAccountGroup(
 			@GraphQLName("adminAccountGroup") AdminAccountGroup
 				adminAccountGroup)
 		throws Exception {
@@ -1321,11 +1465,12 @@ public class Mutation {
 			_adminAccountGroupResourceComponentServiceObjects,
 			this::_populateResourceContext,
 			adminAccountGroupResource ->
-				adminAccountGroupResource.patchAccountGroup(
-					id, adminAccountGroup));
+				adminAccountGroupResource.postAccountGroup(adminAccountGroup));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Creates a new User and immediately adds them as a member of the Account identified by external reference code. Useful for inviting buyers who do not yet exist in Liferay. The newly created user inherits the supplied accountRoles. Deprecated. Use `POST /o/headless-admin-user/v1.0/accounts/by-external-reference-code/{externalReferenceCode}/user-accounts` from the headless-admin-user module instead."
+	)
 	public User createAccountByExternalReferenceCodeAccountMemberCreateUser(
 			@GraphQLName("externalReferenceCode") String externalReferenceCode,
 			@GraphQLName("user") User user)
@@ -1566,12 +1711,15 @@ public class Mutation {
 
 	private AcceptLanguage _acceptLanguage;
 	private com.liferay.portal.kernel.model.Company _company;
-	private BiFunction<Object, String, Filter> _filterBiFunction;
+	private BiFunction
+		<Object, String, com.liferay.portal.kernel.search.filter.Filter>
+			_filterBiFunction;
 	private GroupLocalService _groupLocalService;
 	private HttpServletRequest _httpServletRequest;
 	private HttpServletResponse _httpServletResponse;
 	private RoleLocalService _roleLocalService;
-	private BiFunction<Object, String, Sort[]> _sortsBiFunction;
+	private BiFunction<Object, String, com.liferay.portal.kernel.search.Sort[]>
+		_sortsBiFunction;
 	private UriInfo _uriInfo;
 	private com.liferay.portal.kernel.model.User _user;
 	private VulcanBatchEngineExportTaskResource
@@ -1580,3 +1728,4 @@ public class Mutation {
 		_vulcanBatchEngineImportTaskResource;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1113493796

@@ -1,6 +1,6 @@
 import DisplayComponent from './display-components';
-import React, {Fragment} from 'react';
-import {ConjunctionKey} from 'shared/util/constants';
+import React, {Fragment, useContext} from 'react';
+import {ConjunctionKey, SegmentTypes} from 'shared/util/constants';
 import {Criteria} from 'segment/segment-editor/dynamic/utils/types';
 import {findPropertyByCriterion} from 'segment/segment-editor/dynamic/utils/utils';
 import {ReferencedObjectsContext} from 'segment/segment-editor/dynamic/context/referencedObjects';
@@ -8,45 +8,72 @@ import {ReferencedObjectsContext} from 'segment/segment-editor/dynamic/context/r
 interface ICriteriaViewProps extends React.HTMLAttributes<HTMLDivElement> {
 	criteria: Criteria;
 	forwardedRef?: React.Ref<any>;
+	segmentType: SegmentTypes;
+	sequential: boolean;
 	timeZoneId: string;
 }
 
-const CONJUNCTION_MAP = {
+const CONJUNCTION_MAP: Record<string, string> = {
 	[ConjunctionKey.And]: Liferay.Language.get('and'),
-	[ConjunctionKey.Or]: Liferay.Language.get('or')
+	[ConjunctionKey.Or]: Liferay.Language.get('or'),
+	[ConjunctionKey.Then]: Liferay.Language.get('then')
 };
 
-class CriteriaView extends React.Component<ICriteriaViewProps> {
-	static contextType = ReferencedObjectsContext;
+const CriteriaView: React.FC<ICriteriaViewProps> = ({
+	criteria,
+	forwardedRef,
+	segmentType,
+	sequential,
+	timeZoneId
+}) => {
+	const {referencedProperties} = useContext(ReferencedObjectsContext);
 
-	renderCriteriaGroup(criteria) {
-		const {conjunctionName, criteriaGroupId, items} = criteria;
+	const renderCriteriaGroup = (criteria: Criteria, depth: number) => {
+		const {conjunctionName, criteriaGroupId, items} = criteria as {
+			conjunctionName: string;
+			criteriaGroupId: string;
+			items: any[];
+		};
+
+		const isSequentialTopLevel =
+			segmentType === SegmentTypes.RealTime && depth === 0 && sequential;
+
+		const conjunction = isSequentialTopLevel
+			? CONJUNCTION_MAP[ConjunctionKey.Then]
+			: CONJUNCTION_MAP[conjunctionName];
 
 		return (
 			<div className='criteria-group' key={criteriaGroupId}>
-				{items.map((criterion, index) => (
-					<Fragment key={index}>
-						{index !== 0 && (
-							<div className='conjunction'>
-								{CONJUNCTION_MAP[conjunctionName]}
-							</div>
-						)}
+				{items.map((criterion: any, index: number) => {
+					const content = criterion.items
+						? renderCriteriaGroup(criterion, depth + 1)
+						: renderCriteriaRow(criterion);
 
-						{criterion.items
-							? this.renderCriteriaGroup(criterion)
-							: this.renderCriteriaRow(criterion)}
-					</Fragment>
-				))}
+					return (
+						<Fragment key={index}>
+							{index !== 0 && (
+								<div className='conjunction'>{conjunction}</div>
+							)}
+
+							{isSequentialTopLevel ? (
+								<div className='criteria-step'>
+									<span className='criteria-step-number mr-2'>
+										{index + 1}
+									</span>
+
+									{content}
+								</div>
+							) : (
+								content
+							)}
+						</Fragment>
+					);
+				})}
 			</div>
 		);
-	}
+	};
 
-	renderCriteriaRow(criterion) {
-		const {
-			context: {referencedProperties},
-			props: {timeZoneId}
-		} = this;
-
+	const renderCriteriaRow = (criterion: any) => {
 		const property = findPropertyByCriterion(
 			criterion,
 			referencedProperties
@@ -58,6 +85,7 @@ class CriteriaView extends React.Component<ICriteriaViewProps> {
 					<DisplayComponent
 						criterion={criterion}
 						property={property}
+						segmentType={segmentType}
 						timeZoneId={timeZoneId}
 					/>
 				) : (
@@ -67,18 +95,14 @@ class CriteriaView extends React.Component<ICriteriaViewProps> {
 				)}
 			</div>
 		);
-	}
+	};
 
-	render() {
-		const {criteria, forwardedRef} = this.props;
-
-		return (
-			<div className='criteria-view-root' ref={forwardedRef}>
-				{this.renderCriteriaGroup(criteria)}
-			</div>
-		);
-	}
-}
+	return (
+		<div className='criteria-view-root pt-2' ref={forwardedRef}>
+			{renderCriteriaGroup(criteria, 0)}
+		</div>
+	);
+};
 
 export default React.forwardRef<HTMLDivElement, ICriteriaViewProps>(
 	(props, ref) => <CriteriaView forwardedRef={ref} {...props} />

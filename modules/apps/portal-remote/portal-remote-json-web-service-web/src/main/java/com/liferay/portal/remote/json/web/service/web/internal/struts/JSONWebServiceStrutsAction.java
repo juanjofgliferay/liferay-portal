@@ -6,6 +6,7 @@
 package com.liferay.portal.remote.json.web.service.web.internal.struts;
 
 import com.liferay.petra.io.unsync.UnsyncStringWriter;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -15,17 +16,12 @@ import com.liferay.portal.kernel.servlet.ServletContextPool;
 import com.liferay.portal.kernel.servlet.ServletResponseUtil;
 import com.liferay.portal.kernel.struts.StrutsAction;
 import com.liferay.portal.kernel.theme.ThemeUtil;
-import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -55,19 +51,24 @@ public class JSONWebServiceStrutsAction implements StrutsAction {
 			requestDispatcher.include(
 				httpServletRequest, pipingServletResponse);
 
+			StringBundler sb = new StringBundler(3);
+
 			Theme theme = (Theme)httpServletRequest.getAttribute(WebKeys.THEME);
 
-			Document document = Jsoup.parse(
-				ThemeUtil.include(
-					ServletContextPool.get(StringPool.BLANK),
-					httpServletRequest, httpServletResponse,
-					"portal_pop_up.jsp", theme, false));
+			String html = ThemeUtil.include(
+				ServletContextPool.get(StringPool.BLANK), httpServletRequest,
+				httpServletResponse, "portal_pop_up.jsp", theme, false);
 
-			Element bodyElement = document.body();
+			int index =
+				html.indexOf(StringPool.GREATER_THAN, html.indexOf("<body")) +
+					1;
 
-			bodyElement.prepend(unsyncStringWriter.toString());
+			sb.append(html.substring(0, index));
 
-			ServletResponseUtil.write(httpServletResponse, document.html());
+			sb.append(unsyncStringWriter.toString());
+			sb.append(html.substring(index));
+
+			ServletResponseUtil.write(httpServletResponse, sb.toString());
 		}
 		catch (Exception exception) {
 			_log.error(exception);
@@ -78,9 +79,6 @@ public class JSONWebServiceStrutsAction implements StrutsAction {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		JSONWebServiceStrutsAction.class);
-
-	@Reference
-	private Portal _portal;
 
 	@Reference(
 		target = "(osgi.web.symbolicname=com.liferay.portal.remote.json.web.service.web)"

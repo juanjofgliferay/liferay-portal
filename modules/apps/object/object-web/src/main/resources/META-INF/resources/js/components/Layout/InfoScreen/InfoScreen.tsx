@@ -7,9 +7,9 @@ import ClayForm, {ClayCheckbox} from '@clayui/form';
 import {
 	Card,
 	Input,
-	REQUIRED_MSG,
-	getLocalizableLabel,
+	constantsUtils,
 	invalidateRequired,
+	stringUtils,
 } from '@liferay/object-js-components-web';
 import React from 'react';
 
@@ -17,22 +17,21 @@ import {defaultLanguageId} from '../../../utils/constants';
 import {TYPES, useLayoutContext} from '../objectLayoutContext';
 
 const InfoScreen: React.FC<React.HTMLAttributes<HTMLElement>> = () => {
-	const [
-		{creationLanguageId, isViewOnly, objectLayout},
-		dispatch,
-	] = useLayoutContext();
+	const [{creationLanguageId, isViewOnly, objectLayout}, dispatch] =
+		useLayoutContext();
 
 	let error: string | undefined;
 
 	if (
 		invalidateRequired(
-			getLocalizableLabel(
-				creationLanguageId as Liferay.Language.Locale,
-				objectLayout.name
-			)
+			stringUtils.getLocalizableLabel({
+				fallbackLanguageId:
+					creationLanguageId as Liferay.Language.Locale,
+				labels: objectLayout.name,
+			})
 		)
 	) {
-		error = REQUIRED_MSG;
+		error = constantsUtils.REQUIRED_MSG;
 	}
 
 	return (
@@ -49,10 +48,11 @@ const InfoScreen: React.FC<React.HTMLAttributes<HTMLElement>> = () => {
 					});
 				}}
 				required
-				value={getLocalizableLabel(
-					creationLanguageId as Liferay.Language.Locale,
-					objectLayout.name
-				)}
+				value={stringUtils.getLocalizableLabel({
+					fallbackLanguageId:
+						creationLanguageId as Liferay.Language.Locale,
+					labels: objectLayout.name,
+				})}
 			/>
 
 			<ClayForm.Group className="mb-0">

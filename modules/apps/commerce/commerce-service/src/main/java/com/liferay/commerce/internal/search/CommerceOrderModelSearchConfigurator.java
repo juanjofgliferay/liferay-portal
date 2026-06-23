@@ -5,11 +5,15 @@
 
 package com.liferay.commerce.internal.search;
 
+import com.liferay.commerce.internal.search.spi.model.result.contributor.CommerceOrderModelSummaryContributor;
 import com.liferay.commerce.model.CommerceOrder;
+import com.liferay.commerce.service.CommerceOrderLocalService;
 import com.liferay.portal.search.spi.model.index.contributor.ModelIndexerWriterContributor;
+import com.liferay.portal.search.spi.model.index.contributor.helper.IndexerWriterMode;
 import com.liferay.portal.search.spi.model.registrar.ModelSearchConfigurator;
 import com.liferay.portal.search.spi.model.result.contributor.ModelSummaryContributor;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -42,15 +46,19 @@ public class CommerceOrderModelSearchConfigurator
 		return true;
 	}
 
-	@Reference(
-		target = "(indexer.class.name=com.liferay.commerce.model.CommerceOrder)"
-	)
+	@Activate
+	protected void activate() {
+		_modelIndexWriterContributor = new ModelIndexerWriterContributor<>(
+			IndexerWriterMode.UPDATE,
+			_commerceOrderLocalService::getIndexableActionableDynamicQuery);
+	}
+
+	@Reference
+	private CommerceOrderLocalService _commerceOrderLocalService;
+
 	private ModelIndexerWriterContributor<CommerceOrder>
 		_modelIndexWriterContributor;
-
-	@Reference(
-		target = "(indexer.class.name=com.liferay.commerce.model.CommerceOrder)"
-	)
-	private ModelSummaryContributor _modelSummaryContributor;
+	private final ModelSummaryContributor _modelSummaryContributor =
+		new CommerceOrderModelSummaryContributor();
 
 }

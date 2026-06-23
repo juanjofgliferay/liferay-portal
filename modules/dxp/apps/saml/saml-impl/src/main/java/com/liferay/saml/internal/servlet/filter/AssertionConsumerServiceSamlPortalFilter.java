@@ -8,13 +8,16 @@ package com.liferay.saml.internal.servlet.filter;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.saml.constants.SamlWebKeys;
+import com.liferay.saml.runtime.configuration.SamlProviderConfigurationHelper;
 
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Stian Sigvartsen
@@ -23,7 +26,7 @@ import org.osgi.service.component.annotations.Component;
 	property = {
 		"after-filter=Virtual Host Filter", "dispatcher=REQUEST",
 		"enabled=true",
-		"init-param.url-regex-ignore-pattern=^/html/.+\\.(css|gif|html|ico|jpg|js|png)(\\?.*)?$",
+		"init-param.url-regex-ignore-pattern=^/(html|o)/.+\\.(css|gif|html|ico|jpg|js|png)(\\?.*)?$",
 		"servlet-context-name=",
 		"servlet-filter-name=Assertion Consumer Service SAML Portal Filter",
 		"url-pattern=/c/portal/saml/acs"
@@ -34,11 +37,21 @@ public class AssertionConsumerServiceSamlPortalFilter
 	extends BaseSamlPortalFilter {
 
 	@Override
+	public boolean isFilterEnabled(
+		HttpServletRequest httpServletRequest,
+		HttpServletResponse httpServletResponse) {
+
+		return _samlProviderConfigurationHelper.isEnabled();
+	}
+
+	@Override
 	protected void doProcessFilter(
 			HttpServletRequest httpServletRequest,
 			HttpServletResponse httpServletResponse, FilterChain filterChain)
 		throws Exception {
 
+		httpServletRequest.setAttribute(
+			SamlWebKeys.SAML_ACS_LOGIN, Boolean.TRUE);
 		httpServletRequest.setAttribute(WebKeys.LOGIN_REQUEST, Boolean.TRUE);
 
 		filterChain.doFilter(httpServletRequest, httpServletResponse);
@@ -51,5 +64,8 @@ public class AssertionConsumerServiceSamlPortalFilter
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		AssertionConsumerServiceSamlPortalFilter.class);
+
+	@Reference
+	private SamlProviderConfigurationHelper _samlProviderConfigurationHelper;
 
 }

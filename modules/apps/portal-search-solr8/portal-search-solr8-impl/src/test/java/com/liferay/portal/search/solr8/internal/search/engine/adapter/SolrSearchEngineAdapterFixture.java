@@ -5,19 +5,11 @@
 
 package com.liferay.portal.search.solr8.internal.search.engine.adapter;
 
-import com.liferay.portal.kernel.search.query.QueryTranslator;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.search.engine.adapter.SearchEngineAdapter;
 import com.liferay.portal.search.solr8.internal.connection.SolrClientManager;
-import com.liferay.portal.search.solr8.internal.document.SolrDocumentFactory;
-import com.liferay.portal.search.solr8.internal.facet.FacetProcessor;
-import com.liferay.portal.search.solr8.internal.search.engine.adapter.document.DocumentRequestExecutorFixture;
-import com.liferay.portal.search.solr8.internal.search.engine.adapter.index.IndexRequestExecutorFixture;
-import com.liferay.portal.search.solr8.internal.search.engine.adapter.search.SearchRequestExecutorFixture;
 
 import java.util.Map;
-
-import org.apache.solr.client.solrj.SolrQuery;
 
 /**
  * @author Bryan Engler
@@ -32,55 +24,17 @@ public class SolrSearchEngineAdapterFixture {
 		_properties = properties;
 	}
 
-	public void setQueryTranslator(QueryTranslator<String> queryTranslator) {
-		_queryTranslator = queryTranslator;
-	}
-
 	public void setSolrClientManager(SolrClientManager solrClientManager) {
 		_solrClientManager = solrClientManager;
 	}
 
 	public void setUp() {
 		_searchEngineAdapter = createSearchEngineAdapter(
-			_facetProcessor, _solrClientManager, _solrDocumentFactory,
-			_queryTranslator, _properties);
+			_solrClientManager, _properties);
 	}
 
 	protected SearchEngineAdapter createSearchEngineAdapter(
-		FacetProcessor<SolrQuery> facetProcessor,
-		SolrClientManager solrClientManager,
-		SolrDocumentFactory solrDocumentFactory,
-		QueryTranslator<String> queryTranslator,
-		Map<String, Object> properties) {
-
-		DocumentRequestExecutorFixture documentRequestExecutorFixture =
-			new DocumentRequestExecutorFixture() {
-				{
-					setProperties(properties);
-					setQueryTranslator(queryTranslator);
-					setSolrClientManager(solrClientManager);
-					setSolrDocumentFactory(solrDocumentFactory);
-				}
-			};
-
-		IndexRequestExecutorFixture indexRequestExecutorFixture =
-			new IndexRequestExecutorFixture() {
-				{
-					setSolrClientManager(solrClientManager);
-				}
-			};
-
-		_searchRequestExecutorFixture = new SearchRequestExecutorFixture() {
-			{
-				setFacetProcessor(facetProcessor);
-				setQueryTranslator(queryTranslator);
-				setSolrClientManager(solrClientManager);
-			}
-		};
-
-		documentRequestExecutorFixture.setUp();
-		indexRequestExecutorFixture.setUp();
-		_searchRequestExecutorFixture.setUp();
+		SolrClientManager solrClientManager, Map<String, Object> properties) {
 
 		SolrSearchEngineAdapterImpl solrSearchEngineAdapterImpl =
 			new SolrSearchEngineAdapterImpl() {
@@ -90,34 +44,16 @@ public class SolrSearchEngineAdapterFixture {
 			};
 
 		ReflectionTestUtil.setFieldValue(
-			solrSearchEngineAdapterImpl, "_documentRequestExecutor",
-			documentRequestExecutorFixture.getDocumentRequestExecutor());
-		ReflectionTestUtil.setFieldValue(
-			solrSearchEngineAdapterImpl, "_indexRequestExecutor",
-			indexRequestExecutorFixture.getIndexRequestExecutor());
-		ReflectionTestUtil.setFieldValue(
-			solrSearchEngineAdapterImpl, "_searchRequestExecutor",
-			_searchRequestExecutorFixture.getSearchRequestExecutor());
+			solrSearchEngineAdapterImpl, "_solrClientManager",
+			solrClientManager);
+
+		solrSearchEngineAdapterImpl.activate(properties);
 
 		return solrSearchEngineAdapterImpl;
 	}
 
-	protected void setFacetProcessor(FacetProcessor<SolrQuery> facetProcessor) {
-		_facetProcessor = facetProcessor;
-	}
-
-	protected void setSolrDocumentFactory(
-		SolrDocumentFactory solrDocumentFactory) {
-
-		_solrDocumentFactory = solrDocumentFactory;
-	}
-
-	private FacetProcessor<SolrQuery> _facetProcessor;
 	private Map<String, Object> _properties;
-	private QueryTranslator<String> _queryTranslator;
 	private SearchEngineAdapter _searchEngineAdapter;
-	private SearchRequestExecutorFixture _searchRequestExecutorFixture;
 	private SolrClientManager _solrClientManager;
-	private SolrDocumentFactory _solrDocumentFactory;
 
 }

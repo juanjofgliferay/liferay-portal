@@ -8,9 +8,8 @@ package com.liferay.portal.security.pwd;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.UserPasswordException;
 import com.liferay.portal.kernel.model.PasswordPolicy;
-import com.liferay.portal.kernel.security.ldap.LDAPSettingsUtil;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.security.pwd.Toolkit;
-import com.liferay.portal.kernel.util.ServiceProxyFactory;
 
 /**
  * @author Brian Wing Shun Chan
@@ -18,15 +17,13 @@ import com.liferay.portal.kernel.util.ServiceProxyFactory;
 public class PwdToolkitUtil {
 
 	public static String generate(PasswordPolicy passwordPolicy) {
-		return _toolkit.generate(passwordPolicy);
-	}
+		Toolkit toolkit = _toolkitSnapshot.get();
 
-	public static Toolkit getToolkit() {
-		return _toolkit;
+		return toolkit.generate(passwordPolicy);
 	}
 
 	public static void validate(
-			long companyId, long userId, String password1, String password2,
+			long userId, String password1, String password2,
 			PasswordPolicy passwordPolicy)
 		throws PortalException {
 
@@ -34,18 +31,19 @@ public class PwdToolkitUtil {
 			throw new UserPasswordException.MustMatch(userId);
 		}
 
-		if (!LDAPSettingsUtil.isPasswordPolicyEnabled(companyId) &&
+		if ((passwordPolicy != null) &&
 			PwdToolkitUtilThreadLocal.isValidate()) {
 
-			_toolkit.validate(userId, password1, password2, passwordPolicy);
+			Toolkit toolkit = _toolkitSnapshot.get();
+
+			toolkit.validate(userId, password1, password2, passwordPolicy);
 		}
 	}
 
 	private PwdToolkitUtil() {
 	}
 
-	private static volatile Toolkit _toolkit =
-		ServiceProxyFactory.newServiceTrackedInstance(
-			Toolkit.class, PwdToolkitUtil.class, "_toolkit", false, true);
+	private static final Snapshot<Toolkit> _toolkitSnapshot = new Snapshot<>(
+		PwdToolkitUtil.class, Toolkit.class, null, true);
 
 }

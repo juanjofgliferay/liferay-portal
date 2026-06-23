@@ -85,7 +85,7 @@ ClickToChatConfiguration clickToChatConfiguration = (ClickToChatConfiguration)re
 	</div>
 
 	<div class="col-md-6">
-		<aui:input id="chatProviderSecretKey" label="chat-provider-secret-key" name="chatProviderSecretKey" type="text" value="<%= clickToChatConfiguration.chatProviderSecretKey() %>" />
+		<aui:input id="chatProviderSecretKey" label="secret-key" name="chatProviderSecretKey" type="text" value="<%= clickToChatConfiguration.chatProviderSecretKey() %>" />
 	</div>
 </div>
 
@@ -97,7 +97,7 @@ ClickToChatConfiguration clickToChatConfiguration = (ClickToChatConfiguration)re
 	</div>
 </div>
 
-<script>
+<aui:script>
 	document.addEventListener('DOMContentLoaded', () => {
 		<portlet:namespace />toggleClickToChatZendeskWebWidgetFields();
 	});
@@ -137,9 +137,8 @@ ClickToChatConfiguration clickToChatConfiguration = (ClickToChatConfiguration)re
 			'<portlet:namespace />chatProviderId'
 		);
 
-		var clickToChatProviderIdOptions = clickToChatChatProviderIdElement.querySelectorAll(
-			'option'
-		);
+		var clickToChatProviderIdOptions =
+			clickToChatChatProviderIdElement.querySelectorAll('option');
 
 		clickToChatProviderIdOptions.forEach((option) => {
 			<portlet:namespace />toggleClickToChatChatProviderLearnMessage(
@@ -176,7 +175,7 @@ ClickToChatConfiguration clickToChatConfiguration = (ClickToChatConfiguration)re
 		}
 		else {
 			clickToChatChatProvidersElement.classList.remove('hide');
-			zendeskWebWidgetFieldsElement.classList.remove('hide');
+			<portlet:namespace />toggleClickToChatZendeskWebWidgetFields();
 		}
 	}
 
@@ -205,4 +204,4 @@ ClickToChatConfiguration clickToChatConfiguration = (ClickToChatConfiguration)re
 		document.getElementById('<portlet:namespace />chatProviderId').value,
 		true
 	);
-</script>
+</aui:script>

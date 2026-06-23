@@ -3,42 +3,151 @@ import {fromJS, List, Map} from 'immutable';
 import {isNil} from 'lodash';
 import {Metric, Plan} from 'shared/util/records';
 
-const {subscriptionPlans} = Constants;
-
 export const INDIVIDUALS = 'individuals';
 
 export const PAGEVIEWS = 'pageViews';
 
+export const SubscriptionNames = {
+	LiferayAnalyticsCloudBasic: 'Liferay Analytics Cloud Basic',
+	LiferayAnalyticsCloudBusiness: 'Liferay Analytics Cloud Business',
+	LiferayAnalyticsCloudBusinessContacts:
+		'Liferay Analytics Cloud Business Contacts',
+	LiferayAnalyticsCloudBusinessTrackedPages:
+		'Liferay Analytics Cloud Business Tracked Pages',
+	LiferayAnalyticsCloudEnterprise: 'Liferay Analytics Cloud Enterprise',
+	LiferayAnalyticsCloudEnterpriseContacts:
+		'Liferay Analytics Cloud Enterprise Contacts',
+	LiferayAnalyticsCloudEnterpriseTrackedPages:
+		'Liferay Analytics Cloud Enterprise Tracked Pages',
+	LiferayDataPlatform: 'Liferay Data Platform',
+	LiferayDataPlatformEnterprise: 'Liferay Data Platform Enterprise',
+	LiferayDataPlatformPrivateBeta: 'Liferay Data Platform (Private Beta)',
+	LiferaySaasBusinessPlan: 'Liferay SaaS - Business Plan',
+	LiferaySaasCspCustomUserTier: 'Liferay SaaS - CSP - Custom User Tier',
+	LiferaySaasCspCustomUserTierExtraUser:
+		'Liferay SaaS - CSP - Custom User Tier - Extra User',
+	LiferaySaasCspUpTo100Users: 'Liferay SaaS - CSP - Up to 100 Users',
+	LiferaySaasCspUpTo100UsersExtraUser:
+		'Liferay SaaS - CSP - Up to 100 Users - Extra User',
+	LiferaySaasCspUpTo10kUsers: 'Liferay SaaS - CSP - Up to 10K Users',
+	LiferaySaasCspUpTo10kUsersExtraUser:
+		'Liferay SaaS - CSP - Up to 10K Users - Extra User',
+	LiferaySaasCspUpTo1kUsers: 'Liferay SaaS - CSP - Up to 1K Users',
+	LiferaySaasCspUpTo1kUsersExtraUser:
+		'Liferay SaaS - CSP - Up to 1K Users - Extra User',
+	LiferaySaasCspUpTo20kUsers: 'Liferay SaaS - CSP - Up to 20K Users',
+	LiferaySaasCspUpTo20kUsersExtraUser:
+		'Liferay SaaS - CSP - Up to 20K Users - Extra User',
+	LiferaySaasCspUpTo500Users: 'Liferay SaaS - CSP - Up to 500 Users',
+	LiferaySaasCspUpTo500UsersExtraUser:
+		'Liferay SaaS - CSP - Up to 500 Users - Extra User',
+	LiferaySaasCspUpTo5kUsers: 'Liferay SaaS - CSP - Up to 5K Users',
+	LiferaySaasCspUpTo5kUsersExtraUser:
+		'Liferay SaaS - CSP - Up to 5K Users - Extra User',
+	LiferaySaasEnterprisePlan: 'Liferay SaaS - Enterprise Plan',
+	LiferaySaasProPlan: 'Liferay SaaS - Pro Plan',
+	LiferaySaasSubscriptionEngageSite:
+		'Liferay SaaS Subscription - Engage Site',
+	LiferaySaasSubscriptionSupportSite:
+		'Liferay SaaS Subscription - Support Site',
+	LiferaySaasSubscriptionTransactSite:
+		'Liferay SaaS Subscription - Transact Site',
+	LxcBusinessPlan: 'LXC - Business Plan',
+	LxcCspCustomUserTier: 'LXC - CSP - Custom User Tier',
+	LxcCspCustomUserTierExtraUser: 'LXC - CSP - Custom User Tier - Extra User',
+	LxcCspUpTo100Users: 'LXC - CSP - Up to 100 Users',
+	LxcCspUpTo100UsersExtraUser: 'LXC - CSP - Up to 100 Users - Extra User',
+	LxcCspUpTo10kUsers: 'LXC - CSP - Up to 10K Users',
+	LxcCspUpTo10kUsersExtraUser: 'LXC - CSP - Up to 10K Users - Extra User',
+	LxcCspUpTo1kUsers: 'LXC - CSP - Up to 1K Users',
+	LxcCspUpTo1kUsersExtraUser: 'LXC - CSP - Up to 1K Users - Extra User',
+	LxcCspUpTo20kUsers: 'LXC - CSP - Up to 20K Users',
+	LxcCspUpTo20kUsersExtraUser: 'LXC - CSP - Up to 20K Users - Extra User',
+	LxcCspUpTo500Users: 'LXC - CSP - Up to 500 Users',
+	LxcCspUpTo500UsersExtraUser: 'LXC - CSP - Up to 500 Users - Extra User',
+	LxcCspUpTo5kUsers: 'LXC - CSP - Up to 5K Users',
+	LxcCspUpTo5kUsersExtraUser: 'LXC - CSP - Up to 5K Users - Extra User',
+	LxcEnterprisePlan: 'LXC - Enterprise Plan',
+	LxcProPlan: 'LXC - Pro Plan',
+	LxcSubscriptionEngageSite: 'LXC Subscription - Engage Site',
+	LxcSubscriptionSupportSite: 'LXC Subscription - Support Site',
+	LxcSubscriptionTransactSite: 'LXC Subscription - Transact Site'
+};
+
 export const PLAN_TYPES = {
-	['Liferay Analytics Cloud Basic']: 'basic',
-	['Liferay Analytics Cloud Business']: 'business',
-	['Liferay Analytics Cloud Business Contacts']: INDIVIDUALS,
-	['Liferay Analytics Cloud Business Tracked Pages']: PAGEVIEWS,
-	['Liferay Analytics Cloud Enterprise']: 'enterprise',
-	['Liferay Analytics Cloud Enterprise Contacts']: INDIVIDUALS,
-	['Liferay Analytics Cloud Enterprise Tracked Pages']: PAGEVIEWS,
-	['LXC - CSP - Custom User Tier']: 'lxcCspCustomUserTier',
-	['LXC - CSP - Custom User Tier - Extra User']:
+	[SubscriptionNames.LiferayAnalyticsCloudBasic]: 'basic',
+	[SubscriptionNames.LiferayAnalyticsCloudBusiness]: 'business',
+	[SubscriptionNames.LiferayAnalyticsCloudBusinessContacts]: INDIVIDUALS,
+	[SubscriptionNames.LiferayAnalyticsCloudBusinessTrackedPages]: PAGEVIEWS,
+	[SubscriptionNames.LiferayAnalyticsCloudEnterprise]: 'enterprise',
+	[SubscriptionNames.LiferayAnalyticsCloudEnterpriseContacts]: INDIVIDUALS,
+	[SubscriptionNames.LiferayAnalyticsCloudEnterpriseTrackedPages]: PAGEVIEWS,
+	[SubscriptionNames.LiferayDataPlatform]: 'dataPlatform',
+	[SubscriptionNames.LiferayDataPlatformEnterprise]: 'dataPlatformEnterprise',
+	[SubscriptionNames.LiferayDataPlatformPrivateBeta]: 'dataPlatform',
+	[SubscriptionNames.LiferaySaasBusinessPlan]: 'lxcBusiness',
+	[SubscriptionNames.LiferaySaasCspCustomUserTier]: 'lxcCspCustomUserTier',
+	[SubscriptionNames.LiferaySaasCspCustomUserTierExtraUser]:
 		'lxcCspCustomUserTierExtraUser',
-	['LXC - CSP - Up to 100 Users']: 'lxcCspUpTo100Users',
-	['LXC - CSP - Up to 100 Users - Extra User']: 'lxcCspUpTo100UsersExtraUser',
-	['LXC - CSP - Up to 10K Users']: 'lxcCspUpTo10kUsers',
-	['LXC - CSP - Up to 10K Users - Extra User']: 'lxcCspUpTo10kUsersExtraUser',
-	['LXC - CSP - Up to 1K Users']: 'lxcCspUpTo1kUsers',
-	['LXC - CSP - Up to 1K Users - Extra User']: 'lxcCspUpTo1kUsersExtraUser',
-	['LXC - CSP - Up to 20K Users']: 'lxcCspUpTo20kUsers',
-	['LXC - CSP - Up to 20K Users - Extra User']: 'lxcCspUpTo20kUsersExtraUser',
-	['LXC - CSP - Up to 500 Users']: 'lxcCspUpTo500Users',
-	['LXC - CSP - Up to 500 Users - Extra User']: 'lxcCspUpTo500UsersExtraUser',
-	['LXC - CSP - Up to 5K Users']: 'lxcCspUpTo5kUsers',
-	['LXC - CSP - Up to 5K Users - Extra User']: 'lxcCspUpTo5kUsersExtraUser',
-	['LXC Subscription - Engage Site']: 'lxcSubscriptionEngageSite',
-	['LXC Subscription - Support Site']: 'lxcSubscriptionSupportSite',
-	['LXC Subscription - Transact Site']: 'lxcSubscriptionTransactSite'
+	[SubscriptionNames.LiferaySaasCspUpTo100Users]: 'lxcCspUpTo100Users',
+	[SubscriptionNames.LiferaySaasCspUpTo100UsersExtraUser]:
+		'lxcCspUpTo100UsersExtraUser',
+	[SubscriptionNames.LiferaySaasCspUpTo10kUsers]: 'lxcCspUpTo10kUsers',
+	[SubscriptionNames.LiferaySaasCspUpTo10kUsersExtraUser]:
+		'lxcCspUpTo10kUsersExtraUser',
+	[SubscriptionNames.LiferaySaasCspUpTo1kUsers]: 'lxcCspUpTo1kUsers',
+	[SubscriptionNames.LiferaySaasCspUpTo1kUsersExtraUser]:
+		'lxcCspUpTo1kUsersExtraUser',
+	[SubscriptionNames.LiferaySaasCspUpTo20kUsers]: 'lxcCspUpTo20kUsers',
+	[SubscriptionNames.LiferaySaasCspUpTo20kUsersExtraUser]:
+		'lxcCspUpTo20kUsersExtraUser',
+	[SubscriptionNames.LiferaySaasCspUpTo500Users]: 'lxcCspUpTo500Users',
+	[SubscriptionNames.LiferaySaasCspUpTo500UsersExtraUser]:
+		'lxcCspUpTo500UsersExtraUser',
+	[SubscriptionNames.LiferaySaasCspUpTo5kUsers]: 'lxcCspUpTo5kUsers',
+	[SubscriptionNames.LiferaySaasCspUpTo5kUsersExtraUser]:
+		'lxcCspUpTo5kUsersExtraUser',
+	[SubscriptionNames.LiferaySaasEnterprisePlan]: 'lxcEnterprise',
+	[SubscriptionNames.LiferaySaasProPlan]: 'lxcPro',
+	[SubscriptionNames.LiferaySaasSubscriptionEngageSite]:
+		'lxcSubscriptionEngageSite',
+	[SubscriptionNames.LiferaySaasSubscriptionSupportSite]:
+		'lxcSubscriptionSupportSite',
+	[SubscriptionNames.LiferaySaasSubscriptionTransactSite]:
+		'lxcSubscriptionTransactSite',
+	[SubscriptionNames.LxcBusinessPlan]: 'lxcBusiness',
+	[SubscriptionNames.LxcCspCustomUserTier]: 'lxcCspCustomUserTier',
+	[SubscriptionNames.LxcCspCustomUserTierExtraUser]:
+		'lxcCspCustomUserTierExtraUser',
+	[SubscriptionNames.LxcCspUpTo100Users]: 'lxcCspUpTo100Users',
+	[SubscriptionNames.LxcCspUpTo100UsersExtraUser]:
+		'lxcCspUpTo100UsersExtraUser',
+	[SubscriptionNames.LxcCspUpTo10kUsers]: 'lxcCspUpTo10kUsers',
+	[SubscriptionNames.LxcCspUpTo10kUsersExtraUser]:
+		'lxcCspUpTo10kUsersExtraUser',
+	[SubscriptionNames.LxcCspUpTo1kUsers]: 'lxcCspUpTo1kUsers',
+	[SubscriptionNames.LxcCspUpTo1kUsersExtraUser]:
+		'lxcCspUpTo1kUsersExtraUser',
+	[SubscriptionNames.LxcCspUpTo20kUsers]: 'lxcCspUpTo20kUsers',
+	[SubscriptionNames.LxcCspUpTo20kUsersExtraUser]:
+		'lxcCspUpTo20kUsersExtraUser',
+	[SubscriptionNames.LxcCspUpTo500Users]: 'lxcCspUpTo500Users',
+	[SubscriptionNames.LxcCspUpTo500UsersExtraUser]:
+		'lxcCspUpTo500UsersExtraUser',
+	[SubscriptionNames.LxcCspUpTo5kUsers]: 'lxcCspUpTo5kUsers',
+	[SubscriptionNames.LxcCspUpTo5kUsersExtraUser]:
+		'lxcCspUpTo5kUsersExtraUser',
+	[SubscriptionNames.LxcEnterprisePlan]: 'lxcEnterprise',
+	[SubscriptionNames.LxcProPlan]: 'lxcPro',
+	[SubscriptionNames.LxcSubscriptionEngageSite]: 'lxcSubscriptionEngageSite',
+	[SubscriptionNames.LxcSubscriptionSupportSite]:
+		'lxcSubscriptionSupportSite',
+	[SubscriptionNames.LxcSubscriptionTransactSite]:
+		'lxcSubscriptionTransactSite'
 };
 
 function formatSubscriptions(allPlans) {
-	const addOns = {
+	const ADD_ONS = {
 		[INDIVIDUALS]: {},
 		['lxcCspUpTo100UsersExtraUser']: {},
 		['lxcCspUpTo10kUsersExtraUser']: {},
@@ -54,7 +163,7 @@ function formatSubscriptions(allPlans) {
 		[PAGEVIEWS]: {}
 	};
 
-	const plans = {};
+	const PLANS = {};
 
 	const hasKeyProperty = key =>
 		Object.prototype.hasOwnProperty.call(allPlans, key);
@@ -65,8 +174,7 @@ function formatSubscriptions(allPlans) {
 				baseSubscriptionPlan,
 				individualsLimit,
 				name,
-				pageViewsLimit,
-				price
+				pageViewsLimit
 			} = allPlans[key];
 
 			const planType = PLAN_TYPES[key];
@@ -77,28 +185,25 @@ function formatSubscriptions(allPlans) {
 					[INDIVIDUALS]: individualsLimit,
 					[PAGEVIEWS]: pageViewsLimit
 				},
-				name,
-				price
+				name
 			};
 
 			const parentPlanType = PLAN_TYPES[baseSubscriptionPlan];
 
 			if (baseSubscriptionPlan) {
-				addOns[planType][parentPlanType] = formattedPlan;
+				ADD_ONS[planType][parentPlanType] = formattedPlan;
 			} else {
-				plans[planType] = formattedPlan;
+				PLANS[planType] = formattedPlan;
 			}
 		}
 	}
 
-	return {addOns, plans};
+	return {ADD_ONS, PLANS};
 }
 
-const {addOns, plans} = formatSubscriptions(subscriptionPlans);
+const {ADD_ONS, PLANS} = formatSubscriptions(Constants.subscriptionPlans);
 
-export {addOns as ADD_ONS};
-
-export {plans as PLANS};
+export {ADD_ONS, PLANS};
 
 export const STATUS_DISPLAY_MAP = {
 	[SubscriptionStatuses.Ok]: 'primary',
@@ -107,56 +212,90 @@ export const STATUS_DISPLAY_MAP = {
 };
 
 export const DEFAULT_ADDONS = {
-	[INDIVIDUALS]: addOns[INDIVIDUALS].business,
-	[PAGEVIEWS]: addOns[PAGEVIEWS].business
+	[INDIVIDUALS]: ADD_ONS[INDIVIDUALS].business,
+	[PAGEVIEWS]: ADD_ONS[PAGEVIEWS].business
 };
 
-export function getPlanAddOns(planType) {
-	return planType === 'basic'
-		? [DEFAULT_ADDONS[INDIVIDUALS], DEFAULT_ADDONS[PAGEVIEWS]]
-		: [addOns[INDIVIDUALS][planType], addOns[PAGEVIEWS][planType]];
+export function getPlanAddOns(currentPlan) {
+	if (isBasicPlan(currentPlan)) {
+		return {};
+	}
+
+	const planType = PLAN_TYPES[currentPlan.name];
+
+	return [ADD_ONS[INDIVIDUALS][planType], ADD_ONS[PAGEVIEWS][planType]]
+		.filter(Boolean)
+		.reduce((acc, plan) => {
+			const name = PLAN_TYPES[plan.name];
+			const quantity = currentPlan.getIn(['addOns', name, 'quantity']);
+			const limit = plan.limits[name];
+			const totalLimit = quantity ? limit * quantity : null;
+
+			return {
+				...acc,
+				[name]: totalLimit ? totalLimit.toLocaleString() : '-'
+			};
+		}, {});
 }
 
 export function getPlanLabel(name) {
 	switch (name) {
-		case plans.basic.name:
+		case PLANS.basic.name:
 			return Liferay.Language.get('basic-plan');
 
-		case plans.business.name:
+		case PLANS.business.name:
 			return Liferay.Language.get('business-plan');
 
-		case plans.enterprise.name:
+		case PLANS.enterprise.name:
 			return Liferay.Language.get('enterprise-plan');
 
-		case plans.lxcCspCustomUserTier.name:
+		case SubscriptionNames.LiferayDataPlatform:
+			return Liferay.Language.get('liferay-data-platform');
+
+		case SubscriptionNames.LiferayDataPlatformPrivateBeta:
+			return Liferay.Language.get('liferay-data-platform-private-beta');
+
+		case SubscriptionNames.LiferayDataPlatformEnterprise:
+			return Liferay.Language.get('liferay-data-platform-enterprise');
+
+		case PLANS.lxcCspCustomUserTier.name:
 			return Liferay.Language.get('lxc-csp-custom-user-tier');
 
-		case plans.lxcCspUpTo100Users.name:
+		case PLANS.lxcCspUpTo100Users.name:
 			return Liferay.Language.get('lxc-csp-up-to-100-user');
 
-		case plans.lxcCspUpTo500Users.name:
+		case PLANS.lxcCspUpTo500Users.name:
 			return Liferay.Language.get('lxc-csp-up-to-500-users');
 
-		case plans.lxcCspUpTo1kUsers.name:
+		case PLANS.lxcCspUpTo1kUsers.name:
 			return Liferay.Language.get('lxc-csp-up-to-1k-users');
 
-		case plans.lxcCspUpTo5kUsers.name:
+		case PLANS.lxcCspUpTo5kUsers.name:
 			return Liferay.Language.get('lxc-csp-up-to-5k-users');
 
-		case plans.lxcCspUpTo10kUsers.name:
+		case PLANS.lxcCspUpTo10kUsers.name:
 			return Liferay.Language.get('lxc-csp-up-to-10k-users');
 
-		case plans.lxcCspUpTo20kUsers.name:
+		case PLANS.lxcCspUpTo20kUsers.name:
 			return Liferay.Language.get('lxc-csp-up-to-20k-users');
 
-		case plans.lxcSubscriptionEngageSite.name:
+		case PLANS.lxcSubscriptionEngageSite.name:
 			return Liferay.Language.get('lxc-subscription-engage-site');
 
-		case plans.lxcSubscriptionSupportSite.name:
+		case PLANS.lxcSubscriptionSupportSite.name:
 			return Liferay.Language.get('lxc-subscription-support-site');
 
-		case plans.lxcSubscriptionTransactSite.name:
+		case PLANS.lxcSubscriptionTransactSite.name:
 			return Liferay.Language.get('lxc-subscription-transact-site');
+
+		case PLANS.lxcPro.name:
+			return Liferay.Language.get('basic-plan');
+
+		case PLANS.lxcBusiness.name:
+			return Liferay.Language.get('business-plan');
+
+		case PLANS.lxcEnterprise.name:
+			return Liferay.Language.get('enterprise-plan');
 
 		default:
 			return '';
@@ -166,9 +305,9 @@ export function getPlanLabel(name) {
 export function getPropIcon(name) {
 	switch (name) {
 		case INDIVIDUALS:
-			return 'ac-individual';
+			return 'ac_individual';
 		case PAGEVIEWS:
-			return 'faro-page-views';
+			return 'faro_page_views';
 		default:
 			return '';
 	}
@@ -184,47 +323,62 @@ export function getPropLabel(name) {
 		case `${PAGEVIEWS}Limit`:
 			return Liferay.Language.get('page-views');
 
-		case plans.basic.name:
+		case PLANS.basic.name:
 			return Liferay.Language.get('basic');
 
-		case plans.business.name:
+		case PLANS.business.name:
 			return Liferay.Language.get('business');
 
-		case plans.enterprise.name:
+		case PLANS.enterprise.name:
 			return Liferay.Language.get('enterprise');
 
-		case plans.lxcCspCustomUserTier.name:
+		case SubscriptionNames.LiferayDataPlatform:
+			return Liferay.Language.get('liferay-data-platform');
+
+		case SubscriptionNames.LiferayDataPlatformEnterprise:
+			return Liferay.Language.get('liferay-data-platform-enterprise');
+
+		case SubscriptionNames.LiferayDataPlatformPrivateBeta:
+			return Liferay.Language.get('liferay-data-platform-private-beta');
+
+		case PLANS.lxcCspCustomUserTier.name:
 			return Liferay.Language.get('lxc-csp-custom-user-tier');
 
-		case plans.lxcCspCustomUserTierExtraUser.name:
-			return Liferay.Language.get('lxc-csp-custom-user-tier-extra-user');
-
-		case plans.lxcCspUpTo100Users.name:
+		case PLANS.lxcCspUpTo100Users.name:
 			return Liferay.Language.get('lxc-csp-up-to-100-user');
 
-		case plans.lxcCspUpTo500Users.name:
+		case PLANS.lxcCspUpTo500Users.name:
 			return Liferay.Language.get('lxc-csp-up-to-500-users');
 
-		case plans.lxcCspUpTo1kUsers.name:
+		case PLANS.lxcCspUpTo1kUsers.name:
 			return Liferay.Language.get('lxc-csp-up-to-1k-users');
 
-		case plans.lxcCspUpTo5kUsers.name:
+		case PLANS.lxcCspUpTo5kUsers.name:
 			return Liferay.Language.get('lxc-csp-up-to-5k-users');
 
-		case plans.lxcCspUpTo10kUsers.name:
+		case PLANS.lxcCspUpTo10kUsers.name:
 			return Liferay.Language.get('lxc-csp-up-to-10k-users');
 
-		case plans.lxcCspUpTo20kUsers.name:
+		case PLANS.lxcCspUpTo20kUsers.name:
 			return Liferay.Language.get('lxc-csp-up-to-20k-users');
 
-		case plans.lxcSubscriptionEngageSite.name:
+		case PLANS.lxcSubscriptionEngageSite.name:
 			return Liferay.Language.get('lxc-subscription-engage-site');
 
-		case plans.lxcSubscriptionSupportSite.name:
+		case PLANS.lxcSubscriptionSupportSite.name:
 			return Liferay.Language.get('lxc-subscription-support-site');
 
-		case plans.lxcSubscriptionTransactSite.name:
+		case PLANS.lxcSubscriptionTransactSite.name:
 			return Liferay.Language.get('lxc-subscription-transact-site');
+
+		case PLANS.lxcPro.name:
+			return Liferay.Language.get('lxc-pro');
+
+		case PLANS.lxcBusiness.name:
+			return Liferay.Language.get('lxc-business');
+
+		case PLANS.lxcEnterprise.name:
+			return Liferay.Language.get('lxc-enterprise');
 
 		default:
 			return '';
@@ -235,6 +389,8 @@ export function formatPlanData(subscriptionIMap) {
 	if (isNil(subscriptionIMap)) {
 		subscriptionIMap = new Map();
 	}
+
+	const basicPlan = isBasicPlan({name: subscriptionIMap.get('name')});
 
 	return new Plan(
 		fromJS({
@@ -247,7 +403,6 @@ export function formatPlanData(subscriptionIMap) {
 					}, {})
 			},
 			endDate: subscriptionIMap.get('endDate'),
-			lastAnniversaryDate: subscriptionIMap.get('lastAnniversaryDate'),
 			metrics: {
 				individuals: new Metric({
 					count: subscriptionIMap.get(
@@ -270,10 +425,27 @@ export function formatPlanData(subscriptionIMap) {
 						'pageViewsStatus',
 						SubscriptionStatuses.Ok
 					)
-				})
+				}),
+				syncedIndividualsCount: subscriptionIMap.get(
+					'syncedIndividualsCount'
+				)
 			},
 			name: subscriptionIMap.get('name'),
-			startDate: subscriptionIMap.get('startDate')
+			startDate: basicPlan
+				? subscriptionIMap.get('startDate')
+				: subscriptionIMap.get('lastAnniversaryDate')
 		})
 	);
+}
+
+export function isBasicPlan(currentPlan) {
+	return (
+		PLAN_TYPES[currentPlan.name] === 'basic' ||
+		PLAN_TYPES[currentPlan.name] === 'dataPlatform' ||
+		PLAN_TYPES[currentPlan.name] === 'lxcPro'
+	);
+}
+
+export function isLDPPlan(subscriptionName) {
+	return subscriptionName?.includes('Data Platform') ?? false;
 }

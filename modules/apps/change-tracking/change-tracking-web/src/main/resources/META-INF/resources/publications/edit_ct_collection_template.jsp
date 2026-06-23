@@ -43,9 +43,7 @@ portletDisplay.setURLBack(backURL);
 portletDisplay.setShowBackIcon(true);
 %>
 
-<clay:container-fluid
-	cssClass="container-form-lg edit-publication-template-container"
->
+<div class="container-form-lg edit-publication-template-container">
 	<liferay-portlet:actionURL name="/change_tracking/edit_ct_collection_template" var="actionURL">
 		<liferay-portlet:param name="redirect" value="<%= redirect %>" />
 	</liferay-portlet:actionURL>
@@ -56,7 +54,7 @@ portletDisplay.setShowBackIcon(true);
 	%>
 
 	<react:component
-		module="publications/js/views/PublicationTemplateEditView"
+		module="{PublicationTemplateEditView} from change-tracking-web"
 		props='<%=
 			HashMapBuilder.<String, Object>put(
 				"actionUrl", actionURL
@@ -70,6 +68,8 @@ portletDisplay.setShowBackIcon(true);
 				"defaultSandboxCTCollectionTemplate", defaultSandboxCTCollectionTemplate
 			).put(
 				"description", description
+			).put(
+				"descriptionFieldMaxLength", ModelHintsUtil.getMaxLength(CTCollectionTemplate.class.getName(), "description")
 			).put(
 				"getTemplateCollaboratorsURL",
 				() -> {
@@ -88,6 +88,8 @@ portletDisplay.setShowBackIcon(true);
 			).put(
 				"name", name
 			).put(
+				"nameFieldMaxLength", ModelHintsUtil.getMaxLength(CTCollectionTemplate.class.getName(), "name")
+			).put(
 				"namespace", liferayPortletResponse.getNamespace()
 			).put(
 				"publicationDescription", publicationDescription
@@ -102,4 +104,4 @@ portletDisplay.setShowBackIcon(true);
 			).build()
 		%>'
 	/>
-</clay:container-fluid>
+</div>

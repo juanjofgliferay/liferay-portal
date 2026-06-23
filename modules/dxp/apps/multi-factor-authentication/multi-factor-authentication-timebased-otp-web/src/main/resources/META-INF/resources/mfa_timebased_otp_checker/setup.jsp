@@ -7,14 +7,6 @@
 
 <%@ include file="/init.jsp" %>
 
-<%
-User selectedUser = PortalUtil.getSelectedUser(request);
-
-String mfaTimeBasedOTPAlgorithm = GetterUtil.getString(request.getAttribute(MFATimeBasedOTPWebKeys.MFA_TIME_BASED_OTP_ALGORITHM));
-String mfaTimeBasedOTPCompanyName = GetterUtil.getString(request.getAttribute(MFATimeBasedOTPWebKeys.MFA_TIME_BASED_OTP_COMPANY_NAME));
-String mfaTimeBasedOTPSharedSecret = GetterUtil.getString(request.getAttribute(MFATimeBasedOTPWebKeys.MFA_TIME_BASED_OTP_SHARED_SECRET));
-%>
-
 <div class="sheet-section">
 	<div class="alert alert-info">
 		<liferay-ui:message key="user-account-setup-description" />
@@ -22,7 +14,7 @@ String mfaTimeBasedOTPSharedSecret = GetterUtil.getString(request.getAttribute(M
 
 	<aui:input label="mfa-timebased-otp" name="mfaTimeBasedOTP" showRequiredLabel="yes" />
 
-	<aui:input label="shared-secret" name="sharedSecret" readOnly="<%= true %>" type="text" value="<%= mfaTimeBasedOTPSharedSecret %>" />
+	<aui:input label="shared-secret" name="sharedSecret" readOnly="<%= true %>" type="text" value="<%= GetterUtil.getString(request.getAttribute(MFATimeBasedOTPWebKeys.MFA_TIME_BASED_OTP_SHARED_SECRET)) %>" />
 
 	<div class="qrcode-setup" id="<portlet:namespace />qrcode"></div>
 </div>
@@ -31,22 +23,11 @@ String mfaTimeBasedOTPSharedSecret = GetterUtil.getString(request.getAttribute(M
 	<aui:button type="submit" value="submit" />
 </div>
 
-<aui:script require='<%= npmResolvedPackageName + "/qrcode/generateQRCode as generateQRCode" %>'>
-	var account = '<%= HtmlUtil.escapeJS(selectedUser.getEmailAddress()) %>';
-	var algorithm = '<%= HtmlUtil.escapeJS(mfaTimeBasedOTPAlgorithm) %>';
-	var counter =
-		'<%= GetterUtil.getInteger(request.getAttribute(MFATimeBasedOTPWebKeys.MFA_TIME_BASED_OTP_TIME_COUNTER)) %>';
-	var digits =
-		'<%= GetterUtil.getInteger(request.getAttribute(MFATimeBasedOTPWebKeys.MFA_TIME_BASED_OTP_DIGITS)) %>';
-	var issuer = '<%= HtmlUtil.escapeJS(mfaTimeBasedOTPCompanyName) %>';
-	var secret = '<%= HtmlUtil.escapeJS(mfaTimeBasedOTPSharedSecret) %>';
+<%
+MFATimeBasedOTPCheckerDisplayContext mfaTimeBasedOTPCheckerDisplayContext = (MFATimeBasedOTPCheckerDisplayContext)request.getAttribute(MFATimeBasedOTPWebKeys.MFA_TIME_BASED_OTP_CHECKER_DISPLAY_CONTEXT);
+%>
 
-	generateQRCode.default('<portlet:namespace />qrcode', {
-		account: account,
-		algorithm: algorithm,
-		counter: counter,
-		digits: digits,
-		issuer: issuer,
-		secret: secret,
-	});
-</aui:script>
+<liferay-frontend:component
+	context="<%= mfaTimeBasedOTPCheckerDisplayContext.getContext() %>"
+	module="{generateQRCode} from multi-factor-authentication-timebased-otp-web"
+/>

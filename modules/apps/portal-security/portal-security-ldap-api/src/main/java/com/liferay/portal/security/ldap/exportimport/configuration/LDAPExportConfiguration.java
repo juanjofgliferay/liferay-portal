@@ -14,7 +14,9 @@ import com.liferay.portal.security.ldap.configuration.CompanyScopedConfiguration
  * @author Michael C. Han
  */
 @ExtendedObjectClassDefinition(
-	category = "ldap", scope = ExtendedObjectClassDefinition.Scope.COMPANY
+	category = "ldap", generateUI = false,
+	scope = ExtendedObjectClassDefinition.Scope.COMPANY,
+	visibilityControllerKey = "ldap-export"
 )
 @Meta.OCD(
 	id = "com.liferay.portal.security.ldap.exportimport.configuration.LDAPExportConfiguration",

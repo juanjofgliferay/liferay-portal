@@ -14,12 +14,6 @@ public class TokenCredentials implements Credentials {
 
 	public static final String TYPE = "Token Authentication";
 
-	@Override
-	public void clearPasswords() {
-		_privateKey = null;
-		_publicKey = null;
-	}
-
 	public String getPrivateKey() {
 		return _privateKey;
 	}
@@ -34,14 +28,18 @@ public class TokenCredentials implements Credentials {
 	}
 
 	public void setPrivateKey(String privateKey) {
-		_privateKey = privateKey;
+		if (privateKey != null) {
+			_privateKey = privateKey;
+		}
 	}
 
 	public void setPublicKey(String publicKey) {
-		_publicKey = publicKey;
+		if (publicKey != null) {
+			_publicKey = publicKey;
+		}
 	}
 
-	private String _privateKey;
-	private String _publicKey;
+	private String _privateKey = "";
+	private String _publicKey = "";
 
 }

@@ -9,7 +9,9 @@ import com.liferay.ai.creator.openai.configuration.AICreatorOpenAICompanyConfigu
 import com.liferay.ai.creator.openai.configuration.AICreatorOpenAIGroupConfiguration;
 import com.liferay.ai.creator.openai.configuration.manager.AICreatorOpenAIConfigurationManager;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.Validator;
 
@@ -39,9 +41,12 @@ public class AICreatorOpenAIConfigurationManagerImpl
 	public String getAICreatorOpenAIGroupAPIKey(long groupId)
 		throws ConfigurationException {
 
+		Group group = _groupLocalService.fetchGroup(groupId);
+
 		AICreatorOpenAIGroupConfiguration aiCreatorOpenAIGroupConfiguration =
 			_configurationProvider.getGroupConfiguration(
-				AICreatorOpenAIGroupConfiguration.class, groupId);
+				AICreatorOpenAIGroupConfiguration.class, group.getCompanyId(),
+				groupId);
 
 		return aiCreatorOpenAIGroupConfiguration.apiKey();
 	}
@@ -52,7 +57,7 @@ public class AICreatorOpenAIConfigurationManagerImpl
 
 		AICreatorOpenAIGroupConfiguration aiCreatorOpenAIGroupConfiguration =
 			_configurationProvider.getGroupConfiguration(
-				AICreatorOpenAIGroupConfiguration.class, groupId);
+				AICreatorOpenAIGroupConfiguration.class, companyId, groupId);
 
 		if (Validator.isNotNull(aiCreatorOpenAIGroupConfiguration.apiKey())) {
 			return aiCreatorOpenAIGroupConfiguration.apiKey();
@@ -75,13 +80,8 @@ public class AICreatorOpenAIConfigurationManagerImpl
 				_configurationProvider.getCompanyConfiguration(
 					AICreatorOpenAICompanyConfiguration.class, companyId);
 
-		if (aiCreatorOpenAICompanyConfiguration.
-				enableChatGPTToCreateContent()) {
-
-			return true;
-		}
-
-		return false;
+		return aiCreatorOpenAICompanyConfiguration.
+			enableChatGPTToCreateContent();
 	}
 
 	@Override
@@ -94,13 +94,9 @@ public class AICreatorOpenAIConfigurationManagerImpl
 
 		AICreatorOpenAIGroupConfiguration aiCreatorOpenAIGroupConfiguration =
 			_configurationProvider.getGroupConfiguration(
-				AICreatorOpenAIGroupConfiguration.class, groupId);
+				AICreatorOpenAIGroupConfiguration.class, companyId, groupId);
 
-		if (aiCreatorOpenAIGroupConfiguration.enableChatGPTToCreateContent()) {
-			return true;
-		}
-
-		return false;
+		return aiCreatorOpenAIGroupConfiguration.enableChatGPTToCreateContent();
 	}
 
 	@Override
@@ -112,11 +108,7 @@ public class AICreatorOpenAIConfigurationManagerImpl
 				_configurationProvider.getCompanyConfiguration(
 					AICreatorOpenAICompanyConfiguration.class, companyId);
 
-		if (aiCreatorOpenAICompanyConfiguration.enableDALLEToCreateImages()) {
-			return true;
-		}
-
-		return false;
+		return aiCreatorOpenAICompanyConfiguration.enableDALLEToCreateImages();
 	}
 
 	@Override
@@ -129,13 +121,9 @@ public class AICreatorOpenAIConfigurationManagerImpl
 
 		AICreatorOpenAIGroupConfiguration aiCreatorOpenAIGroupConfiguration =
 			_configurationProvider.getGroupConfiguration(
-				AICreatorOpenAIGroupConfiguration.class, groupId);
+				AICreatorOpenAIGroupConfiguration.class, companyId, groupId);
 
-		if (aiCreatorOpenAIGroupConfiguration.enableDALLEToCreateImages()) {
-			return true;
-		}
-
-		return false;
+		return aiCreatorOpenAIGroupConfiguration.enableDALLEToCreateImages();
 	}
 
 	@Override
@@ -161,8 +149,11 @@ public class AICreatorOpenAIConfigurationManagerImpl
 			boolean enableDALLE)
 		throws ConfigurationException {
 
+		Group group = _groupLocalService.fetchGroup(groupId);
+
 		_configurationProvider.saveGroupConfiguration(
-			AICreatorOpenAIGroupConfiguration.class, groupId,
+			AICreatorOpenAIGroupConfiguration.class, group.getCompanyId(),
+			groupId,
 			HashMapDictionaryBuilder.<String, Object>put(
 				"apiKey", apiKey
 			).put(
@@ -174,5 +165,8 @@ public class AICreatorOpenAIConfigurationManagerImpl
 
 	@Reference
 	private ConfigurationProvider _configurationProvider;
+
+	@Reference
+	private GroupLocalService _groupLocalService;
 
 }

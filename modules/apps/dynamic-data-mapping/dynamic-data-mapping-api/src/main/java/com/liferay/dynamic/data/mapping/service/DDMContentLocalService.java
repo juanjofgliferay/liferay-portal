@@ -44,12 +44,9 @@ import org.osgi.annotation.versioning.ProviderType;
  *
  * @author Brian Wing Shun Chan
  * @see DDMContentLocalServiceUtil
- * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
- DDMFieldLocalServiceImpl}
  * @generated
  */
 @CTAware
-@Deprecated
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
@@ -365,3 +362,4 @@ public interface DDMContentLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1438210059

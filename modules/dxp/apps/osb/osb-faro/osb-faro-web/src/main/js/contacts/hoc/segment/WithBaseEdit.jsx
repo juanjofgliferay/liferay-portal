@@ -15,13 +15,22 @@ import {PropTypes} from 'prop-types';
 import {Routes, SEGMENTS, toRoute} from 'shared/util/router';
 import {Segment} from 'shared/util/records';
 import {SegmentTypes} from 'shared/util/constants';
+import {sub} from 'shared/util/lang';
 
 const MessageKeys = {
+	ExternalReferenceCodeIsAlreadyUsed:
+		'external-reference-code-is-already-used',
 	NameCannotBeBlank: 'name-cannot-be-blank',
 	NameIsAlreadyUsed: 'name-is-already-used'
 };
 
 const ERRORS = {
+	[MessageKeys.ExternalReferenceCodeIsAlreadyUsed]: {
+		alertType: Alert.Types.Warning,
+		message: Liferay.Language.get(
+			'this-segment-erc-is-currently-in-use.-please-try-a-different-one'
+		)
+	},
 	[MessageKeys.NameCannotBeBlank]: {
 		alertType: Alert.Types.Error,
 		message: Liferay.Language.get('name-cannot-be-blank')
@@ -34,7 +43,6 @@ const ERRORS = {
 		)
 	}
 };
-
 export default WrappedComponent => {
 	class BaseEdit extends React.Component {
 		static contextType = ChannelContext;
@@ -47,8 +55,7 @@ export default WrappedComponent => {
 			history: PropTypes.object.isRequired,
 			id: PropTypes.string,
 			open: PropTypes.func.isRequired,
-			segment: PropTypes.instanceOf(Segment),
-			type: PropTypes.oneOf([SegmentTypes.Dynamic, SegmentTypes.Static])
+			segment: PropTypes.instanceOf(Segment)
 		};
 
 		state = {
@@ -61,24 +68,17 @@ export default WrappedComponent => {
 
 		@autobind
 		deleteSegment() {
-			const {
-				addAlert,
-				channelId,
-				close,
-				groupId,
-				history,
-				id,
-				open
-			} = this.props;
+			const {addAlert, channelId, close, groupId, history, id, open} =
+				this.props;
 
 			open(modalTypes.CONFIRMATION_MODAL, {
 				message: (
 					<div>
-						<h4 className='text-secondary'>
+						<div className='h4 text-secondary'>
 							{Liferay.Language.get(
 								'are-you-sure-you-want-to-delete-this-segment'
 							)}
-						</h4>
+						</div>
 
 						<p>
 							{Liferay.Language.get(
@@ -95,7 +95,7 @@ export default WrappedComponent => {
 					return API.individualSegment
 						.delete({
 							groupId,
-							id
+							ids: [id]
 						})
 						.then(() => {
 							addAlert({
@@ -138,27 +138,12 @@ export default WrappedComponent => {
 				: Liferay.Language.get('create-individuals-segment');
 		}
 
-		getPageTitleLabel() {
-			const {type} = this.props;
-
-			return type === SegmentTypes.Static
-				? Liferay.Language.get('static-segment')
-				: Liferay.Language.get('dynamic-segment');
-		}
-
 		@autobind
 		handleSubmit(form, formRef, submitFn) {
-			const {
-				addAlert,
-				channelId,
-				close,
-				groupId,
-				history,
-				id,
-				open
-			} = this.props;
+			const {addAlert, channelId, close, groupId, history, id, open} =
+				this.props;
 
-			const {setSubmitting} = formRef.current.getFormikActions();
+			const {setSubmitting} = formRef.current;
 
 			open(
 				modalTypes.LOADING_MODAL,
@@ -175,26 +160,6 @@ export default WrappedComponent => {
 
 			submitFn(form)
 				.then(segment => {
-					if (!id) {
-						const {channelId, id, segmentType} = Array.isArray(
-							segment
-						)
-							? segment[0]
-							: segment;
-
-						analytics.track(
-							`${segmentType[0]}${segmentType
-								.slice(1)
-								.toLowerCase()} Segment Creation - Saved`,
-							{
-								channelId,
-								createDelta: Date.now() - this._startDate,
-								segmentId: id
-							},
-							{ip: '0'}
-						);
-					}
-
 					if (
 						(Array.isArray(segment) && segment.length) ||
 						(segment && !Array.isArray(segment))
@@ -218,8 +183,6 @@ export default WrappedComponent => {
 
 					setSubmitting(false);
 
-					close();
-
 					return segment;
 				})
 				.catch(error => {
@@ -231,9 +194,8 @@ export default WrappedComponent => {
 					});
 
 					setSubmitting(false);
-
-					close();
-				});
+				})
+				.finally(() => close());
 		}
 
 		render() {
@@ -276,6 +238,11 @@ export default WrappedComponent => {
 						}
 				  ];
 
+			const SEGMENT_TYPES_LABEL_MAP = {
+				[SegmentTypes.Batch]: Liferay.Language.get('batch'),
+				[SegmentTypes.RealTime]: Liferay.Language.get('real-time')
+			};
+
 			return (
 				<BasePage
 					className={getCN('segment-edit-root', className, {
@@ -302,7 +269,9 @@ export default WrappedComponent => {
 								title={this.getPageTitle()}
 							>
 								<Label display='secondary' size='lg' uppercase>
-									{this.getPageTitleLabel()}
+									{sub(Liferay.Language.get('x-segment'), [
+										SEGMENT_TYPES_LABEL_MAP[type]
+									])}
 								</Label>
 							</BasePage.Header.TitleSection>
 
@@ -318,8 +287,8 @@ export default WrappedComponent => {
 														label: Liferay.Language.get(
 															'delete-segment'
 														),
-														onClick: this
-															.deleteSegment
+														onClick:
+															this.deleteSegment
 													}
 											  ]
 											: []
@@ -329,7 +298,7 @@ export default WrappedComponent => {
 						</BasePage.Row>
 					</BasePage.Header>
 
-					<BasePage.Body pageContainer={type === SegmentTypes.Static}>
+					<BasePage.Body pageContainer={false}>
 						<WrappedComponent
 							{...omitDefinedProps(
 								otherProps,

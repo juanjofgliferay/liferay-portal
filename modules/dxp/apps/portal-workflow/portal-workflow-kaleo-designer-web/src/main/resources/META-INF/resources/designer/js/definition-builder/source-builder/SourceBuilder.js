@@ -9,98 +9,116 @@ import ClayLayout from '@clayui/layout';
 import ClayLink from '@clayui/link';
 import ClayLoadingIndicator from '@clayui/loading-indicator';
 import ClayToolbar from '@clayui/toolbar';
-import {Editor} from 'frontend-editor-ckeditor-web';
-import React, {useContext, useEffect, useRef, useState} from 'react';
+import {CodeMirrorEditor} from '@liferay/object-js-components-web';
+import React, {useContext, useEffect, useState} from 'react';
 import {isEdge, isNode} from 'react-flow-renderer';
 
+import XMLUtil from '../../../js/definition-builder/source-builder/xmlUtil';
 import {DefinitionBuilderContext} from '../DefinitionBuilderContext';
-import {editorConfig} from '../constants';
 import {xmlNamespace} from './constants';
+import DeserializeUtil from './deserializeUtil';
 import {serializeDefinition} from './serializeUtil';
 
 export default function SourceBuilder() {
 	const {
+		blockingError,
 		currentEditor,
 		definitionDescription,
 		definitionName,
 		elements,
+		setBlockingError,
 		setCurrentEditor,
-		version,
+		workflowDefinitionVersions,
 	} = useContext(DefinitionBuilderContext);
-	const editorRef = useRef();
 	const [loading, setLoading] = useState(true);
-	const [showImportSuccessMessage, setShowImportSuccessMessage] = useState(
-		false
-	);
-	const [showInvalidContentMessage, setShowInvalidContentMessage] = useState(
-		false
-	);
+	const [showImportSuccessMessage, setShowImportSuccessMessage] =
+		useState(false);
 
 	useEffect(() => {
 		function loadXmlContent() {
-			if (currentEditor?.mode === 'source' && elements) {
+			if (currentEditor && elements) {
 				const metadata = {
 					description: definitionDescription,
 					name: definitionName,
-					version,
+					version: workflowDefinitionVersions.length,
 				};
+
+				const currentData = currentEditor.getValue();
+				let currentElements;
+
+				if (currentData) {
+					const deserializeUtil = new DeserializeUtil();
+
+					deserializeUtil.updateXMLDefinition(
+						encodeURIComponent(currentData)
+					);
+
+					currentElements = deserializeUtil.getElements();
+				}
+				else {
+					currentElements = elements;
+				}
 
 				const xmlContent = serializeDefinition(
 					xmlNamespace,
 					metadata,
-					elements.filter(isNode),
-					elements.filter(isEdge)
+					currentElements.filter(isNode),
+					currentElements.filter(isEdge)
 				);
 
 				if (xmlContent) {
-					currentEditor.setData(xmlContent);
-
-					setLoading(false);
+					if (currentEditor.getValue() !== xmlContent) {
+						currentEditor.setValue(xmlContent);
+					}
 				}
+
+				setLoading(false);
 			}
 		}
 
-		const interval = setInterval(() => {
-			if (currentEditor) {
-				if (currentEditor.mode !== 'source') {
-					setTimeout(() => {
-						currentEditor.setMode('source');
-					}, 1000);
-				}
-				else {
-					clearInterval(interval);
-					loadXmlContent();
-				}
-			}
-		}, 1000);
-
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [currentEditor, definitionName, elements, version]);
+		if (currentEditor) {
+			loadXmlContent();
+		}
+	}, [
+		currentEditor,
+		definitionDescription,
+		definitionName,
+		elements,
+		workflowDefinitionVersions.length,
+	]);
 
 	useEffect(() => {
-		if (showInvalidContentMessage) {
+		if (blockingError.errorType === 'invalidXML') {
 			document.addEventListener('keydown', () => {
-				setShowInvalidContentMessage(false);
+				setBlockingError({errorType: ''});
 			});
 
 			return () => {
 				document.removeEventListener('keydown', () => {
-					setShowInvalidContentMessage(false);
+					setBlockingError({errorType: ''});
 				});
 			};
 		}
-	}, [setShowInvalidContentMessage, showInvalidContentMessage]);
+	}, [blockingError, setBlockingError]);
 
 	const writeDefinitionMessage = Liferay.Language.get(
 		'write-your-definition-or-x'
 	).substring(0, 25);
 
-	const importFileMessage = Liferay.Language.get(
-		'import-a-file'
-	).toLowerCase();
+	const importFileMessage =
+		Liferay.Language.get('import-a-file').toLowerCase();
+
+	function handleInvalidXMLBlockingError() {
+		setBlockingError(() => ({
+			errorMessage: Liferay.Language.get(
+				'please-select-a-valid-xml-file'
+			),
+			errorType: 'invalidXML',
+		}));
+	}
 
 	function loadFile(event) {
-		setShowInvalidContentMessage(false);
+		setBlockingError({errorType: ''});
 
 		const files = event.target.files;
 
@@ -108,8 +126,11 @@ export default function SourceBuilder() {
 			const reader = new FileReader();
 
 			reader.onloadend = (event) => {
-				if (event.target.readyState === FileReader.DONE) {
-					currentEditor.setData(event.target.result);
+				if (
+					event.target.readyState === FileReader.DONE &&
+					XMLUtil.validateDefinition(event.target.result)
+				) {
+					currentEditor.setValue(event.target.result);
 
 					const fileInput = document.querySelector('#fileInput');
 
@@ -117,12 +138,15 @@ export default function SourceBuilder() {
 
 					setShowImportSuccessMessage(true);
 				}
+				else {
+					handleInvalidXMLBlockingError();
+				}
 			};
 
 			reader.readAsText(files[0]);
 		}
 		else if (files[0].type !== 'text/xml') {
-			setShowInvalidContentMessage(true);
+			handleInvalidXMLBlockingError();
 		}
 	}
 
@@ -166,20 +190,19 @@ export default function SourceBuilder() {
 				/>
 			)}
 
-			<Editor
-				config={editorConfig}
-				onInstanceReady={({editor}) => {
-					editor.setMode('source');
-
-					setCurrentEditor(editor);
-				}}
-				ref={editorRef}
+			<CodeMirrorEditor
+				lineWrapping={true}
+				mode="xml"
+				onChange={() => {}}
+				readOnly={false}
+				ref={setCurrentEditor}
 			/>
 
 			{showImportSuccessMessage && (
 				<ClayAlert.ToastContainer>
 					<ClayAlert
 						autoClose={5000}
+						closeButtonAriaLabel={Liferay.Language.get('close')}
 						displayType="success"
 						onClose={() => setShowImportSuccessMessage(false)}
 						title={`${Liferay.Language.get('success')}:`}
@@ -191,12 +214,12 @@ export default function SourceBuilder() {
 				</ClayAlert.ToastContainer>
 			)}
 
-			{showInvalidContentMessage && (
+			{blockingError.errorType === 'invalidXML' && (
 				<ClayAlert.ToastContainer>
 					<ClayAlert
 						autoClose={5000}
 						displayType="danger"
-						onClose={() => showInvalidContentMessage(false)}
+						onClose={() => setBlockingError({errorType: ''})}
 						title={`${Liferay.Language.get('error')}:`}
 					>
 						{Liferay.Language.get('please-select-a-valid-xml-file')}

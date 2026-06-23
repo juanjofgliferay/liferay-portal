@@ -11,15 +11,16 @@ interface IVariantTitleProps {
 
 const VariantTitle: React.FC<IVariantTitleProps> = ({labels = [], title}) => {
 	const [showPopover, setShowPopover] = useState(false);
-	const titleRef = useRef();
+	const titleRef = useRef<HTMLDivElement>(null);
 
 	const handleMouseOut = () => setShowPopover(false);
-	const handleMouseOver = event => setShowPopover(isEllipisActive(event));
+	const handleMouseOver = (event: React.SyntheticEvent) =>
+		setShowPopover(isEllipisActive(event));
 
 	return (
 		<td className='table-cell-expanded'>
-			<h5
-				className='variant-title mb-1 text-truncate'
+			<div
+				className='h5 mb-1 text-truncate variant-title'
 				onBlur={handleMouseOut}
 				onFocus={handleMouseOver}
 				onMouseOut={handleMouseOut}
@@ -27,7 +28,7 @@ const VariantTitle: React.FC<IVariantTitleProps> = ({labels = [], title}) => {
 				ref={titleRef}
 			>
 				{title}
-			</h5>
+			</div>
 
 			{!!labels.length &&
 				labels.map(({status, value}, index) => (
@@ -42,7 +43,7 @@ const VariantTitle: React.FC<IVariantTitleProps> = ({labels = [], title}) => {
 					title={title}
 					visible={showPopover}
 				/>,
-				document.querySelector('body.dxp')
+				document.querySelector('body.dxp') ?? document.body
 			)}
 		</td>
 	);

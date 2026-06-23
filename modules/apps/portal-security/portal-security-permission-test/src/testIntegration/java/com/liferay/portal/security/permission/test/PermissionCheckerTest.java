@@ -8,6 +8,7 @@ package com.liferay.portal.security.permission.test;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.journal.model.JournalFolder;
 import com.liferay.journal.service.JournalFolderLocalServiceUtil;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.kernel.exception.NoSuchResourcePermissionException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Company;
@@ -26,6 +27,7 @@ import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactory;
 import com.liferay.portal.kernel.security.permission.ResourceActions;
+import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.PortletLocalService;
 import com.liferay.portal.kernel.service.ResourceActionLocalService;
@@ -522,12 +524,11 @@ public class PermissionCheckerTest {
 			_group.getCompanyId(), _group.getGroupId(), 0, _MODEL_RESOURCE_NAME,
 			resourceId, false, false, false);
 
-		long companyId = CompanyThreadLocal.getCompanyId();
+		_company = CompanyTestUtil.addCompany();
 
-		try {
-			_company = CompanyTestUtil.addCompany();
-
-			CompanyThreadLocal.setCompanyId(_company.getCompanyId());
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+					_company.getCompanyId())) {
 
 			_user = UserTestUtil.addCompanyAdminUser(_company);
 
@@ -564,8 +565,6 @@ public class PermissionCheckerTest {
 			}
 		}
 		finally {
-			CompanyThreadLocal.setCompanyId(companyId);
-
 			_resourceLocalService.deleteResource(
 				_group.getCompanyId(), _MODEL_RESOURCE_NAME,
 				ResourceConstants.SCOPE_INDIVIDUAL, resourceId);
@@ -962,6 +961,46 @@ public class PermissionCheckerTest {
 	}
 
 	@Test
+	public void testIsGroupAdminWithDifferentCompanyAdmin() throws Exception {
+		_company = CompanyTestUtil.addCompany();
+
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+					_company.getCompanyId())) {
+
+			_user = UserTestUtil.addCompanyAdminUser(_company);
+
+			PermissionChecker permissionChecker =
+				_permissionCheckerFactory.create(_user);
+
+			Company testCompany = _companyLocalService.getCompany(
+				TestPropsValues.getCompanyId());
+
+			Assert.assertFalse(
+				permissionChecker.isGroupAdmin(testCompany.getGroupId()));
+		}
+		catch (Throwable throwable) {
+			boolean found = false;
+
+			Throwable causeThrowable = throwable;
+
+			while (!found && (causeThrowable != null)) {
+				if (causeThrowable instanceof
+						NoSuchResourcePermissionException) {
+
+					found = true;
+				}
+
+				causeThrowable = causeThrowable.getCause();
+			}
+
+			if (!found) {
+				throw throwable;
+			}
+		}
+	}
+
+	@Test
 	public void testIsGroupAdminWithGroupAdmin() throws Exception {
 		_user = UserTestUtil.addGroupAdminUser(_group);
 
@@ -1044,8 +1083,8 @@ public class PermissionCheckerTest {
 	}
 
 	@Test
-	public void testIsOmniAdminWithAdministratorRoleUser() throws Exception {
-		_user = UserTestUtil.addOmniAdminUser();
+	public void testIsOmniadminWithAdministratorRoleUser() throws Exception {
+		_user = UserTestUtil.addOmniadminUser();
 
 		PermissionChecker permissionChecker = _permissionCheckerFactory.create(
 			_user);
@@ -1054,25 +1093,24 @@ public class PermissionCheckerTest {
 	}
 
 	@Test
-	public void testIsOmniAdminWithCompanyAdmin() throws Exception {
-		long companyId = CompanyThreadLocal.getCompanyId();
-
+	public void testIsOmniadminWithCompanyAdmin() throws Exception {
 		_company = CompanyTestUtil.addCompany();
 
-		CompanyThreadLocal.setCompanyId(_company.getCompanyId());
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+					_company.getCompanyId())) {
 
-		_user = UserTestUtil.addCompanyAdminUser(_company);
+			_user = UserTestUtil.addCompanyAdminUser(_company);
 
-		PermissionChecker permissionChecker = _permissionCheckerFactory.create(
-			_user);
+			PermissionChecker permissionChecker =
+				_permissionCheckerFactory.create(_user);
 
-		Assert.assertFalse(permissionChecker.isOmniadmin());
-
-		CompanyThreadLocal.setCompanyId(companyId);
+			Assert.assertFalse(permissionChecker.isOmniadmin());
+		}
 	}
 
 	@Test
-	public void testIsOmniAdminWithGroupAdmin() throws Exception {
+	public void testIsOmniadminWithGroupAdmin() throws Exception {
 		_user = UserTestUtil.addGroupAdminUser(_group);
 
 		PermissionChecker permissionChecker = _permissionCheckerFactory.create(
@@ -1082,7 +1120,7 @@ public class PermissionCheckerTest {
 	}
 
 	@Test
-	public void testIsOmniAdminWithRegularUser() throws Exception {
+	public void testIsOmniadminWithRegularUser() throws Exception {
 		_user = UserTestUtil.addUser();
 
 		PermissionChecker permissionChecker = _permissionCheckerFactory.create(
@@ -1272,6 +1310,9 @@ public class PermissionCheckerTest {
 
 	@DeleteAfterTestRun
 	private Company _company;
+
+	@Inject
+	private CompanyLocalService _companyLocalService;
 
 	@DeleteAfterTestRun
 	private Group _group;

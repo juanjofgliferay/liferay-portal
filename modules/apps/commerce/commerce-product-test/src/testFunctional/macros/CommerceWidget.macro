@@ -121,7 +121,7 @@ definition {
 
 		echo("THE NUMBER OF FACETED LABELS IS ${count}");
 
-		if (${count} != ${expectedLabels}) {
+		while ((${count} != ${expectedLabels}) && (maxIterations = "10")) {
 			CommerceProducts.openProductsAdmin();
 
 			Navigator.openWithAppendToBaseURL(urlAppend = "web/minium/catalog");
@@ -466,22 +466,6 @@ definition {
 				key_title = "And Operator",
 				locator1 = "CalendarLookAndFeelConfiguration#SELECT_BORDER_WIDTH_COLUMN",
 				value1 = ${optionAndOperator});
-		}
-
-		if (isSet(filterType)) {
-			Select(
-				key_fieldName = "queryName0",
-				locator1 = "PRMMDFRequest#SELECT",
-				value1 = ${filterType});
-
-			Click(
-				key_button = "Select",
-				locator1 = "CommerceWidget#PRODUCT_PUBLISHER_FILTER_ADD_SELECT_BUTTON");
-
-			CommerceWidget.setFilterItems(
-				categories = ${categories},
-				filterTitle = ${filterType},
-				tags = ${filterEntries});
 		}
 
 		Button.click(button = "Save");
@@ -863,13 +847,21 @@ definition {
 		}
 
 		var accountID = JSONAccountEntryAPI._getAccountEntryId(accountEntryName = ${accountName});
-		var accountERC = JSONPRMAPI.getAccountExternalReferenceCode(accountEntryName = ${accountName});
+		var accountERC = JSONAccountEntryAPI._getAccountExternalReferenceCode(accountEntryName = ${accountName});
 
 		for (var accountDetails : list "${accountImage},${accountName},${accountType},${accountTaxID},${accountERC},${accountID},${accountDescription}") {
 			AssertElementPresent(
 				key_fieldValue = ${accountDetails},
 				locator1 = "CommerceWidget#ASSERT_ACCOUNT_DETAILS_AT_SIDEBAR");
 		}
+	}
+
+	@summary = "Default summary"
+	macro viewCheckboxNotChecked(fieldName = null, fieldValue = null) {
+		AssertNotChecked.assertNotCheckedNotVisible(
+			key_fieldName = ${fieldName},
+			key_fieldValue = ${fieldValue},
+			locator1 = "FormViewBuilder#CHECKBOX_LABEL");
 	}
 
 	@summary = "This macro can be used for asserting user information from Organization Management Chart"

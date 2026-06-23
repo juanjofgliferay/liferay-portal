@@ -15,6 +15,8 @@ import com.liferay.asset.kernel.service.AssetVocabularyLocalServiceUtil;
 import com.liferay.asset.test.util.AssetTestUtil;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.kernel.service.DLAppLocalServiceUtil;
+import com.liferay.dynamic.data.mapping.model.DDMStructure;
+import com.liferay.dynamic.data.mapping.test.util.DDMStructureTestUtil;
 import com.liferay.expando.kernel.model.ExpandoColumn;
 import com.liferay.expando.kernel.model.ExpandoColumnConstants;
 import com.liferay.expando.kernel.model.ExpandoTable;
@@ -26,6 +28,7 @@ import com.liferay.exportimport.kernel.service.StagingLocalServiceUtil;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.model.JournalFolder;
 import com.liferay.journal.service.JournalArticleLocalService;
+import com.liferay.journal.service.JournalArticleLocalServiceUtil;
 import com.liferay.journal.service.JournalFolderServiceUtil;
 import com.liferay.journal.test.util.JournalTestUtil;
 import com.liferay.petra.string.StringBundler;
@@ -77,6 +80,7 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 import com.liferay.search.experiences.blueprint.search.request.enhancer.SXPBlueprintSearchRequestEnhancer;
+import com.liferay.search.experiences.internal.blueprint.test.util.SXPBlueprintSearchResultTestUtil;
 import com.liferay.search.experiences.model.SXPBlueprint;
 import com.liferay.search.experiences.model.SXPElement;
 import com.liferay.search.experiences.rest.dto.v1_0.util.ConfigurationUtil;
@@ -174,15 +178,11 @@ public class SXPBlueprintSearchResultTest {
 					"com.liferay.journal.model.JournalFolder")));
 
 		_journalArticleBuilder.setTitle(
-			"Article coca cola"
+			"Article Coca Cola"
 		).setContent(
-			"cola"
-		).build();
-
-		_journalArticleBuilder.setTitle(
-			"Article pepsi cola"
+			"Cola"
 		).setJournalFolder(
-			"Folder cola"
+			"Cola"
 		).build();
 
 		_updateElementInstancesJSON(
@@ -191,18 +191,18 @@ public class SXPBlueprintSearchResultTest {
 					"boost", 10000
 				).put(
 					"entry_class_name",
-					"com.liferay.journal.model.JournalArticle"
+					"com.liferay.journal.model.JournalFolder"
 				).build()
 			},
 			new String[] {"Boost Asset Type"});
 
-		_keywords = "cola";
+		_keywords = "Coca Cola";
 
-		_assertSearch("[Article coca cola, Article pepsi cola, Folder cola]");
+		_assertSearch("[Cola, Article Coca Cola]");
 
 		_updateElementInstancesJSON(null, null);
 
-		_assertSearch("[Folder cola, Article coca cola, Article pepsi cola]");
+		_assertSearch("[Article Coca Cola, Cola]");
 	}
 
 	@Test
@@ -268,12 +268,13 @@ public class SXPBlueprintSearchResultTest {
 		_updateElementInstancesJSON(
 			new Object[] {
 				HashMapBuilder.<String, Object>put(
-					"asset_category_ids",
-					new String[] {
-						String.valueOf(_assetCategory.getCategoryId())
-					}
-				).put(
 					"boost", 100
+				).put(
+					"group_asset_category_external_reference_codes",
+					new String[] {
+						_group.getExternalReferenceCode() + "&&" +
+							_assetCategory.getExternalReferenceCode()
+					}
 				).build()
 			},
 			new String[] {"Boost Contents in a Category"});
@@ -302,10 +303,13 @@ public class SXPBlueprintSearchResultTest {
 		_updateElementInstancesJSON(
 			new Object[] {
 				HashMapBuilder.<String, Object>put(
-					"asset_category_id",
-					String.valueOf(_assetCategory.getCategoryId())
-				).put(
 					"boost", 100
+				).put(
+					"group_asset_category_external_reference_codes",
+					new String[] {
+						_group.getExternalReferenceCode() + "&&" +
+							_assetCategory.getExternalReferenceCode()
+					}
 				).put(
 					"keywords", "Article"
 				).build()
@@ -338,15 +342,18 @@ public class SXPBlueprintSearchResultTest {
 		_updateElementInstancesJSON(
 			new Object[] {
 				HashMapBuilder.<String, Object>put(
-					"asset_category_id",
-					String.valueOf(_assetCategory.getCategoryId())
-				).put(
 					"boost", 1000
 				).put(
 					"end_date",
 					DateUtil.getDate(
 						new Date(System.currentTimeMillis() + Time.DAY),
 						"yyyyMMdd", LocaleUtil.US)
+				).put(
+					"group_asset_category_external_reference_codes",
+					new String[] {
+						_group.getExternalReferenceCode() + "&&" +
+							_assetCategory.getExternalReferenceCode()
+					}
 				).put(
 					"start_date",
 					DateUtil.getDate(
@@ -363,15 +370,18 @@ public class SXPBlueprintSearchResultTest {
 		_updateElementInstancesJSON(
 			new Object[] {
 				HashMapBuilder.<String, Object>put(
-					"asset_category_id",
-					String.valueOf(_assetCategory.getCategoryId())
-				).put(
 					"boost", 1000
 				).put(
 					"end_date",
 					DateUtil.getDate(
 						new Date(System.currentTimeMillis() - Time.DAY),
 						"yyyyMMdd", LocaleUtil.US)
+				).put(
+					"group_asset_category_external_reference_codes",
+					new String[] {
+						_group.getExternalReferenceCode() + "&&" +
+							_assetCategory.getExternalReferenceCode()
+					}
 				).put(
 					"start_date",
 					DateUtil.getDate(
@@ -407,10 +417,13 @@ public class SXPBlueprintSearchResultTest {
 		_updateElementInstancesJSON(
 			new Object[] {
 				HashMapBuilder.<String, Object>put(
-					"asset_category_id",
-					String.valueOf(_assetCategory.getCategoryId())
-				).put(
 					"boost", 1000
+				).put(
+					"group_asset_category_external_reference_codes",
+					new String[] {
+						_group.getExternalReferenceCode() + "&&" +
+							_assetCategory.getExternalReferenceCode()
+					}
 				).put(
 					"user_segment_ids", segmentsEntry.getSegmentsEntryId()
 				).build()
@@ -447,10 +460,13 @@ public class SXPBlueprintSearchResultTest {
 		_updateElementInstancesJSON(
 			new Object[] {
 				HashMapBuilder.<String, Object>put(
-					"asset_category_id",
-					String.valueOf(_assetCategory.getCategoryId())
-				).put(
 					"boost", 100
+				).put(
+					"group_asset_category_external_reference_codes",
+					new String[] {
+						_group.getExternalReferenceCode() + "&&" +
+							_assetCategory.getExternalReferenceCode()
+					}
 				).build()
 			},
 			new String[] {"Boost Contents in a Category for Guest Users"});
@@ -487,10 +503,13 @@ public class SXPBlueprintSearchResultTest {
 		_updateElementInstancesJSON(
 			new Object[] {
 				HashMapBuilder.<String, Object>put(
-					"asset_category_id",
-					String.valueOf(_assetCategory.getCategoryId())
-				).put(
 					"boost", 1000
+				).put(
+					"group_asset_category_external_reference_codes",
+					new String[] {
+						_group.getExternalReferenceCode() + "&&" +
+							_assetCategory.getExternalReferenceCode()
+					}
 				).put(
 					"time_range", "30d"
 				).build()
@@ -544,10 +563,13 @@ public class SXPBlueprintSearchResultTest {
 		_updateElementInstancesJSON(
 			new Object[] {
 				HashMapBuilder.<String, Object>put(
-					"asset_category_id",
-					String.valueOf(_assetCategory.getCategoryId())
-				).put(
 					"boost", 100
+				).put(
+					"group_asset_category_external_reference_codes",
+					new String[] {
+						_group.getExternalReferenceCode() + "&&" +
+							_assetCategory.getExternalReferenceCode()
+					}
 				).put(
 					"time_of_day", timeOfDays[0]
 				).build()
@@ -561,10 +583,13 @@ public class SXPBlueprintSearchResultTest {
 		_updateElementInstancesJSON(
 			new Object[] {
 				HashMapBuilder.<String, Object>put(
-					"asset_category_id",
-					String.valueOf(_assetCategory.getCategoryId())
-				).put(
 					"boost", 100
+				).put(
+					"group_asset_category_external_reference_codes",
+					new String[] {
+						_group.getExternalReferenceCode() + "&&" +
+							_assetCategory.getExternalReferenceCode()
+					}
 				).put(
 					"time_of_day", timeOfDays[1]
 				).build()
@@ -850,7 +875,8 @@ public class SXPBlueprintSearchResultTest {
 	@Test
 	public void testBoostTaggedContents() throws Exception {
 		_assetTag = AssetTagLocalServiceUtil.addTag(
-			_user.getUserId(), _group.getGroupId(), "Boost", _serviceContext);
+			null, _user.getUserId(), _group.getGroupId(), "Boost",
+			_serviceContext);
 
 		_journalArticleBuilder.setTitle(
 			"Article"
@@ -884,7 +910,8 @@ public class SXPBlueprintSearchResultTest {
 	@Test
 	public void testBoostTagsMatch() throws Exception {
 		_assetTag = AssetTagLocalServiceUtil.addTag(
-			_user.getUserId(), _group.getGroupId(), "cola", _serviceContext);
+			null, _user.getUserId(), _group.getGroupId(), "cola",
+			_serviceContext);
 
 		_journalArticleBuilder.setTitle(
 			"coca cola"
@@ -1132,8 +1159,11 @@ public class SXPBlueprintSearchResultTest {
 		_updateElementInstancesJSON(
 			new Object[] {
 				HashMapBuilder.<String, Object>put(
-					"asset_category_id",
-					String.valueOf(_assetCategory.getCategoryId())
+					"group_asset_category_external_reference_codes",
+					new String[] {
+						_group.getExternalReferenceCode() + "&&" +
+							_assetCategory.getExternalReferenceCode()
+					}
 				).build()
 			},
 			new String[] {"Hide Contents in a Category"});
@@ -1164,8 +1194,11 @@ public class SXPBlueprintSearchResultTest {
 		_updateElementInstancesJSON(
 			new Object[] {
 				HashMapBuilder.<String, Object>put(
-					"asset_category_id",
-					String.valueOf(_assetCategory.getCategoryId())
+					"group_asset_category_external_reference_codes",
+					new String[] {
+						_group.getExternalReferenceCode() + "&&" +
+							_assetCategory.getExternalReferenceCode()
+					}
 				).build()
 			},
 			new String[] {"Hide Contents in a Category for Guest Users"});
@@ -1565,8 +1598,11 @@ public class SXPBlueprintSearchResultTest {
 		_updateElementInstancesJSON(
 			new Object[] {
 				HashMapBuilder.<String, Object>put(
-					"scope_group_ids",
-					new Long[] {groupA.getGroupId(), groupB.getGroupId()}
+					"scope_group_external_reference_codes",
+					new String[] {
+						groupA.getExternalReferenceCode(),
+						groupB.getExternalReferenceCode()
+					}
 				).build()
 			},
 			new String[] {"Limit Search to These Sites"});
@@ -1831,6 +1867,40 @@ public class SXPBlueprintSearchResultTest {
 			new String[] {"Search with Query String Syntax"});
 
 		_assertSearch("[Pepsi Cola]");
+	}
+
+	@Test
+	public void testSearchableAssetTypesWithSubtype() throws Exception {
+		JournalTestUtil.addArticle(
+			_group.getGroupId(), "Basic Article",
+			RandomTestUtil.randomString());
+
+		DDMStructure ddmStructure = DDMStructureTestUtil.addStructure(
+			_group.getGroupId(), JournalArticle.class.getName());
+
+		JournalArticleLocalServiceUtil.addArticle(
+			null, _user.getUserId(), _group.getGroupId(), 0,
+			HashMapBuilder.put(
+				LocaleUtil.US, "Custom Article"
+			).build(),
+			null, DDMStructureTestUtil.getSampleStructuredContent(),
+			ddmStructure.getStructureId(), StringPool.BLANK, _serviceContext);
+
+		_keywords = "Article";
+
+		_assertSearchIgnoreRelevance("[Basic Article, Custom Article]");
+
+		String searchableAssetType = StringBundler.concat(
+			JournalArticle.class.getName(), "&&",
+			_group.getExternalReferenceCode(), "&&",
+			ddmStructure.getExternalReferenceCode());
+
+		_updateConfigurationJSON(
+			"generalConfiguration",
+			JSONUtil.put(
+				"searchableAssetTypes", JSONUtil.put(searchableAssetType)));
+
+		_assertSearch("[Custom Article]");
 	}
 
 	@Test
@@ -2176,7 +2246,7 @@ public class SXPBlueprintSearchResultTest {
 			FileUtil.getBytes(
 				SXPBlueprintSearchResultTest.class,
 				StringUtils.replace(clazzName, ".", "/") + fileName),
-			null, null, _serviceContext);
+			null, null, null, _serviceContext);
 	}
 
 	private Group _addGroup() throws Exception {
@@ -2203,8 +2273,7 @@ public class SXPBlueprintSearchResultTest {
 			Criteria.Conjunction.AND);
 
 		return SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), CriteriaSerializer.serialize(criteria),
-			User.class.getName());
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria));
 	}
 
 	private void _assertSearch(
@@ -2299,8 +2368,9 @@ public class SXPBlueprintSearchResultTest {
 			Map<String, Field> fields = document.getFields();
 
 			message = StringBundler.concat(
-				message, "\" Score: ", searchHit.getScore(), "Title: \"",
-				fields.get("title_en_US"), StringPool.NEW_LINE);
+				message, "Score: ", searchHit.getScore(), " Title: \"",
+				fields.get("title_en_US"), StringPool.QUOTE,
+				StringPool.NEW_LINE);
 		}
 
 		return message;
@@ -2478,13 +2548,7 @@ public class SXPBlueprintSearchResultTest {
 
 	private static final LocalTime _LOCAL_TIME_20 = LocalTime.of(20, 0, 0);
 
-	@Inject
-	private static JournalArticleLocalService _journalArticleLocalService;
-
 	private static List<SXPElement> _sxpElements;
-
-	@Inject
-	private static UserLocalService _userLocalService;
 
 	private AssetCategory _assetCategory;
 	private AssetTag _assetTag;
@@ -2511,6 +2575,10 @@ public class SXPBlueprintSearchResultTest {
 	private List<Group> _groups = new ArrayList<>();
 
 	private JournalArticleBuilder _journalArticleBuilder;
+
+	@Inject
+	private JournalArticleLocalService _journalArticleLocalService;
+
 	private final List<JournalArticle> _journalArticles = new ArrayList<>();
 	private JournalFolder _journalFolder;
 	private String _keywords;
@@ -2534,6 +2602,9 @@ public class SXPBlueprintSearchResultTest {
 		_sxpBlueprintSearchRequestEnhancer;
 
 	private User _user;
+
+	@Inject
+	private UserLocalService _userLocalService;
 
 	@Inject(
 		filter = "segments.criteria.contributor.key=user",

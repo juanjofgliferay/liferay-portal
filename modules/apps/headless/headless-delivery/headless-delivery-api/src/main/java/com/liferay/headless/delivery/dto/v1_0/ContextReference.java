@@ -7,6 +7,7 @@ package com.liferay.headless.delivery.dto.v1_0;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFilter;
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
@@ -18,7 +19,12 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -26,13 +32,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -40,8 +40,10 @@ import javax.xml.bind.annotation.XmlRootElement;
  */
 @Generated("")
 @GraphQLName("ContextReference")
+@io.swagger.v3.oas.annotations.media.Schema(
+	requiredProperties = {"contextSource"}
+)
 @JsonFilter("Liferay.Vulcan")
-@Schema(requiredProperties = {"contextSource"})
 @XmlRootElement(name = "ContextReference")
 public class ContextReference implements Serializable {
 
@@ -53,14 +55,23 @@ public class ContextReference implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(ContextReference.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
+	@JsonGetter("contextSource")
 	@Valid
 	public ContextSource getContextSource() {
+		if (_contextSourceSupplier != null) {
+			contextSource = _contextSourceSupplier.get();
+
+			_contextSourceSupplier = null;
+		}
+
 		return contextSource;
 	}
 
 	@JsonIgnore
 	public String getContextSourceAsString() {
+		ContextSource contextSource = getContextSource();
+
 		if (contextSource == null) {
 			return null;
 		}
@@ -70,27 +81,34 @@ public class ContextReference implements Serializable {
 
 	public void setContextSource(ContextSource contextSource) {
 		this.contextSource = contextSource;
+
+		_contextSourceSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setContextSource(
 		UnsafeSupplier<ContextSource, Exception> contextSourceUnsafeSupplier) {
 
-		try {
-			contextSource = contextSourceUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_contextSourceSupplier = () -> {
+			try {
+				return contextSourceUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	@NotNull
 	protected ContextSource contextSource;
+
+	@JsonIgnore
+	private Supplier<ContextSource> _contextSourceSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -119,6 +137,8 @@ public class ContextReference implements Serializable {
 
 		sb.append("{");
 
+		ContextSource contextSource = getContextSource();
+
 		if (contextSource != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -127,9 +147,7 @@ public class ContextReference implements Serializable {
 			sb.append("\"contextSource\": ");
 
 			sb.append("\"");
-
 			sb.append(contextSource);
-
 			sb.append("\"");
 		}
 
@@ -138,8 +156,8 @@ public class ContextReference implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.ContextReference",
 		name = "x-class-name"
 	)
@@ -223,7 +241,10 @@ public class ContextReference implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -269,3 +290,4 @@ public class ContextReference implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-129640173

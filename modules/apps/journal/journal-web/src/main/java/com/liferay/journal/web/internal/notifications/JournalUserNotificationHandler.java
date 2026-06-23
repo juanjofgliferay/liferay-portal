@@ -30,7 +30,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Iván Zaera
  */
 @Component(
-	property = "javax.portlet.name=" + JournalPortletKeys.JOURNAL,
+	property = "jakarta.portlet.name=" + JournalPortletKeys.JOURNAL,
 	service = UserNotificationHandler.class
 )
 public class JournalUserNotificationHandler
@@ -82,6 +82,13 @@ public class JournalUserNotificationHandler
 				title = _language.get(
 					serviceContext.getLocale(), "a-web-content-has-expired");
 			}
+		}
+		else if (notificationType ==
+					UserNotificationDefinition.NOTIFICATION_TYPE_REVIEW_ENTRY) {
+
+			title = _language.get(
+				serviceContext.getLocale(),
+				"web-content-article-needs-to-be-reviewed");
 		}
 		else if (notificationType ==
 					UserNotificationDefinition.NOTIFICATION_TYPE_UPDATE_ENTRY) {

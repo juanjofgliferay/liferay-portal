@@ -10,7 +10,7 @@ import com.liferay.content.dashboard.info.item.ClassNameClassPKInfoItemIdentifie
 import com.liferay.content.dashboard.item.ContentDashboardItem;
 import com.liferay.content.dashboard.item.type.ContentDashboardItemSubtype;
 import com.liferay.content.dashboard.item.type.ContentDashboardItemSubtypeFactoryRegistry;
-import com.liferay.content.dashboard.web.internal.item.selector.criteria.content.dashboard.type.criterion.ContentDashboardItemSubtypeItemSelectorCriterion;
+import com.liferay.content.dashboard.web.internal.item.selector.ContentDashboardItemSubtypeItemSelectorCriterion;
 import com.liferay.content.dashboard.web.internal.item.type.ContentDashboardItemSubtypeUtil;
 import com.liferay.content.dashboard.web.internal.model.AssetVocabularyMetric;
 import com.liferay.content.dashboard.web.internal.servlet.taglib.util.ContentDashboardDropdownItemsProvider;
@@ -40,13 +40,11 @@ import com.liferay.portal.kernel.portlet.url.builder.ResourceURLBuilder;
 import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
-import com.liferay.portal.kernel.util.PropsKeys;
-import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.SessionClicks;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -54,11 +52,10 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.users.admin.item.selector.UserItemSelectorCriterion;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
+import jakarta.portlet.ActionURL;
+import jakarta.portlet.ResourceURL;
+
+import java.text.Format;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -70,9 +67,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
-
-import javax.portlet.ActionURL;
-import javax.portlet.ResourceURL;
 
 /**
  * @author Cristina González
@@ -275,8 +269,8 @@ public class ContentDashboardAdminDisplayContext {
 	public List<? extends ContentDashboardItemSubtype>
 		getContentDashboardItemSubtypes() {
 
-		if (_contentDashboardItemSubtypePayloads != null) {
-			return _contentDashboardItemSubtypePayloads;
+		if (_contentDashboardItemSubtypes != null) {
+			return _contentDashboardItemSubtypes;
 		}
 
 		String[] contentDashboardItemSubtypePayloads =
@@ -285,20 +279,45 @@ public class ContentDashboardAdminDisplayContext {
 				new String[0], false);
 
 		if (ArrayUtil.isEmpty(contentDashboardItemSubtypePayloads)) {
-			_contentDashboardItemSubtypePayloads = Collections.emptyList();
+			_contentDashboardItemSubtypes = Collections.emptyList();
 		}
 		else {
-			_contentDashboardItemSubtypePayloads =
-				TransformUtil.transformToList(
-					contentDashboardItemSubtypePayloads,
-					contentDashboardItemSubtypePayload ->
-						ContentDashboardItemSubtypeUtil.
-							toContentDashboardItemSubtype(
-								_contentDashboardItemSubtypeFactoryRegistry,
-								contentDashboardItemSubtypePayload));
+			_contentDashboardItemSubtypes = TransformUtil.transformToList(
+				contentDashboardItemSubtypePayloads,
+				contentDashboardItemSubtypePayload ->
+					ContentDashboardItemSubtypeUtil.
+						toContentDashboardItemSubtype(
+							_contentDashboardItemSubtypeFactoryRegistry,
+							contentDashboardItemSubtypePayload));
 		}
 
-		return _contentDashboardItemSubtypePayloads;
+		return _contentDashboardItemSubtypes;
+	}
+
+	public String getContentPerformanceDataFetchURL(
+		InfoItemReference infoItemReference) {
+
+		InfoItemIdentifier infoItemIdentifier =
+			infoItemReference.getInfoItemIdentifier();
+
+		if (!(infoItemIdentifier instanceof ClassPKInfoItemIdentifier)) {
+			return null;
+		}
+
+		ClassPKInfoItemIdentifier classPKInfoItemIdentifier =
+			(ClassPKInfoItemIdentifier)infoItemIdentifier;
+
+		return ResourceURLBuilder.createResourceURL(
+			_liferayPortletResponse
+		).setBackURL(
+			_portal.getCurrentURL(_liferayPortletRequest)
+		).setParameter(
+			"className", infoItemReference.getClassName()
+		).setParameter(
+			"classPK", String.valueOf(classPKInfoItemIdentifier.getClassPK())
+		).setResourceID(
+			"/content_dashboard/get_content_performance_info"
+		).buildString();
 	}
 
 	public Map<String, Object> getData() {
@@ -315,11 +334,31 @@ public class ContentDashboardAdminDisplayContext {
 		return _data;
 	}
 
+	public String getDateType() {
+		if (_dateType != null) {
+			return _dateType;
+		}
+
+		_dateType = ParamUtil.getString(_liferayPortletRequest, "dateType");
+
+		return _dateType;
+	}
+
 	public List<DropdownItem> getDropdownItems(
 		ContentDashboardItem contentDashboardItem) {
 
 		return _contentDashboardDropdownItemsProvider.getDropdownItems(
 			contentDashboardItem);
+	}
+
+	public String getEndDateString() {
+		if (_endDateString != null) {
+			return _endDateString;
+		}
+
+		_endDateString = ParamUtil.getString(_liferayPortletRequest, "endDate");
+
+		return _endDateString;
 	}
 
 	public String getPanelState() {
@@ -430,10 +469,15 @@ public class ContentDashboardAdminDisplayContext {
 			StringPool.BLANK);
 	}
 
-	public Boolean getSinglePageApplicationEnabled() {
-		return GetterUtil.getBoolean(
-			PropsUtil.get(
-				PropsKeys.JAVASCRIPT_SINGLE_PAGE_APPLICATION_ENABLED));
+	public String getStartDateString() {
+		if (_startDateString != null) {
+			return _startDateString;
+		}
+
+		_startDateString = ParamUtil.getString(
+			_liferayPortletRequest, "startDate");
+
+		return _startDateString;
 	}
 
 	public Integer getStatus() {
@@ -499,13 +543,14 @@ public class ContentDashboardAdminDisplayContext {
 	}
 
 	public String toString(Date date) {
-		Instant instant = date.toInstant();
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)_liferayPortletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
 
-		ZonedDateTime zonedDateTime = instant.atZone(ZoneId.systemDefault());
+		Format format = FastDateFormatFactoryUtil.getDateTime(
+			themeDisplay.getLocale(), themeDisplay.getTimeZone());
 
-		LocalDateTime localDateTime = zonedDateTime.toLocalDateTime();
-
-		return localDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+		return format.format(date);
 	}
 
 	private Map<String, Object> _getContext() {
@@ -547,9 +592,10 @@ public class ContentDashboardAdminDisplayContext {
 		_contentDashboardDropdownItemsProvider;
 	private final ContentDashboardItemSubtypeFactoryRegistry
 		_contentDashboardItemSubtypeFactoryRegistry;
-	private List<ContentDashboardItemSubtype>
-		_contentDashboardItemSubtypePayloads;
+	private List<ContentDashboardItemSubtype> _contentDashboardItemSubtypes;
 	private Map<String, Object> _data;
+	private String _dateType;
+	private String _endDateString;
 	private final ItemSelector _itemSelector;
 	private final String _languageDirection;
 	private final LiferayPortletRequest _liferayPortletRequest;
@@ -559,6 +605,7 @@ public class ContentDashboardAdminDisplayContext {
 	private String _reviewDateString;
 	private long _scopeId;
 	private final SearchContainer<ContentDashboardItem<?>> _searchContainer;
+	private String _startDateString;
 	private Integer _status;
 	private Boolean _swapConfigurationEnabled;
 	private long _userId;

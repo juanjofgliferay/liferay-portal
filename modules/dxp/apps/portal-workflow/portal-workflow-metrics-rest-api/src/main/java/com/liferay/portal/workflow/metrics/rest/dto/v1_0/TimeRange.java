@@ -16,7 +16,9 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -28,10 +30,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Rafael Praxedes
@@ -40,6 +39,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @Generated("")
 @GraphQLName(
 	description = "https://www.schema.org/TimeRange", value = "TimeRange"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "https://www.schema.org/TimeRange"
 )
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "TimeRange")
@@ -53,141 +55,206 @@ public class TimeRange implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(TimeRange.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Date getDateEnd() {
+		if (_dateEndSupplier != null) {
+			dateEnd = _dateEndSupplier.get();
+
+			_dateEndSupplier = null;
+		}
+
 		return dateEnd;
 	}
 
 	public void setDateEnd(Date dateEnd) {
 		this.dateEnd = dateEnd;
+
+		_dateEndSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDateEnd(
 		UnsafeSupplier<Date, Exception> dateEndUnsafeSupplier) {
 
-		try {
-			dateEnd = dateEndUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_dateEndSupplier = () -> {
+			try {
+				return dateEndUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Date dateEnd;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Date> _dateEndSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Date getDateStart() {
+		if (_dateStartSupplier != null) {
+			dateStart = _dateStartSupplier.get();
+
+			_dateStartSupplier = null;
+		}
+
 		return dateStart;
 	}
 
 	public void setDateStart(Date dateStart) {
 		this.dateStart = dateStart;
+
+		_dateStartSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDateStart(
 		UnsafeSupplier<Date, Exception> dateStartUnsafeSupplier) {
 
-		try {
-			dateStart = dateStartUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_dateStartSupplier = () -> {
+			try {
+				return dateStartUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Date dateStart;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Date> _dateStartSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Boolean getDefaultTimeRange() {
+		if (_defaultTimeRangeSupplier != null) {
+			defaultTimeRange = _defaultTimeRangeSupplier.get();
+
+			_defaultTimeRangeSupplier = null;
+		}
+
 		return defaultTimeRange;
 	}
 
 	public void setDefaultTimeRange(Boolean defaultTimeRange) {
 		this.defaultTimeRange = defaultTimeRange;
+
+		_defaultTimeRangeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDefaultTimeRange(
 		UnsafeSupplier<Boolean, Exception> defaultTimeRangeUnsafeSupplier) {
 
-		try {
-			defaultTimeRange = defaultTimeRangeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_defaultTimeRangeSupplier = () -> {
+			try {
+				return defaultTimeRangeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean defaultTimeRange;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Boolean> _defaultTimeRangeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Integer getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Integer id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Integer, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Integer id;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Integer> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getName() {
+		if (_nameSupplier != null) {
+			name = _nameSupplier.get();
+
+			_nameSupplier = null;
+		}
+
 		return name;
 	}
 
 	public void setName(String name) {
 		this.name = name;
+
+		_nameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setName(UnsafeSupplier<String, Exception> nameUnsafeSupplier) {
-		try {
-			name = nameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_nameSupplier = () -> {
+			try {
+				return nameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String name;
+
+	@JsonIgnore
+	private Supplier<String> _nameSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -219,6 +286,8 @@ public class TimeRange implements Serializable {
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 
+		Date dateEnd = getDateEnd();
+
 		if (dateEnd != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -232,6 +301,8 @@ public class TimeRange implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Date dateStart = getDateStart();
 
 		if (dateStart != null) {
 			if (sb.length() > 1) {
@@ -247,6 +318,8 @@ public class TimeRange implements Serializable {
 			sb.append("\"");
 		}
 
+		Boolean defaultTimeRange = getDefaultTimeRange();
+
 		if (defaultTimeRange != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -257,6 +330,8 @@ public class TimeRange implements Serializable {
 			sb.append(defaultTimeRange);
 		}
 
+		Integer id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -266,6 +341,8 @@ public class TimeRange implements Serializable {
 
 			sb.append(id);
 		}
+
+		String name = getName();
 
 		if (name != null) {
 			if (sb.length() > 1) {
@@ -286,8 +363,8 @@ public class TimeRange implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.portal.workflow.metrics.rest.dto.v1_0.TimeRange",
 		name = "x-class-name"
 	)
@@ -333,7 +410,10 @@ public class TimeRange implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -379,3 +459,4 @@ public class TimeRange implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1783217488

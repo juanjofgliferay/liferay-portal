@@ -22,7 +22,10 @@ export function MultiStep({activePage, editable, pages}) {
 	const dispatch = useForm();
 
 	return (
-		<div className="ddm-form-pagination position-relative wizard-mode">
+		<div
+			aria-hidden="true"
+			className="ddm-form-pagination position-relative wizard-mode"
+		>
 			<ol className="ddm-wizard multi-step-indicator-label-top multi-step-nav multi-step-nav-collapse-sm">
 				{pages.map((page, index) => (
 					<li
@@ -70,8 +73,8 @@ export function MultiStep({activePage, editable, pages}) {
 								'wizard_success'
 									? Liferay.Language.get('success-page')
 									: page.title
-									? page.title
-									: Liferay.Language.get('untitled-page')}
+										? page.title
+										: Liferay.Language.get('untitled-page')}
 							</div>
 
 							{editable ? (

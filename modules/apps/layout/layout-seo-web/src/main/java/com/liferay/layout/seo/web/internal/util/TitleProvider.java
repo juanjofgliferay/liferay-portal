@@ -6,11 +6,14 @@
 package com.liferay.layout.seo.web.internal.util;
 
 import com.liferay.layout.seo.kernel.LayoutSEOLinkManager;
+import com.liferay.layout.utility.page.kernel.LayoutUtilityPageEntryTypeUtil;
+import com.liferay.layout.utility.page.kernel.provider.util.LayoutUtilityPageEntryLayoutProviderUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -21,7 +24,8 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * @author Cristina González
@@ -38,6 +42,25 @@ public class TitleProvider {
 		ThemeDisplay themeDisplay =
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
+
+		String layoutUtilityPageEntryType =
+			_getStatusLayoutUtilityPageEntryType(themeDisplay);
+
+		if (Validator.isNotNull(layoutUtilityPageEntryType)) {
+			Layout layout =
+				LayoutUtilityPageEntryLayoutProviderUtil.
+					getDefaultLayoutUtilityPageEntryLayout(
+						themeDisplay.getScopeGroupId(),
+						layoutUtilityPageEntryType);
+
+			if (layout != null) {
+				Company company = themeDisplay.getCompany();
+
+				return _layoutSEOLinkManager.getFullPageTitle(
+					layout, null, themeDisplay.getTilesTitle(), null, null,
+					company.getName(), themeDisplay.getLocale());
+			}
+		}
 
 		String portletId = (String)httpServletRequest.getAttribute(
 			WebKeys.PORTLET_ID);
@@ -74,6 +97,29 @@ public class TitleProvider {
 		return title;
 	}
 
+	private String _getStatusLayoutUtilityPageEntryType(
+		ThemeDisplay themeDisplay) {
+
+		HttpServletResponse httpServletResponse = themeDisplay.getResponse();
+
+		if (httpServletResponse == null) {
+			ServiceContext serviceContext =
+				ServiceContextThreadLocal.getServiceContext();
+
+			if (serviceContext != null) {
+				httpServletResponse = serviceContext.getResponse();
+			}
+		}
+
+		if (httpServletResponse == null) {
+			return null;
+		}
+
+		return LayoutUtilityPageEntryTypeUtil.
+			getStatusLayoutUtilityPageEntryType(
+				httpServletResponse.getStatus());
+	}
+
 	private String _getTitleModifierKey(HttpServletRequest httpServletRequest) {
 		if (_isEditMode(httpServletRequest)) {
 			return "editing";
@@ -98,11 +144,7 @@ public class TitleProvider {
 		String mvcCommand = ParamUtil.getString(
 			httpServletRequest, "mvcRenderCommandName");
 
-		if (mvcCommand.equals("/layout_admin/edit_layout")) {
-			return true;
-		}
-
-		return false;
+		return mvcCommand.equals("/layout_admin/edit_layout");
 	}
 
 	private boolean _isEditMode(HttpServletRequest httpServletRequest) {
@@ -112,11 +154,7 @@ public class TitleProvider {
 		String layoutMode = ParamUtil.getString(
 			originalHttpServletRequest, "p_l_mode", Constants.VIEW);
 
-		if (layoutMode.equals(Constants.EDIT)) {
-			return true;
-		}
-
-		return false;
+		return layoutMode.equals(Constants.EDIT);
 	}
 
 	private final LayoutSEOLinkManager _layoutSEOLinkManager;

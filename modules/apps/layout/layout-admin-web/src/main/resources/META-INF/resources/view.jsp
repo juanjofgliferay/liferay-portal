@@ -12,7 +12,6 @@ portletDisplay.setShowStagingIcon(false);
 %>
 
 <clay:navigation-bar
-	inverted="<%= true %>"
 	navigationItems="<%= layoutsAdminDisplayContext.getNavigationItems() %>"
 />
 
@@ -33,23 +32,12 @@ portletDisplay.setShowStagingIcon(false);
 
 		<clay:management-toolbar
 			managementToolbarDisplayContext="<%= new LayoutsAdminManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, layoutsAdminDisplayContext) %>"
-			propsTransformer="js/LayoutsManagementToolbarPropsTransformer"
+			propsTransformer="{LayoutsManagementToolbarPropsTransformer} from layout-admin-web"
 		/>
-
-		<liferay-ui:error exception="<%= LayoutTypeException.class %>">
-
-			<%
-			LayoutTypeException lte = (LayoutTypeException)errorException;
-			%>
-
-			<c:if test="<%= lte.getType() == LayoutTypeException.FIRST_LAYOUT %>">
-				<liferay-ui:message arguments='<%= "layout.types." + lte.getLayoutType() %>' key="the-first-page-cannot-be-of-type-x" />
-			</c:if>
-		</liferay-ui:error>
 
 		<liferay-ui:error exception="<%= RequiredSegmentsExperienceException.MustNotDeleteSegmentsExperienceReferencedBySegmentsExperiments.class %>" message="this-page-cannot-be-deleted-because-it-has-ab-tests-in-progress" />
 
-		<aui:form cssClass="container-fluid container-fluid-max-xl" name="fm">
+		<aui:form cssClass="container-fluid container-fluid-max-xxxl" name="fm">
 			<c:choose>
 				<c:when test="<%= layoutsAdminDisplayContext.hasLayouts() %>">
 					<c:choose>
@@ -64,7 +52,7 @@ portletDisplay.setShowStagingIcon(false);
 
 							<div>
 								<react:component
-									module="js/layout/Layout"
+									module="{Layout} from layout-admin-web"
 									props="<%= millerColumnsDisplayContext.getLayoutData() %>"
 								/>
 							</div>

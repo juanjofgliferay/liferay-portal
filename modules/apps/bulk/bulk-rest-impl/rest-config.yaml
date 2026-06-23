@@ -1,12 +1,13 @@
-apiDir: "../bulk-rest-api/src/main/java"
-apiPackagePath: "com.liferay.bulk.rest"
+apiDir: ../bulk-rest-api/src/main/java
+apiPackagePath: com.liferay.bulk.rest
 application:
-    baseURI: "/bulk"
-    className: "BulkRESTApplication"
-    name: "Liferay.Bulk.REST"
-author: "Alejandro Tardín"
-clientDir: "../bulk-rest-client/src/main/java"
-compatibilityVersion: 4
+    baseURI: /bulk
+    className: BulkRESTApplication
+    name: Liferay.Bulk.REST
+author: Alejandro Tardín
+clientDir: ../bulk-rest-client/src/main/java
+compatibilityVersion: 15
 forcePredictableOperationId: true
 generateBatch: false
-testDir: "../bulk-rest-test/src/testIntegration/java"
+javaEEPackage: jakarta
+testDir: ../bulk-rest-test/src/testIntegration/java

@@ -43,6 +43,11 @@
 	<td>//div[(@id='model-${schema}')]//tr[contains(.,'${field}')]//tr[contains(.,'${property}')]</td>
 	<td></td>
 </tr>
+<tr>
+	<td>SCHEMA_PROPERTY_PROPERTY_COLLAPSED</td>
+	<td>//div[(@id='model-${schema}')]//tr[contains(.,'${field}')]//tr[contains(.,'${property}')]//tr[contains(.,'${property2}')]//span[(@class='model-toggle collapsed')]</td>
+	<td></td>
+</tr>
 
 <!--SWAGGER-->
 
@@ -99,21 +104,6 @@
 
 <!--GRAPHQL-->
 
-<tr>
-	<td>GRAPHQL_EDITOR</td>
-	<td>//div[contains(@class,'CodeMirror cm-s-graphiql')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>GRAPHQL_EDITOR_LINE</td>
-	<td>//section[contains(@class,'query-editor')]//span[contains(@class,'cm-comment')][1]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>GRAPHQL_RESPONSE</td>
-	<td>//section[contains(@class,'result-window')]//div[contains(@class,'CodeMirror-lines')]</td>
-	<td></td>
-</tr>
 </tbody>
 </table>
 </body>

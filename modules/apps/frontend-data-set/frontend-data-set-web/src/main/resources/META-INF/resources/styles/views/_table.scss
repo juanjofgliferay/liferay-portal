@@ -1,0 +1,145 @@
+.visualization-mode-table {
+	&:not(.selectable) table {
+		&.table-striped.table-hover
+			tbody
+			tr:nth-of-type(odd):hover:not(.table-active):not(
+				.table-disabled
+			):not(.table-divider)
+			td {
+			background-color: $light-l1;
+		}
+
+		tbody tr:hover {
+			background-color: $white;
+		}
+	}
+
+	&.selectable table {
+		&.table-striped.table-hover
+			tbody
+			tr:hover:not(.table-disabled):not(.table-divider) {
+			&.table-active td {
+				background-color: $primary-l2;
+			}
+
+			td {
+				&,
+				& .quick-action-menu {
+					background-color: $light;
+				}
+			}
+		}
+	}
+
+	table {
+		table-layout: auto !important;
+
+		.dnd-th-resizer {
+			cursor: col-resize;
+			display: block;
+			height: 100%;
+			margin: 0 -10px;
+			padding: 0 10px;
+			position: absolute;
+			right: 0;
+			top: 0;
+			z-index: 1;
+
+			&::after {
+				background: $info;
+				content: '';
+				display: block;
+				height: 100%;
+				opacity: 0;
+				transition: background-color 0.1s ease-in;
+				width: 4px;
+			}
+
+			&:hover::after {
+				opacity: 1;
+			}
+
+			&.is-active::after {
+				background-color: $danger;
+				opacity: 1;
+			}
+
+			is-active.is-allowed::after {
+				background-color: $primary;
+			}
+		}
+	}
+}
+
+.table-style-fluid,
+.table-style-stacked {
+	border: 1px solid $border-color;
+	border-radius: 4px;
+	overflow: hidden;
+
+	.table {
+		margin-bottom: -1px;
+	}
+}
+
+.tooltip-table {
+	color: $white;
+	font-weight: 600;
+	width: 100%;
+
+	td {
+		border: none;
+
+		&:first-child {
+			color: unquote('hsl(from #{$white} h s calc(l - 10%))');
+			text-align: left;
+		}
+
+		&:last-child {
+			text-align: right;
+		}
+	}
+
+	tr.with-divider td {
+		padding-top: map-get($spacers, 2);
+		position: relative;
+
+		&::after {
+			border-top: 1px solid unquote('hsl(from #{$white} h s l / 0.1)');
+			content: '';
+			left: 0;
+			position: absolute;
+			right: 0;
+			top: map-get($spacers, 1);
+		}
+	}
+
+	tr.highlighted td {
+		font-size: 1rem;
+
+		&:last-child {
+			color: $error-l1;
+		}
+	}
+}
+
+tr.drop-target {
+	& * {
+		@include common-drop-target;
+	}
+
+	& > td {
+		border-bottom: 2px solid $info !important;
+		border-top: 2px solid $info !important;
+
+		&:first-child {
+			border-left: 2px solid $info !important;
+		}
+
+		&:last-child {
+			border-right: 2px solid $info !important;
+		}
+	}
+
+	@include common-drop-target;
+}

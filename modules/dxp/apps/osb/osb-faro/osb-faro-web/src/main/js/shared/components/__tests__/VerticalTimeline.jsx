@@ -1,12 +1,7 @@
 import mockDate from 'test/mock-date';
 import React from 'react';
 import VerticalTimeline from '../VerticalTimeline';
-import {
-	cleanup,
-	fireEvent,
-	render,
-	waitForElement
-} from '@testing-library/react';
+import {cleanup, fireEvent, render, waitFor} from '@testing-library/react';
 import {StaticRouter} from 'react-router';
 
 jest.unmock('react-dom');
@@ -158,6 +153,25 @@ const DefaultComponent = props => (
 	</StaticRouter>
 );
 
+const createDataSourceItem = ({applicationId, userAgent}) => ({
+	applicationId,
+	attributes: {
+		header: 'Session Attributes'
+	},
+	browserName: 'Firefox',
+	device: 'Desktop',
+	nestedItems: [
+		{
+			subtitle: 'www.liferay.com/testing',
+			time: 1518648993917,
+			title: 'Visited Liferay: Testing'
+		}
+	],
+	time: 1518648993917,
+	title: 'Opened Email',
+	userAgent
+});
+
 describe('VerticalTimeline', () => {
 	afterEach(cleanup);
 
@@ -204,10 +218,62 @@ describe('VerticalTimeline', () => {
 			)[0]
 		);
 
-		const sessionAttributes = await waitForElement(
-			() => getAllByText('Session Attributes')[0]
+		const sessionAttributes = await waitFor(
+			() => getAllByText(/Session Attributes/)[0]
 		);
 
 		expect(sessionAttributes).toHaveTextContent(SESSION_ATTRIBUTES_TITLE);
+	});
+
+	it('should display the "DXP" label for Liferay DXP data sources', () => {
+		['CustomEvent', 'WebContent'].forEach(applicationId => {
+			const {getByText, unmount} = render(
+				<DefaultComponent
+					items={[
+						createDataSourceItem({
+							applicationId,
+							userAgent:
+								'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36'
+						})
+					]}
+				/>
+			);
+
+			expect(getByText('DXP')).toBeInTheDocument();
+
+			unmount();
+		});
+	});
+
+	it('should display the application ID label for the HubSpot webhook data source', () => {
+		const {getByText, queryByText} = render(
+			<DefaultComponent
+				items={[
+					createDataSourceItem({
+						applicationId: 'Hubspot',
+						userAgent: 'HubSpot Webhook'
+					})
+				]}
+			/>
+		);
+
+		expect(getByText('HUBSPOT')).toBeInTheDocument();
+		expect(queryByText('DXP')).not.toBeInTheDocument();
+	});
+
+	it('should display the application ID label for the Marketo webhook data source', () => {
+		const {getByText, queryByText} = render(
+			<DefaultComponent
+				items={[
+					createDataSourceItem({
+						applicationId: 'Marketo',
+						userAgent: 'Marketo Webhook'
+					})
+				]}
+			/>
+		);
+
+		expect(getByText('MARKETO')).toBeInTheDocument();
+		expect(queryByText('DXP')).not.toBeInTheDocument();
 	});
 });

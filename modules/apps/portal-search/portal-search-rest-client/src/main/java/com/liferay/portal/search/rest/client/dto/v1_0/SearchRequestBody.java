@@ -8,12 +8,12 @@ package com.liferay.portal.search.rest.client.dto.v1_0;
 import com.liferay.portal.search.rest.client.function.UnsafeSupplier;
 import com.liferay.portal.search.rest.client.serdes.v1_0.SearchRequestBodySerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Petteri Karttunen
@@ -104,3 +104,4 @@ public class SearchRequestBody implements Cloneable, Serializable {
 	}
 
 }
+// LIFERAY-REST-BUILDER-HASH:-451661791

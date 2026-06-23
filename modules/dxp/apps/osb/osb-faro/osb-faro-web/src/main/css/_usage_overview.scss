@@ -1,115 +1,44 @@
-.usage-overview-page-root {
-	.addon-list-header {
-		margin-bottom: 8px;
+.chart-bars {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+
+	.big-bar {
+		background: #5791ff;
+		border-radius: 4px;
+		height: 12px;
+		width: 95%;
 	}
 
-	.addons-list-root.inactive {
-		opacity: 0.5;
-
-		.annual-price {
-			display: none;
-		}
+	.small-bar {
+		background: #b3cdff;
+		border-radius: 4px;
+		height: 24px;
+		width: 25%;
 	}
+}
 
-	.annual-price {
-		font-size: $fontSizeLarge;
+.donut-chart-item {
+	min-height: 150px;
+
+	.generic-pie-label {
+		fill: #333333;
+		font-size: 1.75rem;
+		font-weight: bold;
 	}
+}
 
-	.content h2 {
-		margin-bottom: 1rem;
-	}
+.gradient-opaque {
+	mask-image: linear-gradient(
+		to bottom,
+		rgba(0, 0, 0, 0.8) 0%,
+		rgba(0, 0, 0, 0) 100%
+	);
+}
 
-	.limit-amount {
-		margin-right: 4px;
-		text-transform: capitalize;
-	}
-
-	.overview-usage-metric-root, .plans {
-		.icon-root {
-			fill: $mainLighten28;
-		}
-	}
-
-	.panel-root:not(:last-of-type) {
-		margin-bottom: 8px;
-	}
-
-	.plans {
-		.plans-list-root {
-			margin-bottom: 32px;
-		}
-
-		h4 {
-			text-transform: uppercase;
-		}
-	}
-
-	.plans .icon-root {
-		font-size: 1.2rem;
-		margin-right: 4px;
-	}
-
-	.plan-breakdown {
-		display: flex;
-		flex-wrap: wrap;
-		justify-content: space-between;
-
-		.limits {
-			margin-right: 8px;
-		}
-
-		li {
-			align-items: center;
-			display: flex;
-		}
-
-		li:not(:last-child) {
-			margin-bottom: 8px;
-		}
-
-		.icon-root {
-			margin-right: 8px;
-		}
-	}
-
-	.plan-name {
-		font-size: $fontSizeMedium;
-		font-weight: $fontWeightBold;
-		text-transform: capitalize;
-	}
-
-	.plan-title {
-		display: flex;
-		flex-wrap: wrap;
-		justify-content: space-between;
-	}
-
-	ul {
-		list-style-type: none;
-		padding-left: 0;
-	}
-
-	.overview-usage-metric-root {
-		.usage-since-label {
-			margin-left: 6px;
-		}
-	}
-
-	/* ---------- Type utility classes ---------- */
-
-	.extra-small {
-		font-size: $fontSizeExtraSmall;
-	}
-
-	.semibold {
-		font-weight: $fontWeightSemiBold;
-	}
-
-	.small {
-		font-size: $fontSizeSmall;
-	}
-
-	strong {
-		font-weight: $fontWeightBold;
-	}
+.saas-banner {
+	background-image: url('/o/osb-faro-web/dist/sprite.svg#ac_banner-usage');
+	background-position: center;
+	background-repeat: no-repeat;
+	background-size: cover;
 }

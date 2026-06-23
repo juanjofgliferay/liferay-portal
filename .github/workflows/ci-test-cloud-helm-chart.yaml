@@ -1,0 +1,14 @@
+jobs:
+    test-cloud-helm-chart:
+        if: ${{github.repository == 'cloudnative-team/liferay-portal'}}
+        permissions:
+            checks: write
+            contents: read
+        uses: ./.github/workflows/ci-reusable-test-cloud-helm-chart.yaml
+on:
+    pull_request:
+        paths:
+            -   .github/workflows/ci-reusable-test-cloud-helm-chart.yaml
+            -   .github/workflows/ci-test-cloud-helm-chart.yaml
+            -   cloud/helm/**
+            -   cloud/scripts/tests/**

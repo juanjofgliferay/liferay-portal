@@ -3,10 +3,15 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {format, isValid, parseISO} from 'date-fns';
+import {dateUtils} from 'frontend-js-web';
 
 import {Criteria} from '../../types/Criteria';
-import {CONJUNCTIONS, PropertyType} from './constants';
+import {
+	CONJUNCTIONS,
+	PropertyType,
+	SUPPORTED_OPERATORS,
+	SUPPORTED_PROPERTY_TYPES,
+} from './constants';
 
 const GROUP_ID_NAMESPACE = 'group_';
 
@@ -74,18 +79,13 @@ export function getChildGroupIds(criteria: Criteria) {
  * Gets the list of operators for a supported type.
  * Used for displaying the operators available for each criteria row.
  */
-export function getSupportedOperatorsFromType<
-	Operator extends {name: string},
-	PropertyKey extends string
->(
-	operators: Operator[],
-	propertyTypes: Record<PropertyKey, PropertyType>,
-	type: PropertyKey
-) {
-	return operators.filter((operator) => {
-		const validOperators = propertyTypes[type];
+export function getSupportedOperatorsFromType(type: PropertyType) {
+	return SUPPORTED_OPERATORS.filter((operator) => {
+		const validOperators = SUPPORTED_PROPERTY_TYPES[type];
 
-		return validOperators && validOperators.includes(operator.name);
+		return validOperators?.some(
+			(validOperator) => validOperator === operator.name
+		);
 	});
 }
 
@@ -180,9 +180,18 @@ export function dateToInternationalHuman(
  * based on a JS Date object
  */
 export function jsDatetoYYYYMMDD(dateJsObject: string | Date) {
-	if (!isValid(dateJsObject)) {
-		dateJsObject = parseISO(dateJsObject as string);
+	if (!dateUtils.isValid(dateJsObject)) {
+		dateJsObject = new Date(dateJsObject as string);
 	}
 
-	return format(dateJsObject as Date, 'yyyy-MM-dd');
+	const intl = new Intl.DateTimeFormat(
+		Liferay.ThemeDisplay.getBCP47LanguageId(),
+		{
+			day: '2-digit',
+			month: '2-digit',
+			year: 'numeric',
+		}
+	);
+
+	return intl.format(dateJsObject as Date);
 }

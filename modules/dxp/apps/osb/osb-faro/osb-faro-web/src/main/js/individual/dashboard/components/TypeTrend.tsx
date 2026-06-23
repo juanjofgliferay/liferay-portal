@@ -26,7 +26,7 @@ export const TrendItem: React.FC<ITrendItemProps> = ({
 	return (
 		<div className='trend-item-root' key={title}>
 			<div className='trend-item-title d-flex justify-content-between'>
-				<h5 className='card-title'>{title}</h5>
+				<div className='card-title'>{title}</div>
 
 				{info && <InfoPopover {...info} />}
 			</div>
@@ -38,7 +38,7 @@ export const TrendItem: React.FC<ITrendItemProps> = ({
 			{!!total && (
 				<div className='change description'>
 					{sub(
-						Liferay.Language.get('x-vs-previous-30-days'),
+						Liferay.Language.get('x-vs-last-30-days'),
 						[
 							<span
 								className={getCN({

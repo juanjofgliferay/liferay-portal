@@ -19,7 +19,7 @@ public class PluginsMarketplaceAppJob
 	extends BaseJob implements PortalTestClassJob, TestSuiteJob {
 
 	@Override
-	public Set<String> getDistTypes() {
+	public Set<String> getAppServerTypes() {
 		return Collections.emptySet();
 	}
 
@@ -54,7 +54,7 @@ public class PluginsMarketplaceAppJob
 
 		super(buildProfile, jobName);
 
-		String appType = System.getenv("TEST_APP_TYPE");
+		String appType = Environment.get("TEST_APP_TYPE");
 
 		if (JenkinsResultsParserUtil.isNullOrEmpty(appType)) {
 			appType = "community";

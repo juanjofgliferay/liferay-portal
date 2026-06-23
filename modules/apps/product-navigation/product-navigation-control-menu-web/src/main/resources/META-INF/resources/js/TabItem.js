@@ -6,6 +6,7 @@
 import ClayButton from '@clayui/button';
 import ClayIcon from '@clayui/icon';
 import classNames from 'classnames';
+import {FeatureIndicator} from 'frontend-js-components-web';
 import PropTypes from 'prop-types';
 import React, {useContext} from 'react';
 
@@ -52,6 +53,7 @@ const TabItem = ({item}) => {
 				'sidebar-body__add-panel__tab-portlet-item':
 					item.data.portletItemId,
 			})}
+			data-qa-id="addPanelTabItem"
 			ref={item.disabled ? null : sourceRef}
 		>
 			<div
@@ -63,10 +65,18 @@ const TabItem = ({item}) => {
 				</div>
 
 				<div className="text">
-					<div className="mr-1 text-truncate title">{item.label}</div>
+					<div className="align-items-center d-flex">
+						<div className="text-truncate title">{item.label}</div>
+
+						{item.data.deprecated && (
+							<div className="flex-shrink-0 ml-1">
+								<FeatureIndicator type="deprecated" />
+							</div>
+						)}
+					</div>
 
 					{isContent && (
-						<div className="subtitle text-break">
+						<div className="subtitle text-truncate">
 							{item.category}
 						</div>
 					)}

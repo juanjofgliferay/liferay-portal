@@ -5,7 +5,7 @@
 
 package com.liferay.oauth2.provider.rest.internal.security.auth.verifier;
 
-import com.liferay.oauth2.provider.constants.OAuth2ProviderConstants;
+import com.liferay.oauth2.provider.constants.OAuth2AuthorizationConstants;
 import com.liferay.oauth2.provider.model.OAuth2Application;
 import com.liferay.oauth2.provider.model.OAuth2Authorization;
 import com.liferay.oauth2.provider.rest.spi.bearer.token.provider.BearerTokenProvider;
@@ -27,6 +27,9 @@ import com.liferay.portal.kernel.servlet.HttpHeaders;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -34,9 +37,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -118,7 +118,7 @@ public class OAuth2RESTAuthVerifier implements AuthVerifier {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug("Unable to verify OAuth2 access token", exception);
+				_log.debug("Unable to verify OAuth 2 access token", exception);
 			}
 
 			return authVerifierResult;
@@ -144,7 +144,9 @@ public class OAuth2RESTAuthVerifier implements AuthVerifier {
 
 		accessTokenContent = oAuth2Authorization.getAccessTokenContent();
 
-		if (OAuth2ProviderConstants.EXPIRED_TOKEN.equals(accessTokenContent)) {
+		if (OAuth2AuthorizationConstants.ACCESS_TOKEN_CONTENT_EXPIRED_TOKEN.
+				equals(accessTokenContent)) {
+
 			return null;
 		}
 

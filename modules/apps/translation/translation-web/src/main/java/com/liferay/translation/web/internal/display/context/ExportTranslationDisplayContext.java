@@ -28,15 +28,14 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.segments.constants.SegmentsEntryConstants;
-import com.liferay.segments.model.SegmentsEntry;
 import com.liferay.segments.model.SegmentsExperience;
-import com.liferay.segments.service.SegmentsEntryLocalServiceUtil;
 import com.liferay.segments.service.SegmentsExperienceLocalServiceUtil;
 import com.liferay.segments.service.SegmentsExperienceServiceUtil;
 import com.liferay.translation.exporter.TranslationInfoItemFieldValuesExporter;
 import com.liferay.translation.exporter.TranslationInfoItemFieldValuesExporterRegistry;
 import com.liferay.translation.info.item.provider.InfoItemLanguagesProvider;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,8 +46,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Jorge González
@@ -102,28 +99,18 @@ public class ExportTranslationDisplayContext {
 			return null;
 		}
 
-		List<Map<String, String>> experiences = new ArrayList<>();
-
-		List<SegmentsExperience> segmentsExperiences =
-			_getSegmentsExperiences();
-
-		for (SegmentsExperience segmentsExperience : segmentsExperiences) {
-			experiences.add(
-				HashMapBuilder.put(
-					"label",
-					segmentsExperience.getName(_themeDisplay.getLocale())
-				).put(
-					"segment",
-					_getSegmentsEntryName(
-						segmentsExperience.getSegmentsEntryId(),
-						_themeDisplay.getLocale())
-				).put(
-					"value",
-					String.valueOf(segmentsExperience.getSegmentsExperienceId())
-				).build());
-		}
-
-		return experiences;
+		return TransformUtil.transform(
+			_getSegmentsExperiences(),
+			segmentsExperience -> HashMapBuilder.put(
+				"label", segmentsExperience.getName(_themeDisplay.getLocale())
+			).put(
+				"segment",
+				segmentsExperience.getSegmentsEntryName(
+					_themeDisplay.getLocale())
+			).put(
+				"value",
+				String.valueOf(segmentsExperience.getSegmentsExperienceId())
+			).build());
 	}
 
 	public Map<String, Object> getExportTranslationData() throws Exception {
@@ -163,7 +150,7 @@ public class ExportTranslationDisplayContext {
 		).put(
 			"pathModule", PortalUtil.getPathModule()
 		).put(
-			"redirectURL", getRedirect()
+			"redirectURL", PortalUtil.escapeRedirect(getRedirect())
 		).build();
 	}
 
@@ -294,17 +281,6 @@ public class ExportTranslationDisplayContext {
 				)));
 
 		return jsonArray;
-	}
-
-	private String _getSegmentsEntryName(long segmentsEntryId, Locale locale) {
-		if (segmentsEntryId == SegmentsEntryConstants.ID_DEFAULT) {
-			return SegmentsEntryConstants.getDefaultSegmentsEntryName(locale);
-		}
-
-		SegmentsEntry segmentsEntry =
-			SegmentsEntryLocalServiceUtil.fetchSegmentsEntry(segmentsEntryId);
-
-		return segmentsEntry.getName(locale);
 	}
 
 	private List<SegmentsExperience> _getSegmentsExperiences()

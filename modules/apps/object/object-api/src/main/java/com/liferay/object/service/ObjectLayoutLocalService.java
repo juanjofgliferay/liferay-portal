@@ -293,6 +293,9 @@ public interface ObjectLayoutLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getObjectLayoutsCount(long objectDefinitionId);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public Map<Long, List<ObjectLayout>> getObjectLayoutsMap(long companyId);
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -328,3 +331,4 @@ public interface ObjectLayoutLocalService
 	public ObjectLayout updateObjectLayout(ObjectLayout objectLayout);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1149495472

@@ -7,6 +7,8 @@ package com.liferay.jenkins.results.parser;
 
 import java.util.Date;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.json.JSONObject;
 
@@ -25,11 +27,7 @@ public abstract class BaseGitCommit implements GitCommit {
 			return false;
 		}
 
-		if (Objects.equals(hashCode(), object.hashCode())) {
-			return true;
-		}
-
-		return false;
+		return Objects.equals(hashCode(), object.hashCode());
 	}
 
 	@Override
@@ -72,6 +70,29 @@ public abstract class BaseGitCommit implements GitCommit {
 	@Override
 	public String getSHA() {
 		return _sha;
+	}
+
+	@Override
+	public String getTicketId() {
+		String commitMessage = getMessage();
+
+		if (commitMessage == null) {
+			return "none";
+		}
+
+		String ticketId = null;
+
+		Matcher matcher = _ticketIdPattern.matcher(commitMessage.trim());
+
+		if (matcher.find()) {
+			ticketId = matcher.group("ticketId");
+		}
+
+		if (!JenkinsResultsParserUtil.isNullOrEmpty(ticketId)) {
+			return ticketId;
+		}
+
+		return "none";
 	}
 
 	@Override
@@ -132,6 +153,9 @@ public abstract class BaseGitCommit implements GitCommit {
 	protected Long commitTime;
 	protected String emailAddress;
 	protected String message;
+
+	private static final Pattern _ticketIdPattern = Pattern.compile(
+		"(Revert \")?(?<ticketId>[A-Z]+-\\d+)\"?");
 
 	private final String _gitRepositoryName;
 	private final String _sha;

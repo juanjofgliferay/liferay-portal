@@ -6,12 +6,11 @@
 package com.liferay.segments.internal.configuration.provider;
 
 import com.liferay.configuration.admin.constants.ConfigurationAdminPortletKeys;
-import com.liferay.petra.string.StringBundler;
-import com.liferay.petra.string.StringPool;
-import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClassDefinition;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
+import com.liferay.portal.configuration.module.configuration.BaseManagedServiceFactory;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
@@ -23,20 +22,21 @@ import com.liferay.segments.configuration.SegmentsCompanyConfiguration;
 import com.liferay.segments.configuration.SegmentsConfiguration;
 import com.liferay.segments.configuration.provider.SegmentsConfigurationProvider;
 
-import java.io.IOException;
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Dictionary;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
-
-import org.osgi.framework.InvalidSyntaxException;
-import org.osgi.service.cm.Configuration;
-import org.osgi.service.cm.ConfigurationAdmin;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.Constants;
+import org.osgi.framework.ServiceRegistration;
+import org.osgi.service.cm.ManagedServiceFactory;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 
@@ -51,6 +51,13 @@ public class SegmentsConfigurationProviderImpl
 	implements SegmentsConfigurationProvider {
 
 	@Override
+	public void clearSegmentsCompanyConfigurations() {
+		_pids.clear();
+		_segmentsCompanyConfigurationManagedServiceFactory.clear();
+		_segmentsCompanyConfigurations.clear();
+	}
+
+	@Override
 	public String getCompanyConfigurationURL(
 			HttpServletRequest httpServletRequest)
 		throws PortalException {
@@ -63,11 +70,15 @@ public class SegmentsConfigurationProviderImpl
 
 			String pid = factoryPid;
 
-			Configuration configuration = _getSegmentsCompanyConfiguration(
-				_portal.getCompanyId(httpServletRequest));
+			SegmentsCompanyConfiguration segmentsCompanyConfiguration =
+				_segmentsCompanyConfigurations.getOrDefault(
+					_portal.getCompanyId(httpServletRequest),
+					_configurationProvider.getCompanyConfiguration(
+						SegmentsCompanyConfiguration.class,
+						_portal.getCompanyId(httpServletRequest)));
 
-			if (configuration != null) {
-				pid = configuration.getPid();
+			if (segmentsCompanyConfiguration != null) {
+				pid = _pids.get(_portal.getCompanyId(httpServletRequest));
 			}
 
 			return PortletURLBuilder.create(
@@ -129,19 +140,17 @@ public class SegmentsConfigurationProviderImpl
 			return false;
 		}
 
-		if (!isSegmentsCompanyConfigurationDefined(companyId)) {
+		SegmentsCompanyConfiguration segmentsCompanyConfiguration =
+			_segmentsCompanyConfigurations.getOrDefault(
+				companyId,
+				_configurationProvider.getCompanyConfiguration(
+					SegmentsCompanyConfiguration.class, companyId));
+
+		if (segmentsCompanyConfiguration == null) {
 			return _segmentsConfiguration.roleSegmentationEnabled();
 		}
 
-		SegmentsCompanyConfiguration segmentsCompanyConfiguration =
-			_configurationProvider.getCompanyConfiguration(
-				SegmentsCompanyConfiguration.class, companyId);
-
-		if (!segmentsCompanyConfiguration.roleSegmentationEnabled()) {
-			return false;
-		}
-
-		return true;
+		return segmentsCompanyConfiguration.roleSegmentationEnabled();
 	}
 
 	@Override
@@ -157,47 +166,42 @@ public class SegmentsConfigurationProviderImpl
 			return false;
 		}
 
-		if (!isSegmentsCompanyConfigurationDefined(companyId)) {
+		SegmentsCompanyConfiguration segmentsCompanyConfiguration =
+			_segmentsCompanyConfigurations.getOrDefault(
+				companyId,
+				_configurationProvider.getCompanyConfiguration(
+					SegmentsCompanyConfiguration.class, companyId));
+
+		if (segmentsCompanyConfiguration == null) {
 			return _segmentsConfiguration.segmentationEnabled();
 		}
 
-		SegmentsCompanyConfiguration segmentsCompanyConfiguration =
-			_configurationProvider.getCompanyConfiguration(
-				SegmentsCompanyConfiguration.class, companyId);
-
-		if (!segmentsCompanyConfiguration.segmentationEnabled()) {
-			return false;
-		}
-
-		return true;
+		return segmentsCompanyConfiguration.segmentationEnabled();
 	}
 
+	@Override
 	public boolean isSegmentsCompanyConfigurationDefined(long companyId)
 		throws ConfigurationException {
 
-		if (_getSegmentsCompanyConfiguration(companyId) != null) {
+		SegmentsCompanyConfiguration segmentsCompanyConfiguration =
+			_segmentsCompanyConfigurations.getOrDefault(
+				companyId,
+				_configurationProvider.getCompanyConfiguration(
+					SegmentsCompanyConfiguration.class, companyId));
+
+		if (segmentsCompanyConfiguration != null) {
 			return true;
 		}
 
 		return false;
 	}
 
+	@Override
 	public void resetSegmentsCompanyConfiguration(long companyId)
 		throws ConfigurationException {
 
-		Configuration configuration = _getSegmentsCompanyConfiguration(
-			companyId);
-
-		while (configuration != null) {
-			try {
-				configuration.delete();
-			}
-			catch (IOException ioException) {
-				throw new ConfigurationException(ioException);
-			}
-
-			configuration = _getSegmentsCompanyConfiguration(companyId);
-		}
+		_configurationProvider.deleteCompanyConfiguration(
+			SegmentsCompanyConfiguration.class, companyId);
 	}
 
 	@Override
@@ -206,77 +210,50 @@ public class SegmentsConfigurationProviderImpl
 			SegmentsCompanyConfiguration segmentsCompanyConfiguration)
 		throws ConfigurationException {
 
-		Dictionary<String, Object> properties = null;
-
-		Configuration configuration = _getSegmentsCompanyConfiguration(
-			companyId);
-
-		if (configuration == null) {
-			try {
-				configuration = _configurationAdmin.createFactoryConfiguration(
-					SegmentsCompanyConfiguration.class.getName() + ".scoped",
-					StringPool.QUESTION);
-			}
-			catch (IOException ioException) {
-				throw new ConfigurationException(ioException);
-			}
-
-			properties = HashMapDictionaryBuilder.<String, Object>put(
-				ExtendedObjectClassDefinition.Scope.COMPANY.getPropertyKey(),
-				companyId
-			).build();
-		}
-		else {
-			properties = configuration.getProperties();
-		}
-
-		properties.put(
-			"roleSegmentationEnabled",
-			segmentsCompanyConfiguration.roleSegmentationEnabled());
-		properties.put(
-			"segmentationEnabled",
-			segmentsCompanyConfiguration.segmentationEnabled());
-
-		try {
-			configuration.update(properties);
-		}
-		catch (IOException ioException) {
-			throw new ConfigurationException(ioException);
-		}
+		_configurationProvider.saveCompanyConfiguration(
+			SegmentsCompanyConfiguration.class, companyId,
+			HashMapDictionaryBuilder.<String, Object>put(
+				"roleSegmentationEnabled",
+				segmentsCompanyConfiguration.roleSegmentationEnabled()
+			).put(
+				"segmentationEnabled",
+				segmentsCompanyConfiguration.segmentationEnabled()
+			).build());
 	}
 
 	@Activate
+	protected void activate(
+		BundleContext bundleContext, Map<String, Object> properties) {
+
+		modified(properties);
+
+		_serviceRegistration = bundleContext.registerService(
+			ManagedServiceFactory.class,
+			_segmentsCompanyConfigurationManagedServiceFactory,
+			HashMapDictionaryBuilder.put(
+				Constants.SERVICE_PID,
+				"com.liferay.segments.configuration." +
+					"SegmentsCompanyConfiguration.scoped"
+			).build());
+	}
+
+	@Deactivate
+	protected void deactivate() {
+		_serviceRegistration.unregister();
+	}
+
 	@Modified
-	protected void activate(Map<String, Object> properties) {
+	protected void modified(Map<String, Object> properties) {
 		_segmentsConfiguration = ConfigurableUtil.createConfigurable(
 			SegmentsConfiguration.class, properties);
 	}
 
-	private Configuration _getSegmentsCompanyConfiguration(long companyId)
-		throws ConfigurationException {
-
-		try {
-			String filterString = StringBundler.concat(
-				"(&(", ConfigurationAdmin.SERVICE_FACTORYPID, StringPool.EQUAL,
-				SegmentsCompanyConfiguration.class.getName(), ".scoped",
-				")(companyId=", companyId, "))");
-
-			Configuration[] configuration =
-				_configurationAdmin.listConfigurations(filterString);
-
-			if (configuration != null) {
-				return configuration[0];
-			}
-
-			return null;
-		}
-		catch (InvalidSyntaxException | IOException exception) {
-			throw new ConfigurationException(exception);
+	private void _unmapPid(long companyId) {
+		if (companyId != CompanyConstants.SYSTEM) {
+			_pids.remove(companyId);
+			_segmentsCompanyConfigurations.remove(companyId);
 		}
 	}
-
-	@Reference
-	private ConfigurationAdmin _configurationAdmin;
 
 	@Reference
 	private ConfigurationProvider _configurationProvider;
@@ -284,9 +261,52 @@ public class SegmentsConfigurationProviderImpl
 	@Reference
 	private PermissionCheckerFactory _permissionCheckerFactory;
 
+	private final Map<Long, String> _pids = new ConcurrentHashMap<>();
+
 	@Reference
 	private Portal _portal;
 
+	private final SegmentsCompanyConfigurationManagedServiceFactory
+		_segmentsCompanyConfigurationManagedServiceFactory =
+			new SegmentsCompanyConfigurationManagedServiceFactory();
+	private final Map<Long, SegmentsCompanyConfiguration>
+		_segmentsCompanyConfigurations = new ConcurrentHashMap<>();
 	private volatile SegmentsConfiguration _segmentsConfiguration;
+	private ServiceRegistration<ManagedServiceFactory> _serviceRegistration;
+
+	private class SegmentsCompanyConfigurationManagedServiceFactory
+		extends BaseManagedServiceFactory {
+
+		public void clear() {
+			companyIds.clear();
+		}
+
+		@Override
+		public String getName() {
+			return "com.liferay.segments.configuration." +
+				"SegmentsCompanyConfiguration.scoped";
+		}
+
+		@Override
+		protected void doDeleted(long companyId, String pid) {
+			_unmapPid(companyId);
+		}
+
+		@Override
+		protected void doUpdated(
+			long companyId, Dictionary<String, ?> dictionary, String pid) {
+
+			_unmapPid(companyId);
+
+			if (companyId != CompanyConstants.SYSTEM) {
+				_pids.put(companyId, pid);
+				_segmentsCompanyConfigurations.put(
+					companyId,
+					ConfigurableUtil.createConfigurable(
+						SegmentsCompanyConfiguration.class, dictionary));
+			}
+		}
+
+	}
 
 }

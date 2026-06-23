@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <#include init />
-<html class="${root_css_class}" dir="<@liferay.language key="lang.dir" />" lang="${w3c_language_id}">
+<#assign colorScheme = sessionClicks.get(request, "com_liferay_application_list_taglib_SideNavigationColorScheme", "light") />
+<html class="${root_css_class}" data-color-scheme="${colorScheme}" dir="<@liferay.language key="lang.dir" />" lang="${w3c_language_id}">
 <head>
 	<title>${the_title} - ${company_name}</title>
 
@@ -28,16 +29,16 @@
 	<#assign css_class = css_class + " minium-login" />
 </#if>
 
-<body class="${css_class}" id="content">
+<body class="${css_class}">
 	<@liferay_ui["quick-access"] contentId="#minium" />
 
 	<@liferay.control_menu />
 
-	<div class="position-relative" id="wrapper">
-		<div class="liferay-top">
-			<@liferay_util["include"] page=body_top_include />
-		</div>
+	<div class="liferay-top">
+		<@liferay_util["include"] page=body_top_include />
+	</div>
 
+	<div class="position-relative" id="wrapper">
 		<main class="minium minium-frame" id="minium">
 			<#if show_sidebar>
 				<div class="minium-frame__sidebar">
@@ -54,7 +55,7 @@
 			<div class="minium-frame__content js-scroll-area">
 				<a name="minium-top"></a>
 
-				<div class="${minium_content_css_class}">
+				<div class="${minium_content_css_class}" id="content">
 					<#if selectable>
 						<@liferay_util["include"] page=content_include />
 					<#else>
@@ -79,11 +80,11 @@
 				<@liferay_commerce_ui["search-results"] />
 			</div>
 		</main>
+	</div>
 
-		<div class="liferay-bottom">
+	<div class="liferay-bottom">
 			<@liferay_util["include"] page=body_bottom_include />
 			<@liferay_util["include"] page=bottom_include />
-		</div>
 	</div>
 </body>
 </html>

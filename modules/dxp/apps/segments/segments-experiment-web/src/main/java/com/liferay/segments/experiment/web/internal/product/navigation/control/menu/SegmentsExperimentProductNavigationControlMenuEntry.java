@@ -6,7 +6,6 @@
 package com.liferay.segments.experiment.web.internal.product.navigation.control.menu;
 
 import com.liferay.analytics.settings.rest.manager.AnalyticsSettingsManager;
-import com.liferay.frontend.js.loader.modules.extender.npm.NPMResolver;
 import com.liferay.frontend.taglib.clay.servlet.taglib.ButtonTag;
 import com.liferay.frontend.taglib.clay.servlet.taglib.IconTag;
 import com.liferay.petra.reflect.ReflectionUtil;
@@ -44,10 +43,20 @@ import com.liferay.product.navigation.control.menu.constants.ProductNavigationCo
 import com.liferay.segments.constants.SegmentsPortletKeys;
 import com.liferay.segments.experiment.web.internal.constants.ProductNavigationControlMenuEntryConstants;
 import com.liferay.segments.manager.SegmentsExperienceManager;
+import com.liferay.segments.model.SegmentsExperience;
 import com.liferay.segments.model.SegmentsExperiment;
 import com.liferay.segments.service.SegmentsExperienceLocalService;
 import com.liferay.segments.service.SegmentsExperimentService;
 import com.liferay.taglib.util.BodyBottomTag;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.ResourceURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.JspWriter;
+import jakarta.servlet.jsp.PageContext;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -55,15 +64,6 @@ import java.io.Writer;
 import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.ResourceURL;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.JspWriter;
-import javax.servlet.jsp.PageContext;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -184,11 +184,7 @@ public class SegmentsExperimentProductNavigationControlMenuEntry
 		String segmentsExperimentKey = ParamUtil.getString(
 			originalHttpServletRequest, "segmentsExperimentKey");
 
-		if (Validator.isNotNull(segmentsExperimentKey)) {
-			return true;
-		}
-
-		return false;
+		return Validator.isNotNull(segmentsExperimentKey);
 	}
 
 	@Override
@@ -354,21 +350,21 @@ public class SegmentsExperimentProductNavigationControlMenuEntry
 			HttpServletRequest httpServletRequest, ThemeDisplay themeDisplay)
 		throws Exception {
 
-		long segmentsExperienceId = _getSelectedSegmentsExperienceId(
-			httpServletRequest);
-
-		Layout layout = themeDisplay.getLayout();
+		SegmentsExperience segmentsExperience =
+			_segmentsExperienceLocalService.fetchSegmentsExperience(
+				_getSelectedSegmentsExperienceId(httpServletRequest));
 
 		SegmentsExperiment segmentsExperiment =
 			_segmentsExperimentService.fetchSegmentsExperiment(
-				themeDisplay.getScopeGroupId(), segmentsExperienceId,
-				layout.getPlid());
+				themeDisplay.getScopeGroupId(),
+				segmentsExperience.getSegmentsExperienceKey(),
+				themeDisplay.getPlid());
 
 		if (segmentsExperiment != null) {
 			return segmentsExperiment.getSegmentsExperienceId();
 		}
 
-		return segmentsExperienceId;
+		return segmentsExperience.getSegmentsExperienceId();
 	}
 
 	private long _getSelectedSegmentsExperienceId(
@@ -403,7 +399,7 @@ public class SegmentsExperimentProductNavigationControlMenuEntry
 		JspWriter jspWriter = pageContext.getOut();
 
 		try {
-			StringBundler sb = new StringBundler(27);
+			StringBundler sb = new StringBundler(20);
 
 			sb.append("<div class=\"");
 
@@ -416,25 +412,19 @@ public class SegmentsExperimentProductNavigationControlMenuEntry
 					"lfr-has-segments-experiment-panel open-admin-panel open ");
 			}
 
-			sb.append("cadmin d-print-none lfr-admin-panel ");
-			sb.append("lfr-product-menu-panel lfr-segments-experiment-panel ");
-			sb.append("sidenav-fixed sidenav-menu-slider sidenav-right\" ");
-			sb.append("id=\"");
+			sb.append("cadmin d-print-none lfr-admin-panel lfr-product-menu-");
+			sb.append("panel lfr-segments-experiment-panel sidenav-fixed ");
+			sb.append("sidenav-menu-slider sidenav-right\" id=\"");
 			sb.append(_portletNamespace);
-			sb.append("segmentsExperimentPanelId\" ");
-			sb.append("tabindex=\"-1\">");
-			sb.append("<div class=\"sidebar sidebar-light sidenav-menu ");
-			sb.append("sidebar-sm\">");
-
-			sb.append("<div class=\"lfr-segments-experiment-sidebar\" ");
-			sb.append("id=\"segmentsExperimentSidebar\">");
-			sb.append("<div class=\"d-flex justify-content-between p-3 ");
-			sb.append("sidebar-header\">");
-			sb.append("<h1 class=\"sr-only\">");
-			sb.append(_language.get(httpServletRequest, "ab-test-panel"));
-			sb.append("</h1>");
-			sb.append("<span class=\"font-weight-bold\">");
-			sb.append(_language.get(httpServletRequest, "ab-test"));
+			sb.append("segmentsExperimentPanelId\" tabindex=\"-1\"><div class");
+			sb.append("=\"sidebar sidebar-light sidenav-menu sidebar-sm\">");
+			sb.append("<div class=\"lfr-segments-experiment-sidebar\" id=\"");
+			sb.append("segmentsExperimentSidebar\"><div class=\"d-flex ");
+			sb.append("justify-content-between p-3 sidebar-header\"><h1 class");
+			sb.append("=\"sr-only\">");
+			sb.append(_language.get(httpServletRequest, "tests-panel"));
+			sb.append("</h1><span class=\"font-weight-bold\">");
+			sb.append(_language.get(httpServletRequest, "tests"));
 			sb.append("</span>");
 
 			ButtonTag buttonTag = new ButtonTag();
@@ -449,18 +439,15 @@ public class SegmentsExperimentProductNavigationControlMenuEntry
 
 			sb.append(buttonTag.doTagAsString(pageContext));
 
-			sb.append("</div>");
-			sb.append("<div class=\"sidebar-body\">");
-			sb.append("<span aria-hidden=\"true\" ");
-			sb.append("className=\"loading-animation ");
-			sb.append("loading-animation-sm\" />");
+			sb.append("</div><div class=\"sidebar-body\"><span aria-hidden=\"");
+			sb.append("true\" className=\"loading-animation loading-");
+			sb.append("animation-sm\" />");
 
 			jspWriter.write(sb.toString());
 
 			_reactRenderer.renderReact(
 				new ComponentDescriptor(
-					_npmResolver.resolveModuleName("segments-experiment-web") +
-						"/js/SegmentsExperimentApp.es"),
+					"{SegmentsExperimentApp} from segments-experiment-web"),
 				_getData(httpServletRequest, panelStateOpen),
 				httpServletRequest, jspWriter);
 
@@ -485,9 +472,6 @@ public class SegmentsExperimentProductNavigationControlMenuEntry
 
 	@Reference
 	private LayoutLocalService _layoutLocalService;
-
-	@Reference
-	private NPMResolver _npmResolver;
 
 	@Reference
 	private Portal _portal;

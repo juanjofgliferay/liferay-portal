@@ -237,6 +237,13 @@ public class AccountEntryWrapper
 	}
 
 	@Override
+	public com.liferay.portal.kernel.model.Contact fetchContact()
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return model.fetchContact();
+	}
+
+	@Override
 	public java.util.List<com.liferay.portal.kernel.model.Organization>
 		fetchOrganizations() {
 
@@ -363,6 +370,13 @@ public class AccountEntryWrapper
 		return model.getEmailAddress();
 	}
 
+	@Override
+	public java.util.List<com.liferay.portal.kernel.model.EmailAddress>
+		getEmailAddresses() {
+
+		return model.getEmailAddresses();
+	}
+
 	/**
 	 * Returns the external reference code of this account entry.
 	 *
@@ -371,6 +385,13 @@ public class AccountEntryWrapper
 	@Override
 	public String getExternalReferenceCode() {
 		return model.getExternalReferenceCode();
+	}
+
+	@Override
+	public java.util.List<com.liferay.portal.kernel.model.Address>
+		getListTypeAddresses(long[] listTypeIds) {
+
+		return model.getListTypeAddresses(listTypeIds);
 	}
 
 	/**
@@ -421,6 +442,11 @@ public class AccountEntryWrapper
 	@Override
 	public long getParentAccountEntryId() {
 		return model.getParentAccountEntryId();
+	}
+
+	@Override
+	public java.util.List<com.liferay.portal.kernel.model.Phone> getPhones() {
+		return model.getPhones();
 	}
 
 	/**
@@ -561,6 +587,13 @@ public class AccountEntryWrapper
 	@Override
 	public String getUuid() {
 		return model.getUuid();
+	}
+
+	@Override
+	public java.util.List<com.liferay.portal.kernel.model.Website>
+		getWebsites() {
+
+		return model.getWebsites();
 	}
 
 	/**
@@ -979,3 +1012,4 @@ public class AccountEntryWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:118838537

@@ -17,8 +17,10 @@ import com.liferay.layout.util.structure.ContainerStyledLayoutStructureItem;
 import com.liferay.layout.util.structure.LayoutStructure;
 import com.liferay.layout.util.structure.LayoutStructureItem;
 import com.liferay.layout.util.structure.StyledLayoutStructureItem;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONException;
 import com.liferay.portal.kernel.json.JSONFactory;
@@ -28,14 +30,12 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
-import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactory;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
-import com.liferay.portal.kernel.service.LayoutSetLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.servlet.PortalSessionThreadLocal;
 import com.liferay.portal.kernel.util.ContentTypes;
@@ -49,6 +49,12 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.style.book.model.StyleBookEntry;
 import com.liferay.style.book.util.DefaultStyleBookEntryUtil;
 
+import jakarta.servlet.Servlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 
@@ -59,12 +65,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.servlet.Servlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -127,6 +127,36 @@ public class LayoutStructureCommonStylesCSSServlet extends HttpServlet {
 			}
 		}
 
+		long previewCTCollectionId = ParamUtil.getLong(
+			httpServletRequest, "previewCTCollectionId",
+			CTCollectionThreadLocal.getCTCollectionId());
+
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					previewCTCollectionId)) {
+
+			_generateCSS(httpServletRequest, httpServletResponse);
+		}
+	}
+
+	private JSONObject _createJSONObject(String json) {
+		try {
+			return _jsonFactory.createJSONObject(json);
+		}
+		catch (JSONException jsonException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(jsonException);
+			}
+
+			return _jsonFactory.createJSONObject();
+		}
+	}
+
+	private void _generateCSS(
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse)
+		throws IOException {
+
 		httpServletResponse.setContentType(ContentTypes.TEXT_CSS_UTF8);
 		httpServletResponse.setStatus(HttpServletResponse.SC_OK);
 
@@ -139,8 +169,8 @@ public class LayoutStructureCommonStylesCSSServlet extends HttpServlet {
 		}
 
 		if ((layout == null) ||
-			(!layout.isTypeAssetDisplay() && !layout.isTypeCollection() &&
-			 !layout.isTypeContent() &&
+			(!layout.isTypeAssetDisplay() && !layout.isTypeContent() &&
+			 !layout.isTypeUtility() &&
 			 ((layout.getMasterLayoutPlid() == 0) ||
 			  !layout.isTypePortlet()))) {
 
@@ -163,8 +193,15 @@ public class LayoutStructureCommonStylesCSSServlet extends HttpServlet {
 
 		PrintWriter printWriter = httpServletResponse.getWriter();
 
-		printWriter.write(".lfr-layout-structure-item-container {padding: 0;}");
-		printWriter.write(".lfr-layout-structure-item-row {overflow: hidden;}");
+		printWriter.write(
+			".lfr-layout-structure-item-container {padding: 0;} ");
+		printWriter.write(
+			".lfr-layout-structure-item-row {overflow: hidden;} ");
+		printWriter.write(
+			".portlet-borderless .portlet-content {padding: 0;} ");
+		printWriter.write(
+			"[data-lfr-editable-type=\"rich-text\"] > p:only-child " +
+				"{margin-bottom:0;}");
 
 		JSONObject frontendTokensJSONObject = _getFrontendTokensJSONObject(
 			layout.getGroupId(), layout,
@@ -221,19 +258,6 @@ public class LayoutStructureCommonStylesCSSServlet extends HttpServlet {
 		}
 	}
 
-	private JSONObject _createJSONObject(String json) {
-		try {
-			return _jsonFactory.createJSONObject(json);
-		}
-		catch (JSONException jsonException) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(jsonException);
-			}
-
-			return _jsonFactory.createJSONObject();
-		}
-	}
-
 	private String _getCustomCSS(
 		StyledLayoutStructureItem styledLayoutStructureItem,
 		ViewportSize viewportSize) {
@@ -274,15 +298,11 @@ public class LayoutStructureCommonStylesCSSServlet extends HttpServlet {
 			return _jsonFactory.createJSONObject();
 		}
 
-		LayoutSet layoutSet = _layoutSetLocalService.fetchLayoutSet(
-			group.getGroupId(), group.isLayoutSetPrototype());
-
 		FrontendTokenDefinitionRegistry frontendTokenDefinitionRegistry =
 			ServletContextUtil.getFrontendTokenDefinitionRegistry();
 
 		FrontendTokenDefinition frontendTokenDefinition =
-			frontendTokenDefinitionRegistry.getFrontendTokenDefinition(
-				layoutSet.getThemeId());
+			frontendTokenDefinitionRegistry.getFrontendTokenDefinition(layout);
 
 		if (frontendTokenDefinition == null) {
 			return _jsonFactory.createJSONObject();
@@ -300,7 +320,8 @@ public class LayoutStructureCommonStylesCSSServlet extends HttpServlet {
 				continue;
 			}
 
-			String value = frontendToken.getDefaultValue();
+			String value = String.valueOf(
+				frontendToken.<Object>getDefaultValue());
 
 			JSONObject valueJSONObject =
 				frontendTokenValuesJSONObject.getJSONObject(
@@ -531,9 +552,6 @@ public class LayoutStructureCommonStylesCSSServlet extends HttpServlet {
 
 	@Reference
 	private LayoutLocalService _layoutLocalService;
-
-	@Reference
-	private LayoutSetLocalService _layoutSetLocalService;
 
 	@Reference
 	private LayoutStructureProvider _layoutStructureProvider;

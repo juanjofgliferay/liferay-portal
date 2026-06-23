@@ -77,6 +77,10 @@ public class QAWebsitesControllerBuildRunner
 	protected String getJobInvocationURL() {
 		BuildData buildData = getBuildData();
 
+		String jobName = buildData.getJobName();
+
+		jobName = jobName.replaceAll("-controller\\(.*\\)", "");
+
 		String invocationMasterHostname = buildData.getBuildParameter(
 			"INVOCATION_MASTER_HOSTNAME");
 
@@ -85,17 +89,14 @@ public class QAWebsitesControllerBuildRunner
 
 			String mostAvailableMasterURL =
 				JenkinsResultsParserUtil.getMostAvailableMasterURL(
-					"http://" + cohortName + ".liferay.com", 1);
+					"http://" + cohortName + ".liferay.com", null, 1, jobName);
 
 			invocationMasterHostname = mostAvailableMasterURL.replaceAll(
 				"https?://([^\\.]+)(.liferay.com.*)?", "\1");
 		}
 
-		String jobName = buildData.getJobName();
-
 		return JenkinsResultsParserUtil.combine(
-			"http://", invocationMasterHostname, "/job/",
-			jobName.replaceAll("-controller\\(.*\\)", ""));
+			"http://", invocationMasterHostname, "/job/", jobName);
 	}
 
 	protected void invokeBuild() {
@@ -191,7 +192,7 @@ public class QAWebsitesControllerBuildRunner
 	}
 
 	private boolean _allowConcurrentBuilds() {
-		String allowConcurrentBuildsString = System.getenv(
+		String allowConcurrentBuildsString = Environment.get(
 			"ALLOW_CONCURRENT_BUILDS");
 
 		if (allowConcurrentBuildsString == null) {
@@ -201,11 +202,7 @@ public class QAWebsitesControllerBuildRunner
 		allowConcurrentBuildsString = allowConcurrentBuildsString.toLowerCase();
 		allowConcurrentBuildsString = allowConcurrentBuildsString.trim();
 
-		if (!allowConcurrentBuildsString.equals("true")) {
-			return false;
-		}
-
-		return true;
+		return allowConcurrentBuildsString.equals("true");
 	}
 
 	private boolean _expirePreviousBuild() {

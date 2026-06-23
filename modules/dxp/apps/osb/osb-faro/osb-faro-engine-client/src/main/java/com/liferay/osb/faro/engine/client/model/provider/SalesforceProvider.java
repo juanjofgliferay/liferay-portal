@@ -5,6 +5,7 @@
 
 package com.liferay.osb.faro.engine.client.model.provider;
 
+import com.liferay.osb.faro.engine.client.model.ChannelsConfiguration;
 import com.liferay.osb.faro.engine.client.model.Provider;
 
 /**
@@ -16,6 +17,10 @@ public class SalesforceProvider implements Provider {
 
 	public AccountsConfiguration getAccountsConfiguration() {
 		return _accountsConfiguration;
+	}
+
+	public ChannelsConfiguration getChannelsConfiguration() {
+		return _channelsConfiguration;
 	}
 
 	public ContactsConfiguration getContactsConfiguration() {
@@ -31,6 +36,12 @@ public class SalesforceProvider implements Provider {
 		AccountsConfiguration accountsConfiguration) {
 
 		_accountsConfiguration = accountsConfiguration;
+	}
+
+	public void setChannelsConfiguration(
+		ChannelsConfiguration channelsConfiguration) {
+
+		_channelsConfiguration = channelsConfiguration;
 	}
 
 	public void setContactsConfiguration(
@@ -77,6 +88,7 @@ public class SalesforceProvider implements Provider {
 	}
 
 	private AccountsConfiguration _accountsConfiguration;
+	private ChannelsConfiguration _channelsConfiguration;
 	private ContactsConfiguration _contactsConfiguration;
 
 }

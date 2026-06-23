@@ -91,7 +91,7 @@ public class FileEntryInfoItemFieldValuesProvider
 				"Caught unexpected exception", portalException);
 		}
 		catch (Exception exception) {
-			throw new RuntimeException("Unexpected exception", exception);
+			throw new RuntimeException(exception);
 		}
 	}
 
@@ -167,7 +167,7 @@ public class FileEntryInfoItemFieldValuesProvider
 				new InfoItemReference(
 					FileEntry.class.getName(), fileEntry.getFileEntryId()),
 				String.valueOf(dlFileEntry.getFileEntryTypeId()),
-				FileEntry.class.getSimpleName(), _getThemeDisplay());
+				FileEntry.class.getSimpleName(), fileEntry, _getThemeDisplay());
 		}
 
 		return Collections.emptyList();
@@ -213,7 +213,7 @@ public class FileEntryInfoItemFieldValuesProvider
 			if (mimeType.startsWith("image")) {
 				WebImage fileURLWebImage = new WebImage(
 					_dlURLHelper.getDownloadURL(
-						fileEntry, fileEntry.getFileVersion(), null,
+						fileEntry, fileEntry.getFileVersion(), themeDisplay,
 						StringPool.BLANK),
 					new InfoItemReference(
 						FileEntry.class.getName(),
@@ -280,7 +280,8 @@ public class FileEntryInfoItemFieldValuesProvider
 					fileEntry.getModifiedDate()));
 
 			String downloadURL = _dlURLHelper.getDownloadURL(
-				fileEntry, fileEntry.getFileVersion(), null, StringPool.BLANK);
+				fileEntry, fileEntry.getFileVersion(), themeDisplay,
+				StringPool.BLANK);
 
 			if (Validator.isNotNull(downloadURL)) {
 				fileEntryFieldValues.add(
@@ -301,7 +302,7 @@ public class FileEntryInfoItemFieldValuesProvider
 			}
 
 			WebImage imagePreviewURLWebImage = new WebImage(
-				_dlURLHelper.getImagePreviewURL(fileEntry, null),
+				_dlURLHelper.getImagePreviewURL(fileEntry, themeDisplay),
 				new InfoItemReference(
 					FileEntry.class.getName(),
 					new ClassPKInfoItemIdentifier(fileEntry.getFileEntryId())));

@@ -1,8 +1,9 @@
 import * as API from 'shared/api';
 import Alerts, {AlertTypes} from 'shared/components/Alert';
-import BasePage from 'settings/components/BasePage';
+import BasePage from 'settings/components/base-page/BasePage';
 import Card from 'shared/components/Card';
 import ClayButton from '@clayui/button';
+import ClayLink from '@clayui/link';
 import CopyButton from 'shared/components/CopyButton';
 import GenerateTokenCard from '../components/GenerateTokenCard';
 import Loading, {Align} from 'shared/components/Loading';
@@ -19,7 +20,7 @@ import {close, modalTypes, open} from 'shared/actions/modals';
 import {compose} from 'redux';
 import {connect, ConnectedProps} from 'react-redux';
 import {CUSTOM_DATE_FORMAT} from 'shared/util/date';
-import {ENABLE_LAST_ACCESS_DATE, ExpirationPeriod} from 'shared/util/constants';
+import {ExpirationPeriod} from 'shared/util/constants';
 import {formatDateToTimeZone, getDateNow} from 'shared/util/date';
 import {RootState} from 'shared/store';
 import {sub} from 'shared/util/lang';
@@ -34,10 +35,16 @@ import type {Column} from 'shared/components/table/Row';
 export const isExpired = (expirationDate: string) =>
 	moment.utc(expirationDate).isSameOrBefore(getDateNow());
 
-const getTimestamp = (date: Date) =>
+const getTimestamp = (date: string | Date) =>
 	Math.floor(new Date(date).getTime() / 1000);
 
-const isIndefinite = ({createDate, expirationDate}) =>
+const isIndefinite = ({
+	createDate,
+	expirationDate
+}: {
+	createDate: string;
+	expirationDate: string;
+}) =>
 	getTimestamp(expirationDate) - getTimestamp(createDate) ===
 	Number(ExpirationPeriod.Indefinite);
 
@@ -66,8 +73,6 @@ const TokenList: React.FC<
 	const [loading, setLoading] = useState(false);
 	const [onCloseAlert, setOnCloseAlert] = useState(false);
 
-	const tokenExpired = !!tokens.length && isExpired(tokens[0].expirationDate);
-
 	const handleError = () => {
 		setLoading(false);
 
@@ -78,7 +83,7 @@ const TokenList: React.FC<
 		});
 	};
 
-	const handleSuccess = message => {
+	const handleSuccess = (message: string) => {
 		setLoading(false);
 
 		addAlert({
@@ -89,9 +94,13 @@ const TokenList: React.FC<
 		refetch();
 	};
 
+	const hasActiveToken = tokens.find(
+		token => !isExpired(token.expirationDate)
+	);
+
 	return (
 		<div className='col-xl-8 pl-0'>
-			{tokenExpired && !onCloseAlert && (
+			{!!tokens.length && !hasActiveToken && !onCloseAlert && (
 				<Alerts
 					iconSymbol='warning-full'
 					onClose={() => setOnCloseAlert(true)}
@@ -102,7 +111,7 @@ const TokenList: React.FC<
 				</Alerts>
 			)}
 
-			{(tokenExpired || !tokens.length) && (
+			{(!tokens.length || !hasActiveToken) && (
 				<GenerateTokenCard
 					groupId={groupId}
 					onError={handleError}
@@ -114,11 +123,13 @@ const TokenList: React.FC<
 			<Card>
 				<Card.Body>
 					<div className='align-items-start d-flex flex-column justify-content-between'>
-						<h4 className='mb-4'>
+						<div className='h4 mb-4'>
 							{Liferay.Language.get('token-information')}
-						</h4>
+						</div>
 
-						<h5>{Liferay.Language.get('root-endpoint')}</h5>
+						<div className='h5'>
+							{Liferay.Language.get('root-endpoint')}
+						</div>
 
 						<span className='text-secondary'>
 							{window.location.origin + ApisPath}
@@ -137,17 +148,6 @@ const TokenList: React.FC<
 									label: Liferay.Language.get('token'),
 									sortable: false
 								},
-								ENABLE_LAST_ACCESS_DATE && {
-									accessor: 'lastAccessDate',
-									dataFormatter: (val: string) =>
-										formatDateToTimeZone(
-											val,
-											CUSTOM_DATE_FORMAT,
-											timeZoneId
-										),
-									label: Liferay.Language.get('last-seen'),
-									sortable: false
-								},
 								{
 									accessor: 'createDate',
 									dataFormatter: (val: string) =>
@@ -161,7 +161,11 @@ const TokenList: React.FC<
 								},
 								{
 									accessor: 'expirationDate',
-									cellRenderer: ({data}) => {
+									cellRenderer: ({
+										data
+									}: {
+										data: AccessToken;
+									}) => {
 										if (isIndefinite(data)) {
 											return (
 												<td>
@@ -188,8 +192,10 @@ const TokenList: React.FC<
 							].filter(Boolean) as Column[]
 						}
 						items={tokens}
-						renderInlineRowActions={({data: {token}}) => {
-							if (tokenExpired) return null;
+						renderInlineRowActions={({
+							data: {expirationDate, token}
+						}) => {
+							if (isExpired(expirationDate)) return null;
 
 							return (
 								<>
@@ -273,7 +279,13 @@ const ListWithData = compose<any>(
 	withQuery(
 		API.apiTokens.search,
 		({groupId}: {groupId: string}) => ({groupId}),
-		({data, ...otherParams}) => ({
+		({
+			data,
+			...otherParams
+		}: {
+			data: AccessToken[];
+			[key: string]: any;
+		}) => ({
 			tokens: data,
 			...otherParams
 		})
@@ -289,19 +301,18 @@ interface IAccessTokenListProps {
 export const AccessTokenList: React.FC<IAccessTokenListProps> = ({groupId}) => (
 	<BasePage
 		className='access-token-list-root'
-		groupId={groupId}
 		pageDescription={sub(
 			Liferay.Language.get(
 				'access-this-workspaces-data-via-api-using-an-access-token.-a-full-list-of-endpoints-is-available-in-the-x'
 			),
 			[
-				<a
+				<ClayLink
 					href={URLConstants.APIOverviewDocumentationLink}
 					key='API_OVERVIEW_DOCUMENTATION'
 					target='_blank'
 				>
-					{Liferay.Language.get('documentation-fragment')}
-				</a>
+					{Liferay.Language.get('documentation').toLowerCase()}
+				</ClayLink>
 			],
 			false
 		)}

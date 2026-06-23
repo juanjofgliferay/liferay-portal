@@ -25,7 +25,9 @@ import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.segments.constants.SegmentsEntryConstants;
 import com.liferay.segments.constants.SegmentsPortletKeys;
 import com.liferay.segments.criteria.Criteria;
 import com.liferay.segments.criteria.CriteriaSerializer;
@@ -36,12 +38,14 @@ import com.liferay.segments.exception.SegmentsEntryKeyException;
 import com.liferay.segments.exception.SegmentsEntryNameException;
 import com.liferay.segments.model.SegmentsEntry;
 import com.liferay.segments.service.SegmentsEntryService;
+import com.liferay.segments.web.internal.util.AudiencesPortletUtil;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -51,7 +55,8 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + SegmentsPortletKeys.SEGMENTS,
+		"jakarta.portlet.name=" + SegmentsPortletKeys.AUDIENCES,
+		"jakarta.portlet.name=" + SegmentsPortletKeys.SEGMENTS,
 		"mvc.command.name=/segments/update_segments_entry"
 	},
 	service = MVCActionCommand.class
@@ -75,7 +80,6 @@ public class UpdateSegmentsEntryMVCActionCommand extends BaseMVCActionCommand {
 		Map<Locale, String> descriptionMap = _localization.getLocalizationMap(
 			actionRequest, "description");
 		boolean active = ParamUtil.getBoolean(actionRequest, "active", true);
-		String type = ParamUtil.getString(actionRequest, "type");
 
 		ServiceContext serviceContext = ServiceContextFactory.getInstance(
 			SegmentsEntry.class.getName(), actionRequest);
@@ -86,27 +90,33 @@ public class UpdateSegmentsEntryMVCActionCommand extends BaseMVCActionCommand {
 			Criteria criteria = ActionUtil.getCriteria(
 				actionRequest,
 				_segmentsCriteriaContributorRegistry.
-					getSegmentsCriteriaContributors(type));
+					getSegmentsCriteriaContributors());
 
 			boolean dynamic = ParamUtil.getBoolean(
 				actionRequest, "dynamic", true);
 
 			_validateCriteria(criteria, dynamic);
 
+			String criteriaString = _getCriteriaString(actionRequest, criteria);
+
 			if (segmentsEntryId <= 0) {
 				serviceContext.setScopeGroupId(
 					_getGroupId(actionRequest, serviceContext));
 
+				String source = null;
+
+				if (AudiencesPortletUtil.isAudiencesPortlet(actionRequest)) {
+					source = SegmentsEntryConstants.SOURCE_AUDIENCE;
+				}
+
 				segmentsEntry = _segmentsEntryService.addSegmentsEntry(
 					segmentsEntryKey, nameMap, descriptionMap, active,
-					CriteriaSerializer.serialize(criteria), type,
-					serviceContext);
+					criteriaString, source, serviceContext);
 			}
 			else {
 				segmentsEntry = _segmentsEntryService.updateSegmentsEntry(
 					segmentsEntryId, segmentsEntryKey, nameMap, descriptionMap,
-					active, CriteriaSerializer.serialize(criteria),
-					serviceContext);
+					active, criteriaString, serviceContext);
 			}
 
 			String redirect = ParamUtil.getString(actionRequest, "redirect");
@@ -152,6 +162,26 @@ public class UpdateSegmentsEntryMVCActionCommand extends BaseMVCActionCommand {
 		}
 	}
 
+	private String _getCriteriaString(
+		ActionRequest actionRequest, Criteria criteria) {
+
+		if (!AudiencesPortletUtil.isAudiencesPortlet(actionRequest)) {
+			return CriteriaSerializer.serialize(criteria);
+		}
+
+		Map<String, Criteria.Criterion> criteriaMap = criteria.getCriteria();
+
+		String value = Criteria.Type.CONTEXT.getValue();
+
+		for (Criteria.Criterion criterion : criteriaMap.values()) {
+			if (Objects.equals(value, criterion.getTypeValue())) {
+				return criterion.getFilterString();
+			}
+		}
+
+		return CriteriaSerializer.serialize(criteria);
+	}
+
 	private long _getGroupId(
 			ActionRequest actionRequest, ServiceContext serviceContext)
 		throws PortalException {
@@ -183,7 +213,7 @@ public class UpdateSegmentsEntryMVCActionCommand extends BaseMVCActionCommand {
 
 		return PortletURLBuilder.create(
 			requestBackedPortletURLFactory.createRenderURL(
-				SegmentsPortletKeys.SEGMENTS)
+				_portal.getPortletId(actionRequest))
 		).setMVCRenderCommandName(
 			"/segments/edit_segments_entry"
 		).setCMD(
@@ -215,6 +245,9 @@ public class UpdateSegmentsEntryMVCActionCommand extends BaseMVCActionCommand {
 
 	@Reference
 	private Localization _localization;
+
+	@Reference
+	private Portal _portal;
 
 	@Reference
 	private SegmentsCriteriaContributorRegistry

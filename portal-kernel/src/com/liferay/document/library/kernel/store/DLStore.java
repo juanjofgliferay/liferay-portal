@@ -34,12 +34,19 @@ public interface DLStore {
 		throws PortalException;
 
 	public void copyFileVersion(
+			DLStoreRequest dlStoreRequest, String toVersionLabel)
+		throws PortalException;
+
+	public void copyFileVersion(
 			long companyId, long repositoryId, String fileName,
 			String fromVersionLabel, String toVersionLabel)
 		throws PortalException;
 
 	public void deleteDirectory(
 			long companyId, long repositoryId, String dirName)
+		throws PortalException;
+
+	public void deleteFile(long companyId, long repositoryId, String fileName)
 		throws PortalException;
 
 	public void deleteFile(

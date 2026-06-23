@@ -6,32 +6,42 @@
 package com.liferay.user.groups.admin.service.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
+import com.liferay.portal.kernel.exception.DuplicateUserGroupException;
 import com.liferay.portal.kernel.exception.DuplicateUserGroupExternalReferenceCodeException;
+import com.liferay.portal.kernel.exception.NoSuchUserGroupException;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.exception.UserGroupNameException;
+import com.liferay.portal.kernel.lazy.referencing.LazyReferencingThreadLocal;
 import com.liferay.portal.kernel.model.Role;
+import com.liferay.portal.kernel.model.SystemEvent;
+import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.UserGroup;
 import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.search.Hits;
 import com.liferay.portal.kernel.search.SortFactoryUtil;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
+import com.liferay.portal.kernel.service.SystemEventLocalService;
 import com.liferay.portal.kernel.service.UserGroupLocalService;
 import com.liferay.portal.kernel.service.UserGroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.UserLocalService;
-import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.util.PropsValuesTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.RoleTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserGroupTestUtil;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.service.persistence.constants.UserGroupFinderConstants;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.portlet.usersadmin.util.UsersAdminUtil;
 
 import java.util.LinkedHashMap;
@@ -106,6 +116,103 @@ public class UserGroupLocalServiceTest {
 	}
 
 	@Test
+	public void testAddUserGroup() throws Exception {
+		UserGroup userGroup = _userGroupLocalService.addUserGroup(
+			RandomTestUtil.randomString(), TestPropsValues.getUserId(),
+			TestPropsValues.getCompanyId(), RandomTestUtil.randomString(),
+			RandomTestUtil.randomString(), null);
+
+		try {
+			_userGroupLocalService.addUserGroup(
+				RandomTestUtil.randomString(), TestPropsValues.getUserId(),
+				TestPropsValues.getCompanyId(), userGroup.getName(),
+				RandomTestUtil.randomString(), null);
+
+			Assert.fail();
+		}
+		catch (DuplicateUserGroupException duplicateUserGroupException) {
+			Assert.assertNotNull(duplicateUserGroupException);
+		}
+
+		_testAddUserGroupWithInvalidName(" ");
+		_testAddUserGroupWithInvalidName("1");
+		_testAddUserGroupWithInvalidName(RandomTestUtil.randomString() + '*');
+		_testAddUserGroupWithInvalidName(RandomTestUtil.randomString() + ',');
+	}
+
+	@Test
+	public void testAddUserUserGroup() throws Exception {
+		User user = UserTestUtil.addUser();
+		UserGroup userGroup = _userGroupLocalService.addUserGroup(
+			RandomTestUtil.randomString(), TestPropsValues.getUserId(),
+			TestPropsValues.getCompanyId(), RandomTestUtil.randomString(),
+			RandomTestUtil.randomString(), null);
+
+		_userGroupLocalService.addUserUserGroup(
+			user.getUserId(), userGroup.getUserGroupId());
+
+		Assert.assertEquals(
+			1,
+			_userLocalService.getUserGroupUsersCount(
+				userGroup.getUserGroupId(), WorkflowConstants.STATUS_APPROVED));
+
+		user = UserTestUtil.addUser();
+
+		_userGroupLocalService.addUserUserGroup(user.getUserId(), userGroup);
+
+		Assert.assertEquals(
+			2,
+			_userLocalService.getUserGroupUsersCount(
+				userGroup.getUserGroupId(), WorkflowConstants.STATUS_APPROVED));
+	}
+
+	@Test
+	public void testAddUserUserGroups() throws Exception {
+		User user = UserTestUtil.addUser();
+		UserGroup userGroup1 = _userGroupLocalService.addUserGroup(
+			RandomTestUtil.randomString(), TestPropsValues.getUserId(),
+			TestPropsValues.getCompanyId(), RandomTestUtil.randomString(),
+			RandomTestUtil.randomString(), null);
+		UserGroup userGroup2 = _userGroupLocalService.addUserGroup(
+			RandomTestUtil.randomString(), TestPropsValues.getUserId(),
+			TestPropsValues.getCompanyId(), RandomTestUtil.randomString(),
+			RandomTestUtil.randomString(), null);
+
+		_userGroupLocalService.addUserUserGroups(
+			user.getUserId(),
+			new long[] {
+				userGroup1.getUserGroupId(), userGroup2.getUserGroupId()
+			});
+
+		Assert.assertEquals(
+			1,
+			_userLocalService.getUserGroupUsersCount(
+				userGroup1.getUserGroupId(),
+				WorkflowConstants.STATUS_APPROVED));
+		Assert.assertEquals(
+			1,
+			_userLocalService.getUserGroupUsersCount(
+				userGroup2.getUserGroupId(),
+				WorkflowConstants.STATUS_APPROVED));
+
+		user = UserTestUtil.addUser();
+
+		_userGroupLocalService.addUserUserGroups(
+			user.getUserId(), ListUtil.fromArray(userGroup1, userGroup2));
+
+		Assert.assertEquals(
+			2,
+			_userLocalService.getUserGroupUsersCount(
+				userGroup1.getUserGroupId(),
+				WorkflowConstants.STATUS_APPROVED));
+		Assert.assertEquals(
+			2,
+			_userLocalService.getUserGroupUsersCount(
+				userGroup2.getUserGroupId(),
+				WorkflowConstants.STATUS_APPROVED));
+	}
+
+	@Test
 	public void testDatabaseSearchUserUserGroups() throws Exception {
 		User user = UserTestUtil.addUser();
 
@@ -133,6 +240,67 @@ public class UserGroupLocalServiceTest {
 			).build());
 
 		Assert.assertEquals(userGroups.toString(), 1, userGroups.size());
+	}
+
+	@Test
+	public void testDeleteUserGroup() throws Exception {
+		UserGroup userGroup = UserGroupTestUtil.addUserGroup();
+
+		_userGroupLocalService.deleteUserGroup(userGroup);
+
+		Assert.assertNull(
+			_userGroupLocalService.fetchUserGroup(userGroup.getUserGroupId()));
+
+		List<SystemEvent> systemEvents =
+			_systemEventLocalService.getSystemEvents(
+				0, _portal.getClassNameId(userGroup.getModelClassName()),
+				userGroup.getPrimaryKey());
+
+		SystemEvent systemEvent = systemEvents.get(0);
+
+		Assert.assertEquals(
+			userGroup.getExternalReferenceCode(),
+			systemEvent.getClassExternalReferenceCode());
+		Assert.assertEquals(
+			SystemEventConstants.TYPE_DELETE, systemEvent.getType());
+	}
+
+	@Test
+	public void testGetOrAddEmptyUserGroup() throws Exception {
+
+		// Lazy referencing disabled
+
+		try {
+			_userGroupLocalService.getOrAddEmptyUserGroup(
+				RandomTestUtil.randomString(), TestPropsValues.getCompanyId(),
+				TestPropsValues.getUserId(), RandomTestUtil.randomString());
+
+			Assert.fail();
+		}
+		catch (NoSuchUserGroupException noSuchUserGroupException) {
+			Assert.assertNotNull(noSuchUserGroupException);
+		}
+
+		// Lazy referencing enabled
+
+		try (SafeCloseable safeCloseable =
+				LazyReferencingThreadLocal.setEnabledWithSafeCloseable(true)) {
+
+			String externalReferenceCode = RandomTestUtil.randomString();
+
+			UserGroup userGroup = _userGroupLocalService.getOrAddEmptyUserGroup(
+				externalReferenceCode, TestPropsValues.getCompanyId(),
+				TestPropsValues.getUserId(), RandomTestUtil.randomString());
+
+			Assert.assertEquals(
+				externalReferenceCode, userGroup.getExternalReferenceCode());
+			Assert.assertEquals(
+				WorkflowConstants.STATUS_EMPTY, userGroup.getStatus());
+			Assert.assertEquals(
+				userGroup,
+				_userGroupLocalService.fetchUserGroupByExternalReferenceCode(
+					externalReferenceCode, TestPropsValues.getCompanyId()));
+		}
 	}
 
 	@Test
@@ -179,18 +347,14 @@ public class UserGroupLocalServiceTest {
 	public void testSearchUserGroupsWithNullParamsAndIndexerDisabled()
 		throws Exception {
 
-		Object value = ReflectionTestUtil.getAndSetFieldValue(
-			PropsValues.class, "USER_GROUPS_SEARCH_WITH_INDEX", Boolean.FALSE);
+		try (SafeCloseable safeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"USER_GROUPS_SEARCH_WITH_INDEX", Boolean.FALSE)) {
 
-		try {
 			List<UserGroup> userGroups = _search(null, null);
 
 			Assert.assertEquals(
 				userGroups.toString(), _count + 2, userGroups.size());
-		}
-		finally {
-			ReflectionTestUtil.setFieldValue(
-				PropsValues.class, "USER_GROUPS_SEARCH_WITH_INDEX", value);
 		}
 	}
 
@@ -261,6 +425,36 @@ public class UserGroupLocalServiceTest {
 			userGroup2, externalReferenceCode);
 	}
 
+	@Test
+	public void testUpdateUserGroupWithLazyReferencingEnabled()
+		throws Exception {
+
+		try (SafeCloseable safeCloseable =
+				LazyReferencingThreadLocal.setEnabledWithSafeCloseable(true)) {
+
+			String externalReferenceCode = RandomTestUtil.randomString();
+
+			UserGroup userGroup = _userGroupLocalService.getOrAddEmptyUserGroup(
+				externalReferenceCode, TestPropsValues.getCompanyId(),
+				TestPropsValues.getUserId(), RandomTestUtil.randomString());
+
+			Assert.assertEquals(
+				externalReferenceCode, userGroup.getExternalReferenceCode());
+
+			String description = RandomTestUtil.randomString();
+			String name = RandomTestUtil.randomString();
+
+			userGroup = _userGroupLocalService.updateUserGroup(
+				externalReferenceCode, TestPropsValues.getCompanyId(),
+				userGroup.getUserGroupId(), name, description, null);
+
+			Assert.assertEquals(description, userGroup.getDescription());
+			Assert.assertEquals(name, userGroup.getName());
+			Assert.assertEquals(
+				WorkflowConstants.STATUS_APPROVED, userGroup.getStatus());
+		}
+	}
+
 	@Rule
 	public SearchTestRule searchTestRule = new SearchTestRule();
 
@@ -274,10 +468,34 @@ public class UserGroupLocalServiceTest {
 			UsersAdminUtil.getUserGroupOrderByComparator("name", "asc"));
 	}
 
-	private static int _count;
-	private static Role _role;
-	private static UserGroup _userGroup1;
-	private static UserGroup _userGroup2;
+	private void _testAddUserGroupWithInvalidName(String name)
+		throws Exception {
+
+		try {
+			_userGroupLocalService.addUserGroup(
+				RandomTestUtil.randomString(), TestPropsValues.getUserId(),
+				TestPropsValues.getCompanyId(), name,
+				RandomTestUtil.randomString(), null);
+
+			Assert.fail();
+		}
+		catch (UserGroupNameException userGroupNameException) {
+			Assert.assertNotNull(userGroupNameException);
+		}
+	}
+
+	private int _count;
+
+	@Inject
+	private Portal _portal;
+
+	private Role _role;
+
+	@Inject
+	private SystemEventLocalService _systemEventLocalService;
+
+	private UserGroup _userGroup1;
+	private UserGroup _userGroup2;
 
 	@Inject
 	private UserGroupLocalService _userGroupLocalService;

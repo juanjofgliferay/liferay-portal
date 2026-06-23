@@ -30,23 +30,6 @@
 				(Group_.liveGroupId = 0)
 		]]>
 	</sql>
-	<sql id="com.liferay.portal.kernel.service.persistence.GroupFinder.countByC_PG_N_D">
-		<![CDATA[
-			SELECT
-				DISTINCT Group_.groupId AS groupId
-			FROM
-				Group_
-			[$JOIN$]
-			WHERE
-				[$WHERE$]
-				(Group_.companyId = ?) AND
-				(Group_.parentGroupId [$PARENT_GROUP_ID_COMPARATOR$] ?) AND
-				(Group_.liveGroupId = 0) AND
-				(Group_.groupKey != 'Control Panel') AND
-				(LOWER(Group_.name) LIKE ? [$AND_OR_NULL_CHECK$]) [$AND_OR_CONNECTOR$]
-				(LOWER(Group_.description) LIKE ? [$AND_OR_NULL_CHECK$])
-		]]>
-	</sql>
 	<sql id="com.liferay.portal.kernel.service.persistence.GroupFinder.findByActiveGroups">
 		<![CDATA[
 			SELECT
@@ -158,23 +141,6 @@
 				(Group_.remoteStagingGroupCount > ?)
 		]]>
 	</sql>
-	<sql id="com.liferay.portal.kernel.service.persistence.GroupFinder.findByC_PG_N_D">
-		<![CDATA[
-			SELECT
-				DISTINCT Group_.groupId AS groupId, Group_.name AS groupName, Group_.type_ AS groupType, Group_.friendlyURL AS groupFriendlyURL
-			FROM
-				Group_
-			[$JOIN$]
-			WHERE
-				[$WHERE$]
-				(Group_.companyId = ?) AND
-				(Group_.parentGroupId [$PARENT_GROUP_ID_COMPARATOR$] ?) AND
-				(Group_.liveGroupId = 0) AND
-				(Group_.groupKey != 'Control Panel') AND
-				(LOWER(Group_.name) LIKE ? [$AND_OR_NULL_CHECK$]) [$AND_OR_CONNECTOR$]
-				(LOWER(Group_.description) LIKE ? [$AND_OR_NULL_CHECK$])
-		]]>
-	</sql>
 	<sql id="com.liferay.portal.kernel.service.persistence.GroupFinder.joinByActionId">
 		<![CDATA[
 			LEFT JOIN
@@ -186,11 +152,15 @@
 						roleId, userId
 					FROM
 						UserGroupRole
+					WHERE
+						userId = ?
 					UNION ALL
 					SELECT
 						roleId, userid
 					FROM
 						Users_Roles
+					WHERE
+						userId = ?
 				) Roles
 			ON
 				Users_Groups.userId = Roles.userId
@@ -198,16 +168,13 @@
 				ResourcePermission ON
 					ResourcePermission.roleId = Roles.roleId
 			WHERE
-			(? = true) OR
+			(? = 1) OR
 			(
-				(Roles.userId = ?) AND
 				(
-					(
-						(Roles.roleId = ?) OR
-						(Roles.roleId = ?)
-					) OR
-					(BITAND(CAST_LONG(ResourcePermission.actionIds), ?) != 0)
-				)
+					(Roles.roleId = ?) OR
+					(Roles.roleId = ?)
+				) OR
+				(BITAND(CAST_LONG(ResourcePermission.actionIds), ?) != 0)
 			)
 		]]>
 	</sql>
@@ -1275,6 +1242,19 @@
 				Groups_UserGroups.groupId = ?
 		]]>
 	</sql>
+	<sql id="com.liferay.portal.kernel.service.persistence.UserFinder.joinByNoAccountEntriesAndNoOrganizations">
+		<![CDATA[
+			LEFT JOIN
+				AccountEntryUserRel ON
+					User_.userId = AccountEntryUserRel.accountUserId
+			LEFT JOIN
+				Users_Orgs ON
+					User_.userId = Users_Orgs.userId
+			WHERE
+				(AccountEntryUserRel.accountEntryId IS NULL) AND
+				(Users_Orgs.organizationId IS NULL)
+		]]>
+	</sql>
 	<sql id="com.liferay.portal.kernel.service.persistence.UserFinder.joinByNoOrganizations">
 		<![CDATA[
 			LEFT JOIN
@@ -1641,6 +1621,16 @@
 				(ResourcePermission.name = ?) AND
 				(ResourcePermission.scope = ?) AND
 				(ResourcePermission.roleId IN ([$ROLE_ID$]))
+		]]>
+	</sql>
+	<sql id="com.liferay.portal.service.impl.UserLocalServiceImpl.updateLastLogin">
+		<![CDATA[
+			UPDATE
+				User_
+			SET
+				loginDate = ?, loginIP = ?, lastLoginDate = ?, lastLoginIP = ?, failedLoginAttempts = ?
+			WHERE
+				userId = ?
 		]]>
 	</sql>
 	<sql id="com.liferay.util.dao.orm.CustomSQL.countBySelectSQL">

@@ -4,17 +4,20 @@
  */
 
 import {ClayModalProvider, useModal} from '@clayui/modal';
-import {Observer} from '@clayui/modal/lib/types';
 import React, {useEffect, useState} from 'react';
 
 import ModalBasicWithFieldName from './ModalBasicWithFieldName';
+
+import type {Observer} from '@clayui/modal/src/types';
 interface IProps extends React.HTMLAttributes<HTMLElement> {
 	apiURL: string;
 	observer: Observer;
 	onClose: () => void;
 }
 
-const ModalWithProvider: React.FC<IProps> = ({apiURL}) => {
+const ModalWithProvider: React.FC<
+	{children?: React.ReactNode | undefined} & IProps
+> = ({apiURL}) => {
 	const [visibleModal, setVisibleModal] = useState<boolean>(false);
 	const {observer, onClose} = useModal({
 		onClose: () => setVisibleModal(false),

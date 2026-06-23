@@ -11,24 +11,24 @@ import com.liferay.commerce.payment.service.CommercePaymentMethodGroupRelLocalSe
 import com.liferay.commerce.product.util.CPSubscriptionTypeJSPContributorRegistry;
 import com.liferay.commerce.product.util.CPSubscriptionTypeRegistry;
 import com.liferay.commerce.service.CommerceOrderItemLocalService;
-import com.liferay.commerce.service.CommerceSubscriptionEntryLocalService;
+import com.liferay.commerce.service.CommerceSubscriptionEntryService;
 import com.liferay.commerce.subscription.web.internal.display.context.CommerceSubscriptionEntryDisplayContext;
 import com.liferay.frontend.taglib.servlet.taglib.ScreenNavigationEntry;
 import com.liferay.frontend.taglib.servlet.taglib.util.JSPRenderer;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.io.IOException;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
 /**
- * @author Joao Victor Alves
+ * @author João Victor Alves
  */
 @Component(
 	property = "screen.navigation.entry.order:Integer=10",
@@ -52,9 +52,9 @@ public class CommerceSubscriptionEntryPaymentsScreenNavigationEntry
 		CommerceSubscriptionEntryDisplayContext
 			commerceSubscriptionEntryDisplayContext =
 				new CommerceSubscriptionEntryDisplayContext(
-					_commercePaymentMethodGroupRelLocalService,
-					_commerceSubscriptionEntryLocalService,
 					_commerceOrderItemLocalService,
+					_commercePaymentMethodGroupRelLocalService,
+					_commerceSubscriptionEntryService,
 					_cpSubscriptionTypeJSPContributorRegistry,
 					_cpSubscriptionTypeRegistry, httpServletRequest,
 					_portletResourcePermission);
@@ -76,8 +76,7 @@ public class CommerceSubscriptionEntryPaymentsScreenNavigationEntry
 		_commercePaymentMethodGroupRelLocalService;
 
 	@Reference
-	private CommerceSubscriptionEntryLocalService
-		_commerceSubscriptionEntryLocalService;
+	private CommerceSubscriptionEntryService _commerceSubscriptionEntryService;
 
 	@Reference
 	private CPSubscriptionTypeJSPContributorRegistry

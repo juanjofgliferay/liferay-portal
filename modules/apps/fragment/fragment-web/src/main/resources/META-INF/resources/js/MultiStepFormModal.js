@@ -6,7 +6,8 @@
 import ClayButton from '@clayui/button';
 import ClayForm from '@clayui/form';
 import ClayModal from '@clayui/modal';
-import {fetch, navigate, openToast} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
+import {fetch, navigate} from 'frontend-js-web';
 import PropTypes from 'prop-types';
 import React, {useRef, useState} from 'react';
 
@@ -95,45 +96,51 @@ export function MultiStepFormModal({
 			onSubmit={handleFormSubmit}
 			size={size}
 		>
-			<ClayForm ref={formRef}>
-				{title && <ClayModal.Header>{title}</ClayModal.Header>}
+			{title && (
+				<ClayModal.Header
+					closeButtonAriaLabel={Liferay.Language.get('close')}
+				>
+					{title}
+				</ClayModal.Header>
+			)}
 
-				<ClayModal.Body>
+			<ClayModal.Body>
+				<ClayForm ref={formRef}>
 					{React.Children.map(children, mapChild)}
-				</ClayModal.Body>
+				</ClayForm>
+			</ClayModal.Body>
 
-				<ClayModal.Footer
-					last={
-						<ClayButton.Group spaced>
-							<ClayButton
-								displayType="secondary"
-								onClick={
-									isPreviousButtonEnabled
-										? handlePreviousStepButtonClick
-										: onClose
-								}
-							>
-								{isPreviousButtonEnabled
-									? Liferay.Language.get('previous')
-									: Liferay.Language.get('cancel')}
-							</ClayButton>
+			<ClayModal.Footer
+				last={
+					<ClayButton.Group spaced>
+						<ClayButton
+							displayType="secondary"
+							onClick={
+								isPreviousButtonEnabled
+									? handlePreviousStepButtonClick
+									: onClose
+							}
+						>
+							{isPreviousButtonEnabled
+								? Liferay.Language.get('previous')
+								: Liferay.Language.get('cancel')}
+						</ClayButton>
 
-							<ClayButton
-								displayType="primary"
-								onClick={
-									isNextButtonEnabled
-										? handleNextStepButtonClick
-										: handleFormSubmit
-								}
-							>
-								{isNextButtonEnabled
-									? Liferay.Language.get('next')
-									: submitLabel}
-							</ClayButton>
-						</ClayButton.Group>
-					}
-				/>
-			</ClayForm>
+						<ClayButton
+							displayType="primary"
+							onClick={
+								isNextButtonEnabled
+									? handleNextStepButtonClick
+									: handleFormSubmit
+							}
+						>
+							{isNextButtonEnabled
+								? Liferay.Language.get('next')
+								: submitLabel}
+						</ClayButton>
+					</ClayButton.Group>
+				}
+			/>
 		</ClayModal>
 	);
 }

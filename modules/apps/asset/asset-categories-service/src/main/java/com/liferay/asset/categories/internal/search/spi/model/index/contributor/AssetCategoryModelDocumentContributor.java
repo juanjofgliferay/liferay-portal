@@ -6,6 +6,10 @@
 package com.liferay.asset.categories.internal.search.spi.model.index.contributor;
 
 import com.liferay.asset.kernel.model.AssetCategory;
+import com.liferay.asset.kernel.model.AssetVocabulary;
+import com.liferay.asset.kernel.model.AssetVocabularyConstants;
+import com.liferay.asset.kernel.service.AssetVocabularyLocalService;
+import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -20,6 +24,7 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.search.localization.SearchLocalizationHelper;
 import com.liferay.portal.search.spi.model.index.contributor.ModelDocumentContributor;
+import com.liferay.portlet.asset.util.AssetVocabularySettingsHelper;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -81,7 +86,8 @@ public class AssetCategoryModelDocumentContributor
 			document, Field.TITLE, siteDefaultLocale,
 			assetCategory.getTitleMap());
 
-		document.addKeyword("treePath", assetCategory.getTreePath());
+		document.addKeyword(
+			"classNameIds", _getClassNameIds(assetCategory.getVocabularyId()));
 		document.addLocalizedKeyword(
 			"localized_title",
 			_localization.populateLocalizationMap(
@@ -89,6 +95,7 @@ public class AssetCategoryModelDocumentContributor
 				assetCategory.getDefaultLanguageId(),
 				assetCategory.getGroupId()),
 			true, true);
+		document.addKeyword("treePath", assetCategory.getTreePath());
 	}
 
 	protected Locale getSiteDefaultLocale(AssetCategory assetCategory) {
@@ -152,6 +159,29 @@ public class AssetCategoryModelDocumentContributor
 				titlesArray);
 		}
 	}
+
+	private long[] _getClassNameIds(long vocabularyId) {
+		if (AssetVocabularyConstants.EMPTY_VOCABULARY_ID == vocabularyId) {
+			return new long[0];
+		}
+
+		try {
+			AssetVocabulary assetVocabulary =
+				_assetVocabularyLocalService.getVocabulary(vocabularyId);
+
+			AssetVocabularySettingsHelper assetVocabularySettingsHelper =
+				new AssetVocabularySettingsHelper(
+					assetVocabulary.getSettings());
+
+			return assetVocabularySettingsHelper.getClassNameIds();
+		}
+		catch (PortalException portalException) {
+			return ReflectionUtil.throwException(portalException);
+		}
+	}
+
+	@Reference
+	private AssetVocabularyLocalService _assetVocabularyLocalService;
 
 	@Reference
 	private Localization _localization;

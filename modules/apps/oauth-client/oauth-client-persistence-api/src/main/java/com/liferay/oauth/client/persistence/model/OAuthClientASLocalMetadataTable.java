@@ -29,6 +29,12 @@ public class OAuthClientASLocalMetadataTable
 	public final Column<OAuthClientASLocalMetadataTable, Long> mvccVersion =
 		createColumn(
 			"mvccVersion", Long.class, Types.BIGINT, Column.FLAG_NULLITY);
+	public final Column<OAuthClientASLocalMetadataTable, String> uuid =
+		createColumn("uuid_", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<OAuthClientASLocalMetadataTable, String>
+		externalReferenceCode = createColumn(
+			"externalReferenceCode", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
 	public final Column<OAuthClientASLocalMetadataTable, Long>
 		oAuthClientASLocalMetadataId = createColumn(
 			"oAuthClientASLocalMetadataId", Long.class, Types.BIGINT,
@@ -47,6 +53,13 @@ public class OAuthClientASLocalMetadataTable
 	public final Column<OAuthClientASLocalMetadataTable, Date> modifiedDate =
 		createColumn(
 			"modifiedDate", Date.class, Types.TIMESTAMP, Column.FLAG_DEFAULT);
+	public final Column<OAuthClientASLocalMetadataTable, String> issuer =
+		createColumn(
+			"issuer", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<OAuthClientASLocalMetadataTable, Boolean>
+		localWellKnownEnabled = createColumn(
+			"localWellKnownEnabled", Boolean.class, Types.BOOLEAN,
+			Column.FLAG_DEFAULT);
 	public final Column<OAuthClientASLocalMetadataTable, String>
 		localWellKnownURI = createColumn(
 			"localWellKnownURI", String.class, Types.VARCHAR,
@@ -54,6 +67,13 @@ public class OAuthClientASLocalMetadataTable
 	public final Column<OAuthClientASLocalMetadataTable, Clob> metadataJSON =
 		createColumn(
 			"metadataJSON", Clob.class, Types.CLOB, Column.FLAG_DEFAULT);
+	public final Column<OAuthClientASLocalMetadataTable, String>
+		oAuthASLocalWellKnownURI = createColumn(
+			"oAuthASLocalWellKnownURI", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
+	public final Column<OAuthClientASLocalMetadataTable, Clob>
+		oAuthASMetadataJSON = createColumn(
+			"oAuthASMetadataJSON", Clob.class, Types.CLOB, Column.FLAG_DEFAULT);
 
 	private OAuthClientASLocalMetadataTable() {
 		super(
@@ -61,3 +81,4 @@ public class OAuthClientASLocalMetadataTable
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:593670583

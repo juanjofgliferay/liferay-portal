@@ -1,0 +1,259 @@
+module "eks" {
+	addons={
+		amazon-cloudwatch-observability={
+			configuration_values=jsonencode(
+				{
+					containerLogs={
+						enabled=true
+					},
+					dcgmExporter={
+						enabled=false
+					},
+					manager={
+						applicationSignals={
+							autoMonitor={
+								monitorAllServices=false
+							}
+						}
+					},
+					neuronMonitor={
+						enabled=false
+					}
+				})
+			most_recent=true
+		}
+		aws-ebs-csi-driver={
+			most_recent=true
+			service_account_role_arn=aws_iam_role.ebs_csi_driver.arn
+		}
+		coredns={
+			before_compute=true
+			most_recent=true
+		}
+		kube-proxy={
+			before_compute=true
+			most_recent=true
+		}
+		metrics-server={
+			most_recent=true
+		}
+		vpc-cni={
+			before_compute=true
+			configuration_values=jsonencode(
+				{
+					enableNetworkPolicy="true"
+					nodeAgent={
+						healthProbeBindAddr="8163"
+						metricsBindAddr="8162"
+					}
+				})
+			most_recent=true
+		}
+	}
+	cloudwatch_log_group_retention_in_days=90
+	compute_config={
+		enabled=true
+		node_pools=["general-purpose"]
+	}
+	create_cloudwatch_log_group=true
+	create_kms_key=false
+	create_node_iam_role=true
+	enable_cluster_creator_admin_permissions=true
+	enable_irsa=true
+	encryption_config={
+		provider_key_arn=aws_kms_key.eks_secrets.arn
+	}
+	endpoint_private_access=true
+	endpoint_public_access=var.eks_allow_public_access
+	endpoint_public_access_cidrs=local.eks_api_public_access_cidrs
+	iam_role_additional_policies={
+		AmazonEKSBlockStoragePolicy="arn:${var.arn_partition}:iam::aws:policy/AmazonEKSBlockStoragePolicy"
+		AmazonEKSComputePolicy="arn:${var.arn_partition}:iam::aws:policy/AmazonEKSComputePolicy"
+		AmazonEKSLoadBalancingPolicy="arn:${var.arn_partition}:iam::aws:policy/AmazonEKSLoadBalancingPolicy"
+		AmazonEKSNetworkingPolicy="arn:${var.arn_partition}:iam::aws:policy/AmazonEKSNetworkingPolicy"
+	}
+	kubernetes_version=data.aws_eks_cluster_versions.available.cluster_versions[0].cluster_version
+	name=local.cluster_name
+	node_iam_role_additional_policies={
+		AWSXRayDaemonWriteAccess="arn:${var.arn_partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
+		CloudWatchAgentServerPolicy="arn:${var.arn_partition}:iam::aws:policy/CloudWatchAgentServerPolicy"
+	}
+	source="git::https://github.com/terraform-aws-modules/terraform-aws-eks.git?ref=de2aa10f25c7f2d2ab1264f6451f7cbf57f784c4"
+	subnet_ids=module.vpc.private_subnets
+	vpc_id=module.vpc.vpc_id
+}
+resource "aws_iam_role" "ebs_csi_driver" {
+	assume_role_policy=jsonencode(
+		{
+			Statement=[
+				{
+					Action="sts:AssumeRoleWithWebIdentity"
+					Condition={
+						StringEquals={
+							"${module.eks.oidc_provider}:aud"="sts.amazonaws.com"
+							"${module.eks.oidc_provider}:sub"="system:serviceaccount:kube-system:ebs-csi-controller-sa"
+						}
+					}
+					Effect="Allow"
+					Principal={
+						Federated=local.oidc_provider_arn
+					}
+				}
+			]
+			Version="2012-10-17"
+		}
+	)
+	force_detach_policies=true
+	name="${var.deployment_name}-ebs_csi_driver"
+}
+resource "aws_iam_role" "irsa" {
+	assume_role_policy=jsonencode(
+		{
+			Statement=[
+				{
+					Action="sts:AssumeRoleWithWebIdentity"
+					Condition={
+						StringEquals={
+							"${module.eks.oidc_provider}:aud"="sts.amazonaws.com"
+						}
+						StringLike={
+							"${module.eks.oidc_provider}:sub"="system:serviceaccount:${local.liferay_namespace_pattern}:liferay-default"
+						}
+					}
+					Effect="Allow"
+					Principal={
+						Federated=local.oidc_provider_arn
+					}
+				}
+			]
+			Version="2012-10-17"
+		})
+	force_detach_policies=true
+	name="${var.deployment_name}-irsa"
+}
+resource "aws_iam_role_policy" "overlay" {
+	policy=jsonencode(
+		{
+			Statement=[
+				{
+					Action=[
+						"s3:GetObject",
+						"s3:ListBucket",
+					]
+					Effect="Allow"
+					Resource=[
+						"arn:${var.arn_partition}:s3:::${var.deployment_name}-overlay-*",
+						"arn:${var.arn_partition}:s3:::${var.deployment_name}-overlay-*/*"
+					]
+					Sid="AllowS3BucketOperations"
+				}
+			]
+			Version="2012-10-17"
+		}
+	)
+	role=aws_iam_role.irsa.id
+}
+resource "aws_iam_role_policy" "this" {
+	count=length(var.ecr_repositories) > 0 ? 1 : 0
+	policy=jsonencode(
+		{
+			Statement=[
+				{
+					Action=[
+						"ecr:BatchCheckLayerAvailability",
+						"ecr:BatchGetImage",
+						"ecr:GetAuthorizationToken",
+						"ecr:GetDownloadUrlForLayer"
+					]
+					Effect="Allow"
+					Resource=[
+						for k, v in var.ecr_repositories : v.arn
+					]
+				}
+			]
+			Version="2012-10-17"
+		}
+	)
+	role=aws_iam_role.irsa.id
+}
+resource "aws_iam_role_policy_attachment" "role_policy_attachment_ebs_csi_driver" {
+	policy_arn="arn:${var.arn_partition}:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+	role=aws_iam_role.ebs_csi_driver.name
+}
+resource "aws_kms_alias" "eks_kms_alias" {
+	depends_on=[aws_kms_key.eks_secrets]
+	name="alias/${local.cluster_name}_kms"
+	target_key_id=aws_kms_key.eks_secrets.key_id
+}
+resource "aws_kms_key" "eks_secrets" {
+	deletion_window_in_days=7
+	description="KMS key for EKS secrets encryption"
+	enable_key_rotation=true
+	policy=jsonencode(
+		{
+			Statement=[
+				{
+					Action="kms:*"
+					Effect="Allow"
+					Principal={
+						AWS="arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+					}
+					Resource="*"
+					Sid="EnableIAMUserPermissions"
+				},
+				{
+					Action=[
+						"kms:CreateGrant",
+						"kms:Decrypt",
+						"kms:DescribeKey",
+						"kms:Encrypt",
+						"kms:GenerateDataKey*",
+						"kms:ReEncrypt*",
+					]
+					Effect="Allow"
+					Principal={
+						Service="eks.amazonaws.com"
+					}
+					Resource="*"
+					Sid="KMSAllowEKS"
+				},
+			]
+			Version="2012-10-17"
+		})
+}
+resource "kubernetes_storage_class_v1" "gp3_storage_class" {
+	allowed_topologies {
+		match_label_expressions {
+			key="eks.amazonaws.com/compute-type"
+			values=["auto"]
+		}
+	}
+	allow_volume_expansion=true
+	depends_on=[time_sleep.cluster_addons_ready_time_buffer]
+	metadata {
+		annotations={
+			"storageclass.kubernetes.io/is-default-class"="true"
+		}
+		name="gp3"
+	}
+	parameters={
+		encrypted=true
+		type="gp3"
+	}
+	reclaim_policy="Delete"
+	storage_provisioner="ebs.csi.eks.amazonaws.com"
+	volume_binding_mode="WaitForFirstConsumer"
+}
+resource "terraform_data" "update_kubeconfig" {
+	depends_on=[time_sleep.cluster_addons_ready_time_buffer]
+	provisioner "local-exec" {
+		command="aws eks update-kubeconfig --name ${module.eks.cluster_name} --region ${var.region}"
+	}
+	triggers_replace=[
+		module.eks.cluster_id
+	]
+}
+resource "time_sleep" "cluster_addons_ready_time_buffer" {
+	create_duration="30s"
+	depends_on=[module.eks.cluster_addons]
+}

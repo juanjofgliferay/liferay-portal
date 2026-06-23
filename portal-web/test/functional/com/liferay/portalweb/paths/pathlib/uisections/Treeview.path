@@ -12,7 +12,7 @@
 <tbody>
 <tr>
 	<td>NODE_CHECKBOX</td>
-	<td>//*[contains(@class,'component-text') or contains(@class,'flex-grow')][normalize-space(text())='${key_nodeName}']/ancestor::div[contains(@class,'treeview')]//input[@type='checkbox']</td>
+	<td>//*[contains(@class,'component-text') or contains(@class,'flex-grow')][normalize-space(text())='${key_nodeName}']/ancestor::div[contains(@class,'treeview')]//input[@type='checkbox'] | //*[contains(@class,'treeview-item')][.//text()[normalize-space()='${key_nodeName}']]//input[@type='checkbox']</td>
 	<td></td>
 </tr>
 <tr>
@@ -37,12 +37,12 @@
 </tr>
 <tr>
 	<td>SEARCH_RESULT_ITEM</td>
-	<td>//ul[contains(@class,'treeview')]//button[contains(@class,'search-result-button')][normalize-space(text())='${key_nodeName}']</td>
+	<td>//ul[contains(@class,'treeview')]//button[contains(@class,'search-result-button')]//*[normalize-space(text())='${key_nodeName}']</td>
 	<td></td>
 </tr>
 <tr>
 	<td>NODE_ITEM</td>
-	<td>//div[contains(@class,'card-horizontal')]//div[contains(@class,'card-body')][contains(.,'${key_nodeName}')] | //li[contains(@class,'treeview-item')]//*[contains(@class,'component-text') or contains(@class,'flex-grow')][normalize-space(text())='${key_nodeName}']</td>
+	<td>//div[contains(@class,'card-horizontal')]//div[contains(@class,'card-body')][contains(.,'${key_nodeName}')] | //li[contains(@class,'treeview-item')]//*[contains(@class,'component-text') or contains(@class,'flex-grow')][normalize-space(text())='${key_nodeName}'] | //*[contains(@class,'treeview-item')][.//text()[normalize-space()='${key_nodeName}']]</td>
 	<td></td>
 </tr>
 <tr>
@@ -62,12 +62,17 @@
 </tr>
 <tr>
 	<td>NODE_SELECTED</td>
-	<td>//div[contains(@class,'card-type-directory') and contains(@class,'selected')]/div[contains(@class,'card-horizontal')]//span[contains(.,'${key_nodeName}')] | //div[contains(@role,'treeitem') and contains(@class,'active')]//*[contains(@class,'component-text') or contains(@class,'flex-grow')][normalize-space(text())='${key_nodeName}']</td>
+	<td>//div[contains(@class,'card-type-directory') and contains(@class,'selected')]/div[contains(@class,'card-horizontal')]//span[contains(.,'${key_nodeName}')] | //div[contains(@role,'treeitem') and contains(@class,'active')]//*[contains(@class,'component-text') or contains(@class,'flex-grow')][normalize-space()='${key_nodeName}']</td>
 	<td></td>
 </tr>
 <tr>
 	<td>NODE_UNSELECTED</td>
-	<td>//div[contains(@class,'card-type-directory') and not(contains(@class,'selected'))]/div[contains(@class,'card-horizontal')]//span[contains(.,'${key_nodeName}')] | //div[contains(@role,'treeitem') and not(contains(@class,'active'))]//*[contains(@class,'component-text') or contains(@class,'flex-grow')][normalize-space(text())='${key_nodeName}']</td>
+	<td>//div[contains(@class,'card-type-directory') and not(contains(@class,'selected'))]/div[contains(@class,'card-horizontal')]//span[contains(.,'${key_nodeName}')] | //div[contains(@role,'treeitem') and not(contains(@class,'active'))]//*[contains(@class,'component-text') or contains(@class,'flex-grow')][normalize-space(text())='${key_nodeName}'] | //*[contains(@class,'treeview-item') and (not(@aria-selected) or @aria-selected='false')][.//text()[normalize-space()='${key_nodeName}']]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>NODE_UNSELECTED_TREEITEM</td>
+	<td>//div[contains(@role,'treeitem') and not(contains(@class,'active'))][.//*[contains(@class,'component-text') or contains(@class,'flex-grow')][normalize-space(text())='${key_nodeName}']]</td>
 	<td></td>
 </tr>
 <tr>

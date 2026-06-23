@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -39,6 +38,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @GraphQLName(
 	description = "Describes a specific language in the platform.",
 	value = "Language"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "Describes a specific language in the platform."
 )
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "Language")
@@ -52,42 +54,67 @@ public class Language implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Language.class, json);
 	}
 
-	@Schema(description = "The language's contry name.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The language's contry name."
+	)
 	public String getCountryName() {
+		if (_countryNameSupplier != null) {
+			countryName = _countryNameSupplier.get();
+
+			_countryNameSupplier = null;
+		}
+
 		return countryName;
 	}
 
 	public void setCountryName(String countryName) {
 		this.countryName = countryName;
+
+		_countryNameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCountryName(
 		UnsafeSupplier<String, Exception> countryNameUnsafeSupplier) {
 
-		try {
-			countryName = countryNameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_countryNameSupplier = () -> {
+			try {
+				return countryNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The language's contry name.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String countryName;
 
-	@Schema(description = "The localized language's country name values.")
+	@JsonIgnore
+	private Supplier<String> _countryNameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The localized language's country name values."
+	)
 	@Valid
 	public Map<String, String> getCountryName_i18n() {
+		if (_countryName_i18nSupplier != null) {
+			countryName_i18n = _countryName_i18nSupplier.get();
+
+			_countryName_i18nSupplier = null;
+		}
+
 		return countryName_i18n;
 	}
 
 	public void setCountryName_i18n(Map<String, String> countryName_i18n) {
 		this.countryName_i18n = countryName_i18n;
+
+		_countryName_i18nSupplier = null;
 	}
 
 	@JsonIgnore
@@ -95,71 +122,101 @@ public class Language implements Serializable {
 		UnsafeSupplier<Map<String, String>, Exception>
 			countryName_i18nUnsafeSupplier) {
 
-		try {
-			countryName_i18n = countryName_i18nUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_countryName_i18nSupplier = () -> {
+			try {
+				return countryName_i18nUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The localized language's country name values.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, String> countryName_i18n;
 
-	@Schema(description = "The language's ID.")
+	@JsonIgnore
+	private Supplier<Map<String, String>> _countryName_i18nSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The language's ID."
+	)
 	public String getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(String id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<String, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The language's ID.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String id;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<String> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "A flag that indicates whether the language has benn marked as default language."
 	)
 	public Boolean getMarkedAsDefault() {
+		if (_markedAsDefaultSupplier != null) {
+			markedAsDefault = _markedAsDefaultSupplier.get();
+
+			_markedAsDefaultSupplier = null;
+		}
+
 		return markedAsDefault;
 	}
 
 	public void setMarkedAsDefault(Boolean markedAsDefault) {
 		this.markedAsDefault = markedAsDefault;
+
+		_markedAsDefaultSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setMarkedAsDefault(
 		UnsafeSupplier<Boolean, Exception> markedAsDefaultUnsafeSupplier) {
 
-		try {
-			markedAsDefault = markedAsDefaultUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_markedAsDefaultSupplier = () -> {
+			try {
+				return markedAsDefaultUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -168,40 +225,68 @@ public class Language implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean markedAsDefault;
 
-	@Schema(description = "The language's name.")
+	@JsonIgnore
+	private Supplier<Boolean> _markedAsDefaultSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The language's name."
+	)
 	public String getName() {
+		if (_nameSupplier != null) {
+			name = _nameSupplier.get();
+
+			_nameSupplier = null;
+		}
+
 		return name;
 	}
 
 	public void setName(String name) {
 		this.name = name;
+
+		_nameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setName(UnsafeSupplier<String, Exception> nameUnsafeSupplier) {
-		try {
-			name = nameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_nameSupplier = () -> {
+			try {
+				return nameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The language's name.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String name;
 
-	@Schema(description = "The localized language's name values.")
+	@JsonIgnore
+	private Supplier<String> _nameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The localized language's name values."
+	)
 	@Valid
 	public Map<String, String> getName_i18n() {
+		if (_name_i18nSupplier != null) {
+			name_i18n = _name_i18nSupplier.get();
+
+			_name_i18nSupplier = null;
+		}
+
 		return name_i18n;
 	}
 
 	public void setName_i18n(Map<String, String> name_i18n) {
 		this.name_i18n = name_i18n;
+
+		_name_i18nSupplier = null;
 	}
 
 	@JsonIgnore
@@ -209,20 +294,25 @@ public class Language implements Serializable {
 		UnsafeSupplier<Map<String, String>, Exception>
 			name_i18nUnsafeSupplier) {
 
-		try {
-			name_i18n = name_i18nUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_name_i18nSupplier = () -> {
+			try {
+				return name_i18nUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The localized language's name values.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, String> name_i18n;
+
+	@JsonIgnore
+	private Supplier<Map<String, String>> _name_i18nSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -251,6 +341,8 @@ public class Language implements Serializable {
 
 		sb.append("{");
 
+		String countryName = getCountryName();
+
 		if (countryName != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -265,6 +357,8 @@ public class Language implements Serializable {
 			sb.append("\"");
 		}
 
+		Map<String, String> countryName_i18n = getCountryName_i18n();
+
 		if (countryName_i18n != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -274,6 +368,8 @@ public class Language implements Serializable {
 
 			sb.append(_toJSON(countryName_i18n));
 		}
+
+		String id = getId();
 
 		if (id != null) {
 			if (sb.length() > 1) {
@@ -289,6 +385,8 @@ public class Language implements Serializable {
 			sb.append("\"");
 		}
 
+		Boolean markedAsDefault = getMarkedAsDefault();
+
 		if (markedAsDefault != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -298,6 +396,8 @@ public class Language implements Serializable {
 
 			sb.append(markedAsDefault);
 		}
+
+		String name = getName();
 
 		if (name != null) {
 			if (sb.length() > 1) {
@@ -312,6 +412,8 @@ public class Language implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Map<String, String> name_i18n = getName_i18n();
 
 		if (name_i18n != null) {
 			if (sb.length() > 1) {
@@ -328,8 +430,8 @@ public class Language implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.Language",
 		name = "x-class-name"
 	)
@@ -375,7 +477,10 @@ public class Language implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -421,3 +526,4 @@ public class Language implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-927279954

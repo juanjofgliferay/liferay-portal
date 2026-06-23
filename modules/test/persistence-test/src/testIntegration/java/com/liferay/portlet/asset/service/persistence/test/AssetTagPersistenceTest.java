@@ -6,6 +6,7 @@
 package com.liferay.portlet.asset.service.persistence.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.asset.kernel.exception.DuplicateAssetTagExternalReferenceCodeException;
 import com.liferay.asset.kernel.exception.NoSuchTagException;
 import com.liferay.asset.kernel.model.AssetTag;
 import com.liferay.asset.kernel.service.AssetTagLocalServiceUtil;
@@ -110,15 +111,13 @@ public class AssetTagPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		AssetTag newAssetTag = _persistence.create(pk);
-
-		newAssetTag.setMvccVersion(RandomTestUtil.nextLong());
+		AssetTag newAssetTag = addAssetTag();
 
 		newAssetTag.setCtCollectionId(RandomTestUtil.nextLong());
 
 		newAssetTag.setUuid(RandomTestUtil.randomString());
+
+		newAssetTag.setExternalReferenceCode(RandomTestUtil.randomString());
 
 		newAssetTag.setGroupId(RandomTestUtil.nextLong());
 
@@ -150,6 +149,9 @@ public class AssetTagPersistenceTest {
 			newAssetTag.getCtCollectionId());
 		Assert.assertEquals(existingAssetTag.getUuid(), newAssetTag.getUuid());
 		Assert.assertEquals(
+			existingAssetTag.getExternalReferenceCode(),
+			newAssetTag.getExternalReferenceCode());
+		Assert.assertEquals(
 			existingAssetTag.getTagId(), newAssetTag.getTagId());
 		Assert.assertEquals(
 			existingAssetTag.getGroupId(), newAssetTag.getGroupId());
@@ -171,6 +173,26 @@ public class AssetTagPersistenceTest {
 		Assert.assertEquals(
 			Time.getShortTimestamp(existingAssetTag.getLastPublishDate()),
 			Time.getShortTimestamp(newAssetTag.getLastPublishDate()));
+	}
+
+	@Test(expected = DuplicateAssetTagExternalReferenceCodeException.class)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		AssetTag assetTag = addAssetTag();
+
+		AssetTag newAssetTag = addAssetTag();
+
+		newAssetTag.setGroupId(assetTag.getGroupId());
+
+		newAssetTag = _persistence.update(newAssetTag);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newAssetTag);
+
+		newAssetTag.setExternalReferenceCode(
+			assetTag.getExternalReferenceCode());
+
+		_persistence.update(newAssetTag);
 	}
 
 	@Test
@@ -230,6 +252,15 @@ public class AssetTagPersistenceTest {
 	}
 
 	@Test
+	public void testCountByG_N() throws Exception {
+		_persistence.countByG_N(RandomTestUtil.nextLong(), "");
+
+		_persistence.countByG_N(0L, "null");
+
+		_persistence.countByG_N(0L, (String)null);
+	}
+
+	@Test
 	public void testCountByG_LikeN() throws Exception {
 		_persistence.countByG_LikeN(RandomTestUtil.nextLong(), "");
 
@@ -243,6 +274,15 @@ public class AssetTagPersistenceTest {
 		_persistence.countByG_LikeN(
 			new long[] {RandomTestUtil.nextLong(), 0L},
 			RandomTestUtil.randomString());
+	}
+
+	@Test
+	public void testCountByERC_G() throws Exception {
+		_persistence.countByERC_G("", RandomTestUtil.nextLong());
+
+		_persistence.countByERC_G("null", 0L);
+
+		_persistence.countByERC_G((String)null, 0L);
 	}
 
 	@Test
@@ -271,9 +311,10 @@ public class AssetTagPersistenceTest {
 	protected OrderByComparator<AssetTag> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
 			"AssetTag", "mvccVersion", true, "ctCollectionId", true, "uuid",
-			true, "tagId", true, "groupId", true, "companyId", true, "userId",
-			true, "userName", true, "createDate", true, "modifiedDate", true,
-			"name", true, "assetCount", true, "lastPublishDate", true);
+			true, "externalReferenceCode", true, "tagId", true, "groupId", true,
+			"companyId", true, "userId", true, "userName", true, "createDate",
+			true, "modifiedDate", true, "name", true, "assetCount", true,
+			"lastPublishDate", true);
 	}
 
 	@Test
@@ -537,6 +578,17 @@ public class AssetTagPersistenceTest {
 			ReflectionTestUtil.<Long>invoke(
 				assetTag, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "groupId"));
+
+		Assert.assertEquals(
+			assetTag.getExternalReferenceCode(),
+			ReflectionTestUtil.invoke(
+				assetTag, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(assetTag.getGroupId()),
+			ReflectionTestUtil.<Long>invoke(
+				assetTag, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "groupId"));
 	}
 
 	protected AssetTag addAssetTag() throws Exception {
@@ -544,11 +596,11 @@ public class AssetTagPersistenceTest {
 
 		AssetTag assetTag = _persistence.create(pk);
 
-		assetTag.setMvccVersion(RandomTestUtil.nextLong());
-
 		assetTag.setCtCollectionId(RandomTestUtil.nextLong());
 
 		assetTag.setUuid(RandomTestUtil.randomString());
+
+		assetTag.setExternalReferenceCode(RandomTestUtil.randomString());
 
 		assetTag.setGroupId(RandomTestUtil.nextLong());
 
@@ -578,3 +630,4 @@ public class AssetTagPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1782296109

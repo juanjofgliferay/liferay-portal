@@ -91,7 +91,7 @@ if (commerceNotificationTemplate != null) {
 		>
 			<div class="row">
 				<div class="col-12">
-					<label for="<portlet:namespace />toFieldWrapper"><liferay-ui:message key="to" /></label>
+					<label for="<portlet:namespace />toFieldWrapper"><liferay-ui:message key="to[recipient]" /></label>
 
 					<aui:field-wrapper label="" name="toFieldWrapper">
 						<liferay-ui:input-localized
@@ -200,37 +200,24 @@ if (commerceNotificationTemplate != null) {
 	</aui:form>
 </liferay-frontend:side-panel-content>
 
-<aui:script>
-	Liferay.provide(
-		window,
-		'<portlet:namespace />selectType',
-		() => {
-			const name = document.getElementById('<portlet:namespace />name').value;
-			const description = document.getElementById(
-				'<portlet:namespace />description'
-			).value;
-			const from = document.getElementById('<portlet:namespace />from').value;
-			const fromName = document.getElementById(
-				'<portlet:namespace />fromName'
-			).value;
-			const cc = document.getElementById('<portlet:namespace />cc').value;
-			const bcc = document.getElementById('<portlet:namespace />bcc').value;
-			const type = document.getElementById('<portlet:namespace />type').value;
+<aui:script sandbox="<%= true %>">
+	Liferay.provide(window, '<portlet:namespace />selectType', () => {
+		const portletURL = Liferay.Util.PortletURL.createPortletURL(
+			'<%= currentURLObj %>',
+			{
+				bcc: document.getElementById('<portlet:namespace />bcc').value,
+				cc: document.getElementById('<portlet:namespace />cc').value,
+				description: document.getElementById(
+					'<portlet:namespace />description'
+				).value,
+				from: document.getElementById('<portlet:namespace />from').value,
+				fromName: document.getElementById('<portlet:namespace />fromName')
+					.value,
+				name: document.getElementById('<portlet:namespace />name').value,
+				type: document.getElementById('<portlet:namespace />type').value,
+			}
+		);
 
-			const portletURL = new Liferay.PortletURL.createURL(
-				'<%= currentURLObj %>'
-			);
-
-			portletURL.setParameter('name', name);
-			portletURL.setParameter('description', description);
-			portletURL.setParameter('from', from);
-			portletURL.setParameter('fromName', fromName);
-			portletURL.setParameter('cc', cc);
-			portletURL.setParameter('bcc', bcc);
-			portletURL.setParameter('type', type);
-
-			window.location.replace(portletURL.toString());
-		},
-		['liferay-portlet-url']
-	);
+		window.location.replace(portletURL.toString());
+	});
 </aui:script>

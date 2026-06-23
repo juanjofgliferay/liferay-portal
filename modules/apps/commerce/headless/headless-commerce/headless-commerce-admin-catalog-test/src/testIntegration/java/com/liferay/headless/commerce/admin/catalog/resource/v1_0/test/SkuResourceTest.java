@@ -6,6 +6,9 @@
 package com.liferay.headless.commerce.admin.catalog.resource.v1_0.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.commerce.price.list.constants.CommercePriceListConstants;
+import com.liferay.commerce.price.list.model.CommercePriceEntry;
+import com.liferay.commerce.price.list.service.CommercePriceEntryLocalService;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPDefinitionOptionRel;
 import com.liferay.commerce.product.model.CPDefinitionOptionValueRel;
@@ -15,16 +18,20 @@ import com.liferay.commerce.product.model.CPOptionValue;
 import com.liferay.commerce.product.model.CProduct;
 import com.liferay.commerce.product.service.CPDefinitionOptionRelLocalService;
 import com.liferay.commerce.product.service.CPInstanceLocalService;
+import com.liferay.commerce.product.service.CPInstanceUnitOfMeasureLocalService;
 import com.liferay.commerce.product.service.CPOptionLocalService;
 import com.liferay.commerce.product.service.CPOptionValueLocalService;
 import com.liferay.commerce.product.test.util.CPTestUtil;
 import com.liferay.headless.commerce.admin.catalog.client.dto.v1_0.Sku;
 import com.liferay.headless.commerce.admin.catalog.client.dto.v1_0.SkuOption;
+import com.liferay.headless.commerce.admin.catalog.client.dto.v1_0.SkuUnitOfMeasure;
 import com.liferay.headless.commerce.admin.catalog.client.dto.v1_0.SkuVirtualSettings;
 import com.liferay.headless.commerce.admin.catalog.client.resource.v1_0.SkuResource;
+import com.liferay.headless.commerce.core.util.LanguageUtils;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
@@ -34,6 +41,7 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.test.rule.Inject;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -122,14 +130,23 @@ public class SkuResourceTest extends BaseSkuResourceTestCase {
 		super.testGraphQLDeleteSku();
 	}
 
+	@Ignore
+	@Override
+	@Test
+	public void testGraphQLDeleteSkuByExternalReferenceCode() throws Exception {
+		super.testGraphQLDeleteSkuByExternalReferenceCode();
+	}
+
 	@Override
 	@Test
 	public void testPatchSku() throws Exception {
 		super.testPatchSku();
 
 		_testPatchSkuExternalReferenceCode();
+		_testPatchSkuWithReplacementSku();
 		_testPatchSkuWithPricing();
 		_testPatchSkuWithShipping();
+		_testPatchSkuWithUnitOfMeasure();
 	}
 
 	@Override
@@ -141,6 +158,12 @@ public class SkuResourceTest extends BaseSkuResourceTestCase {
 		_testPostProductIdSkuWithOptionIdKey();
 		_testPostProductIdSkuWithOptionKey();
 		_testPostProductIdSkuWithSkuVirtualSettings();
+	}
+
+	@Override
+	@Test
+	public void testPutSkuByExternalReferenceCode() throws Exception {
+		_testPatchSkuExternalReferenceCode();
 	}
 
 	@Override
@@ -276,6 +299,22 @@ public class SkuResourceTest extends BaseSkuResourceTestCase {
 		return skuResource.postProductIdSku(_cProduct.getCProductId(), sku);
 	}
 
+	@Override
+	protected Sku testPutSkuByExternalReferenceCode_createSku()
+		throws Exception {
+
+		return skuResource.postProductByExternalReferenceCodeSku(
+			_cProduct.getExternalReferenceCode(), randomSku());
+	}
+
+	private CommercePriceEntry _getCommercePriceEntry(
+		CPInstance cpInstance, String priceListType, String uomKey) {
+
+		return _commercePriceEntryLocalService.
+			getInstanceBaseCommercePriceEntry(
+				cpInstance.getCPInstanceUuid(), priceListType, uomKey);
+	}
+
 	private Sku _randomSkuWithSkuOptions(
 			String optionKey, Long optionKeyId, Long optionValueKeyId,
 			String optionValue)
@@ -333,7 +372,52 @@ public class SkuResourceTest extends BaseSkuResourceTestCase {
 		Assert.assertEquals(
 			patchSku.getPromoPrice(), randomSku.getPromoPrice());
 
+		CommercePriceEntry commercePriceEntry = _getCommercePriceEntry(
+			_cpInstanceLocalService.fetchCPInstance(sku.getId()),
+			CommercePriceListConstants.TYPE_PRICE_LIST, null);
+
+		Assert.assertEquals(BigDecimal.ZERO, commercePriceEntry.getPrice());
+
 		assertValid(patchSku);
+	}
+
+	private void _testPatchSkuWithReplacementSku() throws Exception {
+		Sku sku1 = testPatchSku_addSku();
+		Sku sku2 = testPatchSku_addSku();
+
+		Sku patchSku1 = skuResource.patchSku(
+			sku1.getId(),
+			new Sku() {
+				{
+					discontinued = true;
+					discontinuedDate = RandomTestUtil.nextDate();
+					replacementSkuExternalReferenceCode =
+						sku2.getExternalReferenceCode();
+					replacementSkuId = sku2.getId();
+				}
+			});
+
+		Assert.assertTrue(patchSku1.getDiscontinued());
+		Assert.assertEquals(
+			sku2.getExternalReferenceCode(),
+			patchSku1.getReplacementSkuExternalReferenceCode());
+		Assert.assertEquals(sku2.getId(), patchSku1.getReplacementSkuId());
+
+		assertValid(patchSku1);
+
+		Sku patchSku2 = skuResource.patchSku(
+			patchSku1.getId(),
+			new Sku() {
+				{
+					discontinued = false;
+				}
+			});
+
+		Assert.assertFalse(patchSku2.getDiscontinued());
+		Assert.assertNull(patchSku2.getReplacementSkuExternalReferenceCode());
+		Assert.assertNull(patchSku2.getReplacementSkuId());
+
+		assertValid(patchSku2);
 	}
 
 	private void _testPatchSkuWithShipping() throws Exception {
@@ -358,14 +442,63 @@ public class SkuResourceTest extends BaseSkuResourceTestCase {
 		assertValid(patchSku);
 	}
 
-	private void _testPostProductIdSkuWithOptionId() throws Exception {
-		SkuResource skuResource = SkuResource.builder(
-		).authentication(
-			"test@liferay.com", "test"
-		).locale(
-			LocaleUtil.getDefault()
-		).build();
+	private void _testPatchSkuWithUnitOfMeasure() throws Exception {
+		Sku sku = testPatchSku_addSku();
 
+		SkuUnitOfMeasure randomSkuUnitOfMeasure = new SkuUnitOfMeasure() {
+			{
+				active = true;
+				basePrice = BigDecimal.valueOf(RandomTestUtil.randomDouble());
+				incrementalOrderQuantity = BigDecimal.valueOf(
+					RandomTestUtil.randomInt(1, 10));
+				key = StringUtil.toLowerCase(RandomTestUtil.randomString());
+				name = LanguageUtils.getLanguageIdMap(
+					RandomTestUtil.randomLocaleStringMap());
+				precision = 0;
+				primary = true;
+				priority = RandomTestUtil.randomDouble();
+				promoPrice = BigDecimal.valueOf(RandomTestUtil.randomDouble());
+				rate = BigDecimal.valueOf(RandomTestUtil.randomInt(1, 10));
+			}
+		};
+
+		SkuUnitOfMeasure[] randomSkuUnitOfMeasureArray = {
+			randomSkuUnitOfMeasure
+		};
+
+		sku.setSkuUnitOfMeasures(randomSkuUnitOfMeasureArray);
+
+		Sku patchSku = skuResource.patchSku(sku.getId(), sku);
+
+		SkuUnitOfMeasure[] skuUnitOfMeasures = patchSku.getSkuUnitOfMeasures();
+
+		Assert.assertTrue(
+			(skuUnitOfMeasures != null) && (skuUnitOfMeasures.length == 1));
+
+		BigDecimal randomSkuUnitOfMeasureBasePrice =
+			randomSkuUnitOfMeasure.getBasePrice();
+		SkuUnitOfMeasure skuUnitOfMeasure = skuUnitOfMeasures[0];
+
+		Assert.assertEquals(
+			skuUnitOfMeasure.getBasePrice(),
+			randomSkuUnitOfMeasureBasePrice.setScale(2, RoundingMode.HALF_UP));
+		Assert.assertEquals(
+			skuUnitOfMeasure.getKey(), randomSkuUnitOfMeasure.getKey());
+		Assert.assertEquals(
+			skuUnitOfMeasure.getPriority(),
+			randomSkuUnitOfMeasure.getPriority());
+
+		BigDecimal randomSkuUnitOfMeasurePromoPrice =
+			randomSkuUnitOfMeasure.getPromoPrice();
+
+		Assert.assertEquals(
+			skuUnitOfMeasure.getPromoPrice(),
+			randomSkuUnitOfMeasurePromoPrice.setScale(2, RoundingMode.HALF_UP));
+
+		assertValid(patchSku);
+	}
+
+	private void _testPostProductIdSkuWithOptionId() throws Exception {
 		CPDefinitionOptionValueRel cpDefinitionOptionValueRel =
 			_cpDefinitionOptionValueRels.get(0);
 
@@ -393,13 +526,6 @@ public class SkuResourceTest extends BaseSkuResourceTestCase {
 	}
 
 	private void _testPostProductIdSkuWithOptionIdKey() throws Exception {
-		SkuResource skuResource = SkuResource.builder(
-		).authentication(
-			"test@liferay.com", "test"
-		).locale(
-			LocaleUtil.getDefault()
-		).build();
-
 		CPDefinitionOptionValueRel cpDefinitionOptionValueRel =
 			_cpDefinitionOptionValueRels.get(0);
 
@@ -430,13 +556,6 @@ public class SkuResourceTest extends BaseSkuResourceTestCase {
 	}
 
 	private void _testPostProductIdSkuWithOptionKey() throws Exception {
-		SkuResource skuResource = SkuResource.builder(
-		).authentication(
-			"test@liferay.com", "test"
-		).locale(
-			LocaleUtil.getDefault()
-		).build();
-
 		CPDefinitionOptionValueRel cpDefinitionOptionValueRel =
 			_cpDefinitionOptionValueRels.get(0);
 
@@ -464,9 +583,16 @@ public class SkuResourceTest extends BaseSkuResourceTestCase {
 	private void _testPostProductIdSkuWithSkuVirtualSettings()
 		throws Exception {
 
+		User omniadminUser = UserTestUtil.addOmniadminUser();
+
+		String password = RandomTestUtil.randomString();
+
+		_userLocalService.updatePassword(
+			omniadminUser.getUserId(), password, password, false, true);
+
 		SkuResource skuResource = SkuResource.builder(
 		).authentication(
-			"test@liferay.com", "test"
+			omniadminUser.getEmailAddress(), password
 		).locale(
 			LocaleUtil.getDefault()
 		).parameters(
@@ -522,6 +648,9 @@ public class SkuResourceTest extends BaseSkuResourceTestCase {
 			randomSkuVirtualSettings.getUseSample());
 	}
 
+	@Inject
+	private CommercePriceEntryLocalService _commercePriceEntryLocalService;
+
 	@DeleteAfterTestRun
 	private CPDefinition _cpDefinition;
 
@@ -538,6 +667,10 @@ public class SkuResourceTest extends BaseSkuResourceTestCase {
 
 	@Inject
 	private CPInstanceLocalService _cpInstanceLocalService;
+
+	@Inject
+	private CPInstanceUnitOfMeasureLocalService
+		_cpInstanceUnitOfMeasureLocalService;
 
 	@DeleteAfterTestRun
 	private CPOption _cpOption;
@@ -556,5 +689,8 @@ public class SkuResourceTest extends BaseSkuResourceTestCase {
 
 	@DeleteAfterTestRun
 	private User _user;
+
+	@Inject
+	private UserLocalService _userLocalService;
 
 }

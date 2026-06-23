@@ -1,5 +1,3 @@
-@import 'cadmin-variables';
-
 @keyframes FragmentCommentDecrease {
 	from {
 		max-height: 100vh;
@@ -25,6 +23,12 @@
 	}
 }
 
+@mixin ckeditor-paragraph-margin {
+	.lfr-ck p {
+		margin-bottom: 0;
+	}
+}
+
 html#{$cadmin-selector} {
 	.cadmin {
 		.page-editor__fragment-comment {
@@ -37,7 +41,8 @@ html#{$cadmin-selector} {
 			will-change: min-height;
 
 			&--hidden {
-				animation: FragmentCommentDecrease ease 0.4s,
+				animation:
+					FragmentCommentDecrease ease 0.4s,
 					FragmentCommentFadeOut ease 0.3s;
 				animation-fill-mode: forwards;
 				overflow: hidden;
@@ -93,12 +98,24 @@ html#{$cadmin-selector} {
 				margin-left: 5.6px;
 			}
 
-			+ .page-editor__fragment-comment:not(.page-editor__fragment-comment--reply) {
+			+ .page-editor__fragment-comment:not(
+					.page-editor__fragment-comment--reply
+				) {
 				border-top: solid thin $cadmin-gray-300;
 			}
 
 			&__form {
 				border-bottom: 1px solid $cadmin-gray-300;
+
+				.form-control {
+					&:has(> .ck-focused) {
+						background-color: $cadmin-input-focus-bg;
+						border-color: $cadmin-input-focus-border-color;
+						box-shadow: $cadmin-input-focus-box-shadow;
+					}
+				}
+
+				@include ckeditor-paragraph-margin();
 			}
 
 			.content {
@@ -109,6 +126,8 @@ html#{$cadmin-selector} {
 					margin-bottom: 0;
 				}
 			}
+
+			@include ckeditor-paragraph-margin();
 		}
 	}
 }

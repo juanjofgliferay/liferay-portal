@@ -9,10 +9,14 @@ import com.liferay.ip.geocoder.IPGeocoder;
 import com.liferay.ip.geocoder.IPInfo;
 import com.liferay.ip.geocoder.internal.configuration.IPGeocoderConfiguration;
 import com.liferay.petra.concurrent.DCLSingleton;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
+import com.liferay.portal.kernel.cache.PortalCache;
+import com.liferay.portal.kernel.cache.SingleVMPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.FileUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 
@@ -22,14 +26,14 @@ import com.maxmind.geoip2.exception.AddressNotFoundException;
 import com.maxmind.geoip2.model.CountryResponse;
 import com.maxmind.geoip2.record.Country;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.File;
 import java.io.IOException;
 
 import java.net.InetAddress;
 
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -48,12 +52,28 @@ public class IPGeocoderImpl implements IPGeocoder {
 	public IPInfo getIPInfo(HttpServletRequest httpServletRequest) {
 		String ipAddress = _getIPAddress(httpServletRequest);
 
-		return new IPInfo(_getCountryCode(ipAddress), ipAddress);
+		if (Validator.isNull(ipAddress)) {
+			return new IPInfo(StringPool.BLANK, ipAddress);
+		}
+
+		String countryCode = _portalCache.get(ipAddress);
+
+		if (countryCode == null) {
+			countryCode = _getCountryCode(ipAddress);
+
+			_portalCache.put(ipAddress, countryCode);
+		}
+
+		return new IPInfo(countryCode, ipAddress);
 	}
 
 	@Activate
 	protected void activate(Map<String, String> properties) {
 		_properties = properties;
+
+		_portalCache =
+			(PortalCache<String, String>)_singleVMPool.getPortalCache(
+				IPGeocoderImpl.class.getName());
 	}
 
 	private DatabaseReader _createDatabaseReader() {
@@ -79,7 +99,7 @@ public class IPGeocoderImpl implements IPGeocoder {
 			if (inetAddress.isAnyLocalAddress() ||
 				inetAddress.isLoopbackAddress()) {
 
-				return null;
+				return StringPool.BLANK;
 			}
 
 			DatabaseReader databaseReader =
@@ -90,12 +110,12 @@ public class IPGeocoderImpl implements IPGeocoder {
 				inetAddress);
 
 			if (countryResponse == null) {
-				return null;
+				return StringPool.BLANK;
 			}
 
 			Country country = countryResponse.getCountry();
 
-			return country.getIsoCode();
+			return GetterUtil.getString(country.getIsoCode());
 		}
 		catch (AddressNotFoundException addressNotFoundException) {
 			if (_log.isDebugEnabled()) {
@@ -108,7 +128,7 @@ public class IPGeocoderImpl implements IPGeocoder {
 			}
 		}
 
-		return null;
+		return StringPool.BLANK;
 	}
 
 	private File _getFile() throws IOException {
@@ -167,6 +187,10 @@ public class IPGeocoderImpl implements IPGeocoder {
 	@Reference
 	private Portal _portal;
 
+	private PortalCache<String, String> _portalCache;
 	private volatile Map<String, String> _properties;
+
+	@Reference
+	private SingleVMPool _singleVMPool;
 
 }

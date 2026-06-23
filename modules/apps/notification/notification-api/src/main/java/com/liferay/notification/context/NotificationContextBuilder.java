@@ -30,6 +30,12 @@ public class NotificationContextBuilder {
 		return this;
 	}
 
+	public NotificationContextBuilder companyId(long companyId) {
+		_notificationContext.setCompanyId(companyId);
+
+		return this;
+	}
+
 	public NotificationContextBuilder externalReferenceCode(
 		String externalReferenceCode) {
 
@@ -52,8 +58,22 @@ public class NotificationContextBuilder {
 		return this;
 	}
 
+	public NotificationContextBuilder parentClassPK(long parentClassPK) {
+		_notificationContext.setParentClassPK(parentClassPK);
+
+		return this;
+	}
+
 	public NotificationContextBuilder portletId(String portletId) {
 		_notificationContext.setPortletId(portletId);
+
+		return this;
+	}
+
+	public NotificationContextBuilder preferredLanguageId(
+		String preferredLanguageId) {
+
+		_notificationContext.setPreferredLanguageId(preferredLanguageId);
 
 		return this;
 	}
@@ -62,6 +82,15 @@ public class NotificationContextBuilder {
 		Map<String, Object> termValues) {
 
 		_notificationContext.setTermValues(termValues);
+
+		return this;
+	}
+
+	public NotificationContextBuilder usePreferredLanguageForGuests(
+		boolean usePreferredLanguageForGuests) {
+
+		_notificationContext.setUsePreferredLanguageForGuests(
+			usePreferredLanguageForGuests);
 
 		return this;
 	}

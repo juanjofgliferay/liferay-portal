@@ -32,6 +32,7 @@ import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.segments.configuration.provider.SegmentsConfigurationProvider;
 import com.liferay.segments.criteria.Criteria;
 import com.liferay.segments.criteria.CriteriaSerializer;
 import com.liferay.segments.criteria.contributor.SegmentsCriteriaContributor;
@@ -79,8 +80,7 @@ public class SegmentsEntryReindexMessageListenerTest {
 			Criteria.Conjunction.AND);
 
 		_segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), CriteriaSerializer.serialize(criteria),
-			User.class.getName());
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria));
 
 		_serviceContext = ServiceContextTestUtil.getServiceContext(
 			_group.getGroupId(), TestPropsValues.getUserId());
@@ -118,6 +118,8 @@ public class SegmentsEntryReindexMessageListenerTest {
 				new ConfigurationTemporarySwapper(
 					"com.liferay.segments.configuration.SegmentsConfiguration",
 					properties)) {
+
+			_segmentsConfigurationProvider.clearSegmentsCompanyConfigurations();
 
 			_roleLocalService.addUserRole(
 				_user1.getUserId(), _role.getRoleId());
@@ -239,7 +241,6 @@ public class SegmentsEntryReindexMessageListenerTest {
 
 		message.put("companyId", _segmentsEntry.getCompanyId());
 		message.put("segmentsEntryId", _segmentsEntry.getSegmentsEntryId());
-		message.put("type", _segmentsEntry.getType());
 
 		_messageListener.receive(message);
 	}
@@ -260,6 +261,9 @@ public class SegmentsEntryReindexMessageListenerTest {
 
 	@Inject
 	private RoleLocalService _roleLocalService;
+
+	@Inject
+	private SegmentsConfigurationProvider _segmentsConfigurationProvider;
 
 	@Inject(
 		filter = "segments.criteria.contributor.key=user",

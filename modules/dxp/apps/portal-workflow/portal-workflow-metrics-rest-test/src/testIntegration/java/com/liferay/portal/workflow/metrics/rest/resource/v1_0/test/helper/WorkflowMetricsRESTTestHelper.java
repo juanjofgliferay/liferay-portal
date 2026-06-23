@@ -25,6 +25,7 @@ import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.search.document.Document;
 import com.liferay.portal.search.document.DocumentBuilder;
 import com.liferay.portal.search.document.DocumentBuilderFactory;
@@ -38,7 +39,7 @@ import com.liferay.portal.search.hits.SearchHit;
 import com.liferay.portal.search.hits.SearchHits;
 import com.liferay.portal.search.index.IndexNameBuilder;
 import com.liferay.portal.search.query.BooleanQuery;
-import com.liferay.portal.search.query.Queries;
+import com.liferay.portal.search.query.QueriesUtil;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
 import com.liferay.portal.workflow.metrics.model.AddNodeRequest;
 import com.liferay.portal.workflow.metrics.model.AddProcessRequest;
@@ -71,7 +72,6 @@ import java.io.Serializable;
 import java.lang.reflect.Method;
 
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -82,7 +82,6 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.lang.time.DateUtils;
 
 import org.junit.Assert;
 
@@ -422,10 +421,12 @@ public class WorkflowMetricsRESTTestHelper {
 					companyId, instance,
 					new SLAResult() {
 						{
-							dateModified = DateUtils.truncate(
-								RandomTestUtil.nextDate(), Calendar.SECOND);
-							dateOverdue = DateUtils.truncate(
-								RandomTestUtil.nextDate(), Calendar.SECOND);
+							dateModified = new Date(
+								(System.currentTimeMillis() / Time.MINUTE) *
+									Time.MINUTE);
+							dateOverdue = new Date(
+								(System.currentTimeMillis() / Time.MINUTE) *
+									Time.MINUTE);
 							id = RandomTestUtil.randomLong();
 							name = null;
 							onTime = true;
@@ -441,10 +442,12 @@ public class WorkflowMetricsRESTTestHelper {
 					companyId, instance,
 					new SLAResult() {
 						{
-							dateModified = DateUtils.truncate(
-								RandomTestUtil.nextDate(), Calendar.SECOND);
-							dateOverdue = DateUtils.truncate(
-								RandomTestUtil.nextDate(), Calendar.SECOND);
+							dateModified = new Date(
+								System.currentTimeMillis() / Time.SECOND *
+									Time.SECOND);
+							dateOverdue = new Date(
+								System.currentTimeMillis() / Time.SECOND *
+									Time.SECOND);
 							id = RandomTestUtil.randomLong();
 							name = null;
 							onTime = false;
@@ -642,9 +645,9 @@ public class WorkflowMetricsRESTTestHelper {
 
 			_assertCount(
 				booleanQuery -> booleanQuery.addMustQueryClauses(
-					_queries.nested(
+					QueriesUtil.nested(
 						"tasks",
-						_queries.term(
+						QueriesUtil.term(
 							"tasks.taskId", addTaskRequest.getTaskId()))),
 				1,
 				indexName + WorkflowMetricsIndexNameConstants.SUFFIX_INSTANCE,
@@ -812,8 +815,8 @@ public class WorkflowMetricsRESTTestHelper {
 
 		_assertCount(
 			booleanQuery -> booleanQuery.addMustQueryClauses(
-				_queries.nested(
-					"tasks", _queries.term("tasks.taskId", task.getId()))),
+				QueriesUtil.nested(
+					"tasks", QueriesUtil.term("tasks.taskId", task.getId()))),
 			1, indexName + WorkflowMetricsIndexNameConstants.SUFFIX_INSTANCE,
 			"companyId", companyId, "deleted", false, "instanceId",
 			instance.getId(), "processId", task.getProcessId());
@@ -1029,12 +1032,12 @@ public class WorkflowMetricsRESTTestHelper {
 			_indexNameBuilder.getIndexName(companyId) +
 				WorkflowMetricsIndexNameConstants.SUFFIX_PROCESS);
 
-		BooleanQuery booleanQuery = _queries.booleanQuery();
+		BooleanQuery booleanQuery = QueriesUtil.booleanQuery();
 
 		searchSearchRequest.setQuery(
 			booleanQuery.addMustQueryClauses(
-				_queries.term("companyId", companyId),
-				_queries.term("deleted", Boolean.FALSE)));
+				QueriesUtil.term("companyId", companyId),
+				QueriesUtil.term("deleted", Boolean.FALSE)));
 
 		searchSearchRequest.setSize(10000);
 
@@ -1137,11 +1140,11 @@ public class WorkflowMetricsRESTTestHelper {
 
 		countSearchRequest.setIndexNames(indexName);
 
-		BooleanQuery booleanQuery = _queries.booleanQuery();
+		BooleanQuery booleanQuery = QueriesUtil.booleanQuery();
 
 		for (int i = 0; i < parameters.length; i = i + 2) {
 			booleanQuery.addMustQueryClauses(
-				_queries.term(
+				QueriesUtil.term(
 					String.valueOf(parameters[i]), parameters[i + 1]));
 		}
 
@@ -1184,7 +1187,7 @@ public class WorkflowMetricsRESTTestHelper {
 	private Document _creatWorkflowMetricsSLAInstanceResultDocument(
 		long companyId, Instance instance, SLAResult slaResult) {
 
-		DocumentBuilder documentBuilder = _documentBuilderFactory.builder();
+		DocumentBuilder documentBuilder = DocumentBuilderFactory.builder();
 
 		documentBuilder.setValue(
 			"active", true
@@ -1239,7 +1242,7 @@ public class WorkflowMetricsRESTTestHelper {
 		long processId, long slaDefinitionId, String status, long taskId,
 		String taskName) {
 
-		DocumentBuilder documentBuilder = _documentBuilderFactory.builder();
+		DocumentBuilder documentBuilder = DocumentBuilderFactory.builder();
 
 		documentBuilder.setValue(
 			"active", true
@@ -1304,11 +1307,11 @@ public class WorkflowMetricsRESTTestHelper {
 
 		searchSearchRequest.setIndexNames(indexName);
 
-		BooleanQuery booleanQuery = _queries.booleanQuery();
+		BooleanQuery booleanQuery = QueriesUtil.booleanQuery();
 
 		for (int j = 0; j < parameters.length; j = j + 2) {
 			booleanQuery.addMustQueryClauses(
-				_queries.term(
+				QueriesUtil.term(
 					String.valueOf(parameters[j]), parameters[j + 1]));
 		}
 
@@ -1322,7 +1325,7 @@ public class WorkflowMetricsRESTTestHelper {
 		SearchHits searchHits = searchSearchResponse.getSearchHits();
 
 		for (SearchHit searchHit : searchHits.getSearchHits()) {
-			DocumentBuilder documentBuilder = _documentBuilderFactory.builder(
+			DocumentBuilder documentBuilder = DocumentBuilderFactory.builder(
 				searchHit.getDocument());
 
 			documentBuilder = documentBuilder.setValue("deleted", true);
@@ -1497,7 +1500,7 @@ public class WorkflowMetricsRESTTestHelper {
 			long companyId, Instance instance, SLAResult... slaResults)
 		throws Exception {
 
-		DocumentBuilder documentBuilder = _documentBuilderFactory.builder();
+		DocumentBuilder documentBuilder = DocumentBuilderFactory.builder();
 
 		String indexName = _indexNameBuilder.getIndexName(companyId);
 
@@ -1534,9 +1537,9 @@ public class WorkflowMetricsRESTTestHelper {
 		for (SLAResult slaResult : slaResults) {
 			_assertCount(
 				booleanQuery -> booleanQuery.addMustQueryClauses(
-					_queries.nested(
+					QueriesUtil.nested(
 						"slaResults",
-						_queries.term(
+						QueriesUtil.term(
 							"slaResults.overdueDate",
 							_getDateString(slaResult.getDateOverdue())))),
 				1,
@@ -1557,9 +1560,6 @@ public class WorkflowMetricsRESTTestHelper {
 	private static final Log _log = LogFactoryUtil.getLog(
 		WorkflowMetricsRESTTestHelper.class);
 
-	@Reference
-	private DocumentBuilderFactory _documentBuilderFactory;
-
 	private final Map<String, Object> _indexers = new HashMap<>();
 
 	@Reference
@@ -1577,10 +1577,9 @@ public class WorkflowMetricsRESTTestHelper {
 	@Reference
 	private ProcessWorkflowMetricsIndexer _processWorkflowMetricsIndexer;
 
-	@Reference
-	private Queries _queries;
-
-	@Reference(target = "(search.engine.impl=Elasticsearch)")
+	@Reference(
+		target = "(|(search.engine.impl=Elasticsearch)(search.engine.impl=OpenSearch))"
+	)
 	private volatile SearchEngineAdapter _searchEngineAdapter;
 
 	@Reference

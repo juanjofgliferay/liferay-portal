@@ -28,7 +28,7 @@ public interface LayoutSEOCompanyConfiguration {
 	@Meta.AD(
 		deflt = "default-language-url",
 		description = "layout-seo-configuration-canonical-url-description",
-		name = "layout-seo-configuration-canonical-url",
+		name = "canonical-url",
 		optionLabels = {
 			"layout-seo-configuration-page-default-language-url",
 			"layout-seo-configuration-page-localized-url"
@@ -37,16 +37,6 @@ public interface LayoutSEOCompanyConfiguration {
 		required = false
 	)
 	public String canonicalURL();
-
-	/**
-	 * Sets if open graph is enabled.
-	 */
-	@Meta.AD(
-		deflt = "true",
-		description = "layout-seo-configuration-enable-open-graph-description",
-		name = "layout-seo-configuration-enable-open-graph", required = false
-	)
-	public boolean enableOpenGraph();
 
 	/**
 	 * Sets the configuration to allow the site admins to configure if hreflang
@@ -61,5 +51,15 @@ public interface LayoutSEOCompanyConfiguration {
 		required = false
 	)
 	public boolean enableLayoutTranslatedLanguages();
+
+	/**
+	 * Sets if open graph is enabled.
+	 */
+	@Meta.AD(
+		deflt = "true",
+		description = "layout-seo-configuration-enable-open-graph-description",
+		name = "enable-open-graph", required = false
+	)
+	public boolean enableOpenGraph();
 
 }

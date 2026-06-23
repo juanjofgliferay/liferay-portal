@@ -12,6 +12,7 @@ import com.liferay.object.related.models.ObjectRelatedModelsProvider;
 import com.liferay.object.related.models.ObjectRelatedModelsProviderRegistry;
 import com.liferay.object.relationship.util.ObjectRelationshipUtil;
 import com.liferay.object.rest.dto.v1_0.ObjectEntry;
+import com.liferay.object.rest.internal.util.ServiceContextUtil;
 import com.liferay.object.rest.manager.v1_0.DefaultObjectEntryManager;
 import com.liferay.object.rest.manager.v1_0.DefaultObjectEntryManagerProvider;
 import com.liferay.object.rest.manager.v1_0.ObjectEntryManagerRegistry;
@@ -24,8 +25,8 @@ import com.liferay.object.system.SystemObjectDefinitionManagerRegistry;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.security.auth.GuestOrUserUtil;
 import com.liferay.portal.kernel.service.PersistedModelLocalService;
-import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.service.PersistedModelLocalServiceRegistryUtil;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
@@ -33,11 +34,11 @@ import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 
-import java.net.URI;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.UriInfo;
 
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.UriInfo;
+import java.net.URI;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -100,10 +101,9 @@ public class RelatedObjectEntryResourceImpl
 			previousPath);
 
 		ObjectRelationship objectRelationship =
-			_objectRelationshipLocalService.
-				getObjectRelationshipByObjectDefinitionId(
-					systemObjectDefinition.getObjectDefinitionId(),
-					objectRelationshipName);
+			_objectRelationshipLocalService.getObjectRelationship(
+				systemObjectDefinition.getObjectDefinitionId(),
+				objectRelationshipName);
 
 		ObjectDefinition relatedObjectDefinition = _getRelatedObjectDefinition(
 			systemObjectDefinition, objectRelationship);
@@ -111,6 +111,7 @@ public class RelatedObjectEntryResourceImpl
 		DefaultObjectEntryManager defaultObjectEntryManager =
 			DefaultObjectEntryManagerProvider.provide(
 				_objectEntryManagerRegistry.getObjectEntryManager(
+					systemObjectDefinition.getCompanyId(),
 					systemObjectDefinition.getStorageType()));
 
 		if (relatedObjectDefinition.isUnmodifiableSystemObject()) {
@@ -119,12 +120,10 @@ public class RelatedObjectEntryResourceImpl
 				pagination);
 		}
 
-		return (Page)
-			defaultObjectEntryManager.getObjectEntryRelatedObjectEntries(
-				_getDefaultDTOConverterContext(
-					systemObjectDefinition, objectEntryId, _uriInfo),
-				systemObjectDefinition, objectEntryId, objectRelationshipName,
-				pagination);
+		return (Page)defaultObjectEntryManager.getRelatedObjectEntries(
+			_getDefaultDTOConverterContext(
+				systemObjectDefinition, objectEntryId, _uriInfo),
+			objectEntryId, objectRelationship, pagination);
 	}
 
 	@Override
@@ -143,15 +142,16 @@ public class RelatedObjectEntryResourceImpl
 					systemObjectDefinition.getObjectDefinitionId(),
 					objectRelationshipName);
 
+		long primaryKey2 = _getPrimaryKey2(
+			objectRelationship.getObjectDefinitionId1(), objectEntryId,
+			relatedObjectEntryId, systemObjectDefinition);
+
 		_objectRelationshipService.addObjectRelationshipMappingTableValues(
 			objectRelationship.getObjectRelationshipId(),
 			_getPrimaryKey1(
 				objectRelationship.getObjectDefinitionId1(), objectEntryId,
 				relatedObjectEntryId, systemObjectDefinition),
-			_getPrimaryKey2(
-				objectRelationship.getObjectDefinitionId1(), objectEntryId,
-				relatedObjectEntryId, systemObjectDefinition),
-			new ServiceContext());
+			primaryKey2, ServiceContextUtil.createServiceContext(primaryKey2));
 
 		return _getRelatedObjectEntry(
 			objectRelationship, relatedObjectEntryId, systemObjectDefinition);
@@ -246,6 +246,7 @@ public class RelatedObjectEntryResourceImpl
 		DefaultObjectEntryManager defaultObjectEntryManager =
 			DefaultObjectEntryManagerProvider.provide(
 				_objectEntryManagerRegistry.getObjectEntryManager(
+					systemObjectDefinition.getCompanyId(),
 					systemObjectDefinition.getStorageType()));
 
 		ObjectDefinition relatedObjectDefinition = _getRelatedObjectDefinition(
@@ -283,7 +284,14 @@ public class RelatedObjectEntryResourceImpl
 
 		String path = uri.getPath();
 
-		String restContextPath = path.split("/")[2] + "/v1.0/" + previousPath;
+		String modulePath = Portal.PATH_MODULE + "/";
+
+		int index = path.indexOf(modulePath) + modulePath.length();
+
+		String applicationPath = path.substring(
+			index, path.indexOf("/", index));
+
+		String restContextPath = applicationPath + "/v1.0/" + previousPath;
 
 		for (ObjectDefinition systemObjectDefinition :
 				_objectDefinitionLocalService.

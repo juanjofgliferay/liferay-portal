@@ -44,11 +44,14 @@ public class AssetListEntryStagedModelRepository
 			assetListEntry);
 
 		if (portletDataContext.isDataStrategyMirror()) {
+			serviceContext.setAttribute(
+				"assetListEntryKey", assetListEntry.getAssetListEntryKey());
 			serviceContext.setUuid(assetListEntry.getUuid());
 		}
 
 		return _assetListEntryLocalService.addAssetListEntry(
-			userId, assetListEntry.getGroupId(), assetListEntry.getTitle(),
+			assetListEntry.getExternalReferenceCode(), userId,
+			assetListEntry.getGroupId(), assetListEntry.getTitle(),
 			assetListEntry.getType(), serviceContext);
 	}
 
@@ -127,8 +130,17 @@ public class AssetListEntryStagedModelRepository
 			AssetListEntry assetListEntry)
 		throws PortalException {
 
+		ServiceContext serviceContext = portletDataContext.createServiceContext(
+			assetListEntry);
+
+		if (portletDataContext.isDataStrategyMirror()) {
+			serviceContext.setAttribute(
+				"assetListEntryKey", assetListEntry.getAssetListEntryKey());
+		}
+
 		return _assetListEntryLocalService.updateAssetListEntry(
-			assetListEntry.getAssetListEntryId(), assetListEntry.getTitle());
+			assetListEntry.getAssetListEntryId(), assetListEntry.getTitle(),
+			serviceContext);
 	}
 
 	@Reference

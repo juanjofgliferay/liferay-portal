@@ -30,6 +30,10 @@ public class SegmentsEntryTable extends BaseTable<SegmentsEntryTable> {
 		"ctCollectionId", Long.class, Types.BIGINT, Column.FLAG_PRIMARY);
 	public final Column<SegmentsEntryTable, String> uuid = createColumn(
 		"uuid_", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<SegmentsEntryTable, String> externalReferenceCode =
+		createColumn(
+			"externalReferenceCode", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
 	public final Column<SegmentsEntryTable, Long> segmentsEntryId =
 		createColumn(
 			"segmentsEntryId", Long.class, Types.BIGINT, Column.FLAG_PRIMARY);
@@ -59,8 +63,6 @@ public class SegmentsEntryTable extends BaseTable<SegmentsEntryTable> {
 		"criteria", Clob.class, Types.CLOB, Column.FLAG_DEFAULT);
 	public final Column<SegmentsEntryTable, String> source = createColumn(
 		"source", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
-	public final Column<SegmentsEntryTable, String> type = createColumn(
-		"type_", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
 	public final Column<SegmentsEntryTable, Date> lastPublishDate =
 		createColumn(
 			"lastPublishDate", Date.class, Types.TIMESTAMP,
@@ -71,3 +73,4 @@ public class SegmentsEntryTable extends BaseTable<SegmentsEntryTable> {
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1655363898

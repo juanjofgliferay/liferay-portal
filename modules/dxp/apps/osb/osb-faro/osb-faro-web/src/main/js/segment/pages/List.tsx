@@ -1,21 +1,54 @@
 import * as API from 'shared/api';
-import BaseListPage from 'contacts/components/BaseListPage';
+import * as breadcrumbs from 'shared/util/breadcrumbs';
+import BasePage from 'shared/components/base-page';
+import Card from 'shared/components/Card';
 import ClayButton from '@clayui/button';
+import ClayDropDown, {Align} from '@clayui/drop-down';
+import ClayIcon from '@clayui/icon';
+import ClayLink from '@clayui/link';
+import CrossPageSelect from 'shared/hoc/CrossPageSelect';
+import LinkCell from 'shared/components/table/cell-components/LinkCell';
+import Nav from 'shared/components/Nav';
+import NoResultsDisplay from 'shared/components/NoResultsDisplay';
 import React, {useContext, useEffect, useRef, useState} from 'react';
 import RowActions from 'shared/components/RowActions';
 import SearchableEntityTable from 'shared/components/SearchableEntityTable';
+import SequentialEventOrderPopover from 'shared/components/SequentialEventOrderPopover';
+import ToThousandsCell from 'shared/components/table/cell-components/ToThousandsCell';
 import URLConstants from 'shared/util/url-constants';
+import UserCell from 'shared/components/table/cell-components/UserCell';
 import {
 	ActionType,
 	UnassignedSegmentsContext
 } from 'shared/context/unassignedSegments';
+import {
+	ActionTypes,
+	useSelectionContext,
+	withSelectionProvider
+} from 'shared/context/selection';
 import {addAlert} from 'shared/actions/alerts';
 import {Alert, FilterByType} from 'shared/types';
 import {ALERT_CONFIG_MAP, AlertTypes} from 'shared/components/Alert';
 import {close, modalTypes, open} from 'shared/actions/modals';
-import {compose, withCurrentUser} from 'shared/hoc';
+import {compose} from 'shared/hoc';
 import {connect, ConnectedProps} from 'react-redux';
 import {createOrderIOMap} from 'shared/util/pagination';
+import {
+	DATE_MODIFIED,
+	INDIVIDUAL_COUNT,
+	LAST_MEMBERSHIP_UPDATE_DATE,
+	Routes,
+	SEGMENT_STATE,
+	SEGMENT_TYPE,
+	SEGMENTS,
+	setUriQueryValue,
+	toRoute,
+	USER_NAME
+} from 'shared/util/router';
+import {DateCell} from 'shared/components/table/cell-components';
+import {ENABLE_REAL_TIME_SEGMENTS} from 'shared/util/feature-flags';
+import {FeatureName, useLimitReached} from 'shared/hooks/useLimitReached';
+import {formatDateToTimeZone} from 'shared/util/date';
 import {
 	getDefaultSortOrder,
 	NAME,
@@ -23,20 +56,14 @@ import {
 } from 'shared/util/pagination';
 import {Link} from 'react-router-dom';
 import {OrderedMap} from 'immutable';
-import {OrderParams, User} from 'shared/util/records';
-import {RootState} from 'shared/store';
-import {
-	Routes,
-	SEGMENT_STATE,
-	SEGMENTS,
-	setUriQueryValue,
-	toRoute
-} from 'shared/util/router';
-import {segmentsListColumns} from 'shared/util/table-columns';
+import {OrderParams} from 'shared/util/records';
 import {SegmentStates, SegmentTypes, Sizes} from 'shared/util/constants';
 import {setUriQueryValues} from 'shared/util/router';
 import {sub} from 'shared/util/lang';
-import {useQueryPagination} from 'shared/hooks';
+import {useChannelContext} from 'shared/context/channel';
+import {useCurrentUser} from 'shared/hooks/useCurrentUser';
+import {useQueryPagination} from 'shared/hooks/useQueryPagination';
+import {useRequest} from 'shared/hooks/useRequest';
 
 export interface FetchSegmentsParams {
 	channelId: string;
@@ -46,19 +73,6 @@ export interface FetchSegmentsParams {
 	orderIOMap: OrderedMap<string, OrderParams>;
 	page: number;
 	query: string;
-}
-
-function fetchSegments(params: FetchSegmentsParams): any {
-	const {channelId, delta, groupId, orderIOMap, page, query} = params;
-
-	return API.individualSegment.search({
-		channelId,
-		delta,
-		groupId,
-		orderIOMap,
-		page,
-		query
-	});
 }
 
 function fetchDisabledSegments(
@@ -75,42 +89,80 @@ function fetchDisabledSegments(
 	});
 }
 
-const connector = connect(
-	(store: RootState, {groupId}: {groupId: string}) => ({
-		timeZoneId: store.getIn([
-			'projects',
-			groupId,
-			'data',
-			'timeZone',
-			'timeZoneId'
-		])
-	}),
-	{addAlert, close, open}
-);
+const connector = connect(null, {addAlert, close, open});
 
 type PropsFromRedux = ConnectedProps<typeof connector>;
 
 interface IListProps extends PropsFromRedux {
 	channelId: string;
-	currentUser: User;
 	groupId: string;
 	history: any;
 }
+
+const SEGMENT_TYPES_LABEL_MAP = {
+	[SegmentTypes.Batch]: Liferay.Language.get('batch'),
+	[SegmentTypes.RealTime]: Liferay.Language.get('real-time')
+};
+
+const FILTER_BY_OPTIONS = [
+	{
+		key: SEGMENT_TYPE,
+		label: Liferay.Language.get('segment-type'),
+		values: [
+			{
+				label: SEGMENT_TYPES_LABEL_MAP[SegmentTypes.Batch],
+				value: SegmentTypes.Batch
+			},
+			{
+				label: SEGMENT_TYPES_LABEL_MAP[SegmentTypes.RealTime],
+				value: SegmentTypes.RealTime
+			}
+		]
+	}
+];
+
+const ORDER_BY_OPTIONS = [
+	{
+		label: Liferay.Language.get('name'),
+		value: NAME
+	},
+	{
+		label: Liferay.Language.get('type'),
+		value: SEGMENT_TYPE
+	},
+	{
+		label: Liferay.Language.get('segment-membership'),
+		value: INDIVIDUAL_COUNT
+	},
+	{
+		label: Liferay.Language.get('modified'),
+		value: DATE_MODIFIED
+	},
+	{
+		label: Liferay.Language.get('last-modified-by'),
+		value: USER_NAME
+	},
+	{
+		label: Liferay.Language.get('last-membership-update'),
+		value: LAST_MEMBERSHIP_UPDATE_DATE
+	}
+];
 
 export const List: React.FC<IListProps> = ({
 	addAlert,
 	channelId,
 	close,
-	currentUser,
 	groupId,
 	history,
-	open,
-	timeZoneId
+	open
 }) => {
+	const currentUser = useCurrentUser();
+	const {selectedChannel} = useChannelContext();
 	const _tableRef = useRef<HTMLDivElement & SearchableEntityTable>();
 
-	const {delta, orderIOMap, page, query} = useQueryPagination({
-		filterFields: [SEGMENT_STATE],
+	const {selectedItems, selectionDispatch} = useSelectionContext();
+	const {delta, filterBy, orderIOMap, page, query} = useQueryPagination({
+		filterFields: [SEGMENT_TYPE],
 		initialDelta: paginationDefaults.delta,
 		initialOrderIOMap: createOrderIOMap(NAME, getDefaultSortOrder(NAME)),
 		initialPage: paginationDefaults.page,
@@ -138,15 +190,89 @@ export const List: React.FC<IListProps> = ({
 		};
 	}, []);
 
+	const selectedSegmentTypes = filterBy?.get(SEGMENT_TYPE)?.toArray() || [];
+
+	const {data, error, loading, refetch} = useRequest({
+		dataSourceFn: API.individualSegment.search,
+		variables: {
+			channelId,
+			delta,
+			groupId,
+			orderIOMap,
+			page,
+			query,
+			segmentTypes: selectedSegmentTypes.length
+				? selectedSegmentTypes
+				: undefined
+		}
+	});
+
+	const {
+		data: usageData = [],
+		loading: usageLoading,
+		refetch: refetchUsage
+	} = useRequest({
+		dataSourceFn: API.projects.fetchFeatureUsages,
+		variables: {groupId}
+	});
+
+	const isBatchDisabled = useLimitReached({
+		data: usageData,
+		featureName: FeatureName.Batch
+	});
+
+	const realTimeLimitReached = useLimitReached({
+		data: usageData,
+		featureName: FeatureName.RealTime
+	});
+
+	const isRealTimeDisabled =
+		ENABLE_REAL_TIME_SEGMENTS && realTimeLimitReached;
+
+	const allActionsDisabled = isBatchDisabled && isRealTimeDisabled;
+
+	const getUsageTooltipMessage = () => {
+		if (isBatchDisabled && isRealTimeDisabled) {
+			return Liferay.Language.get(
+				'the-maximum-number-of-segments-has-been-reached-delete-an-existing-segment-to-create-a-new-one'
+			);
+		}
+		if (isBatchDisabled) {
+			return Liferay.Language.get(
+				'a-maximum-of-five-batch-segments-has-been-reached-delete-an-existing-segment-to-create-a-new-one'
+			);
+		}
+		if (isRealTimeDisabled) {
+			return Liferay.Language.get(
+				'a-maximum-of-three-real-time-segments-has-been-reached-delete-an-existing-segment-to-create-a-new-one'
+			);
+		}
+		return null;
+	};
+
+	const getUsageDropDownMessage = () => {
+		if (isBatchDisabled) {
+			return Liferay.Language.get('batch-segment-limit-has-been-reached');
+		}
+		if (isRealTimeDisabled) {
+			return Liferay.Language.get(
+				'real-time-segments-limit-has-been-reached'
+			);
+		}
+		return null;
+	};
+
+	const usageMessage = getUsageTooltipMessage();
+	const usageDropDownMessage = getUsageDropDownMessage();
+
 	const getDisabledSegmentsAlert = (abortSignal: AbortSignal) =>
 		fetchDisabledSegments(channelId, groupId, orderIOMap).then(
-			({total}) => {
+			({total}: {total: number}) => {
 				if (abortSignal.aborted) {
 					return;
 				}
-
 				if (total) {
-					setAlerts(() => handleDisabledSegmentsAlert());
+					setAlerts(handleDisabledSegmentsAlert() as any);
 				}
 			}
 		);
@@ -215,26 +341,52 @@ export const List: React.FC<IListProps> = ({
 				false
 			),
 			onClose: () =>
-				unassignedSegmentsDispatch({type: ActionType.updateShowAlert}),
+				unassignedSegmentsDispatch?.({
+					type: ActionType.updateShowAlert
+				}),
 			...ALERT_CONFIG_MAP[AlertTypes.Warning]
 		};
 	};
 
-	const handleDeleteSegment = ({id, items, name}) => {
+	const handleDeleteSegments = ({
+		ids,
+		items,
+		name = undefined
+	}: {
+		ids: string[];
+		items: unknown[];
+		name?: string;
+	}) => {
+		const isMultiple = ids.length > 1;
+
+		const MODAL_MESSAGES = {
+			confirmation: isMultiple
+				? Liferay.Language.get(
+						'are-you-sure-you-want-to-delete-the-selected-segments'
+				  )
+				: Liferay.Language.get(
+						'are-you-sure-you-want-to-delete-this-segment'
+				  ),
+			subtitle: isMultiple
+				? Liferay.Language.get(
+						'you-will-lose-all-data-related-to-these-segments.-you-will-not-be-able-to-undo-this-operation'
+				  )
+				: Liferay.Language.get(
+						'you-will-lose-all-data-related-to-this-segment.-you-will-not-be-able-to-undo-this-operation'
+				  ),
+			title: isMultiple
+				? Liferay.Language.get('delete-segments')
+				: sub(Liferay.Language.get('deleting-x'), [name])
+		};
+
 		open(modalTypes.CONFIRMATION_MODAL, {
 			message: (
 				<div>
-					<h4 className='text-secondary'>
-						{Liferay.Language.get(
-							'are-you-sure-you-want-to-delete-this-segment'
-						)}
-					</h4>
+					<div className='h4 text-secondary'>
+						{MODAL_MESSAGES.confirmation}
+					</div>
 
-					<p>
-						{Liferay.Language.get(
-							'you-will-lose-all-data-related-to-this-segment.-you-will-not-be-able-to-undo-this-operation'
-						)}
-					</p>
+					<p>{MODAL_MESSAGES.subtitle}</p>
 				</div>
 			),
 			modalVariant: 'modal-warning',
@@ -243,7 +395,7 @@ export const List: React.FC<IListProps> = ({
 				API.individualSegment
 					.delete({
 						groupId,
-						id
+						ids
 					})
 					.then(() => {
 						_tableRef?.current?.reload();
@@ -264,6 +416,10 @@ export const List: React.FC<IListProps> = ({
 								)
 							);
 						}
+						selectionDispatch?.({type: ActionTypes.ClearAll});
+
+						refetch?.();
+						refetchUsage?.();
 					})
 					.catch(() => {
 						addAlert({
@@ -273,13 +429,29 @@ export const List: React.FC<IListProps> = ({
 					}),
 			submitButtonDisplay: 'warning',
 			submitMessage: Liferay.Language.get('delete'),
-			title: sub(Liferay.Language.get('deleting-x'), [name]),
+			title: MODAL_MESSAGES.title,
 			titleIcon: 'warning-full'
 		});
 	};
 
-	const renderRowActions = ({data: {id, name}, items}) => {
+	const renderRowActions = ({
+		data: {id, name},
+		items
+	}: {
+		data: {id: string; name: string};
+		items: unknown[];
+	}) => {
 		const commonActions = [
+			{
+				href: toRoute(Routes.CONTACTS_SEGMENT, {
+					channelId,
+					groupId,
+					id,
+					type: SEGMENTS
+				}),
+				iconSymbol: 'view',
+				label: Liferay.Language.get('view')
+			},
 			{
 				href: toRoute(Routes.CONTACTS_SEGMENT_EDIT, {
 					channelId,
@@ -291,108 +463,359 @@ export const List: React.FC<IListProps> = ({
 				label: Liferay.Language.get('edit')
 			},
 			{
+				className: 'text-danger',
 				iconSymbol: 'trash',
 				label: Liferay.Language.get('delete'),
-				onClick: () => handleDeleteSegment({id, items, name})
+				onClick: () => handleDeleteSegments({ids: [id], items, name})
 			}
 		];
 
-		const actions = commonActions.map(({href, label, onClick}) => ({
-			href,
-			label,
-			onClick
-		}));
-
+		const actions = commonActions.map(
+			({className, href, iconSymbol, label, onClick}) => ({
+				className,
+				href,
+				iconSymbol,
+				label,
+				onClick
+			})
+		);
 		return <RowActions actions={actions} quickActions={commonActions} />;
 	};
 
-	const pageActions = [
-		{
-			href: setUriQueryValues(
-				{type: SegmentTypes.Dynamic},
-				toRoute(Routes.CONTACTS_SEGMENT_CREATE, {
-					channelId,
-					groupId
-				})
-			),
-			label: Liferay.Language.get('dynamic-segment'),
-			onClick: () =>
-				analytics.track('Dynamic Segment Creation - Clicked Create')
-		},
-		{
-			href: setUriQueryValues(
-				{type: SegmentTypes.Static},
-				toRoute(Routes.CONTACTS_SEGMENT_CREATE, {
-					channelId,
-					groupId
-				})
-			),
-			label: Liferay.Language.get('static-segment'),
-			onClick: () =>
-				analytics.track('Static Segment Creation - Clicked Create')
-		}
-	];
+	const pageActionsLabel = Liferay.Language.get('new-segment');
 
-	const pageActionsLabel = Liferay.Language.get('create-segment');
+	const renderNav = () => {
+		if (selectedItems.isEmpty()) {
+			return (
+				<Nav>
+					<Nav.Item>
+						<div className='d-flex align-items-center'>
+							{ENABLE_REAL_TIME_SEGMENTS ? (
+								<ClayDropDown
+									alignmentPosition={Align.BottomRight}
+									trigger={
+										<ClayButton
+											aria-label={
+												pageActionsLabel &&
+												Liferay.Language.get('menu')
+											}
+											className='button-root p-2 rounded-lg'
+											disabled={
+												error ||
+												loading ||
+												allActionsDisabled
+											}
+											displayType='primary'
+											size='sm'
+										>
+											<>
+												<span>{pageActionsLabel}</span>
+												<ClayIcon
+													className='icon-root ml-2'
+													symbol='caret-bottom'
+												/>
+											</>
+										</ClayButton>
+									}
+								>
+									{usageDropDownMessage && (
+										<div
+											className='alert alert-fluid alert-info'
+											role='alert'
+										>
+											{usageDropDownMessage}
+										</div>
+									)}
+
+									<ClayDropDown.Item
+										data-testid='batch-segment-dropdown-item'
+										disabled={
+											usageLoading || isBatchDisabled
+										}
+										href={setUriQueryValues(
+											{type: SegmentTypes.Batch},
+											toRoute(
+												Routes.CONTACTS_SEGMENT_CREATE,
+												{channelId, groupId}
+											)
+										)}
+									>
+										<ClayIcon
+											className='mr-2'
+											symbol='diagram'
+										/>
+										{Liferay.Language.get('batch')}
+									</ClayDropDown.Item>
+
+									<ClayDropDown.Item
+										data-testid='real-time-segment-dropdown-item'
+										disabled={
+											usageLoading || isRealTimeDisabled
+										}
+										href={setUriQueryValues(
+											{type: SegmentTypes.RealTime},
+											toRoute(
+												Routes.CONTACTS_SEGMENT_CREATE,
+												{channelId, groupId}
+											)
+										)}
+									>
+										<ClayIcon
+											className='mr-2'
+											symbol='bolt'
+										/>
+										{Liferay.Language.get('real-time')}
+									</ClayDropDown.Item>
+								</ClayDropDown>
+							) : (
+								<ClayButton
+									aria-label={pageActionsLabel}
+									className='button-root p-2 rounded-lg'
+									data-testid='batch-segment-button'
+									disabled={
+										error || loading || isBatchDisabled
+									}
+									displayType='primary'
+									onClick={() =>
+										history.push(
+											setUriQueryValues(
+												{type: SegmentTypes.Batch},
+												toRoute(
+													Routes.CONTACTS_SEGMENT_CREATE,
+													{channelId, groupId}
+												)
+											)
+										)
+									}
+									size='sm'
+								>
+									{pageActionsLabel}
+								</ClayButton>
+							)}
+
+							{usageMessage && (
+								<ClayButton
+									borderless
+									className='ml-2'
+									data-tooltip-align='right'
+									displayType='unstyled'
+									size='sm'
+									title={usageMessage}
+								>
+									<ClayIcon
+										className='text-secondary'
+										symbol='exclamation-full'
+									/>
+								</ClayButton>
+							)}
+						</div>
+					</Nav.Item>
+				</Nav>
+			);
+		}
+		return (
+			<Nav>
+				<ClayButton
+					borderless
+					className='button-root text-danger'
+					displayType='primary'
+					onClick={() => {
+						handleDeleteSegments({
+							ids: selectedItems.map(item => item.id).toArray(),
+							items: selectedItems.toArray(),
+							name:
+								selectedItems.size === 1
+									? selectedItems.first().name
+									: undefined
+						});
+					}}
+					outline
+				>
+					<ClayIcon className='icon-root mr-2' symbol='trash' />
+					<span>{Liferay.Language.get('delete')}</span>
+				</ClayButton>
+			</Nav>
+		);
+	};
 
 	return (
-		<BaseListPage
-			alerts={getAlerts()}
+		<BasePage
 			className='segment-list-root'
-			columns={[
-				segmentsListColumns.getName({channelId, groupId}),
-				segmentsListColumns.getOwnerName(timeZoneId)
-			]}
-			currentUser={currentUser}
-			dataSourceFn={fetchSegments}
-			delta={delta}
-			emptyStateTitle={Liferay.Language.get('no-data-sources-connected')}
-			entityLabel={Liferay.Language.get('segments')}
-			noResultsConfig={{
-				description: (
-					<>
-						{Liferay.Language.get(
-							'create-a-segment-to-get-started'
-						)}
+			documentTitle={Liferay.Language.get('segments')}
+		>
+			<BasePage.Header
+				breadcrumbs={[
+					breadcrumbs.getHome({
+						channelId,
+						groupId,
+						label: selectedChannel && selectedChannel.name
+					})
+				]}
+				groupId={groupId}
+			>
+				<BasePage.Row>
+					<BasePage.Header.TitleSection
+						title={Liferay.Language.get('segments')}
+					/>
+					<BasePage.Header.Section>
+						<BasePage.Header.PageActions
+							disabled={error || loading || allActionsDisabled}
+							label={pageActionsLabel}
+						/>
+					</BasePage.Header.Section>
+				</BasePage.Row>
+			</BasePage.Header>
+			<BasePage.Body>
+				<Card pageDisplay>
+					<Card.Body noPadding>
+						<CrossPageSelect
+							alerts={getAlerts()}
+							className='segment-list-root'
+							columns={[
+								{
+									accessor: 'name',
+									cellRenderer: LinkCell,
+									cellRendererProps: {
+										hrefFormatter: (data: {id: string}) =>
+											toRoute(Routes.CONTACTS_SEGMENT, {
+												channelId,
+												groupId,
+												id: data.id,
+												type: SEGMENTS
+											})
+									},
+									className: 'table-cell-expand',
+									label: Liferay.Language.get('segment-name'),
+									title: true
+								},
+								{
+									accessor: 'segmentType',
+									cellRenderer: (item: {
+										data: {
+											segmentType: 'BATCH' | 'REAL_TIME';
+											sequential: boolean;
+										};
+									}) => {
+										const segmentTypeMap = {
+											BATCH: Liferay.Language.get(
+												'batch'
+											),
+											REAL_TIME:
+												Liferay.Language.get(
+													'real-time'
+												)
+										};
 
-						<a
-							className='d-block'
-							href={URLConstants.SegmentsDocumentationLink}
-							key='DOCUMENTATION'
-							target='_blank'
-						>
-							{Liferay.Language.get(
-								'access-our-documentation-to-learn-more'
-							)}
-						</a>
-					</>
-				),
-				icon: {
-					border: false,
-					size: Sizes.XXXLarge,
-					symbol: 'ac-satellite'
-				},
-				title: Liferay.Language.get('there-are-no-segments-found')
-			}}
-			orderByOptions={[
-				{
-					label: Liferay.Language.get('name'),
-					value: NAME
-				},
-				{
-					label: Liferay.Language.get('last-modified'),
-					value: 'dateModified'
-				}
-			]}
-			orderIOMap={orderIOMap}
-			page={page}
-			pageActions={pageActions}
-			pageActionsLabel={pageActionsLabel}
-			query={query}
-			ref={_tableRef}
-			renderRowActions={renderRowActions}
-		/>
+										return (
+											<td>
+												{
+													segmentTypeMap[
+														item.data.segmentType
+													]
+												}
+
+												{item.data.segmentType ===
+													SegmentTypes.RealTime &&
+													item.data.sequential && (
+														<SequentialEventOrderPopover />
+													)}
+											</td>
+										);
+									},
+									label: Liferay.Language.get('type')
+								},
+								{
+									accessor: 'individualCount',
+									cellRenderer: ToThousandsCell,
+									label: Liferay.Language.get(
+										'segment-membership'
+									)
+								},
+								{
+									accessor: 'lastMembershipUpdateDate',
+									cellRenderer: DateCell,
+									cellRendererProps: {
+										dateFormatter: (
+											date: string | number
+										) => formatDateToTimeZone(date, 'lll'),
+										datePath: 'lastMembershipUpdateDate'
+									},
+									className: 'table-column-text-start',
+									label: Liferay.Language.get(
+										'last-membership-update'
+									)
+								},
+								{
+									accessor: 'userName',
+									cellRenderer: UserCell,
+									label: Liferay.Language.get(
+										'last-modified-by'
+									)
+								},
+								{
+									accessor: 'dateModified',
+									cellRenderer: DateCell,
+									cellRendererProps: {
+										dateFormatter: (
+											date: string | number
+										) => formatDateToTimeZone(date, 'll'),
+										datePath: 'dateModified'
+									},
+									className: 'table-column-text-start',
+									label: Liferay.Language.get('modified-date')
+								}
+							]}
+							currentUser={currentUser}
+							delta={delta}
+							filterBy={filterBy}
+							filterByOptions={FILTER_BY_OPTIONS}
+							filterEnabled={!!selectedSegmentTypes.length}
+							items={data?.items}
+							loading={loading}
+							noResultsRenderer={
+								<NoResultsDisplay
+									description={
+										<>
+											{Liferay.Language.get(
+												'create-a-segment-to-get-started'
+											)}
+
+											<ClayLink
+												className='d-block mb-3'
+												href={
+													URLConstants.SegmentsDocumentationLink
+												}
+												key='DOCUMENTATION'
+												target='_blank'
+											>
+												{Liferay.Language.get(
+													'access-our-documentation-to-learn-more'
+												)}
+											</ClayLink>
+										</>
+									}
+									icon={{
+										border: false,
+										size: Sizes.XXXLarge,
+										symbol: 'ac_satellite'
+									}}
+									title={Liferay.Language.get(
+										'there-are-no-segments-found'
+									)}
+								/>
+							}
+							orderByOptions={ORDER_BY_OPTIONS}
+							orderIOMap={orderIOMap}
+							page={page}
+							query={query}
+							renderInlineRowActions={renderRowActions}
+							renderNav={renderNav}
+							total={data?.total}
+						/>
+					</Card.Body>
+				</Card>
+			</BasePage.Body>
+		</BasePage>
 	);
 };
-
-export default compose(connector, withCurrentUser)(List);
+export default compose(connector, withSelectionProvider)(List);

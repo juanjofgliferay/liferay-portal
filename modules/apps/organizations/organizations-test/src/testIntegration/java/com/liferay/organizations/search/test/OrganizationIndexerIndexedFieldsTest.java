@@ -16,6 +16,7 @@ import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.model.Region;
+import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.SearchEngineHelper;
@@ -29,16 +30,16 @@ import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.rule.SynchronousDestinationTestRule;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.search.document.DocumentBuilderFactory;
 import com.liferay.portal.search.model.uid.UIDFactory;
 import com.liferay.portal.search.searcher.SearchRequestBuilderFactory;
 import com.liferay.portal.search.searcher.Searcher;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.search.test.util.ExpandoTableSearchFixture;
 import com.liferay.portal.search.test.util.FieldValuesAssert;
 import com.liferay.portal.search.test.util.IndexedFieldsFixture;
-import com.liferay.portal.search.test.util.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
@@ -99,8 +100,7 @@ public class OrganizationIndexerIndexedFieldsTest {
 		_groups = groupSearchFixture.getGroups();
 
 		_indexedFieldsFixture = new IndexedFieldsFixture(
-			resourcePermissionLocalService, searchEngineHelper, uidFactory,
-			documentBuilderFactory);
+			resourcePermissionLocalService, searchEngineHelper, uidFactory);
 
 		_organizationFixture = organizationFixture;
 		_organizations = organizationFixture.getOrganizations();
@@ -144,7 +144,10 @@ public class OrganizationIndexerIndexedFieldsTest {
 
 	protected void assertFieldValues(Map<String, ?> map, String searchTerm) {
 		FieldValuesAssert.assertFieldValues(
-			map, name -> !name.equals("score") && !name.equals("timestamp"),
+			map,
+			name ->
+				!name.contains(StringPool.PERIOD) && !name.equals("score") &&
+				!name.equals("timestamp"),
 			searcher.search(
 				searchRequestBuilderFactory.builder(
 				).companyId(
@@ -163,9 +166,6 @@ public class OrganizationIndexerIndexedFieldsTest {
 
 	@Inject
 	protected CountryService countryService;
-
-	@Inject
-	protected DocumentBuilderFactory documentBuilderFactory;
 
 	@Inject
 	protected ExpandoColumnLocalService expandoColumnLocalService;
@@ -244,6 +244,8 @@ public class OrganizationIndexerIndexedFieldsTest {
 		).put(
 			"country", _organizationFixture.getCountryNames(organization)
 		).put(
+			"externalReferenceCode", organization.getExternalReferenceCode()
+		).put(
 			"nameTreePath", organization.getName()
 		).put(
 			"nameTreePath_String_sortable",
@@ -269,6 +271,13 @@ public class OrganizationIndexerIndexedFieldsTest {
 			}
 		).put(
 			Field.getSortableFieldName("type_String"), organization.getType()
+		).put(
+			"userExternalReferenceCode",
+			() -> {
+				User user = TestPropsValues.getUser();
+
+				return user.getExternalReferenceCode();
+			}
 		).build();
 	}
 

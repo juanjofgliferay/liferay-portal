@@ -28,6 +28,7 @@ import com.liferay.object.constants.ObjectFieldConstants;
 import com.liferay.object.field.util.ObjectFieldUtil;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.service.ObjectDefinitionLocalServiceUtil;
+import com.liferay.object.test.util.ObjectDefinitionTestUtil;
 import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.json.JSONFactoryImpl;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -45,6 +46,7 @@ import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
+import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.Sync;
 import com.liferay.portal.kernel.test.util.CompanyTestUtil;
@@ -116,8 +118,8 @@ public class DDMFormInstanceStagedModelDataHandlerTest
 
 		Company company = CompanyTestUtil.addCompany();
 
-		try (SafeCloseable safeCloseable =
-				CompanyThreadLocal.setWithSafeCloseable(
+		try (SafeCloseable safeCloseable1 =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
 					company.getCompanyId())) {
 
 			User user = UserTestUtil.getAdminUser(company.getCompanyId());
@@ -132,26 +134,28 @@ public class DDMFormInstanceStagedModelDataHandlerTest
 			ObjectDefinition objectDefinition2 = _addObjectDefinition(
 				objectDefinition1.getExternalReferenceCode(), user.getUserId());
 
-			initImport();
+			try (SafeCloseable safeCloseable2 = initImportWithSafeCloseable()) {
+				_assertDDMFormInstanceSettings(
+					objectDefinition1.getObjectDefinitionId(),
+					portletDataContext.getZipEntryAsString(
+						ExportImportPathUtil.getModelPath(
+							ddmFormInstance1,
+							"settings-ddm-form-values.json")));
 
-			_assertDDMFormInstanceSettings(
-				objectDefinition1.getObjectDefinitionId(),
-				portletDataContext.getZipEntryAsString(
-					ExportImportPathUtil.getModelPath(
-						ddmFormInstance1, "settings-ddm-form-values.json")));
+				StagedModelDataHandlerUtil.importStagedModel(
+					portletDataContext, ddmFormInstance1);
 
-			StagedModelDataHandlerUtil.importStagedModel(
-				portletDataContext, ddmFormInstance1);
+				DDMFormInstance ddmFormInstance2 =
+					(DDMFormInstance)getStagedModel(
+						ddmFormInstance1.getUuid(), liveGroup);
 
-			DDMFormInstance ddmFormInstance2 = (DDMFormInstance)getStagedModel(
-				ddmFormInstance1.getUuid(), liveGroup);
+				_assertDDMFormInstanceSettings(
+					objectDefinition2.getObjectDefinitionId(),
+					ddmFormInstance2.getSettings());
 
-			_assertDDMFormInstanceSettings(
-				objectDefinition2.getObjectDefinitionId(),
-				ddmFormInstance2.getSettings());
-
-			ObjectDefinitionLocalServiceUtil.deleteObjectDefinition(
-				objectDefinition2.getObjectDefinitionId());
+				ObjectDefinitionLocalServiceUtil.deleteObjectDefinition(
+					objectDefinition2.getObjectDefinitionId());
+			}
 		}
 		finally {
 			PermissionThreadLocal.setPermissionChecker(
@@ -263,7 +267,7 @@ public class DDMFormInstanceStagedModelDataHandlerTest
 					).toString())));
 
 		DDMStructure ddmStructure = DDMStructureLocalServiceUtil.addStructure(
-			TestPropsValues.getUserId(), stagingGroup.getGroupId(), 0,
+			null, TestPropsValues.getUserId(), stagingGroup.getGroupId(), 0,
 			PortalUtil.getClassNameId(DDMFormInstance.class.getName()), null,
 			HashMapBuilder.put(
 				LocaleUtil.getSiteDefault(), RandomTestUtil.randomString()
@@ -286,17 +290,20 @@ public class DDMFormInstanceStagedModelDataHandlerTest
 
 		ObjectDefinition objectDefinition =
 			ObjectDefinitionLocalServiceUtil.addCustomObjectDefinition(
-				userId, 0, false, false, false,
+				null, userId, 0, null, true, false, true, false, true, false,
+				false, false, false, null,
 				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
-				"A" + RandomTestUtil.randomString(), null, null,
+				ObjectDefinitionTestUtil.getRandomName(), null, null,
 				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
 				true, ObjectDefinitionConstants.SCOPE_COMPANY,
 				ObjectDefinitionConstants.STORAGE_TYPE_DEFAULT,
+				Collections.emptyList(),
 				Collections.singletonList(
 					ObjectFieldUtil.createObjectField(
 						ObjectFieldConstants.BUSINESS_TYPE_TEXT,
 						ObjectFieldConstants.DB_TYPE_STRING,
-						RandomTestUtil.randomString(), "text")));
+						RandomTestUtil.randomString(), "text")),
+				Collections.emptyList(), new ServiceContext());
 
 		objectDefinition.setExternalReferenceCode(externalReferenceCode);
 

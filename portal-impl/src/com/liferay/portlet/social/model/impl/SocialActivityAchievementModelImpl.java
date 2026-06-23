@@ -89,6 +89,8 @@ public class SocialActivityAchievementModelImpl
 	public static final String TABLE_SQL_DROP =
 		"drop table SocialActivityAchievement";
 
+	public static final String ENTITY_ALIAS = "socialActivityAchievement";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY socialActivityAchievement.activityAchievementId ASC";
 
@@ -151,7 +153,7 @@ public class SocialActivityAchievementModelImpl
 	public static final long ACTIVITYACHIEVEMENTID_COLUMN_BITMASK = 16L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.social.kernel.model.SocialActivityAchievement"));
 
 	public SocialActivityAchievementModelImpl() {
@@ -872,3 +874,4 @@ public class SocialActivityAchievementModelImpl
 	private SocialActivityAchievement _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1955850708

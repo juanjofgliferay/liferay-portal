@@ -70,6 +70,16 @@ public class NotificationTemplateLocalServiceWrapper
 			externalReferenceCode, userId, type);
 	}
 
+	@Override
+	public com.liferay.notification.model.NotificationTemplate
+			addSubscriptionNotificationTemplate(
+				String externalReferenceCode, long userId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _notificationTemplateLocalService.
+			addSubscriptionNotificationTemplate(externalReferenceCode, userId);
+	}
+
 	/**
 	 * Creates a new notification template with the primary key. Does not add the notification template to the database.
 	 *
@@ -94,6 +104,14 @@ public class NotificationTemplateLocalServiceWrapper
 
 		return _notificationTemplateLocalService.createPersistedModel(
 			primaryKeyObj);
+	}
+
+	@Override
+	public void deleteCompanyNotificationTemplates(long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_notificationTemplateLocalService.deleteCompanyNotificationTemplates(
+			companyId);
 	}
 
 	/**
@@ -461,3 +479,4 @@ public class NotificationTemplateLocalServiceWrapper
 	private NotificationTemplateLocalService _notificationTemplateLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1018852765

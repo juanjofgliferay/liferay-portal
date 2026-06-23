@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -310,6 +311,14 @@ public class CPDefinitionOptionValueRelLocalServiceUtil {
 		return getService().getActionableDynamicQuery();
 	}
 
+	public static List<CPDefinitionOptionValueRel>
+		getApprovedCPInstanceCPDefinitionOptionValueRels(
+			long cpDefinitionOptionRelId) {
+
+		return getService().getApprovedCPInstanceCPDefinitionOptionValueRels(
+			cpDefinitionOptionRelId);
+	}
+
 	/**
 	 * Returns the cp definition option value rel with the primary key.
 	 *
@@ -595,15 +604,13 @@ public class CPDefinitionOptionValueRelLocalServiceUtil {
 	}
 
 	public static CPDefinitionOptionValueRelLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(
-		CPDefinitionOptionValueRelLocalService service) {
-
-		_service = service;
-	}
-
-	private static volatile CPDefinitionOptionValueRelLocalService _service;
+	private static final Snapshot<CPDefinitionOptionValueRelLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CPDefinitionOptionValueRelLocalServiceUtil.class,
+			CPDefinitionOptionValueRelLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1324743478

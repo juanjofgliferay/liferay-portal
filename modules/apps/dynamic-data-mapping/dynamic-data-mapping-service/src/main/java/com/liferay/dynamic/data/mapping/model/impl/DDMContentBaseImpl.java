@@ -18,10 +18,8 @@ import com.liferay.dynamic.data.mapping.service.DDMContentLocalServiceUtil;
  * @author Brian Wing Shun Chan
  * @see DDMContentImpl
  * @see DDMContent
- * @deprecated
  * @generated
  */
-@Deprecated
 public abstract class DDMContentBaseImpl
 	extends DDMContentModelImpl implements DDMContent {
 
@@ -41,3 +39,4 @@ public abstract class DDMContentBaseImpl
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:885807706

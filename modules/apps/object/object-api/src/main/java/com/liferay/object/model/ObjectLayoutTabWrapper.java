@@ -282,6 +282,13 @@ public class ObjectLayoutTabWrapper
 		return model.getObjectLayoutTabId();
 	}
 
+	@Override
+	public ObjectRelationship getObjectRelationship()
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return model.getObjectRelationship();
+	}
+
 	/**
 	 * Returns the object relationship ID of this object layout tab.
 	 *
@@ -588,3 +595,4 @@ public class ObjectLayoutTabWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-2114387131

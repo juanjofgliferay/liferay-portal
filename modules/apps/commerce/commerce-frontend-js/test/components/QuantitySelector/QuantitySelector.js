@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import {render} from '@testing-library/react';
 import React from 'react';
 
@@ -52,5 +52,26 @@ describe('Quantity Selector', () => {
 		expect(
 			quantitySelector.container.querySelector('select')
 		).not.toBeInTheDocument();
+	});
+
+	describe('product-configuration quantity rules', () => {
+		it('renders exactly the allowed quantities as <option> values', () => {
+			const allowedQuantities = [1, 4, 5, 7, 11];
+
+			const {container} = render(
+				<QuantitySelector
+					{...defaultProps}
+					allowedQuantities={allowedQuantities}
+				/>
+			);
+
+			const options = container.querySelectorAll('option');
+
+			expect(options).toHaveLength(allowedQuantities.length);
+
+			Array.from(options).forEach((option, index) => {
+				expect(option.value).toBe(String(allowedQuantities[index]));
+			});
+		});
 	});
 });

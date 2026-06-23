@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -39,6 +38,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @GraphQLName(
 	description = "Represents a definition of a Page Widget instance.",
 	value = "PageWidgetInstanceDefinition"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "Represents a definition of a Page Widget instance."
 )
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "PageWidgetInstanceDefinition")
@@ -54,30 +56,40 @@ public class PageWidgetInstanceDefinition implements Serializable {
 			PageWidgetInstanceDefinition.class, json);
 	}
 
-	@Schema(
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "A list of CSS Classes that are applied to the element."
 	)
 	public String[] getCssClasses() {
+		if (_cssClassesSupplier != null) {
+			cssClasses = _cssClassesSupplier.get();
+
+			_cssClassesSupplier = null;
+		}
+
 		return cssClasses;
 	}
 
 	public void setCssClasses(String[] cssClasses) {
 		this.cssClasses = cssClasses;
+
+		_cssClassesSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCssClasses(
 		UnsafeSupplier<String[], Exception> cssClassesUnsafeSupplier) {
 
-		try {
-			cssClasses = cssClassesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_cssClassesSupplier = () -> {
+			try {
+				return cssClassesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -86,42 +98,70 @@ public class PageWidgetInstanceDefinition implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String[] cssClasses;
 
-	@Schema(description = "Custom CSS that is applied on the fragment.")
+	@JsonIgnore
+	private Supplier<String[]> _cssClassesSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Custom CSS that is applied on the fragment."
+	)
 	public String getCustomCSS() {
+		if (_customCSSSupplier != null) {
+			customCSS = _customCSSSupplier.get();
+
+			_customCSSSupplier = null;
+		}
+
 		return customCSS;
 	}
 
 	public void setCustomCSS(String customCSS) {
 		this.customCSS = customCSS;
+
+		_customCSSSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCustomCSS(
 		UnsafeSupplier<String, Exception> customCSSUnsafeSupplier) {
 
-		try {
-			customCSS = customCSSUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_customCSSSupplier = () -> {
+			try {
+				return customCSSUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "Custom CSS that is applied on the fragment.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String customCSS;
 
-	@Schema(description = "The custom CSS viewports of the page collection.")
+	@JsonIgnore
+	private Supplier<String> _customCSSSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The custom CSS viewports of the page collection."
+	)
 	@Valid
 	public CustomCSSViewport[] getCustomCSSViewports() {
+		if (_customCSSViewportsSupplier != null) {
+			customCSSViewports = _customCSSViewportsSupplier.get();
+
+			_customCSSViewportsSupplier = null;
+		}
+
 		return customCSSViewports;
 	}
 
 	public void setCustomCSSViewports(CustomCSSViewport[] customCSSViewports) {
 		this.customCSSViewports = customCSSViewports;
+
+		_customCSSViewportsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -129,15 +169,17 @@ public class PageWidgetInstanceDefinition implements Serializable {
 		UnsafeSupplier<CustomCSSViewport[], Exception>
 			customCSSViewportsUnsafeSupplier) {
 
-		try {
-			customCSSViewports = customCSSViewportsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_customCSSViewportsSupplier = () -> {
+			try {
+				return customCSSViewportsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -146,29 +188,44 @@ public class PageWidgetInstanceDefinition implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected CustomCSSViewport[] customCSSViewports;
 
-	@Schema(description = "The fragment style of the page widget instance.")
+	@JsonIgnore
+	private Supplier<CustomCSSViewport[]> _customCSSViewportsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The fragment style of the page widget instance."
+	)
 	@Valid
 	public FragmentStyle getFragmentStyle() {
+		if (_fragmentStyleSupplier != null) {
+			fragmentStyle = _fragmentStyleSupplier.get();
+
+			_fragmentStyleSupplier = null;
+		}
+
 		return fragmentStyle;
 	}
 
 	public void setFragmentStyle(FragmentStyle fragmentStyle) {
 		this.fragmentStyle = fragmentStyle;
+
+		_fragmentStyleSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setFragmentStyle(
 		UnsafeSupplier<FragmentStyle, Exception> fragmentStyleUnsafeSupplier) {
 
-		try {
-			fragmentStyle = fragmentStyleUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_fragmentStyleSupplier = () -> {
+			try {
+				return fragmentStyleUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -177,16 +234,27 @@ public class PageWidgetInstanceDefinition implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected FragmentStyle fragmentStyle;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<FragmentStyle> _fragmentStyleSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "A list of fragment viewports of the page widget instance."
 	)
 	@Valid
 	public FragmentViewport[] getFragmentViewports() {
+		if (_fragmentViewportsSupplier != null) {
+			fragmentViewports = _fragmentViewportsSupplier.get();
+
+			_fragmentViewportsSupplier = null;
+		}
+
 		return fragmentViewports;
 	}
 
 	public void setFragmentViewports(FragmentViewport[] fragmentViewports) {
 		this.fragmentViewports = fragmentViewports;
+
+		_fragmentViewportsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -194,15 +262,17 @@ public class PageWidgetInstanceDefinition implements Serializable {
 		UnsafeSupplier<FragmentViewport[], Exception>
 			fragmentViewportsUnsafeSupplier) {
 
-		try {
-			fragmentViewports = fragmentViewportsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_fragmentViewportsSupplier = () -> {
+			try {
+				return fragmentViewportsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -211,40 +281,68 @@ public class PageWidgetInstanceDefinition implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected FragmentViewport[] fragmentViewports;
 
-	@Schema(description = "The custom name of a Page Widget instance.")
+	@JsonIgnore
+	private Supplier<FragmentViewport[]> _fragmentViewportsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The custom name of a Page Widget instance."
+	)
 	public String getName() {
+		if (_nameSupplier != null) {
+			name = _nameSupplier.get();
+
+			_nameSupplier = null;
+		}
+
 		return name;
 	}
 
 	public void setName(String name) {
 		this.name = name;
+
+		_nameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setName(UnsafeSupplier<String, Exception> nameUnsafeSupplier) {
-		try {
-			name = nameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_nameSupplier = () -> {
+			try {
+				return nameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The custom name of a Page Widget instance.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String name;
 
-	@Schema(description = "The widget instance of the page widget instance.")
+	@JsonIgnore
+	private Supplier<String> _nameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The widget instance of the page widget instance."
+	)
 	@Valid
 	public WidgetInstance getWidgetInstance() {
+		if (_widgetInstanceSupplier != null) {
+			widgetInstance = _widgetInstanceSupplier.get();
+
+			_widgetInstanceSupplier = null;
+		}
+
 		return widgetInstance;
 	}
 
 	public void setWidgetInstance(WidgetInstance widgetInstance) {
 		this.widgetInstance = widgetInstance;
+
+		_widgetInstanceSupplier = null;
 	}
 
 	@JsonIgnore
@@ -252,15 +350,17 @@ public class PageWidgetInstanceDefinition implements Serializable {
 		UnsafeSupplier<WidgetInstance, Exception>
 			widgetInstanceUnsafeSupplier) {
 
-		try {
-			widgetInstance = widgetInstanceUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_widgetInstanceSupplier = () -> {
+			try {
+				return widgetInstanceUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -268,6 +368,9 @@ public class PageWidgetInstanceDefinition implements Serializable {
 	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected WidgetInstance widgetInstance;
+
+	@JsonIgnore
+	private Supplier<WidgetInstance> _widgetInstanceSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -298,6 +401,8 @@ public class PageWidgetInstanceDefinition implements Serializable {
 
 		sb.append("{");
 
+		String[] cssClasses = getCssClasses();
+
 		if (cssClasses != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -322,6 +427,8 @@ public class PageWidgetInstanceDefinition implements Serializable {
 			sb.append("]");
 		}
 
+		String customCSS = getCustomCSS();
+
 		if (customCSS != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -335,6 +442,8 @@ public class PageWidgetInstanceDefinition implements Serializable {
 
 			sb.append("\"");
 		}
+
+		CustomCSSViewport[] customCSSViewports = getCustomCSSViewports();
 
 		if (customCSSViewports != null) {
 			if (sb.length() > 1) {
@@ -356,6 +465,8 @@ public class PageWidgetInstanceDefinition implements Serializable {
 			sb.append("]");
 		}
 
+		FragmentStyle fragmentStyle = getFragmentStyle();
+
 		if (fragmentStyle != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -365,6 +476,8 @@ public class PageWidgetInstanceDefinition implements Serializable {
 
 			sb.append(String.valueOf(fragmentStyle));
 		}
+
+		FragmentViewport[] fragmentViewports = getFragmentViewports();
 
 		if (fragmentViewports != null) {
 			if (sb.length() > 1) {
@@ -386,6 +499,8 @@ public class PageWidgetInstanceDefinition implements Serializable {
 			sb.append("]");
 		}
 
+		String name = getName();
+
 		if (name != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -399,6 +514,8 @@ public class PageWidgetInstanceDefinition implements Serializable {
 
 			sb.append("\"");
 		}
+
+		WidgetInstance widgetInstance = getWidgetInstance();
 
 		if (widgetInstance != null) {
 			if (sb.length() > 1) {
@@ -415,8 +532,8 @@ public class PageWidgetInstanceDefinition implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.PageWidgetInstanceDefinition",
 		name = "x-class-name"
 	)
@@ -462,7 +579,10 @@ public class PageWidgetInstanceDefinition implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -508,3 +628,4 @@ public class PageWidgetInstanceDefinition implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1992079837

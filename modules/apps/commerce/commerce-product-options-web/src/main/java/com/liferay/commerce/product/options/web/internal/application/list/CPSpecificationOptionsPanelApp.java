@@ -30,6 +30,11 @@ import org.osgi.service.component.annotations.Reference;
 public class CPSpecificationOptionsPanelApp extends BasePanelApp {
 
 	@Override
+	public String getIcon() {
+		return "search-experiences";
+	}
+
+	@Override
 	public String getLabel(Locale locale) {
 		return _language.get(locale, "specifications");
 	}
@@ -48,7 +53,7 @@ public class CPSpecificationOptionsPanelApp extends BasePanelApp {
 	private Language _language;
 
 	@Reference(
-		target = "(javax.portlet.name=" + CPPortletKeys.CP_SPECIFICATION_OPTIONS + ")"
+		target = "(jakarta.portlet.name=" + CPPortletKeys.CP_SPECIFICATION_OPTIONS + ")"
 	)
 	private Portlet _portlet;
 

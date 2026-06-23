@@ -214,8 +214,7 @@ public interface LayoutSetLocalService
 	public LayoutSet fetchLayoutSet(String virtualHostname);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public LayoutSet fetchLayoutSetByLogoId(boolean privateLayout, long logoId)
-		throws PortalException;
+	public LayoutSet fetchLayoutSetByLogoId(boolean privateLayout, long logoId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
@@ -369,3 +368,4 @@ public interface LayoutSetLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-604329677

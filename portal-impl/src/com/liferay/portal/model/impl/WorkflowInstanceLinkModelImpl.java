@@ -96,6 +96,8 @@ public class WorkflowInstanceLinkModelImpl
 	public static final String TABLE_SQL_DROP =
 		"drop table WorkflowInstanceLink";
 
+	public static final String ENTITY_ALIAS = "workflowInstanceLink";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY workflowInstanceLink.createDate DESC";
 
@@ -151,14 +153,20 @@ public class WorkflowInstanceLinkModelImpl
 	public static final long GROUPID_COLUMN_BITMASK = 8L;
 
 	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long WORKFLOWINSTANCEID_COLUMN_BITMASK = 16L;
+
+	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long CREATEDATE_COLUMN_BITMASK = 16L;
+	public static final long CREATEDATE_COLUMN_BITMASK = 32L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.portal.kernel.model.WorkflowInstanceLink"));
 
 	public WorkflowInstanceLinkModelImpl() {
@@ -610,6 +618,16 @@ public class WorkflowInstanceLinkModelImpl
 		_workflowInstanceId = workflowInstanceId;
 	}
 
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public long getOriginalWorkflowInstanceId() {
+		return GetterUtil.getLong(
+			this.<Long>getColumnOriginalValue("workflowInstanceId"));
+	}
+
 	public long getColumnBitmask() {
 		if (_columnBitmask > 0) {
 			return _columnBitmask;
@@ -1004,3 +1022,4 @@ public class WorkflowInstanceLinkModelImpl
 	private WorkflowInstanceLink _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-608944747

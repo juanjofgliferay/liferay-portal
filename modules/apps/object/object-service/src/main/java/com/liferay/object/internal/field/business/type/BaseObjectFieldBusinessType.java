@@ -6,12 +6,15 @@
 package com.liferay.object.internal.field.business.type;
 
 import com.liferay.document.library.kernel.util.DLValidatorUtil;
+import com.liferay.dynamic.data.mapping.expression.DDMExpressionFactory;
+import com.liferay.dynamic.data.mapping.model.LocalizedValue;
 import com.liferay.object.constants.ObjectFieldConstants;
 import com.liferay.object.constants.ObjectFieldSettingConstants;
 import com.liferay.object.exception.ObjectFieldSettingNameException;
 import com.liferay.object.exception.ObjectFieldSettingValueException;
 import com.liferay.object.field.business.type.ObjectFieldBusinessType;
 import com.liferay.object.field.render.ObjectFieldRenderingContext;
+import com.liferay.object.field.setting.util.ObjectFieldSettingUtil;
 import com.liferay.object.model.ObjectField;
 import com.liferay.object.model.ObjectFieldSetting;
 import com.liferay.object.service.ObjectFieldSettingLocalService;
@@ -21,6 +24,7 @@ import com.liferay.petra.string.StringUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.Validator;
@@ -29,6 +33,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -43,14 +48,47 @@ public abstract class BaseObjectFieldBusinessType
 
 	@Override
 	public Map<String, Object> getProperties(
-		ObjectField objectField,
-		ObjectFieldRenderingContext objectFieldRenderingContext) {
+			ObjectField objectField,
+			ObjectFieldRenderingContext objectFieldRenderingContext)
+		throws PortalException {
 
-		return new HashMap<>(
+		return HashMapBuilder.<String, Object>put(
+			"predefinedValue",
+			() -> {
+				LocalizedValue localizedValue = new LocalizedValue(
+					objectFieldRenderingContext.getLocale());
+
+				Locale defaultLocale = objectFieldRenderingContext.getLocale();
+				String defaultValue = Objects.toString(
+					ObjectFieldSettingUtil.getDefaultValue(
+						ddmExpressionFactory, objectField, null),
+					StringPool.BLANK);
+
+				if (objectField.isLocalized() &&
+					Validator.isNotNull(defaultValue)) {
+
+					localizedValue.addString(
+						defaultLocale,
+						jsonFactory.createJSONObject(
+							HashMapBuilder.put(
+								defaultLocale, defaultValue
+							).build()
+						).toJSONString());
+				}
+				else {
+					localizedValue.addString(defaultLocale, defaultValue);
+				}
+
+				return localizedValue;
+			}
+		).putAll(
 			getObjectFieldSettingsValues(
 				objectFieldSettingLocalService.
-					getObjectFieldObjectFieldSettings(
-						objectField.getObjectFieldId())));
+					getObjectFieldObjectFieldSettings(objectField))
+		).putAll(
+			ObjectFieldBusinessType.super.getProperties(
+				objectField, objectFieldRenderingContext)
+		).build();
 	}
 
 	protected Map<String, String> getObjectFieldSettingsValues(
@@ -122,38 +160,7 @@ public abstract class BaseObjectFieldBusinessType
 		}
 	}
 
-	protected void validateRelatedObjectFieldSettings(
-			ObjectField objectField, String objectFieldSettingName1,
-			String objectFieldSettingName2,
-			Map<String, String> objectFieldSettingsValues)
-		throws PortalException {
-
-		validateBooleanObjectFieldSetting(
-			objectField.getName(), objectFieldSettingName1,
-			objectFieldSettingsValues);
-
-		if (StringUtil.equalsIgnoreCase(
-				objectFieldSettingsValues.get(objectFieldSettingName1),
-				StringPool.TRUE)) {
-
-			_validateObjectFieldSettingValue(
-				objectField, objectFieldSettingName2,
-				objectFieldSettingsValues);
-		}
-		else {
-			validateNotAllowedObjectFieldSettingNames(
-				SetUtil.fromArray(objectFieldSettingName2),
-				objectField.getName(), objectFieldSettingsValues);
-		}
-	}
-
-	@Reference
-	protected JSONFactory jsonFactory;
-
-	@Reference
-	protected ObjectFieldSettingLocalService objectFieldSettingLocalService;
-
-	private void _validateObjectFieldSettingValue(
+	protected void validateObjectFieldSettingValue(
 			ObjectField objectField, String objectFieldSettingName,
 			Map<String, String> objectFieldSettingsValues)
 		throws PortalException {
@@ -203,5 +210,39 @@ public abstract class BaseObjectFieldBusinessType
 			}
 		}
 	}
+
+	protected void validateRelatedObjectFieldSettings(
+			ObjectField objectField, String objectFieldSettingName1,
+			String objectFieldSettingName2,
+			Map<String, String> objectFieldSettingsValues)
+		throws PortalException {
+
+		validateBooleanObjectFieldSetting(
+			objectField.getName(), objectFieldSettingName1,
+			objectFieldSettingsValues);
+
+		if (StringUtil.equalsIgnoreCase(
+				objectFieldSettingsValues.get(objectFieldSettingName1),
+				StringPool.TRUE)) {
+
+			validateObjectFieldSettingValue(
+				objectField, objectFieldSettingName2,
+				objectFieldSettingsValues);
+		}
+		else {
+			validateNotAllowedObjectFieldSettingNames(
+				SetUtil.fromArray(objectFieldSettingName2),
+				objectField.getName(), objectFieldSettingsValues);
+		}
+	}
+
+	@Reference
+	protected DDMExpressionFactory ddmExpressionFactory;
+
+	@Reference
+	protected JSONFactory jsonFactory;
+
+	@Reference
+	protected ObjectFieldSettingLocalService objectFieldSettingLocalService;
 
 }

@@ -6,17 +6,20 @@
 package com.liferay.product.navigation.product.menu.theme.contributor.internal.servlet.taglib;
 
 import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.content.security.policy.ContentSecurityPolicyNonceProviderUtil;
 import com.liferay.portal.kernel.servlet.taglib.DynamicInclude;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.url.builder.AbsolutePortalURLBuilder;
 import com.liferay.portal.url.builder.AbsolutePortalURLBuilderFactory;
+import com.liferay.product.navigation.product.menu.helper.ProductNavigationProductMenuHelper;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -42,13 +45,16 @@ public class ProductNavigationProductMenuTopHeadDynamicInclude
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-		if (!themeDisplay.isSignedIn()) {
+		if (!themeDisplay.isShowControlMenu() ||
+			!_productNavigationProductMenuHelper.isShowProductMenu(
+				httpServletRequest)) {
+
 			return;
 		}
 
 		PrintWriter printWriter = httpServletResponse.getWriter();
 
-		StringBundler sb = new StringBundler(3);
+		StringBundler sb = new StringBundler(5);
 
 		sb.append("<link data-senna-track=\"permanent\" href=\"");
 
@@ -57,11 +63,16 @@ public class ProductNavigationProductMenuTopHeadDynamicInclude
 				httpServletRequest);
 
 		sb.append(
-			absolutePortalURLBuilder.forBundleStylesheet(
-				_bundle, "/product_navigation_product_menu.css"
+			absolutePortalURLBuilder.forWebContextStylesheet(
+				"product-navigation-product-menu-theme-contributor",
+				"/product_navigation_product_menu.css"
 			).build());
 
-		sb.append("\" rel=\"stylesheet\" type = \"text/css\" />\n");
+		sb.append(StringPool.QUOTE);
+		sb.append(
+			ContentSecurityPolicyNonceProviderUtil.getNonceAttribute(
+				httpServletRequest));
+		sb.append(" rel=\"stylesheet\" type = \"text/css\" />\n");
 
 		printWriter.println(sb.toString());
 	}
@@ -82,5 +93,9 @@ public class ProductNavigationProductMenuTopHeadDynamicInclude
 	private AbsolutePortalURLBuilderFactory _absolutePortalURLBuilderFactory;
 
 	private volatile Bundle _bundle;
+
+	@Reference
+	private ProductNavigationProductMenuHelper
+		_productNavigationProductMenuHelper;
 
 }

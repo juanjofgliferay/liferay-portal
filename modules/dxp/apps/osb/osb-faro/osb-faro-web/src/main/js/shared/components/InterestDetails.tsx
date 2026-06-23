@@ -1,11 +1,12 @@
 import Card from 'shared/components/Card';
+import ClayLink from '@clayui/link';
 import getCN from 'classnames';
 import getMetricsMapper from 'shared/hoc/mappers/metrics';
 import React from 'react';
 import TouchpointsQuery from 'shared/queries/TouchpointsQuery';
 import URLConstants from 'shared/util/url-constants';
 import {createOrderIOMap, VISITORS_METRIC} from 'shared/util/pagination';
-import {graphql} from '@apollo/react-hoc';
+import {graphql} from '@apollo/client/react/hoc';
 import {
 	metricsListColumns,
 	sitePagesListColumns
@@ -17,7 +18,8 @@ import {RangeSelectors, Router} from 'shared/types';
 import {Routes} from 'shared/util/router';
 import {sub} from 'shared/util/lang';
 import {useParams} from 'react-router-dom';
-import {useQueryPagination, useQueryRangeSelectors} from 'shared/hooks';
+import {useQueryPagination} from 'shared/hooks/useQueryPagination';
+import {useQueryRangeSelectors} from 'shared/hooks/useQueryRangeSelectors';
 import {withBaseResults, withRangeKey} from 'shared/hoc';
 
 const withData = () =>
@@ -48,18 +50,22 @@ const TableWithData: React.FC<ITableWithDataProps> = withRangeKey(
 		emptyDescription: sub(
 			Liferay.Language.get('empty-message-lists'),
 			[
-				<a
+				<ClayLink
 					href={URLConstants.DocumentationLink}
 					key='DOCUMENTATION'
 					target='_blank'
 				>
 					{Liferay.Language.get('documentation').toLowerCase()}
-				</a>
+				</ClayLink>
 			],
 			false
 		),
 		emptyTitle: Liferay.Language.get('empty-title-pages'),
-		getColumns: ({channelId, groupId, rangeSelectors}) => [
+		getColumns: ({
+			channelId,
+			groupId,
+			rangeSelectors
+		}: ITableWithDataProps) => [
 			sitePagesListColumns.getTitleUrl({
 				channelId,
 				groupId,
@@ -113,10 +119,10 @@ const InterestDetails: React.FC<IInterestDetailsProps> = ({
 			</Card.Header>
 
 			<TableWithData
-				channelId={channelId}
+				channelId={channelId!}
 				delta={delta}
-				groupId={groupId}
-				interestId={interestId}
+				groupId={groupId!}
+				interestId={interestId!}
 				orderIOMap={orderIOMap}
 				page={page}
 				query={query}

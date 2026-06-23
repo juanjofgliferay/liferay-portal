@@ -8,13 +8,16 @@ package com.liferay.headless.commerce.admin.order.client.serdes.v1_0;
 import com.liferay.headless.commerce.admin.order.client.dto.v1_0.OrderNote;
 import com.liferay.headless.commerce.admin.order.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.annotation.Generated;
 
 /**
  * @author Alessio Antonio Rendina
@@ -44,6 +47,9 @@ public class OrderNoteSerDes {
 
 		sb.append("{");
 
+		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
+			"yyyy-MM-dd'T'HH:mm:ssXX");
+
 		if (orderNote.getAuthor() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -54,6 +60,30 @@ public class OrderNoteSerDes {
 			sb.append("\"");
 
 			sb.append(_escape(orderNote.getAuthor()));
+
+			sb.append("\"");
+		}
+
+		if (orderNote.getAuthorId() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"authorId\": ");
+
+			sb.append(orderNote.getAuthorId());
+		}
+
+		if (orderNote.getAuthorPortraitURL() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"authorPortraitURL\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(orderNote.getAuthorPortraitURL()));
 
 			sb.append("\"");
 		}
@@ -94,6 +124,21 @@ public class OrderNoteSerDes {
 			sb.append("\"id\": ");
 
 			sb.append(orderNote.getId());
+		}
+
+		if (orderNote.getModifiedDate() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"modifiedDate\": ");
+
+			sb.append("\"");
+
+			sb.append(
+				liferayToJSONDateFormat.format(orderNote.getModifiedDate()));
+
+			sb.append("\"");
 		}
 
 		if (orderNote.getOrderExternalReferenceCode() != null) {
@@ -148,11 +193,30 @@ public class OrderNoteSerDes {
 
 		Map<String, String> map = new TreeMap<>();
 
+		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
+			"yyyy-MM-dd'T'HH:mm:ssXX");
+
 		if (orderNote.getAuthor() == null) {
 			map.put("author", null);
 		}
 		else {
 			map.put("author", String.valueOf(orderNote.getAuthor()));
+		}
+
+		if (orderNote.getAuthorId() == null) {
+			map.put("authorId", null);
+		}
+		else {
+			map.put("authorId", String.valueOf(orderNote.getAuthorId()));
+		}
+
+		if (orderNote.getAuthorPortraitURL() == null) {
+			map.put("authorPortraitURL", null);
+		}
+		else {
+			map.put(
+				"authorPortraitURL",
+				String.valueOf(orderNote.getAuthorPortraitURL()));
 		}
 
 		if (orderNote.getContent() == null) {
@@ -176,6 +240,15 @@ public class OrderNoteSerDes {
 		}
 		else {
 			map.put("id", String.valueOf(orderNote.getId()));
+		}
+
+		if (orderNote.getModifiedDate() == null) {
+			map.put("modifiedDate", null);
+		}
+		else {
+			map.put(
+				"modifiedDate",
+				liferayToJSONDateFormat.format(orderNote.getModifiedDate()));
 		}
 
 		if (orderNote.getOrderExternalReferenceCode() == null) {
@@ -217,6 +290,46 @@ public class OrderNoteSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "author")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "authorId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "authorPortraitURL")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "content")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "externalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "id")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "modifiedDate")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "orderExternalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "orderId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "restricted")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			OrderNote orderNote, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
@@ -224,6 +337,18 @@ public class OrderNoteSerDes {
 			if (Objects.equals(jsonParserFieldName, "author")) {
 				if (jsonParserFieldValue != null) {
 					orderNote.setAuthor((String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "authorId")) {
+				if (jsonParserFieldValue != null) {
+					orderNote.setAuthorId(
+						Long.valueOf((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "authorPortraitURL")) {
+				if (jsonParserFieldValue != null) {
+					orderNote.setAuthorPortraitURL(
+						(String)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "content")) {
@@ -242,6 +367,12 @@ public class OrderNoteSerDes {
 			else if (Objects.equals(jsonParserFieldName, "id")) {
 				if (jsonParserFieldValue != null) {
 					orderNote.setId(Long.valueOf((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "modifiedDate")) {
+				if (jsonParserFieldValue != null) {
+					orderNote.setModifiedDate(
+						toDate((String)jsonParserFieldValue));
 				}
 			}
 			else if (Objects.equals(
@@ -295,36 +426,7 @@ public class OrderNoteSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -336,4 +438,41 @@ public class OrderNoteSerDes {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
+	}
+
 }
+// LIFERAY-REST-BUILDER-HASH:1733924199

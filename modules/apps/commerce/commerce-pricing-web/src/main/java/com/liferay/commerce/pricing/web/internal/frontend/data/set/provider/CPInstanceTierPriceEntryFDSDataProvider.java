@@ -5,7 +5,9 @@
 
 package com.liferay.commerce.pricing.web.internal.frontend.data.set.provider;
 
+import com.liferay.commerce.currency.model.CommerceCurrency;
 import com.liferay.commerce.currency.model.CommerceMoney;
+import com.liferay.commerce.currency.util.CommercePriceFormatter;
 import com.liferay.commerce.price.list.model.CommercePriceEntry;
 import com.liferay.commerce.price.list.model.CommercePriceList;
 import com.liferay.commerce.price.list.model.CommerceTierPriceEntry;
@@ -18,6 +20,7 @@ import com.liferay.commerce.util.CommerceQuantityFormatter;
 import com.liferay.frontend.data.set.provider.FDSDataProvider;
 import com.liferay.frontend.data.set.provider.search.FDSKeywords;
 import com.liferay.frontend.data.set.provider.search.FDSPagination;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -30,14 +33,14 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.text.DateFormat;
 import java.text.Format;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
+import java.util.Locale;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -66,48 +69,46 @@ public class CPInstanceTierPriceEntryFDSDataProvider
 			DateFormat.MEDIUM, DateFormat.MEDIUM, themeDisplay.getLocale(),
 			themeDisplay.getTimeZone());
 
-		List<InstanceTierPriceEntry> instanceTierPriceEntries =
-			new ArrayList<>();
-
 		long commercePriceEntryId = ParamUtil.getLong(
 			httpServletRequest, "commercePriceEntryId");
 
-		List<CommerceTierPriceEntry> commerceTierPriceEntries =
+		return TransformUtil.transform(
 			_commerceTierPriceEntryService.getCommerceTierPriceEntries(
 				commercePriceEntryId, fdsPagination.getStartPosition(),
-				fdsPagination.getEndPosition());
+				fdsPagination.getEndPosition()),
+			commerceTierPriceEntry -> {
+				CommercePriceEntry commercePriceEntry =
+					commerceTierPriceEntry.getCommercePriceEntry();
 
-		for (CommerceTierPriceEntry commerceTierPriceEntry :
-				commerceTierPriceEntries) {
+				CommercePriceList commercePriceList =
+					commercePriceEntry.getCommercePriceList();
 
-			CommercePriceEntry commercePriceEntry =
-				commerceTierPriceEntry.getCommercePriceEntry();
+				CommerceCurrency commerceCurrency =
+					commercePriceList.getCommerceCurrency();
 
-			CommercePriceList commercePriceList =
-				commercePriceEntry.getCommercePriceList();
+				CommerceMoney priceCommerceMoney =
+					commerceTierPriceEntry.getPriceCommerceMoney(
+						commerceCurrency.getCommerceCurrencyId());
 
-			CommerceMoney priceCommerceMoney =
-				commerceTierPriceEntry.getPriceCommerceMoney(
-					commercePriceList.getCommerceCurrencyId());
+				Date createDate = commerceTierPriceEntry.getCreateDate();
 
-			Date createDate = commerceTierPriceEntry.getCreateDate();
+				String createDateDescription = _language.getTimeDescription(
+					httpServletRequest,
+					System.currentTimeMillis() - createDate.getTime(), true);
 
-			String createDateDescription = _language.getTimeDescription(
-				httpServletRequest,
-				System.currentTimeMillis() - createDate.getTime(), true);
+				CPInstance cpInstance =
+					_cpInstanceLocalService.fetchCProductInstance(
+						commercePriceEntry.getCProductId(),
+						commercePriceEntry.getCPInstanceUuid());
 
-			CPInstance cpInstance =
-				_cpInstanceLocalService.fetchCProductInstance(
-					commercePriceEntry.getCProductId(),
-					commercePriceEntry.getCPInstanceUuid());
-
-			instanceTierPriceEntries.add(
-				new InstanceTierPriceEntry(
+				return new InstanceTierPriceEntry(
 					commerceTierPriceEntry.getCommerceTierPriceEntryId(),
 					_language.format(
 						httpServletRequest, "x-ago", createDateDescription,
 						false),
-					_getDiscountLevels(commerceTierPriceEntry),
+					_getDiscountLevels(
+						commerceCurrency, commerceTierPriceEntry,
+						_portal.getLocale(httpServletRequest)),
 					_getEndDate(commerceTierPriceEntry, dateTimeFormat),
 					_getOverride(commerceTierPriceEntry, httpServletRequest),
 					_commerceQuantityFormatter.format(
@@ -115,10 +116,8 @@ public class CPInstanceTierPriceEntryFDSDataProvider
 						commercePriceEntry.getUnitOfMeasureKey()),
 					HtmlUtil.escape(
 						priceCommerceMoney.format(
-							_portal.getLocale(httpServletRequest)))));
-		}
-
-		return instanceTierPriceEntries;
+							_portal.getLocale(httpServletRequest))));
+			});
 	}
 
 	@Override
@@ -134,17 +133,30 @@ public class CPInstanceTierPriceEntryFDSDataProvider
 	}
 
 	private String _getDiscountLevels(
-		CommerceTierPriceEntry commerceTierPriceEntry) {
+			CommerceCurrency commerceCurrency,
+			CommerceTierPriceEntry commerceTierPriceEntry, Locale locale)
+		throws PortalException {
 
 		if (commerceTierPriceEntry.isDiscountDiscovery()) {
 			return StringPool.BLANK;
 		}
 
 		return StringBundler.concat(
-			commerceTierPriceEntry.getDiscountLevel1(), " - ",
-			commerceTierPriceEntry.getDiscountLevel2(), " - ",
-			commerceTierPriceEntry.getDiscountLevel3(), " - ",
-			commerceTierPriceEntry.getDiscountLevel4());
+			_commercePriceFormatter.format(
+				commerceCurrency, true, locale,
+				commerceTierPriceEntry.getDiscountLevel1()),
+			" - ",
+			_commercePriceFormatter.format(
+				commerceCurrency, true, locale,
+				commerceTierPriceEntry.getDiscountLevel2()),
+			" - ",
+			_commercePriceFormatter.format(
+				commerceCurrency, true, locale,
+				commerceTierPriceEntry.getDiscountLevel3()),
+			" - ",
+			_commercePriceFormatter.format(
+				commerceCurrency, true, locale,
+				commerceTierPriceEntry.getDiscountLevel4()));
 	}
 
 	private String _getEndDate(
@@ -168,6 +180,9 @@ public class CPInstanceTierPriceEntryFDSDataProvider
 
 		return _language.get(httpServletRequest, "yes");
 	}
+
+	@Reference
+	private CommercePriceFormatter _commercePriceFormatter;
 
 	@Reference
 	private CommerceQuantityFormatter _commerceQuantityFormatter;

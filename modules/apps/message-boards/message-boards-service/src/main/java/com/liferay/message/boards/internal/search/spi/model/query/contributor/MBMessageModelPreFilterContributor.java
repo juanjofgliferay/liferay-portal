@@ -25,7 +25,6 @@ import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.search.spi.model.query.contributor.ModelPreFilterContributor;
 import com.liferay.portal.search.spi.model.registrar.ModelSearchSettings;
@@ -67,34 +66,40 @@ public class MBMessageModelPreFilterContributor
 						},
 						BooleanClauseOccur.SHOULD);
 
+					User user = null;
+
 					PermissionChecker permissionChecker =
 						PermissionThreadLocal.getPermissionChecker();
 
-					User user = permissionChecker.getUser();
+					if (permissionChecker != null) {
+						user = permissionChecker.getUser();
 
-					long groupId = GroupConstants.DEFAULT_LIVE_GROUP_ID;
+						long groupId = GroupConstants.DEFAULT_LIVE_GROUP_ID;
 
-					if (user.getGroup() != null) {
-						groupId = user.getGroupId();
+						if (user.getGroup() != null) {
+							groupId = user.getGroupId();
+						}
+
+						if (permissionChecker.isContentReviewer(
+								CompanyThreadLocal.getCompanyId(), groupId)) {
+
+							add(
+								new BooleanFilter() {
+									{
+										add(
+											new TermFilter(
+												"status",
+												String.valueOf(
+													WorkflowConstants.
+														STATUS_PENDING)),
+											BooleanClauseOccur.MUST);
+									}
+								},
+								BooleanClauseOccur.SHOULD);
+						}
 					}
 
-					if (permissionChecker.isContentReviewer(
-							CompanyThreadLocal.getCompanyId(), groupId)) {
-
-						add(
-							new BooleanFilter() {
-								{
-									add(
-										new TermFilter(
-											"status",
-											String.valueOf(
-												WorkflowConstants.
-													STATUS_PENDING)),
-										BooleanClauseOccur.MUST);
-								}
-							},
-							BooleanClauseOccur.SHOULD);
-					}
+					User finalUser = user;
 
 					add(
 						new BooleanFilter() {
@@ -105,11 +110,15 @@ public class MBMessageModelPreFilterContributor
 										String.valueOf(
 											WorkflowConstants.STATUS_PENDING)),
 									BooleanClauseOccur.MUST);
-								add(
-									new TermFilter(
-										"userId",
-										String.valueOf(user.getUserId())),
-									BooleanClauseOccur.MUST);
+
+								if (finalUser != null) {
+									add(
+										new TermFilter(
+											"userId",
+											String.valueOf(
+												finalUser.getUserId())),
+										BooleanClauseOccur.MUST);
+								}
 							}
 						},
 						BooleanClauseOccur.SHOULD);
@@ -131,10 +140,10 @@ public class MBMessageModelPreFilterContributor
 			}
 		}
 
-		String classNameId = GetterUtil.getString(
+		long classNameId = GetterUtil.getLong(
 			searchContext.getAttribute(Field.CLASS_NAME_ID));
 
-		if (Validator.isNotNull(classNameId)) {
+		if (classNameId > 0) {
 			booleanFilter.addRequiredTerm(Field.CLASS_NAME_ID, classNameId);
 		}
 

@@ -115,12 +115,8 @@ public class AssetDisplayPageEntryPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		AssetDisplayPageEntry newAssetDisplayPageEntry = _persistence.create(
-			pk);
-
-		newAssetDisplayPageEntry.setMvccVersion(RandomTestUtil.nextLong());
+		AssetDisplayPageEntry newAssetDisplayPageEntry =
+			addAssetDisplayPageEntry();
 
 		newAssetDisplayPageEntry.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -245,6 +241,14 @@ public class AssetDisplayPageEntryPersistenceTest {
 			RandomTestUtil.nextLong());
 
 		_persistence.countByLayoutPageTemplateEntryId(0L);
+	}
+
+	@Test
+	public void testCountByG_CN() throws Exception {
+		_persistence.countByG_CN(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
+
+		_persistence.countByG_CN(0L, 0L);
 	}
 
 	@Test
@@ -620,8 +624,6 @@ public class AssetDisplayPageEntryPersistenceTest {
 
 		AssetDisplayPageEntry assetDisplayPageEntry = _persistence.create(pk);
 
-		assetDisplayPageEntry.setMvccVersion(RandomTestUtil.nextLong());
-
 		assetDisplayPageEntry.setCtCollectionId(RandomTestUtil.nextLong());
 
 		assetDisplayPageEntry.setUuid(RandomTestUtil.randomString());
@@ -661,3 +663,4 @@ public class AssetDisplayPageEntryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:810024056

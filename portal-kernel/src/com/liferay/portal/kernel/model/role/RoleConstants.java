@@ -5,8 +5,11 @@
 
 package com.liferay.portal.kernel.model.role;
 
+import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.model.Role;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 
 import java.util.Locale;
@@ -19,10 +22,17 @@ import java.util.Locale;
  */
 public class RoleConstants {
 
+	public static final String ACCOUNT_MANAGER = "Account Manager";
+
 	public static final String ADMINISTRATOR = "Administrator";
 
 	public static final String ANALYTICS_ADMINISTRATOR =
 		"Analytics Administrator";
+
+	public static final String CMS_ADMINISTRATOR = "CMS Administrator";
+
+	public static final String EXTERNAL_REFERENCE_CODE_PREFIX_SYSTEM_ROLE =
+		"L_";
 
 	public static final String GUEST = "Guest";
 
@@ -35,6 +45,9 @@ public class RoleConstants {
 
 	public static final String ORGANIZATION_ADMINISTRATOR =
 		"Organization Administrator";
+
+	public static final String ORGANIZATION_CONTENT_REVIEWER =
+		"Organization Content Reviewer";
 
 	public static final String ORGANIZATION_OWNER = "Organization Owner";
 
@@ -50,7 +63,16 @@ public class RoleConstants {
 
 	public static final String POWER_USER = "Power User";
 
+	public static final String PUBLICATIONS_ADMIN = "Publications Admin";
+
+	public static final String PUBLICATIONS_EDITOR = "Publications Editor";
+
+	public static final String PUBLICATIONS_PUBLISHER =
+		"Publications Publisher";
+
 	public static final String PUBLICATIONS_USER = "Publications User";
+
+	public static final String PUBLICATIONS_VIEWER = "Publications Viewer";
 
 	public static final String SITE_ADMINISTRATOR = "Site Administrator";
 
@@ -66,7 +88,8 @@ public class RoleConstants {
 
 	public static final String[] SYSTEM_ROLES = {
 		ADMINISTRATOR, ANALYTICS_ADMINISTRATOR, GUEST, OWNER, POWER_USER,
-		PUBLICATIONS_USER, RoleConstants.USER
+		PUBLICATIONS_ADMIN, PUBLICATIONS_EDITOR, PUBLICATIONS_PUBLISHER,
+		PUBLICATIONS_USER, PUBLICATIONS_VIEWER, RoleConstants.USER
 	};
 
 	public static final String[] SYSTEM_SITE_ROLES = {
@@ -161,5 +184,31 @@ public class RoleConstants {
 
 		return TYPE_REGULAR_LABEL;
 	}
+
+	public static boolean isUnmodifiable(Role role) {
+		if (role == null) {
+			return false;
+		}
+
+		if (ArrayUtil.contains(_UNMODIFIABLE_ROLE_NAMES, role.getName()) ||
+			role.isSystem()) {
+
+			return true;
+		}
+
+		return false;
+	}
+
+	public static String toSystemRoleExternalReferenceCode(String roleName) {
+		roleName = StringUtil.toUpperCase(
+			StringUtil.replace(roleName, CharPool.SPACE, CharPool.UNDERLINE));
+
+		return RoleConstants.EXTERNAL_REFERENCE_CODE_PREFIX_SYSTEM_ROLE +
+			roleName;
+	}
+
+	private static final String[] _UNMODIFIABLE_ROLE_NAMES = {
+		CMS_ADMINISTRATOR
+	};
 
 }

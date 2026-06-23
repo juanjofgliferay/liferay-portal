@@ -6,6 +6,7 @@
 package com.liferay.object.web.internal.notifications;
 
 import com.liferay.asset.display.page.portlet.AssetDisplayPageFriendlyURLProvider;
+import com.liferay.configuration.admin.constants.ConfigurationAdminPortletKeys;
 import com.liferay.info.item.ClassPKInfoItemIdentifier;
 import com.liferay.info.item.InfoItemReference;
 import com.liferay.object.model.ObjectDefinition;
@@ -13,13 +14,21 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.model.UserNotificationEvent;
 import com.liferay.portal.kernel.notifications.BaseModelUserNotificationHandler;
+import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
+import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactory;
+import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HtmlUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.Validator;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.WindowState;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowState;
 
 /**
  * @author Feliphe Marinho
@@ -46,7 +55,8 @@ public class ObjectUserNotificationsHandler
 
 		return _getMessage(
 			JSONFactoryUtil.createJSONObject(
-				userNotificationEvent.getPayload()));
+				userNotificationEvent.getPayload()),
+			serviceContext);
 	}
 
 	@Override
@@ -57,6 +67,47 @@ public class ObjectUserNotificationsHandler
 
 		JSONObject jsonObject = JSONFactoryUtil.createJSONObject(
 			userNotificationEvent.getPayload());
+
+		String notificationLink = jsonObject.getString("notificationLink");
+
+		if (Validator.isNotNull(notificationLink)) {
+			if (jsonObject.getBoolean("appendBackURL")) {
+				ThemeDisplay themeDisplay = serviceContext.getThemeDisplay();
+
+				if (themeDisplay != null) {
+					PortletURL portletURL = PortletURLFactoryUtil.create(
+						themeDisplay.getRequest(),
+						"com_liferay_notifications_web_portlet_" +
+							"NotificationsPortlet",
+						PortletRequest.RENDER_PHASE);
+
+					notificationLink = HttpComponentsUtil.addParameter(
+						notificationLink, "backURL", portletURL.toString());
+				}
+			}
+
+			return notificationLink;
+		}
+
+		if (GetterUtil.getBoolean(jsonObject.get("exceedsObjectEntryLimit"))) {
+			RequestBackedPortletURLFactory requestBackedPortletURLFactory =
+				RequestBackedPortletURLFactoryUtil.create(
+					serviceContext.getRequest());
+
+			return PortletURLBuilder.create(
+				requestBackedPortletURLFactory.createActionURL(
+					ConfigurationAdminPortletKeys.INSTANCE_SETTINGS)
+			).setMVCRenderCommandName(
+				"/configuration_admin/edit_configuration"
+			).setRedirect(
+				serviceContext.getCurrentURL()
+			).setParameter(
+				"factoryPid",
+				"com.liferay.object.configuration.ObjectConfiguration"
+			).setWindowState(
+				WindowState.MAXIMIZED
+			).buildString();
+		}
 
 		if (serviceContext.getThemeDisplay() != null) {
 			String friendlyURL =
@@ -97,10 +148,23 @@ public class ObjectUserNotificationsHandler
 
 		return _getMessage(
 			JSONFactoryUtil.createJSONObject(
-				userNotificationEvent.getPayload()));
+				userNotificationEvent.getPayload()),
+			serviceContext);
 	}
 
-	private String _getMessage(JSONObject jsonObject) {
+	private String _getMessage(
+		JSONObject jsonObject, ServiceContext serviceContext) {
+
+		String notificationMessageKey = jsonObject.getString(
+			"notificationMessageKey");
+
+		if (Validator.isNotNull(notificationMessageKey)) {
+			return HtmlUtil.escape(
+				serviceContext.translate(
+					notificationMessageKey,
+					jsonObject.getString("notificationMessageArg")));
+		}
+
 		return HtmlUtil.escape(jsonObject.getString("notificationMessage"));
 	}
 

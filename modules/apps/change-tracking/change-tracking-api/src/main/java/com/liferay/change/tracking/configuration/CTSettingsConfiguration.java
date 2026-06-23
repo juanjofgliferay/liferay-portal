@@ -7,6 +7,7 @@ package com.liferay.change.tracking.configuration;
 
 import aQute.bnd.annotation.metatype.Meta;
 
+import com.liferay.portal.configuration.metatype.annotations.ExtendedAttributeDefinition;
 import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClassDefinition;
 
 /**
@@ -24,10 +25,19 @@ import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClass
 public interface CTSettingsConfiguration {
 
 	@Meta.AD(
+		deflt = "false", description = "clean-up-cts-content-data-description",
+		name = "clean-up-cts-content-data", required = false
+	)
+	public boolean cleanUpCTSContentData();
+
+	@Meta.AD(
 		deflt = "0", name = "default-ct-collection-template-id",
 		required = false
 	)
 	public long defaultCTCollectionTemplateId();
+
+	@Meta.AD(name = "default-owner-action-ids", required = false)
+	public String[] defaultOwnerActionIds();
 
 	@Meta.AD(
 		deflt = "0", name = "default-sandbox-ct-collection-template-id",
@@ -38,17 +48,34 @@ public interface CTSettingsConfiguration {
 	@Meta.AD(deflt = "false", name = "enabled", required = false)
 	public boolean enabled();
 
-	@Meta.AD(deflt = "false", name = "remote-enabled", required = false)
-	public boolean remoteEnabled();
+	@Meta.AD(
+		deflt = "false",
+		description = "modification-deletion-conflict-check-enabled-description",
+		name = "modification-deletion-conflict-check-enabled", required = false
+	)
+	public boolean modificationDeletionConflictCheckEnabled();
 
+	@ExtendedAttributeDefinition(featureFlagKey = "LPS-186360")
 	@Meta.AD(name = "remote-client-id", required = false)
 	public String remoteClientId();
 
+	@ExtendedAttributeDefinition(featureFlagKey = "LPS-186360")
 	@Meta.AD(name = "remote-client-secret", required = false)
 	public String remoteClientSecret();
 
+	@ExtendedAttributeDefinition(featureFlagKey = "LPS-186360")
+	@Meta.AD(deflt = "false", name = "remote-enabled", required = false)
+	public boolean remoteEnabled();
+
 	@Meta.AD(deflt = "false", name = "sandbox-enabled", required = false)
 	public boolean sandboxEnabled();
+
+	@Meta.AD(
+		deflt = "false",
+		description = "schema-version-check-enabled-description",
+		name = "schema-version-check-enabled", required = false
+	)
+	public boolean schemaVersionCheckEnabled();
 
 	@Meta.AD(
 		deflt = "false", name = "allow-unapproved-changes", required = false

@@ -47,56 +47,65 @@ public abstract class UpgradePortletSettings extends UpgradeProcess {
 						"PortletPreferences.ownerId, PortletPreferences.plid, ",
 						"Layout.groupId from PortletPreferences left join ",
 						"Layout on Layout.plid = PortletPreferences.plid ",
-						"where PortletPreferences.ownerType = ", ownerType,
-						" and PortletPreferences.portletId = '", portletId,
-						"'"));
-			ResultSet resultSet = selectPreparedStatement.executeQuery()) {
+						"where PortletPreferences.ownerType = ? and ",
+						"PortletPreferences.portletId = ?"))) {
 
-			while (resultSet.next()) {
-				long oldPortletPreferencesId = resultSet.getLong(1);
+			selectPreparedStatement.setInt(1, ownerType);
+			selectPreparedStatement.setString(2, portletId);
 
-				long ownerId = 0;
-				long plid = 0;
+			try (PreparedStatement insertPreparedStatement =
+					AutoBatchPreparedStatementUtil.autoBatch(
+						connection,
+						StringBundler.concat(
+							"insert into PortletPreferences (",
+							"mvccVersion, ctCollectionId, ",
+							"portletPreferencesId, ownerId, ownerType, plid, ",
+							"portletId) values (0, 0, ?, ?, ?, ?, ?)"));
+				ResultSet resultSet = selectPreparedStatement.executeQuery()) {
 
-				if (ownerType == PortletKeys.PREFS_OWNER_TYPE_LAYOUT) {
-					ownerId = resultSet.getLong(3);
-					plid = 0;
-				}
-				else {
-					ownerId = resultSet.getLong(1);
-					plid = resultSet.getLong(2);
-				}
+				while (resultSet.next()) {
+					long oldPortletPreferencesId = resultSet.getLong(
+						"portletPreferencesId");
 
-				long newPortletPreferencesId = increment();
+					long ownerId = 0;
+					long plid = 0;
 
-				try (PreparedStatement insertPreparedStatement =
-						connection.prepareStatement(
-							StringBundler.concat(
-								"insert into PortletPreferences (mvccVersion, ",
-								"ctCollectionId, portletPreferencesId, ",
-								"ownerId, ownerType, plid, portletId) values ",
-								"(0, 0, ?, ?, ?, ?, ?)"))) {
+					if (ownerType == PortletKeys.PREFS_OWNER_TYPE_LAYOUT) {
+						ownerId = resultSet.getLong("plid");
+						plid = 0;
+					}
+					else {
+						ownerId = resultSet.getLong("portletPreferencesId");
+						plid = resultSet.getLong("ownerId");
+					}
 
-					insertPreparedStatement.setLong(1, newPortletPreferencesId);
-					insertPreparedStatement.setLong(2, ownerId);
-					insertPreparedStatement.setInt(
-						3, PortletKeys.PREFS_OWNER_TYPE_GROUP);
-					insertPreparedStatement.setLong(4, plid);
-					insertPreparedStatement.setString(5, serviceName);
+					long newPortletPreferencesId = increment();
 
-					insertPreparedStatement.executeUpdate();
+					try {
+						insertPreparedStatement.setLong(
+							1, newPortletPreferencesId);
+						insertPreparedStatement.setLong(2, ownerId);
+						insertPreparedStatement.setInt(
+							3, PortletKeys.PREFS_OWNER_TYPE_GROUP);
+						insertPreparedStatement.setLong(4, plid);
+						insertPreparedStatement.setString(5, serviceName);
 
-					_copyPortletPreferenceValues(
-						oldPortletPreferencesId, newPortletPreferencesId);
-				}
-				catch (SQLException sqlException) {
-					if (_log.isDebugEnabled()) {
-						_log.debug(
-							"Unable to copy portlet preferences " +
-								oldPortletPreferencesId,
-							sqlException);
+						insertPreparedStatement.addBatch();
+
+						_copyPortletPreferenceValues(
+							oldPortletPreferencesId, newPortletPreferencesId);
+					}
+					catch (SQLException sqlException) {
+						if (_log.isDebugEnabled()) {
+							_log.debug(
+								"Unable to copy portlet preferences " +
+									oldPortletPreferencesId,
+								sqlException);
+						}
 					}
 				}
+
+				insertPreparedStatement.executeBatch();
 			}
 		}
 	}
@@ -242,7 +251,8 @@ public abstract class UpgradePortletSettings extends UpgradeProcess {
 					insertPreparedStatement.setLong(
 						1, increment(PortletPreferenceValue.class.getName()));
 					insertPreparedStatement.setLong(2, newPortletPreferencesId);
-					insertPreparedStatement.setLong(3, resultSet.getLong(1));
+					insertPreparedStatement.setLong(
+						3, resultSet.getLong("portletPreferenceValueId"));
 
 					insertPreparedStatement.addBatch();
 				}

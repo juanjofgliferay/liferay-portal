@@ -27,6 +27,11 @@ import org.osgi.service.component.annotations.Reference;
 public class LicenseManagerPanelApp extends BasePanelApp {
 
 	@Override
+	public String getIcon() {
+		return "forms";
+	}
+
+	@Override
 	public Portlet getPortlet() {
 		return _portlet;
 	}
@@ -37,7 +42,7 @@ public class LicenseManagerPanelApp extends BasePanelApp {
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + LicenseManagerPortletKeys.LICENSE_MANAGER + ")"
+		target = "(jakarta.portlet.name=" + LicenseManagerPortletKeys.LICENSE_MANAGER + ")"
 	)
 	private Portlet _portlet;
 

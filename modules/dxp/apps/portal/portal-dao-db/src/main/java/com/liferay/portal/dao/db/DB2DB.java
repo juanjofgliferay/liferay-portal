@@ -5,14 +5,15 @@
 
 package com.liferay.portal.dao.db;
 
+import com.liferay.petra.io.unsync.UnsyncBufferedReader;
+import com.liferay.petra.io.unsync.UnsyncStringReader;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.db.DBInspector;
 import com.liferay.portal.kernel.dao.db.DBType;
 import com.liferay.portal.kernel.dao.db.IndexMetadata;
-import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
-import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
+import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
@@ -33,6 +34,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -207,6 +209,21 @@ public class DB2DB extends BaseDB {
 	}
 
 	@Override
+	public String getCharacterSet(Connection connection) throws SQLException {
+		try (PreparedStatement preparedStatement = connection.prepareStatement(
+				"select value from sysibmadm.dbcfg where name = 'codeset'")) {
+
+			try (ResultSet resultSet = preparedStatement.executeQuery()) {
+				if (resultSet.next()) {
+					return resultSet.getString("value");
+				}
+			}
+		}
+
+		return StringPool.BLANK;
+	}
+
+	@Override
 	public String getPopulateSQL(String databaseName, String sqlContent) {
 		return StringBundler.concat(
 			"connect to ", databaseName, ";\n", sqlContent);
@@ -215,20 +232,26 @@ public class DB2DB extends BaseDB {
 	@Override
 	public String getRecreateSQL(String databaseName) {
 		return StringBundler.concat(
-			"drop database ", databaseName, ";\n", "create database ",
-			databaseName,
+			"drop database ", databaseName, ";\ncreate database ", databaseName,
 			" pagesize 32768 temporary tablespace managed by automatic ",
 			"storage;\n");
 	}
 
 	@Override
+	public boolean isSupportsCharacterSet(Connection connection)
+		throws SQLException {
+
+		return Objects.equals(getCharacterSet(connection), "UTF-8");
+	}
+
+	@Override
 	public boolean isSupportsInlineDistinct() {
-		return _SUPPORTS_INLINE_DISTINCT;
+		return false;
 	}
 
 	@Override
 	public boolean isSupportsScrollableResults() {
-		return _SUPPORTS_SCROLLABLE_RESULTS;
+		return false;
 	}
 
 	@Override
@@ -400,12 +423,48 @@ public class DB2DB extends BaseDB {
 		runSQL(connection, sb.toString());
 	}
 
+	@Override
 	protected String getCopyTableStructureSQL(
 		String tableName, String newTableName) {
 
 		return StringBundler.concat(
 			"create table ", newTableName, " as (select * from ", tableName,
 			") with no data");
+	}
+
+	@Override
+	protected String getLockedQueryInfosSQL() {
+		return StringBundler.concat(
+			"select timestampdiff(2, char(current timestamp - ",
+			"activity.local_start_time)) * 1000 as duration, ",
+			"sysibmadm.applications.agent_id as id, cast(activity.stmt_text ",
+			"as varchar(4000)) as query, sysibmadm.applications.db_name as ",
+			"schema_, sysibmadm.applications.appl_status as state from ",
+			"sysibmadm.applications left join table(",
+			"sysproc.mon_get_activity(null, -2)) as activity on ",
+			"sysibmadm.applications.agent_id = activity.application_handle ",
+			"where timestampdiff(2, char(current timestamp - ",
+			"activity.local_start_time)) * 1000 >= ? and ",
+			"sysibmadm.applications.agent_id != mon_get_application_handle() ",
+			"and sysibmadm.applications.appl_status = 'LOCKWAIT'");
+	}
+
+	@Override
+	protected String getLongRunningQueryInfosSQL() {
+		return StringBundler.concat(
+			"select timestampdiff(2, char(current timestamp - ",
+			"activity.local_start_time)) * 1000 as duration, ",
+			"sysibmadm.applications.agent_id as id, cast(activity.stmt_text ",
+			"as varchar(4000)) as query, sysibmadm.applications.db_name as ",
+			"schema_, sysibmadm.applications.appl_status as state from ",
+			"sysibmadm.applications left join table(",
+			"sysproc.mon_get_activity(null, -2)) as activity on ",
+			"sysibmadm.applications.agent_id = activity.application_handle ",
+			"where timestampdiff(2, char(current timestamp - ",
+			"activity.local_start_time)) * 1000 >= ? and ",
+			"sysibmadm.applications.agent_id != mon_get_application_handle() ",
+			"and (sysibmadm.applications.appl_status is null or ",
+			"sysibmadm.applications.appl_status != 'LOCKWAIT')");
 	}
 
 	@Override
@@ -435,6 +494,16 @@ public class DB2DB extends BaseDB {
 		return _DB2;
 	}
 
+	protected boolean isNullable(String tableName, String columnName)
+		throws SQLException {
+
+		try (Connection connection = DataAccess.getConnection()) {
+			DBInspector dbInspector = new DBInspector(connection);
+
+			return dbInspector.isNullable(tableName, columnName);
+		}
+	}
+
 	protected boolean isRequiresReorgTable(
 			Connection connection, String tableName)
 		throws SQLException {
@@ -447,10 +516,12 @@ public class DB2DB extends BaseDB {
 					"sysproc.admin_get_tab_info(current_schema, '",
 					StringUtil.toUpperCase(tableName),
 					"')) where reorg_pending = 'Y'"));
+
 			ResultSet resultSet = preparedStatement.executeQuery()) {
 
 			if (resultSet.next()) {
-				int numReorgRecAlters = resultSet.getInt(1);
+				int numReorgRecAlters = resultSet.getInt(
+					"num_reorg_rec_alters");
 
 				if (numReorgRecAlters >= 1) {
 					reorgTableRequired = true;
@@ -461,8 +532,9 @@ public class DB2DB extends BaseDB {
 		return reorgTableRequired;
 	}
 
+	@Override
 	protected boolean isSupportsDuplicatedIndexName() {
-		return _SUPPORTS_DUPLICATED_INDEX_NAME;
+		return false;
 	}
 
 	protected void reorgTable(Connection connection, String tableName)
@@ -512,6 +584,10 @@ public class DB2DB extends BaseDB {
 
 	@Override
 	protected String reword(String data) throws IOException, SQLException {
+		if (Validator.isNull(data)) {
+			return null;
+		}
+
 		try (UnsyncBufferedReader unsyncBufferedReader =
 				new UnsyncBufferedReader(new UnsyncStringReader(data))) {
 
@@ -539,14 +615,20 @@ public class DB2DB extends BaseDB {
 					String defaultValue = template[template.length - 2];
 
 					if (Validator.isBlank(defaultValue)) {
-						line = line.concat(
+						runSQL(
+							StringUtil.replace(
+								"alter table @table@ alter column " +
+									"@old-column@ set default 0;",
+								REWORD_TEMPLATE, template));
+
+						runSQL(
 							StringUtil.replace(
 								"alter table @table@ alter column " +
 									"@old-column@ drop default;",
 								REWORD_TEMPLATE, template));
 					}
 					else {
-						line = line.concat(
+						runSQL(
 							StringUtil.replace(
 								"alter table @table@ alter column " +
 									"@old-column@ set default @default@;",
@@ -555,23 +637,23 @@ public class DB2DB extends BaseDB {
 
 					String nullable = template[template.length - 1];
 
-					if (!Validator.isBlank(nullable)) {
-						String nullableAlter;
+					if (Objects.equals(nullable, "not null") &&
+						isNullable(template[0], template[1])) {
 
-						if (nullable.equals("not null")) {
-							nullableAlter = StringUtil.replace(
+						runSQL(
+							StringUtil.replace(
 								"alter table @table@ alter column " +
 									"@old-column@ set not null;",
-								REWORD_TEMPLATE, template);
-						}
-						else {
-							nullableAlter = StringUtil.replace(
+								REWORD_TEMPLATE, template));
+					}
+					else if (!Objects.equals(nullable, "not null") &&
+							 !isNullable(template[0], template[1])) {
+
+						runSQL(
+							StringUtil.replace(
 								"alter table @table@ alter column " +
 									"@old-column@ drop not null;",
-								REWORD_TEMPLATE, template);
-						}
-
-						runSQL(nullableAlter);
+								REWORD_TEMPLATE, template));
 					}
 				}
 				else if (line.startsWith(ALTER_TABLE_NAME)) {
@@ -609,8 +691,8 @@ public class DB2DB extends BaseDB {
 	private static final String[] _DB2 = {
 		"--", "1", "0", "'1970-01-01-00.00.00.000000'", "current timestamp",
 		" blob", " blob", " decimal(30, 16)", " smallint", " timestamp",
-		" double", " integer", " bigint", " varchar(4000)", " clob", " varchar",
-		" generated always as identity", "commit"
+		" double", " integer", " bigint", " varchar(4000)", " clob(2G)",
+		" varchar", " generated always as identity", "commit"
 	};
 
 	private static final int _SQL_STRING_SIZE = 4000;
@@ -620,12 +702,6 @@ public class DB2DB extends BaseDB {
 		Types.DOUBLE, Types.INTEGER, Types.BIGINT, Types.VARCHAR, Types.CLOB,
 		Types.VARCHAR
 	};
-
-	private static final boolean _SUPPORTS_DUPLICATED_INDEX_NAME = false;
-
-	private static final boolean _SUPPORTS_INLINE_DISTINCT = false;
-
-	private static final boolean _SUPPORTS_SCROLLABLE_RESULTS = false;
 
 	private static final Log _log = LogFactoryUtil.getLog(DB2DB.class);
 

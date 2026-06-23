@@ -5,16 +5,23 @@
 
 package com.liferay.portal.action;
 
+import com.liferay.layout.utility.page.kernel.constants.LayoutUtilityPageEntryConstants;
+import com.liferay.layout.utility.page.kernel.provider.util.LayoutUtilityPageEntryLayoutProviderUtil;
 import com.liferay.petra.string.CharPool;
+import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
 import com.liferay.portal.kernel.portlet.WindowStateFactory;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.auth.AuthTokenUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
-import com.liferay.portal.kernel.util.PortletKeys;
+import com.liferay.portal.kernel.util.PrefsPropsUtil;
+import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.security.auth.session.AuthenticatedSessionManagerUtil;
@@ -22,15 +29,14 @@ import com.liferay.portal.security.sso.SSOUtil;
 import com.liferay.portal.struts.Action;
 import com.liferay.portal.struts.model.ActionForward;
 import com.liferay.portal.struts.model.ActionMapping;
-import com.liferay.portal.util.PropsValues;
 
-import javax.portlet.PortletMode;
-import javax.portlet.PortletRequest;
-import javax.portlet.WindowState;
+import jakarta.portlet.PortletMode;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.WindowState;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 /**
  * @author Brian Wing Shun Chan
@@ -106,17 +112,53 @@ public class LoginAction implements Action {
 			return null;
 		}
 
-		String redirect = PortalUtil.getSiteLoginURL(themeDisplay);
+		Layout layout =
+			LayoutUtilityPageEntryLayoutProviderUtil.
+				getDefaultLayoutUtilityPageEntryLayout(
+					themeDisplay.getScopeGroupId(),
+					LayoutUtilityPageEntryConstants.TYPE_LOGIN);
 
-		if (Validator.isNull(redirect)) {
-			redirect = PropsValues.AUTH_LOGIN_URL;
+		String loginRedirect = PortalUtil.escapeRedirect(
+			ParamUtil.getString(httpServletRequest, "redirect"));
+		String redirect = null;
+
+		if (layout == null) {
+			if (Validator.isNotNull(loginRedirect) &&
+				SSOUtil.isRedirectRequired(themeDisplay.getCompanyId())) {
+
+				redirect = loginRedirect;
+
+				loginRedirect = null;
+			}
+
+			if (Validator.isNull(redirect)) {
+				layout = themeDisplay.getLayout();
+
+				redirect = PortalUtil.getSiteLoginURL(themeDisplay);
+			}
+
+			if (Validator.isNull(redirect)) {
+				redirect = PropsValues.AUTH_LOGIN_URL;
+			}
+		}
+		else {
+			if (Validator.isNull(loginRedirect) &&
+				Validator.isNull(
+					PrefsPropsUtil.getString(
+						themeDisplay.getCompanyId(),
+						PropsKeys.DEFAULT_LANDING_PAGE_PATH))) {
+
+				loginRedirect = GetterUtil.getString(
+					PortalUtil.getLayoutFullURL(
+						themeDisplay.getLayout(), themeDisplay));
+			}
 		}
 
 		if (Validator.isNull(redirect)) {
 			redirect = PortletURLBuilder.create(
 				PortletURLFactoryUtil.create(
-					httpServletRequest, PortletKeys.LOGIN,
-					PortletRequest.RENDER_PHASE)
+					httpServletRequest, PropsValues.AUTH_LOGIN_PORTLET_NAME,
+					layout, PortletRequest.RENDER_PHASE)
 			).setMVCRenderCommandName(
 				"/login/login"
 			).setParameter(
@@ -124,33 +166,21 @@ public class LoginAction implements Action {
 			).setPortletMode(
 				PortletMode.VIEW
 			).setWindowState(
-				getWindowState(httpServletRequest)
+				getWindowState(httpServletRequest, layout.isTypeUtility())
 			).buildString();
 		}
 
-		String loginRedirect = ParamUtil.getString(
-			httpServletRequest, "redirect");
-
-		loginRedirect = PortalUtil.escapeRedirect(loginRedirect);
-
 		if (Validator.isNotNull(loginRedirect)) {
-			if (SSOUtil.isRedirectRequired(themeDisplay.getCompanyId())) {
-				redirect = loginRedirect;
-			}
-			else {
-				String loginPortletNamespace = PortalUtil.getPortletNamespace(
-					PropsValues.AUTH_LOGIN_PORTLET_NAME);
+			redirect = HttpComponentsUtil.setParameter(
+				redirect, "p_p_id", PropsValues.AUTH_LOGIN_PORTLET_NAME);
+			redirect = HttpComponentsUtil.setParameter(
+				redirect, "p_p_lifecycle", "0");
 
-				String loginRedirectParameter =
-					loginPortletNamespace + "redirect";
+			String portletNamespace = PortalUtil.getPortletNamespace(
+				PropsValues.AUTH_LOGIN_PORTLET_NAME);
 
-				redirect = HttpComponentsUtil.setParameter(
-					redirect, "p_p_id", PropsValues.AUTH_LOGIN_PORTLET_NAME);
-				redirect = HttpComponentsUtil.setParameter(
-					redirect, "p_p_lifecycle", "0");
-				redirect = HttpComponentsUtil.setParameter(
-					redirect, loginRedirectParameter, loginRedirect);
-			}
+			redirect = HttpComponentsUtil.setParameter(
+				redirect, portletNamespace + "redirect", loginRedirect);
 		}
 
 		httpServletResponse.sendRedirect(redirect);
@@ -159,7 +189,7 @@ public class LoginAction implements Action {
 	}
 
 	protected WindowState getWindowState(
-		HttpServletRequest httpServletRequest) {
+		HttpServletRequest httpServletRequest, boolean utility) {
 
 		WindowState windowState = WindowState.MAXIMIZED;
 
@@ -168,6 +198,10 @@ public class LoginAction implements Action {
 
 		if (Validator.isNotNull(windowStateString)) {
 			windowState = WindowStateFactory.getWindowState(windowStateString);
+		}
+
+		if (utility && (windowState != LiferayWindowState.EXCLUSIVE)) {
+			windowState = WindowState.NORMAL;
 		}
 
 		return windowState;

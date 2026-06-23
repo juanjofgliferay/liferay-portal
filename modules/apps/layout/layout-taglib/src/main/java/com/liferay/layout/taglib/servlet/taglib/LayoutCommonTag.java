@@ -15,6 +15,7 @@ import com.liferay.portal.kernel.service.PortletLocalServiceUtil;
 import com.liferay.portal.kernel.servlet.SessionMessages;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
@@ -25,15 +26,15 @@ import com.liferay.taglib.aui.ScriptTag;
 import com.liferay.taglib.portletext.RuntimeTag;
 import com.liferay.taglib.util.IncludeTag;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.jsp.JspWriter;
+import jakarta.servlet.jsp.PageContext;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.jsp.JspWriter;
-import javax.servlet.jsp.PageContext;
 
 /**
  * @author Eudaldo Alonso
@@ -162,7 +163,7 @@ public class LayoutCommonTag extends IncludeTag {
 		StringBundler sb = new StringBundler(7);
 
 		sb.append("Liferay.Util.openToast({autoClose: 10000, message: '");
-		sb.append(message);
+		sb.append(HtmlUtil.escapeJS(message));
 		sb.append("', title: '");
 		sb.append(LanguageUtil.get(getRequest(), type));
 		sb.append(":', type: '");
@@ -209,6 +210,13 @@ public class LayoutCommonTag extends IncludeTag {
 						httpServletRequest,
 						"your-request-completed-successfully");
 				}
+
+				sb.append(_getScript(message, "success"));
+
+				keys.add(key);
+			}
+			else if (key.endsWith("_requestProcessedSuccess") &&
+					 Validator.isNotNull(message)) {
 
 				sb.append(_getScript(message, "success"));
 

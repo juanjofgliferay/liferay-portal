@@ -5,17 +5,15 @@
 
 package com.liferay.change.tracking.closure;
 
-import java.util.Set;
-
 /**
  * @author Preston Crary
  */
 public interface CTClosureFactory {
 
+	public void clearCache(long ctCollectionId);
+
 	public CTClosure create(long ctCollectionId);
 
 	public CTClosure create(long ctCollectionId, long classNameId);
-
-	public CTClosure create(long ctCollectionId, Set<Long> classNameIds);
 
 }

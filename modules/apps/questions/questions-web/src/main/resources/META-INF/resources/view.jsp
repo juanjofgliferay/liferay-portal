@@ -13,10 +13,18 @@
 
 	<%
 	QuestionsConfiguration questionsConfiguration = ConfigurationProviderUtil.getPortletInstanceConfiguration(QuestionsConfiguration.class, themeDisplay);
+
+	long categoryId = MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID;
+
+	if (!Validator.isBlank(questionsConfiguration.rootTopicExternalReferenceCode())) {
+		MBCategory mbCategory = MBCategoryLocalServiceUtil.getMBCategoryByExternalReferenceCode(questionsConfiguration.rootTopicExternalReferenceCode(), themeDisplay.getScopeGroupId());
+
+		categoryId = mbCategory.getCategoryId();
+	}
 	%>
 
 	<react:component
-		module="js/index.es"
+		module="{Main} from questions-web"
 		props='<%=
 			HashMapBuilder.<String, Object>put(
 				"askQuestionButtonText", LocalizationUtil.getLocalization(questionsConfiguration.askQuestionButtonTextAsLocalizedXML(), themeDisplay.getLanguageId())
@@ -35,11 +43,11 @@
 			).put(
 				"imageBrowseURL", renderRequest.getAttribute(QuestionsWebKeys.IMAGE_BROWSE_URL)
 			).put(
-				"includeContextPath", renderRequest.getAttribute("javax.servlet.include.context_path")
+				"includeContextPath", renderRequest.getAttribute("jakarta.servlet.include.context_path")
 			).put(
 				"isContentReviewer", permissionChecker.isContentReviewer(themeDisplay.getCompanyId(), themeDisplay.getScopeGroupId())
 			).put(
-				"isOmniAdmin", permissionChecker.isOmniadmin()
+				"isOmniadmin", permissionChecker.isOmniadmin()
 			).put(
 				"newQuestionPageTitle", LocalizationUtil.getLocalization(questionsConfiguration.newQuestionPageTitleAsLocalizedXML(), themeDisplay.getLanguageId())
 			).put(
@@ -49,7 +57,7 @@
 			).put(
 				"redirectToLogin", questionsConfiguration.enableRedirectToLogin()
 			).put(
-				"rootTopicId", questionsConfiguration.rootTopicId()
+				"rootTopicId", categoryId
 			).put(
 				"showCardsForTopicNavigation", questionsConfiguration.showCardsForTopicNavigation()
 			).put(

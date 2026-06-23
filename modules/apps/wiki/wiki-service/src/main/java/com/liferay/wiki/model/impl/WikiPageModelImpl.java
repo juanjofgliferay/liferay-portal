@@ -119,11 +119,18 @@ public class WikiPageModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table WikiPage";
 
+	public static final String ENTITY_ALIAS = "wikiPage";
+
+	public static final String FILTER_PK_COLUMN_NAME = "resourcePrimKey";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY wikiPage.nodeId ASC, wikiPage.title ASC, wikiPage.version DESC";
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY WikiPage.nodeId ASC, WikiPage.title ASC, WikiPage.version DESC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY wikiPage.nodeId ASC, wikiPage.title ASC, wikiPage.version DESC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -1834,3 +1841,4 @@ public class WikiPageModelImpl
 	private WikiPage _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1813625062

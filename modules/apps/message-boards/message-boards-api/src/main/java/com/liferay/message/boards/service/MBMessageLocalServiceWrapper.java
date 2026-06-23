@@ -889,6 +889,16 @@ public class MBMessageLocalServiceWrapper
 		return _mbMessageLocalService.getMessages(className, classPK, status);
 	}
 
+	@Override
+	public MBMessage getOrAddEmptyDiscussionMessage(
+			String externalReferenceCode, long userId, long groupId,
+			String className, long classPK)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _mbMessageLocalService.getOrAddEmptyDiscussionMessage(
+			externalReferenceCode, userId, groupId, className, classPK);
+	}
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -1231,3 +1241,4 @@ public class MBMessageLocalServiceWrapper
 	private MBMessageLocalService _mbMessageLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1633566375

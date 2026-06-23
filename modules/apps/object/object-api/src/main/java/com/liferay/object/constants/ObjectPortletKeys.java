@@ -10,6 +10,10 @@ package com.liferay.object.constants;
  */
 public class ObjectPortletKeys {
 
+	public static final String CMS_OBJECT_ENTRY =
+		"com_liferay_site_cms_site_initializer_internal_portlet_" +
+			"CMSObjectEntryPortlet";
+
 	public static final String LIST_TYPE_DEFINITIONS =
 		"com_liferay_object_web_internal_list_type_portlet_portlet_" +
 			"ListTypeDefinitionsPortlet";
@@ -21,5 +25,9 @@ public class ObjectPortletKeys {
 	public static final String OBJECT_ENTRIES =
 		"com_liferay_object_web_internal_object_entries_portlet_" +
 			"ObjectEntriesPortlet";
+
+	public static final String OBJECT_ENTRY_FOLDER =
+		"com_liferay_object_web_internal_object_entries_portlet_" +
+			"ObjectEntryFolderPortlet";
 
 }

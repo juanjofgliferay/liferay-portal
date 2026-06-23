@@ -13,6 +13,8 @@ import com.liferay.info.form.InfoForm;
 import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.item.provider.InfoItemFormProvider;
 import com.liferay.notification.constants.NotificationPortletKeys;
+import com.liferay.notification.model.NotificationTemplate;
+import com.liferay.object.definition.util.ObjectDefinitionUtil;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.service.ObjectDefinitionLocalService;
 import com.liferay.petra.string.StringBundler;
@@ -34,11 +36,11 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.template.engine.TemplateContextHelper;
 import com.liferay.portlet.display.template.PortletDisplayTemplate;
 
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -48,7 +50,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + NotificationPortletKeys.NOTIFICATION_TEMPLATES,
+		"jakarta.portlet.name=" + NotificationPortletKeys.NOTIFICATION_TEMPLATES,
 		"mvc.command.name=/notification_templates/notification_template_ftl_elements"
 	},
 	service = MVCResourceCommand.class
@@ -73,23 +75,24 @@ public class NotificationTemplateFTLElementsMVCResourceCommand
 
 		Locale locale = _portal.getLocale(resourceRequest);
 
-		Map<String, TemplateVariableGroup> templateVariableGroupsMap =
-			TemplateContextHelper.getTemplateVariableGroups(
-				_classNameLocalService.getClassNameId(
-					InfoItemFormProvider.class.getName()),
-				0L, TemplateConstants.LANG_TYPE_FTL, locale);
+		_fillTemplateContextTemplateVariables(jsonArray, locale);
 
-		for (TemplateVariableGroup templateVariableGroup :
-				templateVariableGroupsMap.values()) {
+		_fillObjectDefinitionTemplateVariables(
+			jsonArray, locale, objectDefinition, resourceRequest);
 
-			jsonArray.put(
-				_getTemplateVariableGroupJSONObject(
-					false, locale, templateVariableGroup));
-		}
+		JSONPortletResponseUtil.writeJSON(
+			resourceRequest, resourceResponse, jsonArray);
+	}
+
+	private void _fillObjectDefinitionTemplateVariables(
+			JSONArray jsonArray, Locale locale,
+			ObjectDefinition objectDefinition, ResourceRequest resourceRequest)
+		throws Exception {
 
 		InfoItemFormProvider<?> infoItemFormProvider =
 			_infoItemServiceRegistry.getFirstInfoItemService(
-				InfoItemFormProvider.class, objectDefinition.getClassName());
+				InfoItemFormProvider.class,
+				ObjectDefinitionUtil.getItemClassName(objectDefinition));
 
 		InfoForm infoForm = infoItemFormProvider.getInfoForm(
 			StringPool.BLANK, _portal.getScopeGroupId(resourceRequest));
@@ -125,9 +128,25 @@ public class NotificationTemplateFTLElementsMVCResourceCommand
 				_getTemplateVariableGroupJSONObject(
 					true, locale, templateVariableGroup));
 		}
+	}
 
-		JSONPortletResponseUtil.writeJSON(
-			resourceRequest, resourceResponse, jsonArray);
+	private void _fillTemplateContextTemplateVariables(
+			JSONArray jsonArray, Locale locale)
+		throws Exception {
+
+		Map<String, TemplateVariableGroup> templateVariableGroupsMap =
+			TemplateContextHelper.getTemplateVariableGroups(
+				_classNameLocalService.getClassNameId(
+					NotificationTemplate.class.getName()),
+				0L, TemplateConstants.LANG_TYPE_FTL, locale);
+
+		for (TemplateVariableGroup templateVariableGroup :
+				templateVariableGroupsMap.values()) {
+
+			jsonArray.put(
+				_getTemplateVariableGroupJSONObject(
+					false, locale, templateVariableGroup));
+		}
 	}
 
 	private JSONObject _getTemplateVariableGroupJSONObject(
@@ -151,8 +170,16 @@ public class NotificationTemplateFTLElementsMVCResourceCommand
 					String content = (String)jsonObject.get("name");
 
 					if (infoField) {
+						if (content.contains(StringPool.POUND)) {
+							content = StringBundler.concat(
+								".data_model[\"", content, "\"]");
+						}
+
 						content = StringBundler.concat(
 							"${", content, ".getData()}");
+					}
+					else {
+						content = StringBundler.concat("${", content, "}");
 					}
 
 					return content;

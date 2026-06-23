@@ -46,8 +46,6 @@ public abstract class BaseBuildRunner<T extends BuildData>
 
 	protected BaseBuildRunner(T buildData) {
 		_buildData = buildData;
-
-		_job = JobFactory.newJob(_buildData);
 	}
 
 	protected void cleanUpHostServices() {
@@ -57,6 +55,12 @@ public abstract class BaseBuildRunner<T extends BuildData>
 	}
 
 	protected Job getJob() {
+		if (_job != null) {
+			return _job;
+		}
+
+		_job = JobFactory.newJob(_buildData);
+
 		return _job;
 	}
 
@@ -132,8 +136,8 @@ public abstract class BaseBuildRunner<T extends BuildData>
 				String command = JenkinsResultsParserUtil.combine(
 					"time timeout 1200 rsync -Ipqrs --chmod=go=rx ",
 					JenkinsResultsParserUtil.getCanonicalPath(file), " ",
-					_buildData.getTopLevelMasterHostname(), "::usercontent/",
-					userContentRelativePath);
+					_buildData.getTopLevelMasterHostname(),
+					":/opt/java/jenkins/userContent/", userContentRelativePath);
 
 				JenkinsResultsParserUtil.executeBashCommands(command);
 
@@ -158,7 +162,7 @@ public abstract class BaseBuildRunner<T extends BuildData>
 	protected void retirePreviousBuilds() {
 		long allowedBuildAge = 7 * _MILLISECONDS_PER_DAY;
 
-		String allowedBuildAgeInDays = System.getenv(
+		String allowedBuildAgeInDays = Environment.get(
 			"ALLOWED_BUILD_AGE_IN_DAYS");
 
 		if ((allowedBuildAgeInDays != null) &&
@@ -190,6 +194,10 @@ public abstract class BaseBuildRunner<T extends BuildData>
 
 				JSONObject envMapJSONObject =
 					injectedEnvVarsJSONObject.getJSONObject("envMap");
+
+				if (envMapJSONObject.isEmpty()) {
+					return;
+				}
 
 				JenkinsResultsParserUtil.keepJenkinsBuild(
 					false,
@@ -224,7 +232,7 @@ public abstract class BaseBuildRunner<T extends BuildData>
 	private static final long _MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
 
 	private final T _buildData;
-	private final Job _job;
+	private Job _job;
 	private List<JSONObject> _previousBuildJSONObjects;
 
 }

@@ -109,11 +109,18 @@ public class DDMDataProviderInstanceModelImpl
 	public static final String TABLE_SQL_DROP =
 		"drop table DDMDataProviderInstance";
 
+	public static final String ENTITY_ALIAS = "ddmDataProviderInstance";
+
+	public static final String FILTER_PK_COLUMN_NAME = "dataProviderInstanceId";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY ddmDataProviderInstance.dataProviderInstanceId ASC";
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY DDMDataProviderInstance.dataProviderInstanceId ASC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY ddmDataProviderInstance.dataProviderInstanceId ASC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -1426,3 +1433,4 @@ public class DDMDataProviderInstanceModelImpl
 	private DDMDataProviderInstance _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-536686286

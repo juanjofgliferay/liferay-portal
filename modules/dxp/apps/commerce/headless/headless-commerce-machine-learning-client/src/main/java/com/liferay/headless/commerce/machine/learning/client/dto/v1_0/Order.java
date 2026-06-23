@@ -8,6 +8,8 @@ package com.liferay.headless.commerce.machine.learning.client.dto.v1_0;
 import com.liferay.headless.commerce.machine.learning.client.function.UnsafeSupplier;
 import com.liferay.headless.commerce.machine.learning.client.serdes.v1_0.OrderSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.math.BigDecimal;
@@ -15,8 +17,6 @@ import java.math.BigDecimal;
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Riccardo Ferrari
@@ -28,6 +28,31 @@ public class Order implements Cloneable, Serializable {
 	public static Order toDTO(String json) {
 		return OrderSerDes.toDTO(json);
 	}
+
+	public String getAccountExternalReferenceCode() {
+		return accountExternalReferenceCode;
+	}
+
+	public void setAccountExternalReferenceCode(
+		String accountExternalReferenceCode) {
+
+		this.accountExternalReferenceCode = accountExternalReferenceCode;
+	}
+
+	public void setAccountExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			accountExternalReferenceCodeUnsafeSupplier) {
+
+		try {
+			accountExternalReferenceCode =
+				accountExternalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String accountExternalReferenceCode;
 
 	public Long getAccountId() {
 		return accountId;
@@ -441,3 +466,4 @@ public class Order implements Cloneable, Serializable {
 	}
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1119383462

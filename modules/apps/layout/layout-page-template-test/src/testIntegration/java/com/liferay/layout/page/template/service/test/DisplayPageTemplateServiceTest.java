@@ -9,7 +9,7 @@ import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeConstants;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryService;
-import com.liferay.layout.page.template.service.test.util.DisplayPageTemplateTestUtil;
+import com.liferay.layout.page.template.test.util.DisplayPageTemplateTestUtil;
 import com.liferay.portal.kernel.exception.NoSuchClassNameException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
@@ -55,7 +55,7 @@ public class DisplayPageTemplateServiceTest {
 
 		LayoutPageTemplateEntry displayPageTemplate =
 			_layoutPageTemplateEntryService.addLayoutPageTemplateEntry(
-				_group.getGroupId(), 0, name,
+				null, _group.getGroupId(), 0, null, name,
 				LayoutPageTemplateEntryTypeConstants.DISPLAY_PAGE, 0,
 				WorkflowConstants.STATUS_DRAFT,
 				ServiceContextTestUtil.getServiceContext(
@@ -72,7 +72,7 @@ public class DisplayPageTemplateServiceTest {
 	public void testAddDisplayPageWithInvalidClassNameId()
 		throws PortalException {
 
-		_createDisplayPageEntry(0, RandomTestUtil.randomLong());
+		_createDisplayPageEntry(0, RandomTestUtil.randomString());
 	}
 
 	@Test
@@ -90,21 +90,20 @@ public class DisplayPageTemplateServiceTest {
 	}
 
 	private LayoutPageTemplateEntry _createDisplayPageEntry(
-			long classNameId, long classTypeId)
+			long classNameId, String classTypeKey)
 		throws PortalException {
 
 		return _layoutPageTemplateEntryService.addLayoutPageTemplateEntry(
-			_group.getGroupId(), 0, classNameId, classTypeId,
+			null, _group.getGroupId(), 0, null, classNameId, classTypeKey,
 			RandomTestUtil.randomString(), 0, WorkflowConstants.STATUS_DRAFT,
 			ServiceContextTestUtil.getServiceContext(
 				_group.getGroupId(), TestPropsValues.getUserId()));
 	}
 
-	@Inject
-	private static LayoutPageTemplateEntryService
-		_layoutPageTemplateEntryService;
-
 	@DeleteAfterTestRun
 	private Group _group;
+
+	@Inject
+	private LayoutPageTemplateEntryService _layoutPageTemplateEntryService;
 
 }

@@ -5,12 +5,12 @@
 
 package com.liferay.portal.cache.ehcache.internal;
 
-import com.liferay.portal.cache.ehcache.internal.configurator.BaseEhcachePortalCacheManagerConfigurator;
 import com.liferay.portal.kernel.cache.PortalCacheManager;
 import com.liferay.portal.kernel.cache.PortalCacheManagerNames;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsUtil;
 
 import java.io.Serializable;
 
@@ -33,7 +33,8 @@ public class SingleVMEhcachePortalCacheManager<K extends Serializable, V>
 	protected void activate(BundleContext bundleContext) {
 		this.bundleContext = bundleContext;
 
-		setConfigFile(props.get(PropsKeys.EHCACHE_SINGLE_VM_CONFIG_LOCATION));
+		setConfigFile(
+			PropsUtil.get(PropsKeys.EHCACHE_SINGLE_VM_CONFIG_LOCATION));
 		setDefaultConfigFile(_DEFAULT_CONFIG_FILE_NAME);
 		setPortalCacheManagerName(PortalCacheManagerNames.SINGLE_VM);
 
@@ -49,25 +50,10 @@ public class SingleVMEhcachePortalCacheManager<K extends Serializable, V>
 		destroy();
 	}
 
-	@Override
-	protected BaseEhcachePortalCacheManagerConfigurator
-		getBaseEhcachePortalCacheManagerConfigurator() {
-
-		return _singleVMEhcachePortalCacheManagerConfigurator;
-	}
-
 	private static final String _DEFAULT_CONFIG_FILE_NAME =
 		"/ehcache/liferay-single-vm.xml";
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		SingleVMEhcachePortalCacheManager.class);
-
-	private final SingleVMEhcachePortalCacheManagerConfigurator
-		_singleVMEhcachePortalCacheManagerConfigurator =
-			new SingleVMEhcachePortalCacheManagerConfigurator();
-
-	private static class SingleVMEhcachePortalCacheManagerConfigurator
-		extends BaseEhcachePortalCacheManagerConfigurator {
-	}
 
 }

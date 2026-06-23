@@ -17,10 +17,10 @@ import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
 
+import jakarta.portlet.PortletPreferences;
+
 import java.util.Locale;
 import java.util.Objects;
-
-import javax.portlet.PortletPreferences;
 
 /**
  * @author Eudaldo Alonso
@@ -62,36 +62,21 @@ public abstract class BaseConfigurationFormNavigatorEntry
 	}
 
 	protected boolean isAssetListSelection() {
-		if (Objects.equals(
-				getSelectionStyle(),
-				AssetPublisherSelectionStyleConstants.TYPE_ASSET_LIST)) {
-
-			return true;
-		}
-
-		return false;
+		return Objects.equals(
+			getSelectionStyle(),
+			AssetPublisherSelectionStyleConstants.TYPE_ASSET_LIST);
 	}
 
 	protected boolean isDynamicAssetSelection() {
-		if (Objects.equals(
-				getSelectionStyle(),
-				AssetPublisherSelectionStyleConstants.TYPE_DYNAMIC)) {
-
-			return true;
-		}
-
-		return false;
+		return Objects.equals(
+			getSelectionStyle(),
+			AssetPublisherSelectionStyleConstants.TYPE_DYNAMIC);
 	}
 
 	protected boolean isManualSelection() {
-		if (Objects.equals(
-				getSelectionStyle(),
-				AssetPublisherSelectionStyleConstants.TYPE_MANUAL)) {
-
-			return true;
-		}
-
-		return false;
+		return Objects.equals(
+			getSelectionStyle(),
+			AssetPublisherSelectionStyleConstants.TYPE_MANUAL);
 	}
 
 }

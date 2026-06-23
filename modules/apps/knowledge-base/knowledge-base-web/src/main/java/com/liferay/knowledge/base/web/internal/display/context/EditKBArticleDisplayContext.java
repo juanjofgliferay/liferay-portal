@@ -25,6 +25,7 @@ import com.liferay.portal.configuration.module.configuration.ConfigurationProvid
 import com.liferay.portal.kernel.bean.BeanParamUtil;
 import com.liferay.portal.kernel.bean.BeanPropertiesUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
@@ -42,19 +43,19 @@ import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.util.PropsValues;
+
+import jakarta.portlet.PortletConfig;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.text.Format;
 
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletConfig;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Adolfo Pérez
@@ -106,6 +107,32 @@ public class EditKBArticleDisplayContext {
 		return sections;
 	}
 
+	public String getCancelURL() {
+		if (!FeatureFlagManagerUtil.isEnabled(
+				_themeDisplay.getCompanyId(), "LPD-11003")) {
+
+			return getRedirect();
+		}
+
+		long resourcePrimKey = getResourcePrimKey();
+
+		if (resourcePrimKey == 0) {
+			return getRedirect();
+		}
+
+		return PortletURLBuilder.createActionURL(
+			_liferayPortletResponse
+		).setActionName(
+			"/knowledge_base/update_kb_article"
+		).setCMD(
+			Constants.CANCEL
+		).setRedirect(
+			getRedirect()
+		).setParameter(
+			"resourcePrimKey", resourcePrimKey
+		).buildString();
+	}
+
 	public String getContent() {
 		return BeanParamUtil.getString(
 			getKBArticle(), _liferayPortletRequest, "content",
@@ -154,7 +181,7 @@ public class EditKBArticleDisplayContext {
 			return StringPool.BLANK;
 		}
 
-		return "class=\"container-fluid container-fluid-max-xl " +
+		return "class=\"container-fluid container-fluid-max-lg " +
 			"container-form-lg\"";
 	}
 
@@ -403,21 +430,13 @@ public class EditKBArticleDisplayContext {
 	}
 
 	public boolean isHeaderVisible() {
-		if (isPortletTitleBasedNavigation()) {
-			return true;
-		}
-
-		return false;
+		return isPortletTitleBasedNavigation();
 	}
 
 	public boolean isKBArticleSectionSelected(String section)
 		throws ConfigurationException {
 
-		if (ArrayUtil.contains(_getKBArticleSections(), section)) {
-			return true;
-		}
-
-		return false;
+		return ArrayUtil.contains(_getKBArticleSections(), section);
 	}
 
 	public boolean isNavigationBarVisible() {
@@ -488,11 +507,7 @@ public class EditKBArticleDisplayContext {
 	}
 
 	public boolean isSchedulerEnabled() {
-		if (PropsValues.SCHEDULER_ENABLED) {
-			return true;
-		}
-
-		return false;
+		return PropsValues.SCHEDULER_ENABLED;
 	}
 
 	public boolean isSourceURLEnabled() {

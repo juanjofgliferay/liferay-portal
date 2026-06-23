@@ -27,13 +27,14 @@ public class AccountRoleServiceWrapper
 
 	@Override
 	public com.liferay.account.model.AccountRole addAccountRole(
-			long accountEntryId, String name,
+			String externalReferenceCode, long accountEntryId, String name,
 			java.util.Map<java.util.Locale, String> titleMap,
 			java.util.Map<java.util.Locale, String> descriptionMap)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _accountRoleService.addAccountRole(
-			accountEntryId, name, titleMap, descriptionMap);
+			externalReferenceCode, accountEntryId, name, titleMap,
+			descriptionMap);
 	}
 
 	@Override
@@ -134,3 +135,4 @@ public class AccountRoleServiceWrapper
 	private AccountRoleService _accountRoleService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1900220341

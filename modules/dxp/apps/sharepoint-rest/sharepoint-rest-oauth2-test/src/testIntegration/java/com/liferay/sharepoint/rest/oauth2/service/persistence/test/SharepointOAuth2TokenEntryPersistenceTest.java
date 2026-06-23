@@ -116,10 +116,8 @@ public class SharepointOAuth2TokenEntryPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
 		SharepointOAuth2TokenEntry newSharepointOAuth2TokenEntry =
-			_persistence.create(pk);
+			addSharepointOAuth2TokenEntry();
 
 		newSharepointOAuth2TokenEntry.setCompanyId(RandomTestUtil.nextLong());
 
@@ -588,3 +586,4 @@ public class SharepointOAuth2TokenEntryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:349851106

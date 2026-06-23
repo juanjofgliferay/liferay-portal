@@ -7,12 +7,18 @@ package com.liferay.segments.service.impl;
 
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.messaging.Message;
 import com.liferay.portal.kernel.messaging.MessageBus;
+import com.liferay.portal.kernel.model.CompanyConstants;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
+import com.liferay.portal.kernel.search.BooleanClause;
+import com.liferay.portal.kernel.search.BooleanClauseOccur;
+import com.liferay.portal.kernel.search.BooleanQuery;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Hits;
@@ -20,16 +26,17 @@ import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistryUtil;
+import com.liferay.portal.kernel.search.ParseException;
 import com.liferay.portal.kernel.search.QueryConfig;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.SearchException;
 import com.liferay.portal.kernel.search.Sort;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ResourceLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.transaction.TransactionCommitCallbackUtil;
-import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.GroupThreadLocal;
 import com.liferay.portal.kernel.util.HashMapBuilder;
@@ -78,12 +85,12 @@ public class SegmentsEntryLocalServiceImpl
 	public SegmentsEntry addSegmentsEntry(
 			String segmentsEntryKey, Map<Locale, String> nameMap,
 			Map<Locale, String> descriptionMap, boolean active, String criteria,
-			String type, ServiceContext serviceContext)
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		return segmentsEntryLocalService.addSegmentsEntry(
 			segmentsEntryKey, nameMap, descriptionMap, active, criteria, null,
-			type, serviceContext);
+			serviceContext);
 	}
 
 	@Indexable(type = IndexableType.REINDEX)
@@ -91,7 +98,7 @@ public class SegmentsEntryLocalServiceImpl
 	public SegmentsEntry addSegmentsEntry(
 			String segmentsEntryKey, Map<Locale, String> nameMap,
 			Map<Locale, String> descriptionMap, boolean active, String criteria,
-			String source, String type, ServiceContext serviceContext)
+			String source, ServiceContext serviceContext)
 		throws PortalException {
 
 		// Segments entry
@@ -128,7 +135,6 @@ public class SegmentsEntryLocalServiceImpl
 		segmentsEntry.setActive(active);
 		segmentsEntry.setCriteria(criteria);
 		segmentsEntry.setSource(_getSource(criteria, source));
-		segmentsEntry.setType(type);
 
 		segmentsEntry = segmentsEntryPersistence.update(segmentsEntry);
 
@@ -152,8 +158,8 @@ public class SegmentsEntryLocalServiceImpl
 		SegmentsEntry segmentsEntry = getSegmentsEntry(segmentsEntryId);
 
 		_segmentsEntryRelLocalService.addSegmentsEntryRels(
-			segmentsEntryId, _portal.getClassNameId(segmentsEntry.getType()),
-			classPKs, serviceContext);
+			segmentsEntryId, _portal.getClassNameId(User.class), classPKs,
+			serviceContext);
 
 		segmentsEntry.setModifiedDate(
 			serviceContext.getModifiedDate(new Date()));
@@ -202,8 +208,18 @@ public class SegmentsEntryLocalServiceImpl
 		// Segments entry
 
 		if (!GroupThreadLocal.isDeleteInProcess()) {
-			int count = _segmentsExperiencePersistence.countBySegmentsEntryId(
-				segmentsEntry.getSegmentsEntryId());
+			int count = _segmentsExperiencePersistence.countByG_SEERC_SESERC(
+				segmentsEntry.getGroupId(),
+				segmentsEntry.getExternalReferenceCode(), null);
+
+			if (count == 0) {
+				Group group = _groupLocalService.getGroup(
+					segmentsEntry.getGroupId());
+
+				count = _segmentsExperiencePersistence.countBySEERC_SESERC(
+					segmentsEntry.getExternalReferenceCode(),
+					group.getExternalReferenceCode());
+			}
 
 			if (count > 0) {
 				throw new RequiredSegmentsEntryException.
@@ -221,8 +237,20 @@ public class SegmentsEntryLocalServiceImpl
 
 		// Segments experiences
 
+		Group group = _groupLocalService.fetchGroup(segmentsEntry.getGroupId());
+
+		if ((group != null) &&
+			Validator.isNotNull(group.getExternalReferenceCode())) {
+
+			_segmentsExperienceLocalService.
+				deleteSegmentsEntrySegmentsExperiences(
+					segmentsEntry.getExternalReferenceCode(),
+					group.getExternalReferenceCode());
+		}
+
 		_segmentsExperienceLocalService.deleteSegmentsEntrySegmentsExperiences(
-			segmentsEntry.getSegmentsEntryId());
+			segmentsEntry.getGroupId(),
+			segmentsEntry.getExternalReferenceCode(), null);
 
 		// Segments rels
 
@@ -249,8 +277,7 @@ public class SegmentsEntryLocalServiceImpl
 		SegmentsEntry segmentsEntry = getSegmentsEntry(segmentsEntryId);
 
 		_segmentsEntryRelLocalService.deleteSegmentsEntryRels(
-			segmentsEntryId, _portal.getClassNameId(segmentsEntry.getType()),
-			classPKs);
+			segmentsEntryId, _portal.getClassNameId(User.class), classPKs);
 
 		segmentsEntry.setModifiedDate(new Date());
 
@@ -261,8 +288,7 @@ public class SegmentsEntryLocalServiceImpl
 
 	@Override
 	public SegmentsEntry fetchSegmentsEntry(
-		long groupId, String segmentsEntryKey,
-		boolean includeAncestorSegmentsEntries) {
+		long groupId, String segmentsEntryKey) {
 
 		if (Validator.isNotNull(segmentsEntryKey)) {
 			segmentsEntryKey = StringUtil.toUpperCase(segmentsEntryKey.trim());
@@ -291,37 +317,38 @@ public class SegmentsEntryLocalServiceImpl
 
 	@Override
 	public List<SegmentsEntry> getSegmentsEntries(
-		long groupId, boolean includeAncestorSegmentsEntries, int start,
-		int end, OrderByComparator<SegmentsEntry> orderByComparator) {
-
-		if (!includeAncestorSegmentsEntries) {
-			return segmentsEntryPersistence.findByGroupId(
-				groupId, start, end, orderByComparator);
-		}
-
-		return segmentsEntryPersistence.findByGroupId(
-			ArrayUtil.append(_portal.getAncestorSiteGroupIds(groupId), groupId),
-			start, end, orderByComparator);
-	}
-
-	@Override
-	public List<SegmentsEntry> getSegmentsEntries(
-		long groupId, boolean active, String type, int start, int end,
+		long groupId, int start, int end,
 		OrderByComparator<SegmentsEntry> orderByComparator) {
 
-		return segmentsEntryPersistence.findByG_A_T(
-			ArrayUtil.append(_portal.getAncestorSiteGroupIds(groupId), groupId),
-			active, type, start, end, orderByComparator);
+		return segmentsEntryPersistence.findByGroupId(
+			_portal.getCurrentAndAncestorSiteGroupIds(groupId), start, end,
+			orderByComparator);
 	}
 
 	@Override
 	public List<SegmentsEntry> getSegmentsEntries(
-		long groupId, boolean active, String source, String type, int start,
-		int end, OrderByComparator<SegmentsEntry> orderByComparator) {
+		long groupId, String[] sources, int start, int end,
+		OrderByComparator<SegmentsEntry> orderByComparator) {
 
-		return segmentsEntryPersistence.findByG_A_S_T(
-			ArrayUtil.append(_portal.getAncestorSiteGroupIds(groupId), groupId),
-			active, source, type, start, end, orderByComparator);
+		return segmentsEntryPersistence.findByG_SRC(
+			_portal.getCurrentAndAncestorSiteGroupIds(groupId), sources, start,
+			end, orderByComparator);
+	}
+
+	@Override
+	public List<SegmentsEntry> getSegmentsEntries(
+		long[] groupIds, boolean active, String[] sources) {
+
+		return segmentsEntryPersistence.findByG_A_SRC(
+			groupIds, active, sources);
+	}
+
+	@Override
+	public List<SegmentsEntry> getSegmentsEntries(
+		long[] segmentsEntryIds, int start, int end) {
+
+		return segmentsEntryPersistence.findBySegmentsEntryId(
+			segmentsEntryIds, start, end);
 	}
 
 	@Override
@@ -334,40 +361,25 @@ public class SegmentsEntryLocalServiceImpl
 	}
 
 	@Override
-	public int getSegmentsEntriesCount(
-		long groupId, boolean includeAncestorSegmentsEntries) {
-
-		if (!includeAncestorSegmentsEntries) {
-			return segmentsEntryPersistence.countByGroupId(groupId);
-		}
-
+	public int getSegmentsEntriesCount(long groupId) {
 		return segmentsEntryPersistence.countByGroupId(
-			ArrayUtil.append(
-				_portal.getAncestorSiteGroupIds(groupId), groupId));
+			_portal.getCurrentAndAncestorSiteGroupIds(groupId));
+	}
+
+	@Override
+	public int getSegmentsEntriesCount(long groupId, String[] sources) {
+		return segmentsEntryPersistence.countByG_SRC(
+			_portal.getCurrentAndAncestorSiteGroupIds(groupId), sources);
 	}
 
 	@Override
 	public BaseModelSearchResult<SegmentsEntry> searchSegmentsEntries(
 			long companyId, long groupId, String keywords,
-			boolean includeAncestorSegmentsEntries,
 			LinkedHashMap<String, Object> params, int start, int end, Sort sort)
 		throws PortalException {
 
 		SearchContext searchContext = _buildSearchContext(
-			companyId, groupId, keywords, includeAncestorSegmentsEntries,
-			params, start, end, sort);
-
-		return segmentsEntryLocalService.searchSegmentsEntries(searchContext);
-	}
-
-	@Override
-	public BaseModelSearchResult<SegmentsEntry> searchSegmentsEntries(
-			long companyId, String keywords,
-			LinkedHashMap<String, Object> params, int start, int end, Sort sort)
-		throws PortalException {
-
-		SearchContext searchContext = _buildSearchContext(
-			companyId, keywords, params, start, end, sort);
+			companyId, groupId, keywords, params, start, end, sort);
 
 		return segmentsEntryLocalService.searchSegmentsEntries(searchContext);
 	}
@@ -435,28 +447,9 @@ public class SegmentsEntryLocalServiceImpl
 	}
 
 	private SearchContext _buildSearchContext(
-		long companyId, long groupId, String keywords,
-		boolean includeAncestorSegmentsEntries,
-		LinkedHashMap<String, Object> params, int start, int end, Sort sort) {
-
-		SearchContext searchContext = _buildSearchContext(
-			companyId, keywords, params, start, end, sort);
-
-		long[] groupIds = {groupId};
-
-		if (includeAncestorSegmentsEntries) {
-			groupIds = ArrayUtil.append(
-				groupIds, _portal.getAncestorSiteGroupIds(groupId));
-		}
-
-		searchContext.setGroupIds(groupIds);
-
-		return searchContext;
-	}
-
-	private SearchContext _buildSearchContext(
-		long companyId, String keywords, LinkedHashMap<String, Object> params,
-		int start, int end, Sort sort) {
+			long companyId, long groupId, String keywords,
+			LinkedHashMap<String, Object> params, int start, int end, Sort sort)
+		throws ParseException {
 
 		SearchContext searchContext = new SearchContext();
 
@@ -476,8 +469,26 @@ public class SegmentsEntryLocalServiceImpl
 
 		searchContext.setAttributes(attributes);
 
+		if (!FeatureFlagManagerUtil.isEnabled(
+				CompanyConstants.SYSTEM, "LPD-78863")) {
+
+			BooleanQuery booleanQuery = new BooleanQuery();
+
+			booleanQuery.addTerm(
+				"source",
+				StringUtil.toLowerCase(
+					SegmentsEntryConstants.SOURCE_ASAH_FARO_BACKEND));
+
+			searchContext.setBooleanClauses(
+				new BooleanClause[] {
+					new BooleanClause<>(booleanQuery, BooleanClauseOccur.MUST)
+				});
+		}
+
 		searchContext.setCompanyId(companyId);
 		searchContext.setEnd(end);
+		searchContext.setGroupIds(
+			_portal.getCurrentAndAncestorSiteGroupIds(groupId));
 
 		if (Validator.isNotNull(keywords)) {
 			searchContext.setKeywords(keywords);
@@ -525,6 +536,10 @@ public class SegmentsEntryLocalServiceImpl
 	}
 
 	private String _getSource(String criteria, String source) {
+		if (SegmentsEntryConstants.SOURCE_AUDIENCE.equals(source)) {
+			return source;
+		}
+
 		if (Validator.isNotNull(criteria)) {
 			Criteria deserializedCriteria = CriteriaSerializer.deserialize(
 				criteria);
@@ -591,7 +606,6 @@ public class SegmentsEntryLocalServiceImpl
 				message.put("companyId", segmentsEntry.getCompanyId());
 				message.put(
 					"segmentsEntryId", segmentsEntry.getSegmentsEntryId());
-				message.put("type", segmentsEntry.getType());
 
 				_messageBus.sendMessage(
 					SegmentsDestinationNames.SEGMENTS_ENTRY_REINDEX, message);
@@ -605,7 +619,7 @@ public class SegmentsEntryLocalServiceImpl
 		throws PortalException {
 
 		SegmentsEntry segmentsEntry = fetchSegmentsEntry(
-			groupId, segmentsEntryKey, true);
+			groupId, segmentsEntryKey);
 
 		if ((segmentsEntry != null) &&
 			(segmentsEntry.getSegmentsEntryId() != segmentsEntryId)) {
@@ -624,6 +638,9 @@ public class SegmentsEntryLocalServiceImpl
 				"Name is null for locale " + defaultLocale.getDisplayName());
 		}
 	}
+
+	@Reference
+	private GroupLocalService _groupLocalService;
 
 	@Reference
 	private MessageBus _messageBus;

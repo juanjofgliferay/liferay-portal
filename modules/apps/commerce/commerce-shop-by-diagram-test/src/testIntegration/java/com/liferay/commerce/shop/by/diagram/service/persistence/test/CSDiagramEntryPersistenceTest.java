@@ -6,6 +6,7 @@
 package com.liferay.commerce.shop.by.diagram.service.persistence.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.commerce.shop.by.diagram.exception.DuplicateCSDiagramEntryExternalReferenceCodeException;
 import com.liferay.commerce.shop.by.diagram.exception.NoSuchCSDiagramEntryException;
 import com.liferay.commerce.shop.by.diagram.model.CSDiagramEntry;
 import com.liferay.commerce.shop.by.diagram.service.CSDiagramEntryLocalServiceUtil;
@@ -112,13 +113,12 @@ public class CSDiagramEntryPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		CSDiagramEntry newCSDiagramEntry = _persistence.create(pk);
-
-		newCSDiagramEntry.setMvccVersion(RandomTestUtil.nextLong());
+		CSDiagramEntry newCSDiagramEntry = addCSDiagramEntry();
 
 		newCSDiagramEntry.setCtCollectionId(RandomTestUtil.nextLong());
+
+		newCSDiagramEntry.setExternalReferenceCode(
+			RandomTestUtil.randomString());
 
 		newCSDiagramEntry.setCompanyId(RandomTestUtil.nextLong());
 
@@ -155,6 +155,9 @@ public class CSDiagramEntryPersistenceTest {
 		Assert.assertEquals(
 			existingCSDiagramEntry.getCtCollectionId(),
 			newCSDiagramEntry.getCtCollectionId());
+		Assert.assertEquals(
+			existingCSDiagramEntry.getExternalReferenceCode(),
+			newCSDiagramEntry.getExternalReferenceCode());
 		Assert.assertEquals(
 			existingCSDiagramEntry.getCSDiagramEntryId(),
 			newCSDiagramEntry.getCSDiagramEntryId());
@@ -193,6 +196,28 @@ public class CSDiagramEntryPersistenceTest {
 			existingCSDiagramEntry.getSku(), newCSDiagramEntry.getSku());
 	}
 
+	@Test(
+		expected = DuplicateCSDiagramEntryExternalReferenceCodeException.class
+	)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		CSDiagramEntry csDiagramEntry = addCSDiagramEntry();
+
+		CSDiagramEntry newCSDiagramEntry = addCSDiagramEntry();
+
+		newCSDiagramEntry.setCompanyId(csDiagramEntry.getCompanyId());
+
+		newCSDiagramEntry = _persistence.update(newCSDiagramEntry);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newCSDiagramEntry);
+
+		newCSDiagramEntry.setExternalReferenceCode(
+			csDiagramEntry.getExternalReferenceCode());
+
+		_persistence.update(newCSDiagramEntry);
+	}
+
 	@Test
 	public void testCountByCPDefinitionId() throws Exception {
 		_persistence.countByCPDefinitionId(RandomTestUtil.nextLong());
@@ -224,6 +249,15 @@ public class CSDiagramEntryPersistenceTest {
 	}
 
 	@Test
+	public void testCountByERC_C() throws Exception {
+		_persistence.countByERC_C("", RandomTestUtil.nextLong());
+
+		_persistence.countByERC_C("null", 0L);
+
+		_persistence.countByERC_C((String)null, 0L);
+	}
+
+	@Test
 	public void testFindByPrimaryKeyExisting() throws Exception {
 		CSDiagramEntry newCSDiagramEntry = addCSDiagramEntry();
 
@@ -249,10 +283,11 @@ public class CSDiagramEntryPersistenceTest {
 	protected OrderByComparator<CSDiagramEntry> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
 			"CSDiagramEntry", "mvccVersion", true, "ctCollectionId", true,
-			"CSDiagramEntryId", true, "companyId", true, "userId", true,
-			"userName", true, "createDate", true, "modifiedDate", true,
-			"CPDefinitionId", true, "CPInstanceId", true, "CProductId", true,
-			"diagram", true, "quantity", true, "sequence", true, "sku", true);
+			"externalReferenceCode", true, "CSDiagramEntryId", true,
+			"companyId", true, "userId", true, "userName", true, "createDate",
+			true, "modifiedDate", true, "CPDefinitionId", true, "CPInstanceId",
+			true, "CProductId", true, "diagram", true, "quantity", true,
+			"sequence", true, "sku", true);
 	}
 
 	@Test
@@ -530,6 +565,17 @@ public class CSDiagramEntryPersistenceTest {
 			ReflectionTestUtil.invoke(
 				csDiagramEntry, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "sequence"));
+
+		Assert.assertEquals(
+			csDiagramEntry.getExternalReferenceCode(),
+			ReflectionTestUtil.invoke(
+				csDiagramEntry, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(csDiagramEntry.getCompanyId()),
+			ReflectionTestUtil.<Long>invoke(
+				csDiagramEntry, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "companyId"));
 	}
 
 	protected CSDiagramEntry addCSDiagramEntry() throws Exception {
@@ -537,9 +583,9 @@ public class CSDiagramEntryPersistenceTest {
 
 		CSDiagramEntry csDiagramEntry = _persistence.create(pk);
 
-		csDiagramEntry.setMvccVersion(RandomTestUtil.nextLong());
-
 		csDiagramEntry.setCtCollectionId(RandomTestUtil.nextLong());
+
+		csDiagramEntry.setExternalReferenceCode(RandomTestUtil.randomString());
 
 		csDiagramEntry.setCompanyId(RandomTestUtil.nextLong());
 
@@ -576,3 +622,4 @@ public class CSDiagramEntryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1234556000

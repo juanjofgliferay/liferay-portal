@@ -17,12 +17,13 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.TextFormatter;
 import com.liferay.portlet.asset.util.AssetVocabularySettingsHelper;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -33,7 +34,7 @@ import java.util.Set;
  */
 public class AssetVocabularyUtil {
 
-	public static void addAssetVocabulary(
+	public static void addReservedAssetVocabulary(
 			AssetVocabularyLocalService assetVocabularyLocalService,
 			Collection<Long> classNameIds, Company company,
 			String assetVocabularyName, int visibilityType)
@@ -69,6 +70,7 @@ public class AssetVocabularyUtil {
 		}
 
 		assetVocabularyLocalService.updateVocabulary(
+			assetVocabulary.getExternalReferenceCode(),
 			assetVocabulary.getVocabularyId(), assetVocabulary.getTitleMap(),
 			assetVocabulary.getDescriptionMap(),
 			assetVocabularySettingsHelper.toString(), visibilityType);
@@ -76,7 +78,7 @@ public class AssetVocabularyUtil {
 
 	private static void _addAssetVocabulary(
 			AssetVocabularyLocalService assetVocabularyLocalService,
-			String assetVocabularyName, Collection<Long> classNameIdsCollection,
+			String assetVocabularyName, Collection<Long> classNameIds,
 			Company company, int visibilityType)
 		throws PortalException {
 
@@ -94,21 +96,21 @@ public class AssetVocabularyUtil {
 		AssetVocabularySettingsHelper assetVocabularySettingsHelper =
 			new AssetVocabularySettingsHelper();
 
-		if (classNameIdsCollection != null) {
-			long[] classNameIds = new long[classNameIdsCollection.size()];
-			long[] classTypePKs = new long[classNameIdsCollection.size()];
-			boolean[] requireds = new boolean[classNameIdsCollection.size()];
+		assetVocabularySettingsHelper.setRegisteredClassNameIds(
+			ArrayUtil.toLongArray(classNameIds));
 
-			Iterator<Long> iterator = classNameIdsCollection.iterator();
+		if (classNameIds != null) {
+			long[] classTypePKs = new long[classNameIds.size()];
+			boolean[] requireds = new boolean[classNameIds.size()];
 
-			for (int i = 0; i < classNameIdsCollection.size(); i++) {
-				classNameIds[i] = iterator.next();
+			for (int i = 0; i < classNameIds.size(); i++) {
 				classTypePKs[i] = AssetCategoryConstants.ALL_CLASS_TYPE_PK;
 				requireds[i] = false;
 			}
 
 			assetVocabularySettingsHelper.setClassNameIdsAndClassTypePKs(
-				classNameIds, classTypePKs, requireds);
+				ArrayUtil.toArray(classNameIds.toArray(new Long[0])),
+				classTypePKs, requireds);
 		}
 
 		ServiceContext serviceContext = new ServiceContext();
@@ -117,40 +119,52 @@ public class AssetVocabularyUtil {
 		serviceContext.setAddGuestPermissions(true);
 
 		assetVocabularyLocalService.addVocabulary(
-			null, user.getUserId(), company.getGroupId(), assetVocabularyName,
-			StringPool.BLANK, titleMap, Collections.emptyMap(),
+			_toExternalReferenceCode(assetVocabularyName), user.getUserId(),
+			company.getGroupId(), assetVocabularyName, StringPool.BLANK,
+			titleMap, Collections.emptyMap(),
 			assetVocabularySettingsHelper.toString(), visibilityType,
 			serviceContext);
 	}
 
 	private static AssetVocabularySettingsHelper
 		_getAssetVocabularySettingsHelper(
-			AssetVocabulary assetVocabulary,
-			Collection<Long> classNameIdsCollection) {
+			AssetVocabulary assetVocabulary, Collection<Long> classNameIds) {
 
 		AssetVocabularySettingsHelper assetVocabularySettingsHelper =
-			new AssetVocabularySettingsHelper();
+			new AssetVocabularySettingsHelper(assetVocabulary.getSettings());
 
-		Set<Long> classNameIds = SetUtil.fromArray(
+		Set<Long> filteredClassNameIds = new LinkedHashSet<>(classNameIds);
+
+		Set<Long> registeredClassNameIds = SetUtil.fromArray(
+			assetVocabularySettingsHelper.getRegisteredClassNameIds());
+
+		filteredClassNameIds.removeAll(registeredClassNameIds);
+
+		assetVocabularySettingsHelper.setRegisteredClassNameIds(
+			ArrayUtil.toLongArray(filteredClassNameIds));
+
+		Set<Long> selectedClassNameIds = SetUtil.fromArray(
 			assetVocabulary.getSelectedClassNameIds());
 
-		classNameIds.addAll(classNameIdsCollection);
+		selectedClassNameIds.addAll(filteredClassNameIds);
 
-		long[] selectedClassNameIds = ArrayUtil.toArray(
-			classNameIds.toArray(new Long[0]));
+		long[] classTypePKs = new long[selectedClassNameIds.size()];
+		boolean[] requireds = new boolean[selectedClassNameIds.size()];
 
-		long[] classTypePKs = new long[selectedClassNameIds.length];
-		boolean[] requireds = new boolean[selectedClassNameIds.length];
-
-		for (int i = 0; i < selectedClassNameIds.length; i++) {
+		for (int i = 0; i < selectedClassNameIds.size(); i++) {
 			classTypePKs[i] = AssetCategoryConstants.ALL_CLASS_TYPE_PK;
 			requireds[i] = false;
 		}
 
 		assetVocabularySettingsHelper.setClassNameIdsAndClassTypePKs(
-			selectedClassNameIds, classTypePKs, requireds);
+			ArrayUtil.toArray(selectedClassNameIds.toArray(new Long[0])),
+			classTypePKs, requireds);
 
 		return assetVocabularySettingsHelper;
+	}
+
+	private static String _toExternalReferenceCode(String title) {
+		return "L_" + TextFormatter.format(title, TextFormatter.A);
 	}
 
 }

@@ -5,7 +5,6 @@
 
 package com.liferay.site.internal.struts;
 
-import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.NoSuchLayoutSetException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -24,14 +23,16 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.util.PropsValues;
-import com.liferay.site.util.Sitemap;
+import com.liferay.site.manager.SitemapManager;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import java.io.InputStream;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -112,22 +113,26 @@ public class SitemapStrutsAction implements StrutsAction {
 			Group currentGroup = _groupLocalService.getGroup(
 				layoutSet.getGroupId());
 
-			if (currentGroup.isActive()) {
-				String layoutUuid = ParamUtil.getString(
-					httpServletRequest, "layoutUuid");
-
-				String sitemap = _sitemap.getSitemap(
-					layoutUuid, layoutSet.getGroupId(),
-					layoutSet.isPrivateLayout(), themeDisplay);
-
-				ServletResponseUtil.sendFile(
-					httpServletRequest, httpServletResponse, null,
-					sitemap.getBytes(StringPool.UTF8),
-					ContentTypes.TEXT_XML_UTF8);
-			}
-			else {
+			if (!currentGroup.isActive()) {
 				throw new NoSuchLayoutSetException();
 			}
+
+			InputStream inputStream = _sitemapManager.getSitemapInputStream(
+				ParamUtil.getString(httpServletRequest, "assetTypeKey"),
+				ParamUtil.getString(httpServletRequest, "layoutUuid"),
+				layoutSet.getGroupId(), layoutSet.isPrivateLayout(),
+				themeDisplay,
+				ParamUtil.getInteger(httpServletRequest, "page", 1));
+
+			if (inputStream == null) {
+				httpServletResponse.sendError(HttpServletResponse.SC_NOT_FOUND);
+
+				return null;
+			}
+
+			ServletResponseUtil.sendFile(
+				httpServletRequest, httpServletResponse, null, inputStream,
+				ContentTypes.TEXT_XML_UTF8);
 		}
 		catch (NoSuchLayoutSetException noSuchLayoutSetException) {
 			_portal.sendError(
@@ -160,7 +165,7 @@ public class SitemapStrutsAction implements StrutsAction {
 	private Portal _portal;
 
 	@Reference
-	private Sitemap _sitemap;
+	private SitemapManager _sitemapManager;
 
 	@Reference
 	private VirtualHostLocalService _virtualHostLocalService;

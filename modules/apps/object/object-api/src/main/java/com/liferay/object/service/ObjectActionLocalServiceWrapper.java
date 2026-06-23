@@ -85,6 +85,15 @@ public class ObjectActionLocalServiceWrapper
 			parametersUnicodeProperties, system);
 	}
 
+	@Override
+	public void addOrUpdateSubscriptionObjectActions(
+			com.liferay.object.model.ObjectDefinition objectDefinition)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_objectActionLocalService.addOrUpdateSubscriptionObjectActions(
+			objectDefinition);
+	}
+
 	/**
 	 * Creates a new object action with the primary key. Does not add the object action to the database.
 	 *
@@ -276,6 +285,14 @@ public class ObjectActionLocalServiceWrapper
 
 	@Override
 	public com.liferay.object.model.ObjectAction fetchObjectAction(
+		long objectDefinitionId, String name) {
+
+		return _objectActionLocalService.fetchObjectAction(
+			objectDefinitionId, name);
+	}
+
+	@Override
+	public com.liferay.object.model.ObjectAction fetchObjectAction(
 		String externalReferenceCode, long objectDefinitionId) {
 
 		return _objectActionLocalService.fetchObjectAction(
@@ -362,6 +379,14 @@ public class ObjectActionLocalServiceWrapper
 			uuid, companyId);
 	}
 
+	@Override
+	public java.util.List<com.liferay.object.model.ObjectAction>
+		getObjectActions(boolean active, String objectActionExecutorKey) {
+
+		return _objectActionLocalService.getObjectActions(
+			active, objectActionExecutorKey);
+	}
+
 	/**
 	 * Returns a range of all the object actions.
 	 *
@@ -406,6 +431,16 @@ public class ObjectActionLocalServiceWrapper
 		return _objectActionLocalService.getObjectActionsCount();
 	}
 
+	@Override
+	public java.util.Map
+		<Long, java.util.List<com.liferay.object.model.ObjectAction>>
+			getObjectActionsMap(
+				long companyId, boolean active, String objectActionTriggerKey) {
+
+		return _objectActionLocalService.getObjectActionsMap(
+			companyId, active, objectActionTriggerKey);
+	}
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -425,6 +460,14 @@ public class ObjectActionLocalServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _objectActionLocalService.getPersistedModel(primaryKeyObj);
+	}
+
+	@Override
+	public com.liferay.object.model.ObjectAction updateActive(
+			com.liferay.object.model.ObjectAction objectAction, boolean active)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _objectActionLocalService.updateActive(objectAction, active);
 	}
 
 	/**
@@ -490,3 +533,4 @@ public class ObjectActionLocalServiceWrapper
 	private ObjectActionLocalService _objectActionLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1907125171

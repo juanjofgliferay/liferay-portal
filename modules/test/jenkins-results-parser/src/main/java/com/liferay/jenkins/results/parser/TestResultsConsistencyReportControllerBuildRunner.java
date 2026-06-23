@@ -54,7 +54,7 @@ public class TestResultsConsistencyReportControllerBuildRunner
 	}
 
 	protected String getInvocationCohortName() {
-		String invocationCohortName = System.getenv("INVOCATION_COHORT_NAME");
+		String invocationCohortName = Environment.get("INVOCATION_COHORT_NAME");
 
 		if ((invocationCohortName != null) && !invocationCohortName.isEmpty()) {
 			return invocationCohortName;
@@ -66,12 +66,13 @@ public class TestResultsConsistencyReportControllerBuildRunner
 	}
 
 	protected String getJobURL() {
+		String jobName = "test-results-consistency-report";
+
 		return JenkinsResultsParserUtil.combine(
 			JenkinsResultsParserUtil.getMostAvailableMasterURL(
-				JenkinsResultsParserUtil.combine(
-					"http://" + getInvocationCohortName() + ".liferay.com"),
-				1),
-			"/job/test-results-consistency-report");
+				"http://" + getInvocationCohortName() + ".liferay.com", null, 1,
+				jobName),
+			"/job/", jobName);
 	}
 
 	protected void invokeTestSuiteBuilds() {
@@ -252,6 +253,9 @@ public class TestResultsConsistencyReportControllerBuildRunner
 	}
 
 	private Map<Pair<String, String>, Long> _getLatestTestSuiteStartTimes() {
+		Map<Pair<String, String>, Long> latestTestSuiteStartTimes =
+			new LinkedHashMap<>();
+
 		List<Build> builds = _getBuildHistory();
 
 		BuildData buildData = getBuildData();
@@ -260,9 +264,6 @@ public class TestResultsConsistencyReportControllerBuildRunner
 			buildData.getBuildURL(), null);
 
 		builds.remove(currentBuild);
-
-		Map<Pair<String, String>, Long> latestTestSuiteStartTimes =
-			new LinkedHashMap<>();
 
 		for (Pair<String, String> testSuiteBranchNamePair :
 				_getTestSuiteBranchNamePairs()) {

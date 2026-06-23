@@ -69,8 +69,8 @@ public interface SamlSpAuthRequestLocalService
 		SamlSpAuthRequest samlSpAuthRequest);
 
 	public SamlSpAuthRequest addSamlSpAuthRequest(
-		String samlIdpEntityId, String samlSpAuthRequestKey,
-		ServiceContext serviceContext);
+		String samlIdpEntityId, String samlRelayState,
+		String samlSpAuthRequestKey, ServiceContext serviceContext);
 
 	/**
 	 * @throws PortalException
@@ -278,3 +278,4 @@ public interface SamlSpAuthRequestLocalService
 		SamlSpAuthRequest samlSpAuthRequest);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1392957542

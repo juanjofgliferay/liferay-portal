@@ -78,10 +78,9 @@ public abstract class BaseCMISModel {
 
 		AllowableActions allowableActions = cmisObject.getAllowableActions();
 
-		Set<Action> allowableActionsSet =
-			allowableActions.getAllowableActions();
+		Set<Action> actions = allowableActions.getAllowableActions();
 
-		return allowableActionsSet.contains(action);
+		return actions.contains(action);
 	}
 
 	protected abstract CMISRepository getCmisRepository();
@@ -146,6 +145,8 @@ public abstract class BaseCMISModel {
 			ActionKeys.ADD_FOLDER, Action.CAN_CREATE_FOLDER
 		).put(
 			ActionKeys.ADD_SUBFOLDER, Action.CAN_CREATE_FOLDER
+		).put(
+			ActionKeys.ADVANCED_UPDATE, Action.CAN_UPDATE_PROPERTIES
 		).put(
 			ActionKeys.DELETE, Action.CAN_DELETE_OBJECT
 		).put(

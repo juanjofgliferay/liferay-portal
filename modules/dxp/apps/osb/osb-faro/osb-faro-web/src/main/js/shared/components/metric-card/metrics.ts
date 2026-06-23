@@ -10,55 +10,50 @@ export enum MetricType {
 export type Metric = {
 	compositeMetrics?: Metric[];
 	name: MetricName;
+	sortField?: MetricName;
 	title: string;
 	tooltipTitle?: string;
 	type: MetricType;
-	sortField?: MetricName;
 };
 
-export const VisitorsMetric: Metric = {
-	name: MetricName.Visitors,
-	sortField: MetricName.Visitors,
-	title: Liferay.Language.get('unique-visitors'),
-	type: MetricType.Number
-};
+const metric = (metric: Metric): Metric => metric;
 
-export const ViewsMetric: Metric = {
-	name: MetricName.Views,
-	sortField: MetricName.Views,
-	title: Liferay.Language.get('views'),
-	type: MetricType.Number
-};
-
-export const BounceRateMetric: Metric = {
-	name: MetricName.BounceRate,
-	sortField: MetricName.BounceRate,
-	title: Liferay.Language.get('bounce-rate'),
+export const AbandonmentsMetric = metric({
+	name: MetricName.Abandonments,
+	sortField: MetricName.Abandonments,
+	title: Liferay.Language.get('abandonment'),
 	type: MetricType.Percentage
-};
+});
 
-export const AvgTimeOnPageMetric: Metric = {
+export const AvgTimeOnPageMetric = metric({
 	name: MetricName.AvgTimeOnPage,
 	sortField: MetricName.AvgTimeOnPage,
 	title: Liferay.Language.get('time-on-page'),
 	type: MetricType.Time
-};
+});
 
-export const EntrancesMetric: Metric = {
-	name: MetricName.Entrances,
-	sortField: MetricName.Entrances,
-	title: Liferay.Language.get('entrances'),
-	type: MetricType.Number
-};
-
-export const ExitRateMetric: Metric = {
-	name: MetricName.ExitRate,
-	sortField: MetricName.ExitRate,
-	title: Liferay.Language.get('exit-rate'),
+export const BounceRateMetric = metric({
+	name: MetricName.BounceRate,
+	sortField: MetricName.BounceRate,
+	title: Liferay.Language.get('bounce-rate'),
 	type: MetricType.Percentage
-};
+});
 
-export const CompositeMetric: Metric = {
+export const CommentsMetric = metric({
+	name: MetricName.Comments,
+	sortField: MetricName.Comments,
+	title: Liferay.Language.get('comments'),
+	type: MetricType.Number
+});
+
+export const CompletionTimeMetric = metric({
+	name: MetricName.CompletionTime,
+	sortField: MetricName.CompletionTime,
+	title: Liferay.Language.get('completion-time'),
+	type: MetricType.Time
+});
+
+export const CompositeMetric = metric({
 	compositeMetrics: [
 		{
 			name: MetricName.AnonymousVisitors,
@@ -76,74 +71,81 @@ export const CompositeMetric: Metric = {
 	name: MetricName.Visitors,
 	title: Liferay.Language.get('unique-visitors'),
 	type: MetricType.Number
-};
+});
 
-export const SessionsPerVisitorMetric: Metric = {
-	name: MetricName.SessionsPerVisitor,
-	title: Liferay.Language.get('sessions-visitor'),
-	tooltipTitle: Liferay.Language.get('avg-sessions'),
-	type: MetricType.Number
-};
-
-export const SessionDurationMetric: Metric = {
-	name: MetricName.SessionsDuration,
-	title: Liferay.Language.get('session-duration'),
-	tooltipTitle: Liferay.Language.get('avg-duration'),
-	type: MetricType.Time
-};
-
-export const SubmissionsMetric: Metric = {
-	name: MetricName.Submissions,
-	sortField: MetricName.Submissions,
-	title: Liferay.Language.get('submissions'),
-	type: MetricType.Number
-};
-
-export const AbandonmentsMetric: Metric = {
-	name: MetricName.Abandonments,
-	sortField: MetricName.Abandonments,
-	title: Liferay.Language.get('abandonment'),
-	type: MetricType.Percentage
-};
-
-export const CompletionTimeMetric: Metric = {
-	name: MetricName.CompletionTime,
-	sortField: MetricName.CompletionTime,
-	title: Liferay.Language.get('completion-time'),
-	type: MetricType.Time
-};
-
-export const DownloadsMetric: Metric = {
+export const DownloadsMetric = metric({
 	name: MetricName.Downloads,
 	sortField: MetricName.Downloads,
 	title: Liferay.Language.get('downloads'),
 	type: MetricType.Number
-};
+});
 
-export const PreviewsMetric: Metric = {
-	name: MetricName.Previews,
-	sortField: MetricName.Previews,
-	title: Liferay.Language.get('previews'),
+export const EntrancesMetric = metric({
+	name: MetricName.Entrances,
+	sortField: MetricName.Entrances,
+	title: Liferay.Language.get('entrances'),
 	type: MetricType.Number
-};
+});
 
-export const CommentsMetric: Metric = {
-	name: MetricName.Comments,
-	sortField: MetricName.Comments,
-	title: Liferay.Language.get('comments'),
+export const ExitRateMetric = metric({
+	name: MetricName.ExitRate,
+	sortField: MetricName.ExitRate,
+	title: Liferay.Language.get('exit-rate'),
+	type: MetricType.Percentage
+});
+
+export const ImpressionMadeMetric = metric({
+	name: MetricName.Impressions,
+	sortField: MetricName.Impressions,
+	title: Liferay.Language.get('impressions'),
 	type: MetricType.Number
-};
+});
 
-export const RatingsMetric: Metric = {
+export const RatingsMetric = metric({
 	name: MetricName.Ratings,
 	sortField: MetricName.Ratings,
 	title: Liferay.Language.get('rating'),
 	type: MetricType.Ratings
-};
+});
 
-export const ReadingTimeMetric: Metric = {
+export const ReadingTimeMetric = metric({
 	name: MetricName.ReadingTime,
 	sortField: MetricName.ReadingTime,
 	title: Liferay.Language.get('reading-time'),
 	type: MetricType.Time
-};
+});
+
+export const SessionDurationMetric = metric({
+	name: MetricName.SessionsDuration,
+	title: Liferay.Language.get('session-duration'),
+	tooltipTitle: Liferay.Language.get('avg-duration'),
+	type: MetricType.Time
+});
+
+export const SessionsPerVisitorMetric = metric({
+	name: MetricName.SessionsPerVisitor,
+	title: Liferay.Language.get('sessions-visitor'),
+	tooltipTitle: Liferay.Language.get('avg-sessions'),
+	type: MetricType.Number
+});
+
+export const SubmissionsMetric = metric({
+	name: MetricName.Submissions,
+	sortField: MetricName.Submissions,
+	title: Liferay.Language.get('submissions'),
+	type: MetricType.Number
+});
+
+export const ViewsMetric = metric({
+	name: MetricName.Views,
+	sortField: MetricName.Views,
+	title: Liferay.Language.get('views'),
+	type: MetricType.Number
+});
+
+export const VisitorsMetric = metric({
+	name: MetricName.Visitors,
+	sortField: MetricName.Visitors,
+	title: Liferay.Language.get('unique-visitors'),
+	type: MetricType.Number
+});

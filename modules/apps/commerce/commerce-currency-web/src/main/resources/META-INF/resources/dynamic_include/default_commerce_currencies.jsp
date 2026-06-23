@@ -28,7 +28,7 @@ AccountEntry accountEntry = commerceChannelAccountEntryRelDisplayContext.getAcco
 		</clay:content-col>
 	</clay:content-row>
 
-	<div id="<portlet:namespace />defaultCommerceCurrencies">
+	<div data-qa-id="defaultCommerceCurrencies" id="<portlet:namespace />defaultCommerceCurrencies">
 		<frontend-data-set:classic-display
 			contextParams='<%=
 				HashMapBuilder.<String, String>put(
@@ -40,7 +40,6 @@ AccountEntry accountEntry = commerceChannelAccountEntryRelDisplayContext.getAcco
 			creationMenu="<%= commerceChannelAccountEntryRelDisplayContext.getCreationMenu() %>"
 			dataProviderKey="<%= CommerceCurrencyFDSNames.ACCOUNT_ENTRY_CURRENCIES %>"
 			id="<%= CommerceCurrencyFDSNames.ACCOUNT_ENTRY_CURRENCIES %>"
-			itemsPerPage="<%= 10 %>"
 			showSearch="<%= false %>"
 			style="fluid"
 		/>

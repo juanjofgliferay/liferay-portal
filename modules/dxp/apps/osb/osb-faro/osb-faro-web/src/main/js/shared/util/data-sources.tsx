@@ -8,6 +8,7 @@ import {
 	EntityTypes
 } from 'shared/util/constants';
 import {DataSource} from 'shared/util/records';
+import {Map as ImmutableMap, List} from 'immutable';
 import {Routes, toRoute} from 'shared/util/router';
 import {toPromise} from 'shared/components/form';
 
@@ -18,7 +19,7 @@ export const LIFERAY_SITE_TYPE = `${EntityTypes.DataSource}-site`;
  */
 export const WARNING_TIMEOUT = 7000;
 
-export const SERVICE_ERROR_MESSAGE_MAP = {
+export const SERVICE_ERROR_MESSAGE_MAP: Record<number, string> = {
 	403: Liferay.Language.get(
 		'data-source-credentials-invalid-please-contact-your-oauth-administrator'
 	),
@@ -32,8 +33,8 @@ export const SERVICE_ERROR_MESSAGE_MAP = {
  * @param {Number} code - The http response error code.
  * @returns {Object} The props to use for the alert.
  */
-export function getServiceAlertConfig(code) {
-	const message = (code => {
+export function getServiceAlertConfig(code: number) {
+	const message = ((code: number) => {
 		switch (code) {
 			case 401:
 			case 403:
@@ -131,7 +132,13 @@ export const STATUS_DISPLAY = {
  * @param {string} props.groupId
  * @returns {string} - Returns a route to the data source authorization page if not valid.
  */
-export function dataSourceRedirectFn({dataSource, groupId}) {
+export function dataSourceRedirectFn({
+	dataSource,
+	groupId
+}: {
+	dataSource: DataSource;
+	groupId: string;
+}) {
 	if (isDataSourceValid(dataSource.state)) {
 		return null;
 	} else {
@@ -147,9 +154,9 @@ export function dataSourceRedirectFn({dataSource, groupId}) {
  * @param {string} state - The dataSource state.
  * @returns {boolean} - True if this state is valid or false if not valid.
  */
-export function isDataSourceValid(state) {
+export function isDataSourceValid(state?: string): boolean {
 	return [DataSourceStates.CredentialsValid, DataSourceStates.Ready].includes(
-		state
+		state as DataSourceStates
 	);
 }
 
@@ -158,7 +165,13 @@ export function isDataSourceValid(state) {
  * @param {string} value - The current input value for the dataSource name.
  * @returns {Promise.<Object>} - A Promise resolving with an assertion object
  */
-export function validateUniqueName({groupId, value}) {
+export function validateUniqueName({
+	groupId,
+	value
+}: {
+	groupId: string;
+	value: string;
+}) {
 	return API.dataSource
 		.search({
 			delta: 1,
@@ -183,15 +196,9 @@ export function validateUniqueName({groupId, value}) {
  * Utility for getting the display object for a dataSource state in order
  * to display its status.
  */
-export function getDataSourceDisplayObject(
-	dataSource: DataSource,
-	showActionNeededStatus: boolean = false
-) {
+export function getDataSourceDisplayObject(dataSource: DataSource) {
 	if (!dataSource) {
 		return STATUS_DISPLAY.default;
-	}
-	if (showActionNeededStatus && hasLegacyDXPConnection(dataSource)) {
-		return STATUS_DISPLAY[DataSourceStates.ActionNeeded];
 	}
 
 	const {state, status} = dataSource;
@@ -209,13 +216,17 @@ export function getDataSourceDisplayObject(
 			return STATUS_DISPLAY[DataSourceStates.Disconnected];
 		case DataSourceStates.CredentialsValid:
 			if (
-				(validContactsConfig(dataSource) && active) ||
-				validAnalyticsConfig(dataSource)
+				validAnalyticsConfig(dataSource) ||
+				(active &&
+					(validContactsConfig(dataSource) ||
+						dataSource.sitesSelected ||
+						dataSource.contactsSelected))
 			) {
 				return STATUS_DISPLAY.active;
 			}
 
-			return credentialsType === CredentialTypes.Token
+			return credentialsType === CredentialTypes.Token ||
+				credentialsType === CredentialTypes.OAuth2
 				? STATUS_DISPLAY.tokenCredentialsValid
 				: STATUS_DISPLAY[DataSourceStates.CredentialsValid];
 		case DataSourceStates.InProgressDeleting:
@@ -242,32 +253,22 @@ export function getDataSourceDisplayObject(
  * @param {string} key - The Map key that contains the List of objects.
  * @returns {array} - The List of objects converted to an array of numerical ids.
  */
-export function getIdsFromConfiguration(configIMap, key) {
-	return configIMap
-		.get(key, new Map())
-		.map(itemIMap => Number(itemIMap.get('id')))
-		.toArray();
-}
+export function getIdsFromConfiguration(
+	configIMap: ImmutableMap<string, unknown>,
+	key: string
+): number[] {
+	const list = configIMap.get(key, List()) as List<
+		ImmutableMap<string, unknown>
+	>;
 
-/**
- * Check if a DataSource is considered legacy (DXP and not token authentication)
- */
-export const hasLegacyDXPConnection = (dataSource: DataSource) =>
-	dataSource.providerType === DataSourceTypes.Liferay &&
-	dataSource.getIn(['credentials', 'type']) !== CredentialTypes.Token;
+	return list.map(itemIMap => Number(itemIMap?.get('id'))).toArray();
+}
 
 /**
  * Helper function for checking validity of a DataSource's analyticsConfiguration.
  */
 export function validAnalyticsConfig(dataSource: DataSource): boolean {
 	const {provider, providerType} = dataSource;
-
-	if (
-		providerType === DataSourceTypes.Liferay &&
-		!hasLegacyDXPConnection(dataSource)
-	) {
-		return dataSource.sitesSelected;
-	}
 
 	const analyticsConfiguration =
 		provider && provider.get('analyticsConfiguration');
@@ -295,15 +296,10 @@ export function validAnalyticsConfig(dataSource: DataSource): boolean {
 export function validContactsConfig(dataSource: DataSource): boolean {
 	const {provider, providerType, status} = dataSource;
 
-	if (
-		providerType === DataSourceTypes.Liferay &&
-		!hasLegacyDXPConnection(dataSource)
-	) {
-		return dataSource.contactsSelected;
-	}
-
 	const contactsConfiguration =
 		provider && provider.get('contactsConfiguration');
+	const accountsConfiguration =
+		provider && provider.get('accountsConfiguration');
 
 	if (!contactsConfiguration && providerType !== DataSourceTypes.Csv) {
 		return false;
@@ -318,8 +314,12 @@ export function validContactsConfig(dataSource: DataSource): boolean {
 					contactsConfiguration.get('organizations').size ||
 					contactsConfiguration.get('userGroups').size
 			);
-		// TODO: Add validation on salesforce contactsConfiguration
 		case DataSourceTypes.Salesforce:
+			return Boolean(
+				accountsConfiguration.get('enableAllAccounts') ||
+					contactsConfiguration.get('enableAllContacts') ||
+					contactsConfiguration.get('enableAllLeads')
+			);
 		default:
 			return Boolean(contactsConfiguration);
 	}

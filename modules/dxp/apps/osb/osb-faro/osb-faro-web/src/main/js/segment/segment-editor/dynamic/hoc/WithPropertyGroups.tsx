@@ -7,16 +7,15 @@ import {
 	convertEventToProperty,
 	convertFieldMappingToAccountProperty,
 	convertFieldMappingToIndividualProperty,
-	convertFieldMappingToOrganizationProperty
+	convertFieldMappingToOrganizationProperty,
+	createInterestProperty
 } from '../utils/utils';
-import {createInterestProperty} from '../utils/utils';
-import {
-	DEVELOPER_MODE,
-	ENABLE_ACCOUNTS,
-	FieldContexts,
-	FieldOwnerTypes
-} from 'shared/util/constants';
 import {EventTypes} from 'event-analysis/utils/types';
+import {
+	FieldContexts,
+	FieldOwnerTypes,
+	SegmentTypes
+} from 'shared/util/constants';
 import {
 	INDIVIDUAL_PROPERTIES,
 	ORGANIZATION_PROPERTIES,
@@ -27,12 +26,19 @@ import {List} from 'immutable';
 import {NAME} from 'shared/util/pagination';
 import {OrderByDirections} from 'shared/util/constants';
 import {PropertyGroup, PropertySubgroup} from 'shared/util/records';
-import {sub} from 'shared/util/lang';
 import {withRequest} from 'shared/hoc';
 
 const MAX_DELTA = 500;
 
-const fetchPropertyGroups = ({groupId}: {groupId: string}): Promise<any> =>
+const fetchPropertyGroups = ({
+	channelId,
+	groupId,
+	type
+}: {
+	channelId: string;
+	groupId: string;
+	type?: string;
+}): Promise<any> =>
 	Promise.all([
 		API.fieldMappings.search({
 			context: FieldContexts.Demographics,
@@ -47,7 +53,8 @@ const fetchPropertyGroups = ({groupId}: {groupId: string}): Promise<any> =>
 			ownerType: FieldOwnerTypes.Individual
 		}),
 		API.fieldMappings.search({
-			context: FieldContexts.Organization,
+			channelId,
+			context: FieldContexts.Account,
 			delta: MAX_DELTA,
 			groupId,
 			ownerType: FieldOwnerTypes.Account
@@ -59,42 +66,50 @@ const fetchPropertyGroups = ({groupId}: {groupId: string}): Promise<any> =>
 			groupId,
 			ownerType: FieldOwnerTypes.Organization
 		}),
-		API.interests.searchKeywords({delta: MAX_DELTA, groupId}),
-		Promise.resolve(SESSION_PROPERTIES),
-		// TODO: LRAC-8210 Remove for release 3.1
-		DEVELOPER_MODE
-			? client.query({
-					fetchPolicy: 'network-only',
-					query: EventDefinitionsQuery,
-					variables: {
-						eventType: EventTypes.Custom,
-						hidden: false,
-						page: 0,
-						size: MAX_DELTA,
-						sort: {
-							column: NAME,
-							type: OrderByDirections.Ascending
-						}
-					}
+		client.query({
+			fetchPolicy: 'network-only',
+			query: EventDefinitionsQuery,
+			variables: {
+				eventType: EventTypes.Custom,
+				hidden: false,
+				page: 0,
+				size: MAX_DELTA,
+				sort: {
+					column: NAME,
+					type: OrderByDirections.Ascending
+				}
+			}
+		}),
+		Promise.resolve(WEB_BEHAVIORS),
+		type === SegmentTypes.Batch
+			? API.interests.searchKeywords({
+					channelId,
+					delta: MAX_DELTA,
+					groupId
 			  })
-			: Promise.resolve([]),
-		Promise.resolve(WEB_BEHAVIORS)
+			: Promise.resolve({items: []}),
+		Promise.resolve(SESSION_PROPERTIES),
+		Promise.resolve({items: [], totalCount: 0})
 	]);
 
-const mapResultToProps = ([
-	individualDemographicsMappings,
-	individualCustomMappings,
-	accountMappings,
-	organizationProperties,
-	organizationCustomMappings,
-	interestKeywords,
-	sessionProperties,
-	eventProperties,
-	webBehaviors
-]) => {
-	const individualDemographicProperties = individualDemographicsMappings.items.map(
-		convertFieldMappingToIndividualProperty
-	);
+const mapResultToProps = (
+	[
+		individualDemographicsMappings,
+		individualCustomMappings,
+		accountMappings,
+		organizationProperties,
+		organizationCustomMappings,
+		eventProperties,
+		webBehaviors,
+		interestKeywords,
+		sessionProperties
+	]: any[],
+	{type}: {type: SegmentTypes}
+) => {
+	const individualDemographicProperties =
+		individualDemographicsMappings.items.map(
+			convertFieldMappingToIndividualProperty
+		);
 
 	let individualSubgroupsIList = List([
 		new PropertySubgroup({
@@ -115,24 +130,6 @@ const mapResultToProps = ([
 		})
 	);
 
-	const organizationPropertyGroup = new PropertyGroup({
-		label: sub(Liferay.Language.get('x-attributes'), [
-			Liferay.Language.get('organization')
-		]) as string,
-		propertyKey: FieldOwnerTypes.Organization,
-		propertySubgroups: List([
-			new PropertySubgroup({properties: organizationProperties}),
-			new PropertySubgroup({
-				label: Liferay.Language.get('dxp-custom-fields'),
-				properties: List(
-					organizationCustomMappings.items.map(
-						convertFieldMappingToOrganizationProperty
-					)
-				)
-			})
-		])
-	});
-
 	const propertyGroupsIList = List(
 		[
 			new PropertyGroup({
@@ -141,37 +138,31 @@ const mapResultToProps = ([
 				propertySubgroups: List(
 					[
 						new PropertySubgroup({
-							// TODO: LRAC-8210 Remove for release 3.1
-							label: DEVELOPER_MODE
-								? Liferay.Language.get('default-events')
-								: null,
+							label: Liferay.Language.get('default-events'),
+
 							properties: webBehaviors
 						}),
-						// TODO: LRAC-8210 Remove for release 3.1
-						DEVELOPER_MODE &&
-							new PropertySubgroup({
-								label: Liferay.Language.get('custom-events'),
-								properties: List(
-									eventProperties?.data?.eventDefinitions?.eventDefinitions?.map(
-										convertEventToProperty
-									)
+
+						new PropertySubgroup({
+							label: Liferay.Language.get('custom-events'),
+							properties: List(
+								eventProperties?.data?.eventDefinitions?.eventDefinitions?.map(
+									convertEventToProperty
 								)
-							})
+							)
+						})
 					].filter(Boolean)
 				)
 			}),
-			new PropertyGroup({
-				label: sub(Liferay.Language.get('x-attributes'), [
-					Liferay.Language.get('individual')
-				]) as string,
-				propertyKey: FieldOwnerTypes.Individual,
-				propertySubgroups: individualSubgroupsIList
-			}),
-			ENABLE_ACCOUNTS &&
+			type === SegmentTypes.Batch &&
 				new PropertyGroup({
-					label: sub(Liferay.Language.get('x-attributes'), [
-						Liferay.Language.get('account')
-					]) as string,
+					label: Liferay.Language.get('individual'),
+					propertyKey: FieldOwnerTypes.Individual,
+					propertySubgroups: individualSubgroupsIList
+				}),
+			type === SegmentTypes.Batch &&
+				new PropertyGroup({
+					label: Liferay.Language.get('account'),
 					propertyKey: FieldOwnerTypes.Account,
 					propertySubgroups: List([
 						new PropertySubgroup({
@@ -183,35 +174,79 @@ const mapResultToProps = ([
 						})
 					])
 				}),
-			new PropertyGroup({
-				label: Liferay.Language.get('interests'),
-				propertyKey: 'interest',
-				propertySubgroups: List([
-					new PropertySubgroup({
-						properties: List(
-							interestKeywords.items.map(createInterestProperty)
-						)
-					})
-				])
-			}),
-			new PropertyGroup({
-				label: sub(Liferay.Language.get('x-attributes'), [
-					Liferay.Language.get('session')
-				]) as string,
-				propertyKey: 'session',
-				propertySubgroups: List([
-					new PropertySubgroup({properties: sessionProperties})
-				])
-			})
+			type === SegmentTypes.Batch &&
+				new PropertyGroup({
+					label: Liferay.Language.get('interests'),
+					propertyKey: 'interest',
+					propertySubgroups: List([
+						new PropertySubgroup({
+							properties: List(
+								interestKeywords.items.map(
+									createInterestProperty
+								)
+							)
+						})
+					])
+				}),
+			type === SegmentTypes.Batch &&
+				new PropertyGroup({
+					label: Liferay.Language.get('session'),
+					propertyKey: 'session',
+					propertySubgroups: List([
+						new PropertySubgroup({
+							properties: List(sessionProperties)
+						})
+					])
+				}),
+			type === SegmentTypes.Batch &&
+				new PropertyGroup({
+					label: Liferay.Language.get('vocabularies-and-categories'),
+					propertyKey: 'vocabulary',
+					propertySubgroups: List([
+						new PropertySubgroup({properties: List()})
+					])
+				}),
+			type === SegmentTypes.Batch &&
+				new PropertyGroup({
+					label: Liferay.Language.get('tags'),
+					propertyKey: 'tag',
+					propertySubgroups: List([
+						new PropertySubgroup({properties: List()})
+					])
+				})
 		].filter(Boolean) as PropertyGroup[]
 	);
 
-	return {
-		propertyGroupsIList: propertyGroupsIList.push(organizationPropertyGroup)
-	};
+	if (type === SegmentTypes.Batch) {
+		const organizationPropertyGroup = new PropertyGroup({
+			label: Liferay.Language.get('organization'),
+			propertyKey: FieldOwnerTypes.Organization,
+			propertySubgroups: List([
+				new PropertySubgroup({properties: organizationProperties}),
+				new PropertySubgroup({
+					label: Liferay.Language.get('dxp-custom-fields'),
+					properties: List(
+						organizationCustomMappings.items.map(
+							convertFieldMappingToOrganizationProperty
+						)
+					)
+				})
+			])
+		});
+
+		return {
+			propertyGroupsIList: propertyGroupsIList.push(
+				organizationPropertyGroup
+			)
+		};
+	}
+
+	return {propertyGroupsIList};
 };
 
-export const withPropertyGroups = WrappedComponent =>
+export const withPropertyGroups = (
+	WrappedComponent: React.ComponentType<any>
+) =>
 	class extends React.Component<{
 		propertyGroupsIList: List<PropertyGroup>;
 	}> {

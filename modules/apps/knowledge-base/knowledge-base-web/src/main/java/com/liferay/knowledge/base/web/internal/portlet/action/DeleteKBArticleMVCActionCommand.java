@@ -6,12 +6,10 @@
 package com.liferay.knowledge.base.web.internal.portlet.action;
 
 import com.liferay.knowledge.base.constants.KBPortletKeys;
-import com.liferay.knowledge.base.model.KBArticle;
+import com.liferay.knowledge.base.exception.LockedKBArticleException;
 import com.liferay.knowledge.base.service.KBArticleService;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
+import com.liferay.knowledge.base.util.KnowledgeBaseUtil;
 import com.liferay.portal.kernel.model.TrashedModel;
-import com.liferay.portal.kernel.portlet.LiferayPortletURL;
-import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -22,11 +20,8 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.Objects;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletRequest;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -36,11 +31,11 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + KBPortletKeys.KNOWLEDGE_BASE_ADMIN,
-		"javax.portlet.name=" + KBPortletKeys.KNOWLEDGE_BASE_ARTICLE,
-		"javax.portlet.name=" + KBPortletKeys.KNOWLEDGE_BASE_DISPLAY,
-		"javax.portlet.name=" + KBPortletKeys.KNOWLEDGE_BASE_SEARCH,
-		"javax.portlet.name=" + KBPortletKeys.KNOWLEDGE_BASE_SECTION,
+		"jakarta.portlet.name=" + KBPortletKeys.KNOWLEDGE_BASE_ADMIN,
+		"jakarta.portlet.name=" + KBPortletKeys.KNOWLEDGE_BASE_ARTICLE,
+		"jakarta.portlet.name=" + KBPortletKeys.KNOWLEDGE_BASE_DISPLAY,
+		"jakarta.portlet.name=" + KBPortletKeys.KNOWLEDGE_BASE_SEARCH,
+		"jakarta.portlet.name=" + KBPortletKeys.KNOWLEDGE_BASE_SECTION,
 		"mvc.command.name=/knowledge_base/delete_kb_article"
 	},
 	service = MVCActionCommand.class
@@ -57,45 +52,41 @@ public class DeleteKBArticleMVCActionCommand extends BaseMVCActionCommand {
 		long resourcePrimKey = ParamUtil.getLong(
 			actionRequest, "resourcePrimKey");
 
-		if (cmd.equals(Constants.MOVE_TO_TRASH) &&
-			FeatureFlagManagerUtil.isEnabled("LPS-188058")) {
-
-			addDeleteSuccessData(
-				actionRequest,
-				HashMapBuilder.<String, Object>put(
-					"trashedModels",
-					ListUtil.toList(
-						(TrashedModel)_kbArticleService.moveKBArticleToTrash(
-							resourcePrimKey))
-				).build());
-		}
-		else {
-			_kbArticleService.deleteKBArticle(resourcePrimKey);
-		}
-
-		if (Objects.equals(
-				_portal.getPortletId(actionRequest),
-				KBPortletKeys.KNOWLEDGE_BASE_DISPLAY)) {
-
+		if (ParamUtil.getBoolean(actionRequest, "forceLock")) {
 			ThemeDisplay themeDisplay =
 				(ThemeDisplay)actionRequest.getAttribute(WebKeys.THEME_DISPLAY);
 
-			KBArticle kbArticle = _kbArticleService.getLatestKBArticle(
-				resourcePrimKey);
+			_kbArticleService.forceLockKBArticle(
+				themeDisplay.getScopeGroupId(), resourcePrimKey);
+		}
 
-			LiferayPortletURL liferayPortletURL = PortletURLFactoryUtil.create(
-				actionRequest, _portal.getPortletId(actionRequest),
-				themeDisplay.getPlid(), PortletRequest.RENDER_PHASE);
-
-			if (kbArticle.getParentResourcePrimKey() !=
-					kbArticle.getKbFolderId()) {
-
-				liferayPortletURL.setParameter(
-					"resourcePrimKey",
-					String.valueOf(kbArticle.getParentResourcePrimKey()));
+		try {
+			if (cmd.equals(Constants.MOVE_TO_TRASH)) {
+				addDeleteSuccessData(
+					actionRequest,
+					HashMapBuilder.<String, Object>put(
+						"trashedModels",
+						ListUtil.toList(
+							(TrashedModel)
+								_kbArticleService.moveKBArticleToTrash(
+									resourcePrimKey))
+					).build());
 			}
+			else {
+				_kbArticleService.deleteKBArticle(resourcePrimKey);
+			}
+		}
+		catch (LockedKBArticleException lockedKBArticleException) {
+			hideDefaultErrorMessage(actionRequest);
 
-			actionResponse.sendRedirect(liferayPortletURL.toString());
+			lockedKBArticleException.setActionURL(
+				KnowledgeBaseUtil.getKBArticleDeleteURL(
+					_portal.getLiferayPortletResponse(actionResponse), cmd,
+					true, KnowledgeBaseUtil.getRedirect(actionRequest),
+					resourcePrimKey));
+			lockedKBArticleException.setCmd(Constants.DELETE);
+
+			throw lockedKBArticleException;
 		}
 	}
 

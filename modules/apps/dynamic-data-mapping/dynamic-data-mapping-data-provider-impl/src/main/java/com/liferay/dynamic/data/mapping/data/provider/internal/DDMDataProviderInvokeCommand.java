@@ -5,8 +5,6 @@
 
 package com.liferay.dynamic.data.mapping.data.provider.internal;
 
-import com.liferay.dynamic.data.mapping.data.provider.DDMDataProvider;
-import com.liferay.dynamic.data.mapping.data.provider.DDMDataProviderRequest;
 import com.liferay.dynamic.data.mapping.data.provider.DDMDataProviderResponse;
 import com.liferay.dynamic.data.mapping.data.provider.internal.rest.DDMRESTDataProviderSettings;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
@@ -17,8 +15,11 @@ import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixCommandProperties;
+import com.netflix.hystrix.HystrixThreadPoolProperties;
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
+
+import java.util.concurrent.Callable;
 
 /**
  * @author Marcellus Tavares
@@ -27,9 +28,9 @@ public class DDMDataProviderInvokeCommand
 	extends HystrixCommand<DDMDataProviderResponse> {
 
 	public DDMDataProviderInvokeCommand(
-		String nameCurrentValue, DDMDataProvider ddmDataProvider,
-		DDMDataProviderRequest ddmDataProviderRequest,
-		DDMRESTDataProviderSettings ddmRESTDataProviderSettings) {
+		Callable<DDMDataProviderResponse> callable,
+		DDMRESTDataProviderSettings ddmRESTDataProviderSettings,
+		String nameCurrentValue) {
 
 		// Skip JavaParser
 
@@ -40,13 +41,20 @@ public class DDMDataProviderInvokeCommand
 				HystrixCommandKey.Factory.asKey(
 					"DDMDataProviderInvokeCommand#" + nameCurrentValue)
 			).andCommandPropertiesDefaults(
-				HystrixCommandProperties.Setter().
-					withExecutionTimeoutInMilliseconds(
+				HystrixCommandProperties.Setter()
+					.withExecutionIsolationStrategy(
+						HystrixCommandProperties.ExecutionIsolationStrategy.THREAD)
+					.withExecutionTimeoutInMilliseconds(
 						_getTimeout(ddmRESTDataProviderSettings))
+					.withFallbackEnabled(false)
+			).andThreadPoolPropertiesDefaults(
+				HystrixThreadPoolProperties.Setter()
+					.withAllowMaximumSizeToDivergeFromCoreSize(true)
+					.withCoreSize(5)
+					.withMetricsRollingStatisticalWindowInMilliseconds(1000)
 			));
 
-		_ddmDataProvider = ddmDataProvider;
-		_ddmDataProviderRequest = ddmDataProviderRequest;
+		_callable = callable;
 
 		_permissionChecker = PermissionThreadLocal.getPermissionChecker();
 	}
@@ -55,7 +63,7 @@ public class DDMDataProviderInvokeCommand
 	protected DDMDataProviderResponse run() throws Exception {
 		PermissionThreadLocal.setPermissionChecker(_permissionChecker);
 
-		return _ddmDataProvider.getData(_ddmDataProviderRequest);
+		return _callable.call();
 	}
 
 	private static int _getTimeout(
@@ -95,8 +103,7 @@ public class DDMDataProviderInvokeCommand
 			});
 	}
 
-	private final DDMDataProvider _ddmDataProvider;
-	private final DDMDataProviderRequest _ddmDataProviderRequest;
+	private final Callable<DDMDataProviderResponse> _callable;
 	private final PermissionChecker _permissionChecker;
 
 }

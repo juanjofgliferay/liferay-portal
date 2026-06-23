@@ -75,7 +75,7 @@ if ((commercePriceList != null) && (commercePriceList.getExpirationDate() != nul
 					for (CommerceCurrency commerceCurrency : commercePriceListDisplayContext.getCommerceCurrencies()) {
 					%>
 
-						<aui:option label="<%= HtmlUtil.escape(commerceCurrency.getCode()) %>" selected="<%= (commercePriceList != null) && (commercePriceList.getCommerceCurrencyId() == commerceCurrency.getCommerceCurrencyId()) %>" value="<%= commerceCurrency.getCommerceCurrencyId() %>" />
+						<aui:option label="<%= HtmlUtil.escape(commerceCurrency.getCode()) %>" selected="<%= (commercePriceList != null) && StringUtil.equals(commercePriceList.getCommerceCurrencyCode(), commerceCurrency.getCode()) %>" value="<%= commerceCurrency.getCommerceCurrencyId() %>" />
 
 					<%
 					}
@@ -91,33 +91,20 @@ if ((commercePriceList != null) && (commercePriceList.getExpirationDate() != nul
 
 				<div class="mb-4" id="autocomplete-root"></div>
 
-				<aui:script require="commerce-frontend-js/components/autocomplete/entry as autocomplete, commerce-frontend-js/utilities/eventsDefinitions as events">
-					autocomplete.default('autocomplete', 'autocomplete-root', {
-						apiUrl:
-							'<%= commercePriceListDisplayContext.getPriceListsAPIURL(portletName) %>',
-						initialLabel:
-							'<%= (parentCommercePriceList == null) ? StringPool.BLANK : HtmlUtil.escapeJS(parentCommercePriceList.getName()) %>',
-						initialValue:
-							'<%= (parentCommercePriceList == null) ? 0 : parentCommercePriceList.getCommercePriceListId() %>',
-						inputId: 'parentCommercePriceListId',
-						inputName:
-							'<%= liferayPortletResponse.getNamespace() %>parentCommercePriceListId',
-						itemsKey: 'id',
-						itemsLabel: 'name',
-						onValueUpdated: function (value, priceListData) {
-							if (value) {
-								window.document.querySelector(
-									'#<portlet:namespace />parentCommercePriceListId'
-								).value = priceListData.id;
-							}
-							else {
-								window.document.querySelector(
-									'#<portlet:namespace />parentCommercePriceListId'
-								).value = 0;
-							}
-						},
-					});
-				</aui:script>
+				<liferay-frontend:component
+					context='<%=
+						HashMapBuilder.<String, Object>put(
+							"apiUrl", String.valueOf(commercePriceListDisplayContext.getPriceListsAPIURL(portletName))
+						).put(
+							"initialLabel", (parentCommercePriceList == null) ? StringPool.BLANK : parentCommercePriceList.getName()
+						).put(
+							"initialValue", (parentCommercePriceList == null) ? 0 : parentCommercePriceList.getCommercePriceListId()
+						).put(
+							"namespace", liferayPortletResponse.getNamespace()
+						).build()
+					%>'
+					module="{detailsAutocomplete} from commerce-pricing-web"
+				/>
 
 				<aui:select label="price-type" name="netPrice">
 
@@ -136,17 +123,19 @@ if ((commercePriceList != null) && (commercePriceList.getExpirationDate() != nul
 		</div>
 
 		<div class="col-4">
-			<commerce-ui:panel
-				title='<%= LanguageUtil.get(request, "schedule") %>'
-			>
-				<liferay-ui:error exception="<%= CommercePriceListExpirationDateException.class %>" message="please-enter-a-valid-expiration-date" />
+			<c:if test="<%= !(commercePriceList.isCatalogBasePriceList() && Objects.equals(commercePriceList.getType(), CommercePriceListConstants.TYPE_PRICE_LIST)) %>">
+				<commerce-ui:panel
+					title='<%= LanguageUtil.get(request, "schedule") %>'
+				>
+					<liferay-ui:error exception="<%= CommercePriceListExpirationDateException.class %>" message="please-enter-a-valid-expiration-date" />
 
-				<aui:fieldset>
-					<aui:input formName="fm" label="publish-date" name="displayDate" />
+					<aui:fieldset>
+						<aui:input formName="fm" label="publish-date" name="displayDate" />
 
-					<aui:input dateTogglerCheckboxLabel="never-expire" disabled="<%= neverExpire %>" formName="fm" name="expirationDate" />
-				</aui:fieldset>
-			</commerce-ui:panel>
+						<aui:input dateTogglerCheckboxLabel="never-expire" disabled="<%= neverExpire %>" formName="fm" name="expirationDate" />
+					</aui:fieldset>
+				</commerce-ui:panel>
+			</c:if>
 
 			<c:if test="<%= commercePriceListDisplayContext.hasCustomAttributesAvailable(CommercePriceList.class.getName(), commercePriceListId) %>">
 				<commerce-ui:panel

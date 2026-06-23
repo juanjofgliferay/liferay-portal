@@ -5,6 +5,8 @@
 
 package com.liferay.portal.configuration.persistence.internal.upgrade.registry;
 
+import com.liferay.portal.configuration.persistence.internal.upgrade.v2_0_0.ConfigurationDBPartitionUpgradeProcess;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.upgrade.UpgradeProcessFactory;
 import com.liferay.portal.upgrade.registry.UpgradeStepRegistrator;
 
@@ -21,8 +23,6 @@ public class ConfigurationPersistenceUpgradeStepRegistrator
 
 	@Override
 	public void register(Registry registry) {
-		registry.registerInitialization();
-
 		registry.register(
 			"0.0.1", "0.0.2",
 			UpgradeProcessFactory.alterColumnType(
@@ -47,9 +47,21 @@ public class ConfigurationPersistenceUpgradeStepRegistrator
 			"1.0.2", "1.0.3",
 			new com.liferay.portal.configuration.persistence.internal.upgrade.
 				v1_0_3.ConfigurationUpgradeProcess(_configurationAdmin));
+
+		registry.register(
+			"1.0.3", "2.0.0", new ConfigurationDBPartitionUpgradeProcess());
+
+		registry.register(
+			"2.0.0", "2.0.1",
+			new com.liferay.portal.configuration.persistence.internal.upgrade.
+				v2_0_1.ConfigurationUpgradeProcess(
+					_configurationAdmin, _groupLocalService));
 	}
 
 	@Reference
 	private ConfigurationAdmin _configurationAdmin;
+
+	@Reference
+	private GroupLocalService _groupLocalService;
 
 }

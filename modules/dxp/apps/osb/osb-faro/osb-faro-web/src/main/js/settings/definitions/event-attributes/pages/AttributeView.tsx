@@ -1,4 +1,5 @@
-import BasePage from 'settings/components/BasePage';
+import BasePage from 'settings/components/base-page/BasePage';
+import ClayLink from '@clayui/link';
 import EVENT_ATTRIBUTE_DEFINITION_QUERY, {
 	EVENT_ATTRIBUTE_DEFINITION_WITH_RECENT_VALUES_QUERY,
 	EventAttributeDefinitionData,
@@ -18,7 +19,7 @@ import {getDefinitions, getEventAttributes} from 'shared/util/breadcrumbs';
 import {getSafeDisplayValue} from 'shared/util/util';
 import {HasModal, Modal} from 'shared/types';
 import {SafeResults} from 'shared/hoc/util';
-import {useQuery} from '@apollo/react-hooks';
+import {useQuery} from '@apollo/client';
 
 interface IAttributeViewProps
 	extends React.HTMLAttributes<HTMLElement>,
@@ -75,7 +76,6 @@ const AttributeView: React.FC<IAttributeViewProps> = ({
 						getEventAttributes({groupId}),
 						{active: true, label: name}
 					]}
-					groupId={groupId}
 					pageActions={viewAttributePageActions}
 					pageDescription={
 						<>
@@ -95,7 +95,7 @@ const AttributeView: React.FC<IAttributeViewProps> = ({
 					pageTitle={name}
 					subTitle={displayName}
 				>
-					<StatesRenderer empty={!recentValues.length}>
+					<StatesRenderer empty={!recentValues?.length}>
 						<StatesRenderer.Empty
 							className='bg-white rounded'
 							description={
@@ -104,7 +104,7 @@ const AttributeView: React.FC<IAttributeViewProps> = ({
 										'you-can-come-back-later-and-check-if-there-is-any-data-received-from-your-events'
 									)}
 
-									<a
+									<ClayLink
 										className='d-block mb-3'
 										href={
 											URLConstants.EventAttributesDocumentation
@@ -115,7 +115,7 @@ const AttributeView: React.FC<IAttributeViewProps> = ({
 										{Liferay.Language.get(
 											'learn-more-about-event-tracking'
 										)}
-									</a>
+									</ClayLink>
 								</>
 							}
 							spacer
@@ -152,7 +152,7 @@ const AttributeView: React.FC<IAttributeViewProps> = ({
 										sortable: false
 									}
 								]}
-								items={recentValues}
+								items={recentValues ?? []}
 								rowIdentifier='value'
 							/>
 						</StatesRenderer.Success>

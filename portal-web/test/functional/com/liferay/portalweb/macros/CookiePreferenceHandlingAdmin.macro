@@ -2,24 +2,17 @@ definition {
 
 	@description = "Disable Cookie Preference handling on instance level"
 	@summary = "Default summary"
-	macro disablePreferenceHandling(explicitMode = null) {
+	macro disablePreferenceHandling() {
 		CookieNavigator.gotoInstanceSettings(portlet = "Preference Handling");
 
 		FormFields.disableCheckbox(fieldName = "Enabled");
 
-		if (${explicitMode} == "enable") {
-			FormFields.enableCheckbox(fieldName = "Explicit Cookie Consent Mode");
-		}
-		else if (${explicitMode} == "disable") {
-			FormFields.disableCheckbox(fieldName = "Explicit Cookie Consent Mode");
-		}
-
-		CookiePreferenceHandlingAdmin.saveConfiguration();
+		CookiePreferenceHandlingAdmin.saveConfiguration(assertConfirmation = "false");
 	}
 
 	@description = "Disable Cookie Preference handling with Explicit cookie setting Disabled on site level"
 	@summary = "Default summary"
-	macro disablePreferenceHandlingWithOutCookieConsentInSiteSettings(baseURL = null, siteURLKey = null) {
+	macro disablePreferenceHandlingInSiteSettings(baseURL = null, siteURLKey = null) {
 		CookieNavigator.gotoSiteSettings(
 			baseURL = ${baseURL},
 			portlet = "Preference Handling",
@@ -27,9 +20,7 @@ definition {
 
 		FormFields.disableCheckbox(fieldName = "Enabled");
 
-		FormFields.disableCheckbox(fieldName = "Explicit Cookie Consent Mode");
-
-		CookiePreferenceHandlingAdmin.saveConfiguration();
+		CookiePreferenceHandlingAdmin.saveConfiguration(assertConfirmation = "false");
 	}
 
 	@description = "Enable Cookie Preference handling"
@@ -37,9 +28,11 @@ definition {
 	macro enablePreferenceHandling() {
 		CookieNavigator.gotoInstanceSettings(portlet = "Preference Handling");
 
+		var assertConfirmation = "false";
+
 		FormFields.enableCheckbox(fieldName = "Enabled");
 
-		CookiePreferenceHandlingAdmin.saveConfiguration();
+		CookiePreferenceHandlingAdmin.saveConfiguration(assertConfirmation = ${assertConfirmation});
 	}
 
 	@description = "Enable Cookie Preference handling on instance level"
@@ -47,9 +40,11 @@ definition {
 	macro enablePreferenceHandlingInInstanceSettings() {
 		CookieNavigator.gotoInstanceSettings(portlet = "Preference Handling");
 
+		var assertConfirmation = "false";
+
 		FormFields.enableCheckbox(fieldName = "Enabled");
 
-		CookiePreferenceHandlingAdmin.saveConfiguration();
+		CookiePreferenceHandlingAdmin.saveConfiguration(assertConfirmation = ${assertConfirmation});
 	}
 
 	@description = "Enable Cookie Preference handling with Explicit cookie setting Enabled"
@@ -57,11 +52,13 @@ definition {
 	macro enablePreferenceHandlingWithCookieConsent() {
 		CookieNavigator.gotoInstanceSettings(portlet = "Preference Handling");
 
+		var assertConfirmation = "false";
+
 		FormFields.enableCheckbox(fieldName = "Enabled");
 
 		FormFields.enableCheckbox(fieldName = "Explicit Cookie Consent Mode");
 
-		CookiePreferenceHandlingAdmin.saveConfiguration();
+		CookiePreferenceHandlingAdmin.saveConfiguration(assertConfirmation = ${assertConfirmation});
 	}
 
 	@description = "Enable Cookie Preference handling with Explicit cookie setting Enabled on site level"
@@ -72,11 +69,13 @@ definition {
 			portlet = "Preference Handling",
 			siteURLKey = ${siteURLKey});
 
+		var assertConfirmation = "false";
+
 		FormFields.enableCheckbox(fieldName = "Enabled");
 
 		FormFields.enableCheckbox(fieldName = "Explicit Cookie Consent Mode");
 
-		CookiePreferenceHandlingAdmin.saveConfiguration();
+		CookiePreferenceHandlingAdmin.saveConfiguration(assertConfirmation = ${assertConfirmation});
 	}
 
 	@description = "Disable Cookie Preference handling with Explicit cookie setting Disabled"
@@ -84,11 +83,13 @@ definition {
 	macro enablePreferenceHandlingWithoutCookieConsent() {
 		CookieNavigator.gotoInstanceSettings(portlet = "Preference Handling");
 
+		var assertConfirmation = "false";
+
 		FormFields.enableCheckbox(fieldName = "Enabled");
 
 		FormFields.disableCheckbox(fieldName = "Explicit Cookie Consent Mode");
 
-		CookiePreferenceHandlingAdmin.saveConfiguration();
+		CookiePreferenceHandlingAdmin.saveConfiguration(assertConfirmation = ${assertConfirmation});
 	}
 
 	@description = "Enable Cookie Preference handling with Explicit cookie setting disabled on instance level"
@@ -96,11 +97,13 @@ definition {
 	macro enablePreferenceHandlingWithOutCookieConsentInInstanceSettings() {
 		CookieNavigator.gotoInstanceSettings(portlet = "Preference Handling");
 
+		var assertConfirmation = "false";
+
 		FormFields.enableCheckbox(fieldName = "Enabled");
 
 		FormFields.disableCheckbox(fieldName = "Explicit Cookie Consent Mode");
 
-		CookiePreferenceHandlingAdmin.saveConfiguration();
+		CookiePreferenceHandlingAdmin.saveConfiguration(assertConfirmation = ${assertConfirmation});
 	}
 
 	@description = "Enable Cookie Preference handling with Explicit cookie setting Disabled on site level"
@@ -111,15 +114,17 @@ definition {
 			portlet = "Preference Handling",
 			siteURLKey = ${siteURLKey});
 
+		var assertConfirmation = "false";
+
 		FormFields.enableCheckbox(fieldName = "Enabled");
 
 		FormFields.disableCheckbox(fieldName = "Explicit Cookie Consent Mode");
 
-		CookiePreferenceHandlingAdmin.saveConfiguration();
+		CookiePreferenceHandlingAdmin.saveConfiguration(assertConfirmation = ${assertConfirmation});
 	}
 
 	@summary = "Default summary"
-	macro saveConfiguration() {
+	macro saveConfiguration(assertConfirmation) {
 		if (IsElementPresent(locator1 = "Button#UPDATE")) {
 			AssertClick.assertTextClickNoMouseOver(
 				locator1 = "Button#UPDATE",
@@ -129,6 +134,10 @@ definition {
 			AssertClick.assertTextClickNoMouseOver(
 				locator1 = "Button#SAVE",
 				value1 = "Save");
+		}
+
+		if (${assertConfirmation} == "true") {
+			AssertConfirm.assertConfirmationNoError(value1 = "You are about to change the consent renewal period. By applying this change, every user will have to give their consent again. Are you sure you want to continue?");
 		}
 
 		AssertTextEquals.assertPartialText(

@@ -7,6 +7,8 @@ package com.liferay.portal.instance.lifecycle.internal;
 
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerList;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFactory;
+import com.liferay.petra.io.Deserializer;
+import com.liferay.petra.io.Serializer;
 import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.events.StartupHelperUtil;
@@ -15,8 +17,6 @@ import com.liferay.portal.instance.lifecycle.PortalInstanceLifecycleListener;
 import com.liferay.portal.kernel.cluster.ClusterInvokeThreadLocal;
 import com.liferay.portal.kernel.cluster.Clusterable;
 import com.liferay.portal.kernel.instance.lifecycle.PortalInstanceLifecycleManager;
-import com.liferay.portal.kernel.io.Deserializer;
-import com.liferay.portal.kernel.io.Serializer;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Company;
@@ -154,17 +154,22 @@ public class PortalInstanceLifecycleListenerManagerImpl
 		PortalInstanceLifecycleListener portalInstanceLifecycleListener,
 		Company company) {
 
-		try {
-			portalInstanceLifecycleListener.portalInstancePreunregistered(
-				company);
-		}
-		catch (Exception exception) {
-			if (_log.isWarnEnabled()) {
-				_log.warn(
-					"Unable to preunregister portal instance " + company,
-					exception);
-			}
-		}
+		_runIfNeeded(
+			company.getCompanyId(), portalInstanceLifecycleListener, false,
+			() -> {
+				try {
+					portalInstanceLifecycleListener.
+						portalInstancePreunregistered(company);
+				}
+				catch (Exception exception) {
+					if (_log.isWarnEnabled()) {
+						_log.warn(
+							"Unable to preunregister portal instance " +
+								company,
+							exception);
+					}
+				}
+			});
 	}
 
 	protected void registerCompany(
@@ -174,16 +179,18 @@ public class PortalInstanceLifecycleListenerManagerImpl
 		_runIfNeeded(
 			company.getCompanyId(), portalInstanceLifecycleListener, true,
 			() -> {
-				Long companyId = CompanyThreadLocal.getCompanyId();
 				Locale defaultLocale = LocaleThreadLocal.getDefaultLocale();
 				Locale siteDefaultLocale =
 					LocaleThreadLocal.getSiteDefaultLocale();
 
-				try (SafeCloseable safeCloseable =
-						CompanyThreadLocal.setInitializingPortalInstance(
-							true)) {
+				try (SafeCloseable safeCloseable1 =
+						CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+							company.getCompanyId());
+					SafeCloseable safeCloseable2 =
+						CompanyThreadLocal.
+							setInitializingPortalInstanceWithSafeCloseable(
+								true)) {
 
-					CompanyThreadLocal.setCompanyId(company.getCompanyId());
 					LocaleThreadLocal.setDefaultLocale(company.getLocale());
 					LocaleThreadLocal.setSiteDefaultLocale(null);
 
@@ -198,7 +205,6 @@ public class PortalInstanceLifecycleListenerManagerImpl
 					}
 				}
 				finally {
-					CompanyThreadLocal.setCompanyId(companyId);
 					LocaleThreadLocal.setDefaultLocale(defaultLocale);
 					LocaleThreadLocal.setSiteDefaultLocale(siteDefaultLocale);
 				}

@@ -52,6 +52,11 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -60,13 +65,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-
-import javax.portlet.PortletException;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Leonardo Barros
@@ -115,9 +113,7 @@ public class DDMFormViewFormInstanceRecordsDisplayContext {
 				dropdownItem.putData("action", "deleteRecords");
 				dropdownItem.setIcon("times-circle");
 				dropdownItem.setLabel(
-					LanguageUtil.get(
-						PortalUtil.getHttpServletRequest(_renderRequest),
-						"delete"));
+					getLocalizedMessage(_renderRequest.getLocale(), "delete"));
 				dropdownItem.setQuickAction(true);
 			}
 		).build();
@@ -232,6 +228,13 @@ public class DDMFormViewFormInstanceRecordsDisplayContext {
 		return _ddmFormInstance;
 	}
 
+	public List<Long> getDDMFormInstanceRecordIds() {
+		return TransformUtil.transform(
+			_ddmFormInstanceRecordLocalService.getFormInstanceRecords(
+				_ddmFormInstance.getFormInstanceId()),
+			DDMFormInstanceRecord::getFormInstanceRecordId);
+	}
+
 	public Locale getDefaultLocale(DDMFormInstanceRecord ddmFormInstanceRecord)
 		throws Exception {
 
@@ -244,27 +247,6 @@ public class DDMFormViewFormInstanceRecordsDisplayContext {
 		return "list";
 	}
 
-	public List<DropdownItem> getFilterItemsDropdownItems() {
-		HttpServletRequest httpServletRequest =
-			PortalUtil.getHttpServletRequest(_renderRequest);
-
-		return DropdownItemListBuilder.addGroup(
-			dropdownGroupItem -> {
-				dropdownGroupItem.setDropdownItems(
-					getFilterNavigationDropdownItems());
-				dropdownGroupItem.setLabel(
-					LanguageUtil.get(
-						httpServletRequest, "filter-by-navigation"));
-			}
-		).addGroup(
-			dropdownGroupItem -> {
-				dropdownGroupItem.setDropdownItems(getOrderByDropdownItems());
-				dropdownGroupItem.setLabel(
-					LanguageUtil.get(httpServletRequest, "order-by"));
-			}
-		).build();
-	}
-
 	public String getLocalizedColumnValues(String columnValues) {
 		ThemeDisplay themeDisplay = (ThemeDisplay)_renderRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
@@ -273,10 +255,14 @@ public class DDMFormViewFormInstanceRecordsDisplayContext {
 			TransformUtil.transformToArray(
 				Arrays.asList(
 					StringUtil.split(columnValues, StringPool.COMMA_AND_SPACE)),
-				value -> LanguageUtil.get(
+				value -> getLocalizedMessage(
 					themeDisplay.getLocale(), value.toLowerCase()),
 				String.class),
 			StringPool.COMMA_AND_SPACE);
+	}
+
+	public String getLocalizedMessage(Locale locale, String key) {
+		return LanguageUtil.get(locale, key);
 	}
 
 	public List<NavigationItem> getNavigationItems() {
@@ -315,6 +301,20 @@ public class DDMFormViewFormInstanceRecordsDisplayContext {
 			"view-entries-order-by-type", "asc");
 
 		return _orderByType;
+	}
+
+	public List<DropdownItem> getOrderItemsDropdownItems() {
+		return DropdownItemListBuilder.add(
+			dropdownItem -> {
+				String orderByCol = "modified-date";
+
+				dropdownItem.setActive(orderByCol.equals(getOrderByCol()));
+				dropdownItem.setHref(getPortletURL(), "orderByCol", orderByCol);
+				dropdownItem.setLabel(
+					getLocalizedMessage(
+						_renderRequest.getLocale(), orderByCol));
+			}
+		).build();
 	}
 
 	public PortletURL getPortletURL() {
@@ -485,36 +485,8 @@ public class DDMFormViewFormInstanceRecordsDisplayContext {
 		return true;
 	}
 
-	protected List<DropdownItem> getFilterNavigationDropdownItems() {
-		return DropdownItemListBuilder.add(
-			dropdownItem -> {
-				dropdownItem.setActive(true);
-				dropdownItem.setHref(getPortletURL(), "navigation", "all");
-				dropdownItem.setLabel(
-					LanguageUtil.get(
-						PortalUtil.getHttpServletRequest(_renderRequest),
-						"all"));
-			}
-		).build();
-	}
-
 	protected String getKeywords() {
 		return ParamUtil.getString(_renderRequest, "keywords");
-	}
-
-	protected List<DropdownItem> getOrderByDropdownItems() {
-		return DropdownItemListBuilder.add(
-			dropdownItem -> {
-				String orderByCol = "modified-date";
-
-				dropdownItem.setActive(orderByCol.equals(getOrderByCol()));
-				dropdownItem.setHref(getPortletURL(), "orderByCol", orderByCol);
-				dropdownItem.setLabel(
-					LanguageUtil.get(
-						PortalUtil.getHttpServletRequest(_renderRequest),
-						orderByCol));
-			}
-		).build();
 	}
 
 	protected boolean hasResults() {
@@ -526,11 +498,7 @@ public class DDMFormViewFormInstanceRecordsDisplayContext {
 	}
 
 	protected boolean isSearch() {
-		if (Validator.isNotNull(getKeywords())) {
-			return true;
-		}
-
-		return false;
+		return Validator.isNotNull(getKeywords());
 	}
 
 	private DDMFormValues _getDDMFormValues(
@@ -567,20 +535,18 @@ public class DDMFormViewFormInstanceRecordsDisplayContext {
 	}
 
 	private List<DDMFormField> _getNontransientFormFields(DDMForm ddmForm) {
-		List<DDMFormField> ddmFormFields = new ArrayList<>();
-
 		Map<String, DDMFormField> ddmFormFieldsMap =
 			ddmForm.getDDMFormFieldsMap(true);
 
-		for (DDMFormField ddmFormField : ddmFormFieldsMap.values()) {
-			if (ddmFormField.isTransient()) {
-				continue;
-			}
+		return TransformUtil.transform(
+			ddmFormFieldsMap.values(),
+			ddmFormField -> {
+				if (ddmFormField.isTransient()) {
+					return null;
+				}
 
-			ddmFormFields.add(ddmFormField);
-		}
-
-		return ddmFormFields;
+				return ddmFormField;
+			});
 	}
 
 	private List<String> _getOptionsRenderedFormFieldValues(

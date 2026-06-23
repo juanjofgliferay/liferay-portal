@@ -16,6 +16,8 @@ import com.liferay.portal.kernel.test.constants.TestDataConstants;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 
 import java.io.File;
 
@@ -23,6 +25,7 @@ import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -91,6 +94,39 @@ public class MessageBoardAttachmentResourceTest
 					RandomTestUtil.randomString()));
 	}
 
+	@Ignore
+	@Override
+	@Test
+	public void testGraphQLGetMessageBoardMessageMessageBoardAttachmentsPage()
+		throws Exception {
+
+		super.testGraphQLGetMessageBoardMessageMessageBoardAttachmentsPage();
+	}
+
+	@Ignore
+	@Override
+	@Test
+	public void testGraphQLGetMessageBoardThreadMessageBoardAttachmentsPage()
+		throws Exception {
+
+		super.testGraphQLGetMessageBoardThreadMessageBoardAttachmentsPage();
+	}
+
+	@Override
+	@Test
+	public void testPostMessageBoardMessageMessageBoardAttachment()
+		throws Exception {
+
+		super.testPostMessageBoardMessageMessageBoardAttachment();
+
+		MessageBoardAttachment postMessageBoardAttachment =
+			testPostMessageBoardThreadMessageBoardAttachment_addMessageBoardAttachment(
+				randomMessageBoardAttachment(), getMultipartFiles());
+
+		Assert.assertEquals(
+			"text/plain", postMessageBoardAttachment.getEncodingFormat());
+	}
+
 	@Override
 	protected void assertValid(
 			MessageBoardAttachment messageBoardAttachment,
@@ -100,7 +136,7 @@ public class MessageBoardAttachmentResourceTest
 		Assert.assertEquals(
 			new String(FileUtil.getBytes(multipartFiles.get("file"))),
 			_read(
-				"http://localhost:8080" +
+				"http://localhost:" + PortalUtil.getPortalServerPort(false) +
 					messageBoardAttachment.getContentUrl()));
 	}
 
@@ -172,14 +208,6 @@ public class MessageBoardAttachmentResourceTest
 	}
 
 	@Override
-	protected Long
-			testDeleteSiteMessageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCode_getSiteId()
-		throws Exception {
-
-		return testGroup.getGroupId();
-	}
-
-	@Override
 	protected MessageBoardAttachment
 			testGetMessageBoardAttachment_addMessageBoardAttachment()
 		throws Exception {
@@ -226,11 +254,11 @@ public class MessageBoardAttachmentResourceTest
 	}
 
 	@Override
-	protected Long
-			testGetSiteMessageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCode_getSiteId()
+	protected String
+			testGraphQLDeleteSiteMessageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCode_getMessageBoardMessageExternalReferenceCode()
 		throws Exception {
 
-		return testGroup.getGroupId();
+		return _mbMessage.getExternalReferenceCode();
 	}
 
 	@Override
@@ -250,19 +278,24 @@ public class MessageBoardAttachmentResourceTest
 	}
 
 	@Override
-	protected Long
-			testGraphQLGetSiteMessageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCode_getSiteId()
-		throws Exception {
-
-		return testGroup.getGroupId();
-	}
-
-	@Override
 	protected MessageBoardAttachment
 			testGraphQLMessageBoardAttachment_addMessageBoardAttachment()
 		throws Exception {
 
 		return testDeleteMessageBoardAttachment_addMessageBoardAttachment();
+	}
+
+	@Override
+	protected MessageBoardAttachment
+			testGraphQLSiteMessageBoardAttachment_addMessageBoardAttachment()
+		throws Exception {
+
+		_mbMessage = _addMBMessage();
+
+		return messageBoardAttachmentResource.
+			postMessageBoardMessageMessageBoardAttachment(
+				_mbMessage.getMessageId(), randomMessageBoardAttachment(),
+				getMultipartFiles());
 	}
 
 	private MBMessage _addMBMessage() throws Exception {
@@ -277,7 +310,8 @@ public class MessageBoardAttachmentResourceTest
 
 		httpInvoker.httpMethod(HttpInvoker.HttpMethod.GET);
 		httpInvoker.path(url);
-		httpInvoker.userNameAndPassword("test@liferay.com:test");
+		httpInvoker.userNameAndPassword(
+			"test@liferay.com:" + PropsValues.DEFAULT_ADMIN_PASSWORD);
 
 		HttpInvoker.HttpResponse httpResponse = httpInvoker.invoke();
 

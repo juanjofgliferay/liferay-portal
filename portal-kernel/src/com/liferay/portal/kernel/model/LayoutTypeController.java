@@ -6,11 +6,12 @@
 package com.liferay.portal.kernel.model;
 
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.util.UnicodeProperties;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.Serializable;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Raymond Augé
@@ -29,6 +30,12 @@ public interface LayoutTypeController extends Serializable {
 	}
 
 	public String getType();
+
+	public default UnicodeProperties getTypeSettingsProperties(Layout layout)
+		throws PortalException {
+
+		return layout.getTypeSettingsProperties();
+	}
 
 	public String getURL();
 

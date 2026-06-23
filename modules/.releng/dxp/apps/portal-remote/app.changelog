@@ -3716,3 +3716,1846 @@ app.artifacts-4.0.89=\
 app.change.log-4.0.89=[[trimmed]]166547 LPS-167114 LPS-168042 LPS-169260 LPS-171293 LPS-171976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-72545 LPS-74544 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86406 LPS-86408 LPS-86714 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-89637 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94003 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
 
 app.git.id-4.0.89=8cec70c2dc341500782b853f2fc484eb4f444f35
+
+#
+# Liferay App Version 4.0.90
+#
+
+app.artifacts-4.0.90=\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-base-2.13.4.jar,\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-json-provider-2.13.4.jar,\
+	com.fasterxml.jackson.module.jackson-module-jaxb-annotations-2.13.4.jar,\
+	com.sun.xml.bind.jaxb-osgi-2.3.4.jar,\
+	geronimo-jaxrs_2.1_spec-1.1.jar,\
+	geronimo-jsonb_1.0_spec-1.4.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.jar,\
+	org.apache.commons.collections-3.2.2.jar,\
+	org.apache.commons.lang3-3.11.0.jar,\
+	org.apache.cxf.cxf-core-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-soap-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-xml-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-databinding-jaxb-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxrs-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxws-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-simple-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-rs-client-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-rs-sse-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-security-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-transports-http-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-ws-policy-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-wsdl-3.4.10.jar,\
+	org.apache.cxf.cxf-tools-common-3.4.10.jar,\
+	org.apache.cxf.cxf-tools-validator-3.4.10.jar,\
+	org.apache.johnzon.jsonb-1.2.21.jar,\
+	org.apache.johnzon.mapper-1.2.21.jar,\
+	org.apache.neethi-3.1.1.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.2.5.jar,\
+	org.osgi.service.jaxrs-1.0.0.jar
+
+app.change.log-4.0.90=[[trimmed]]168042 LPS-169260 LPS-171293 LPS-171976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-202036 LPS-202873 LPS-72545 LPS-74544 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86406 LPS-86408 LPS-86714 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-89637 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94003 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.90=512444af449d0a2f47e756a29b591f9c6a074ab9
+
+#
+# Liferay App Version 4.0.91
+#
+
+app.artifacts-4.0.91=\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-base-2.13.4.jar,\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-json-provider-2.13.4.jar,\
+	com.fasterxml.jackson.module.jackson-module-jaxb-annotations-2.13.4.jar,\
+	com.sun.xml.bind.jaxb-osgi-2.3.4.jar,\
+	geronimo-jaxrs_2.1_spec-1.1.jar,\
+	geronimo-jsonb_1.0_spec-1.4.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.jar,\
+	org.apache.commons.collections-3.2.2.jar,\
+	org.apache.commons.lang3-3.11.0.jar,\
+	org.apache.cxf.cxf-core-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-soap-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-xml-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-databinding-jaxb-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxrs-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxws-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-simple-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-rs-client-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-rs-sse-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-security-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-transports-http-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-ws-policy-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-wsdl-3.4.10.jar,\
+	org.apache.cxf.cxf-tools-common-3.4.10.jar,\
+	org.apache.cxf.cxf-tools-validator-3.4.10.jar,\
+	org.apache.johnzon.jsonb-1.2.21.jar,\
+	org.apache.johnzon.mapper-1.2.21.jar,\
+	org.apache.neethi-3.1.1.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.2.5.jar,\
+	org.osgi.service.jaxrs-1.0.0.jar
+
+app.change.log-4.0.91=[[trimmed]]168042 LPS-169260 LPS-171293 LPS-171976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-202036 LPS-202873 LPS-72545 LPS-74544 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86406 LPS-86408 LPS-86714 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-89637 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94003 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.91=327ece420802d180c2df02e8f3ac74717fa905e2
+
+#
+# Liferay App Version 4.0.92
+#
+
+app.artifacts-4.0.92=\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-base-2.13.4.jar,\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-json-provider-2.13.4.jar,\
+	com.fasterxml.jackson.module.jackson-module-jaxb-annotations-2.13.4.jar,\
+	com.sun.xml.bind.jaxb-osgi-2.3.4.jar,\
+	geronimo-jaxrs_2.1_spec-1.1.jar,\
+	geronimo-jsonb_1.0_spec-1.4.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.commons.collections-3.2.2.jar,\
+	org.apache.commons.lang3-3.11.0.jar,\
+	org.apache.cxf.cxf-core-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-soap-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-xml-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-databinding-jaxb-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxrs-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxws-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-simple-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-rs-client-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-rs-sse-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-security-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-transports-http-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-ws-policy-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-wsdl-3.4.10.jar,\
+	org.apache.cxf.cxf-tools-common-3.4.10.jar,\
+	org.apache.cxf.cxf-tools-validator-3.4.10.jar,\
+	org.apache.johnzon.jsonb-1.2.21.jar,\
+	org.apache.johnzon.mapper-1.2.21.jar,\
+	org.apache.neethi-3.1.1.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.2.5.jar,\
+	org.osgi.service.jaxrs-1.0.0.jar
+
+app.change.log-4.0.92=[[trimmed]]114 LPS-168042 LPS-169260 LPS-171293 LPS-171976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.92=3a54dafc609d716151a8955563a4d384de6387fd
+
+#
+# Liferay App Version 4.0.93
+#
+
+app.artifacts-4.0.93=\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-base-2.13.4.jar,\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-json-provider-2.13.4.jar,\
+	com.fasterxml.jackson.module.jackson-module-jaxb-annotations-2.13.4.jar,\
+	com.sun.xml.bind.jaxb-osgi-2.3.4.jar,\
+	geronimo-jaxrs_2.1_spec-1.1.jar,\
+	geronimo-jsonb_1.0_spec-1.4.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.commons.collections-3.2.2.jar,\
+	org.apache.commons.lang3-3.11.0.jar,\
+	org.apache.cxf.cxf-core-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-soap-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-xml-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-databinding-jaxb-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxrs-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxws-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-simple-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-rs-client-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-rs-sse-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-security-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-transports-http-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-ws-policy-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-wsdl-3.4.10.jar,\
+	org.apache.cxf.cxf-tools-common-3.4.10.jar,\
+	org.apache.cxf.cxf-tools-validator-3.4.10.jar,\
+	org.apache.johnzon.jsonb-1.2.21.jar,\
+	org.apache.johnzon.mapper-1.2.21.jar,\
+	org.apache.neethi-3.1.1.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.2.5.jar,\
+	org.osgi.service.jaxrs-1.0.0.jar
+
+app.change.log-4.0.93=[[trimmed]]260 LPS-171293 LPS-171976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.93=d920d6f350edc182e8260c78351ba0a3e8419464
+
+#
+# Liferay App Version 4.0.94
+#
+
+app.artifacts-4.0.94=\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-base-2.13.4.jar,\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-json-provider-2.13.4.jar,\
+	com.fasterxml.jackson.module.jackson-module-jaxb-annotations-2.13.4.jar,\
+	com.sun.xml.bind.jaxb-osgi-2.3.4.jar,\
+	geronimo-jaxrs_2.1_spec-1.1.jar,\
+	geronimo-jsonb_1.0_spec-1.4.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.commons.collections-3.2.2.jar,\
+	org.apache.commons.lang3-3.11.0.jar,\
+	org.apache.cxf.cxf-core-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-soap-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-xml-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-databinding-jaxb-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxrs-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxws-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-simple-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-rs-client-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-rs-sse-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-security-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-transports-http-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-ws-policy-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-wsdl-3.4.10.jar,\
+	org.apache.cxf.cxf-tools-common-3.4.10.jar,\
+	org.apache.cxf.cxf-tools-validator-3.4.10.jar,\
+	org.apache.johnzon.jsonb-1.2.21.jar,\
+	org.apache.johnzon.mapper-1.2.21.jar,\
+	org.apache.neethi-3.1.1.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.2.5.jar,\
+	org.osgi.service.jaxrs-1.0.0.jar
+
+app.change.log-4.0.94=[[trimmed]]260 LPS-171293 LPS-171976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.94=d0333d581e62e330119209adef860e2c0d98fdfd
+
+#
+# Liferay App Version 4.0.95
+#
+
+app.artifacts-4.0.95=\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-base-2.16.1.jar,\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-json-provider-2.16.1.jar,\
+	com.fasterxml.jackson.module.jackson-module-jaxb-annotations-2.16.1.jar,\
+	com.sun.xml.bind.jaxb-osgi-2.3.4.jar,\
+	geronimo-jaxrs_2.1_spec-1.1.jar,\
+	geronimo-jsonb_1.0_spec-1.4.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.commons.collections-3.2.2.jar,\
+	org.apache.commons.lang3-3.11.0.jar,\
+	org.apache.cxf.cxf-core-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-soap-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-xml-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-databinding-jaxb-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxrs-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxws-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-simple-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-rs-client-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-rs-sse-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-security-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-transports-http-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-ws-policy-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-wsdl-3.4.10.jar,\
+	org.apache.cxf.cxf-tools-common-3.4.10.jar,\
+	org.apache.cxf.cxf-tools-validator-3.4.10.jar,\
+	org.apache.johnzon.jsonb-1.2.21.jar,\
+	org.apache.johnzon.mapper-1.2.21.jar,\
+	org.apache.neethi-3.1.1.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.2.5.jar,\
+	org.osgi.service.jaxrs-1.0.0.jar
+
+app.change.log-4.0.95=[[trimmed]]293 LPS-171976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.95=31eb381720ef4c8575a926337b8d2668580bb4d4
+
+#
+# Liferay App Version 4.0.96
+#
+
+app.artifacts-4.0.96=\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-base-2.16.1.jar,\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-json-provider-2.16.1.jar,\
+	com.fasterxml.jackson.module.jackson-module-jaxb-annotations-2.16.1.jar,\
+	com.sun.xml.bind.jaxb-osgi-2.3.4.jar,\
+	geronimo-jaxrs_2.1_spec-1.1.jar,\
+	geronimo-jsonb_1.0_spec-1.4.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.commons.collections-3.2.2.jar,\
+	org.apache.commons.lang3-3.11.0.jar,\
+	org.apache.cxf.cxf-core-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-soap-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-xml-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-databinding-jaxb-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxrs-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxws-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-simple-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-rs-client-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-rs-sse-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-security-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-transports-http-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-ws-policy-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-wsdl-3.4.10.jar,\
+	org.apache.cxf.cxf-tools-common-3.4.10.jar,\
+	org.apache.cxf.cxf-tools-validator-3.4.10.jar,\
+	org.apache.johnzon.jsonb-1.2.21.jar,\
+	org.apache.johnzon.mapper-1.2.21.jar,\
+	org.apache.neethi-3.1.1.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.2.5.jar,\
+	org.osgi.service.jaxrs-1.0.0.jar
+
+app.change.log-4.0.96=[[trimmed]]293 LPS-171976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.96=ccc738fe294500712efc423e5c52dc515a1f4244
+
+#
+# Liferay App Version 4.0.97
+#
+
+app.artifacts-4.0.97=\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-base-2.16.1.jar,\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-json-provider-2.16.1.jar,\
+	com.fasterxml.jackson.module.jackson-module-jaxb-annotations-2.16.1.jar,\
+	com.sun.xml.bind.jaxb-osgi-2.3.4.jar,\
+	geronimo-jaxrs_2.1_spec-1.1.jar,\
+	geronimo-jsonb_1.0_spec-1.4.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.commons.collections-3.2.2.jar,\
+	org.apache.commons.lang3-3.11.0.jar,\
+	org.apache.cxf.cxf-core-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-soap-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-xml-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-databinding-jaxb-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxrs-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxws-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-simple-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-rs-client-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-rs-sse-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-security-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-transports-http-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-ws-policy-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-wsdl-3.4.10.jar,\
+	org.apache.cxf.cxf-tools-common-3.4.10.jar,\
+	org.apache.cxf.cxf-tools-validator-3.4.10.jar,\
+	org.apache.johnzon.jsonb-1.2.21.jar,\
+	org.apache.johnzon.mapper-1.2.21.jar,\
+	org.apache.neethi-3.1.1.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.2.5.jar,\
+	org.osgi.service.jaxrs-1.0.0.jar
+
+app.change.log-4.0.97=[[trimmed]]293 LPS-171976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.97=1d116106bcaee408d3b26bbc4b613650e77fd5a2
+
+#
+# Liferay App Version 4.0.98
+#
+
+app.artifacts-4.0.98=\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-base-2.16.1.jar,\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-json-provider-2.16.1.jar,\
+	com.fasterxml.jackson.module.jackson-module-jaxb-annotations-2.16.1.jar,\
+	com.sun.xml.bind.jaxb-osgi-2.3.4.jar,\
+	geronimo-jaxrs_2.1_spec-1.1.jar,\
+	geronimo-jsonb_1.0_spec-1.4.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.commons.collections-3.2.2.jar,\
+	org.apache.commons.lang3-3.11.0.jar,\
+	org.apache.cxf.cxf-core-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-soap-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-xml-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-databinding-jaxb-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxrs-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxws-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-simple-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-rs-client-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-rs-sse-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-security-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-transports-http-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-ws-policy-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-wsdl-3.4.10.jar,\
+	org.apache.cxf.cxf-tools-common-3.4.10.jar,\
+	org.apache.cxf.cxf-tools-validator-3.4.10.jar,\
+	org.apache.johnzon.jsonb-1.2.21.jar,\
+	org.apache.johnzon.mapper-1.2.21.jar,\
+	org.apache.neethi-3.1.1.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.2.5.jar,\
+	org.osgi.service.jaxrs-1.0.0.jar
+
+app.change.log-4.0.98=[[trimmed]]293 LPS-171976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.98=f2117ef1a44e7f0a4c05070e205c98d11414045c
+
+#
+# Liferay App Version 4.0.99
+#
+
+app.artifacts-4.0.99=\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-base-2.16.1.jar,\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-json-provider-2.16.1.jar,\
+	com.fasterxml.jackson.module.jackson-module-jaxb-annotations-2.16.1.jar,\
+	com.sun.xml.bind.jaxb-osgi-2.3.4.jar,\
+	geronimo-jaxrs_2.1_spec-1.1.jar,\
+	geronimo-jsonb_1.0_spec-1.4.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.commons.collections-3.2.2.jar,\
+	org.apache.commons.lang3-3.11.0.jar,\
+	org.apache.cxf.cxf-core-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-soap-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-xml-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-databinding-jaxb-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxrs-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxws-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-simple-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-rs-client-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-rs-sse-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-security-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-transports-http-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-ws-policy-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-wsdl-3.4.10.jar,\
+	org.apache.cxf.cxf-tools-common-3.4.10.jar,\
+	org.apache.cxf.cxf-tools-validator-3.4.10.jar,\
+	org.apache.johnzon.jsonb-1.2.21.jar,\
+	org.apache.johnzon.mapper-1.2.21.jar,\
+	org.apache.neethi-3.1.1.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.2.5.jar,\
+	org.osgi.service.jaxrs-1.0.0.jar
+
+app.change.log-4.0.99=[[trimmed]]293 LPS-171976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.99=012d68a4e94188bb562d223be57a488a9b5e6024
+
+#
+# Liferay App Version 4.0.100
+#
+
+app.artifacts-4.0.100=\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-base-2.16.1.jar,\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-json-provider-2.16.1.jar,\
+	com.fasterxml.jackson.module.jackson-module-jaxb-annotations-2.16.1.jar,\
+	com.sun.xml.bind.jaxb-osgi-2.3.4.jar,\
+	geronimo-jaxrs_2.1_spec-1.1.jar,\
+	geronimo-jsonb_1.0_spec-1.4.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.commons.collections-3.2.2.jar,\
+	org.apache.commons.lang3-3.11.0.jar,\
+	org.apache.cxf.cxf-core-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-soap-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-xml-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-databinding-jaxb-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxrs-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxws-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-simple-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-rs-client-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-rs-sse-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-security-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-transports-http-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-ws-policy-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-wsdl-3.4.10.jar,\
+	org.apache.cxf.cxf-tools-common-3.4.10.jar,\
+	org.apache.cxf.cxf-tools-validator-3.4.10.jar,\
+	org.apache.johnzon.jsonb-1.2.21.jar,\
+	org.apache.johnzon.mapper-1.2.21.jar,\
+	org.apache.neethi-3.1.1.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.2.5.jar,\
+	org.osgi.service.jaxrs-1.0.0.jar
+
+app.change.log-4.0.100=[[trimmed]]293 LPS-171976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.100=57afa8d84fbf63292c94211a341a5f2a5700ca29
+
+#
+# Liferay App Version 4.0.101
+#
+
+app.artifacts-4.0.101=\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-base-2.16.1.jar,\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-json-provider-2.16.1.jar,\
+	com.fasterxml.jackson.module.jackson-module-jaxb-annotations-2.16.1.jar,\
+	com.sun.xml.bind.jaxb-osgi-2.3.4.jar,\
+	geronimo-jaxrs_2.1_spec-1.1.jar,\
+	geronimo-jsonb_1.0_spec-1.4.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.commons.collections-3.2.2.jar,\
+	org.apache.commons.lang3-3.11.0.jar,\
+	org.apache.cxf.cxf-core-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-soap-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-xml-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-databinding-jaxb-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxrs-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxws-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-simple-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-rs-client-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-rs-sse-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-security-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-transports-http-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-ws-policy-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-wsdl-3.4.10.jar,\
+	org.apache.cxf.cxf-tools-common-3.4.10.jar,\
+	org.apache.cxf.cxf-tools-validator-3.4.10.jar,\
+	org.apache.johnzon.jsonb-1.2.21.jar,\
+	org.apache.johnzon.mapper-1.2.21.jar,\
+	org.apache.neethi-3.1.1.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.2.5.jar,\
+	org.osgi.service.jaxrs-1.0.0.jar
+
+app.change.log-4.0.101=[[trimmed]]293 LPS-171976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.101=7dcfd7fee9ced9b9a5937d5f1b07934134b6504a
+
+#
+# Liferay App Version 4.0.102
+#
+
+app.artifacts-4.0.102=\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-base-2.16.1.jar,\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-json-provider-2.16.1.jar,\
+	com.fasterxml.jackson.module.jackson-module-jaxb-annotations-2.16.1.jar,\
+	com.sun.xml.bind.jaxb-osgi-2.3.4.jar,\
+	geronimo-jaxrs_2.1_spec-1.1.jar,\
+	geronimo-jsonb_1.0_spec-1.4.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.commons.collections-3.2.2.jar,\
+	org.apache.commons.lang3-3.11.0.jar,\
+	org.apache.cxf.cxf-core-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-soap-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-xml-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-databinding-jaxb-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxrs-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxws-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-simple-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-rs-client-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-rs-sse-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-security-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-transports-http-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-ws-policy-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-wsdl-3.4.10.jar,\
+	org.apache.cxf.cxf-tools-common-3.4.10.jar,\
+	org.apache.cxf.cxf-tools-validator-3.4.10.jar,\
+	org.apache.johnzon.jsonb-1.2.21.jar,\
+	org.apache.johnzon.mapper-1.2.21.jar,\
+	org.apache.neethi-3.1.1.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.2.5.jar,\
+	org.osgi.service.jaxrs-1.0.0.jar
+
+app.change.log-4.0.102=[[trimmed]]293 LPS-171976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.102=01dbfef8b69cbc82c37644785cb34c1d436922c5
+
+#
+# Liferay App Version 4.0.103
+#
+
+app.artifacts-4.0.103=\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-base-2.16.1.jar,\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-json-provider-2.16.1.jar,\
+	com.fasterxml.jackson.module.jackson-module-jaxb-annotations-2.16.1.jar,\
+	com.sun.xml.bind.jaxb-osgi-2.3.4.jar,\
+	geronimo-jaxrs_2.1_spec-1.1.jar,\
+	geronimo-jsonb_1.0_spec-1.4.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.commons.collections-3.2.2.jar,\
+	org.apache.commons.lang3-3.11.0.jar,\
+	org.apache.cxf.cxf-core-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-soap-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-xml-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-databinding-jaxb-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxrs-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxws-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-simple-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-rs-client-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-rs-sse-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-security-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-transports-http-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-ws-policy-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-wsdl-3.4.10.jar,\
+	org.apache.cxf.cxf-tools-common-3.4.10.jar,\
+	org.apache.cxf.cxf-tools-validator-3.4.10.jar,\
+	org.apache.johnzon.jsonb-1.2.21.jar,\
+	org.apache.johnzon.mapper-1.2.21.jar,\
+	org.apache.neethi-3.1.1.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.2.5.jar,\
+	org.osgi.service.jaxrs-1.0.0.jar
+
+app.change.log-4.0.103=[[trimmed]]293 LPS-171976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.103=2bfad501b2b741bf8b6abdd92d4d63e4ece473a0
+
+#
+# Liferay App Version 4.0.104
+#
+
+app.artifacts-4.0.104=\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-base-2.16.1.jar,\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-json-provider-2.16.1.jar,\
+	com.fasterxml.jackson.module.jackson-module-jaxb-annotations-2.16.1.jar,\
+	com.sun.xml.bind.jaxb-osgi-2.3.4.jar,\
+	geronimo-jaxrs_2.1_spec-1.1.jar,\
+	geronimo-jsonb_1.0_spec-1.4.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.commons.collections-3.2.2.jar,\
+	org.apache.commons.lang3-3.11.0.jar,\
+	org.apache.cxf.cxf-core-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-soap-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-xml-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-databinding-jaxb-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxrs-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxws-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-simple-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-rs-client-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-rs-sse-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-security-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-transports-http-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-ws-policy-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-wsdl-3.4.10.jar,\
+	org.apache.cxf.cxf-tools-common-3.4.10.jar,\
+	org.apache.cxf.cxf-tools-validator-3.4.10.jar,\
+	org.apache.johnzon.jsonb-1.2.21.jar,\
+	org.apache.johnzon.mapper-1.2.21.jar,\
+	org.apache.neethi-3.1.1.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.2.5.jar,\
+	org.osgi.service.jaxrs-1.0.0.jar
+
+app.change.log-4.0.104=[[trimmed]]293 LPS-171976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.104=1c2d74671142772a7a0e42ea0c26a637d7086c08
+
+#
+# Liferay App Version 4.0.105
+#
+
+app.artifacts-4.0.105=\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-base-2.16.1.jar,\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-json-provider-2.16.1.jar,\
+	com.fasterxml.jackson.module.jackson-module-jaxb-annotations-2.16.1.jar,\
+	com.sun.xml.bind.jaxb-osgi-2.3.4.jar,\
+	geronimo-jaxrs_2.1_spec-1.1.jar,\
+	geronimo-jsonb_1.0_spec-1.4.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.commons.collections-3.2.2.jar,\
+	org.apache.commons.lang3-3.11.0.jar,\
+	org.apache.cxf.cxf-core-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-soap-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-xml-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-databinding-jaxb-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxrs-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxws-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-simple-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-rs-client-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-rs-sse-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-security-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-transports-http-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-ws-policy-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-wsdl-3.4.10.jar,\
+	org.apache.cxf.cxf-tools-common-3.4.10.jar,\
+	org.apache.cxf.cxf-tools-validator-3.4.10.jar,\
+	org.apache.johnzon.jsonb-1.2.21.jar,\
+	org.apache.johnzon.mapper-1.2.21.jar,\
+	org.apache.neethi-3.1.1.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.2.5.jar,\
+	org.osgi.service.jaxrs-1.0.0.jar
+
+app.change.log-4.0.105=[[trimmed]]293 LPS-171976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.105=f399753b50977b6a29082b73f5efe77a106607dd
+
+#
+# Liferay App Version 4.0.106
+#
+
+app.artifacts-4.0.106=\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-base-2.16.1.jar,\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-json-provider-2.16.1.jar,\
+	com.fasterxml.jackson.module.jackson-module-jaxb-annotations-2.16.1.jar,\
+	com.sun.xml.bind.jaxb-osgi-2.3.4.jar,\
+	geronimo-jaxrs_2.1_spec-1.1.jar,\
+	geronimo-jsonb_1.0_spec-1.4.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.commons.collections-3.2.2.jar,\
+	org.apache.commons.lang3-3.11.0.jar,\
+	org.apache.cxf.cxf-core-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-soap-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-xml-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-databinding-jaxb-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxrs-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxws-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-simple-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-rs-client-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-rs-sse-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-security-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-transports-http-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-ws-policy-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-wsdl-3.4.10.jar,\
+	org.apache.cxf.cxf-tools-common-3.4.10.jar,\
+	org.apache.cxf.cxf-tools-validator-3.4.10.jar,\
+	org.apache.johnzon.jsonb-1.2.21.jar,\
+	org.apache.johnzon.mapper-1.2.21.jar,\
+	org.apache.neethi-3.1.1.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.2.5.jar,\
+	org.osgi.service.jaxrs-1.0.0.jar
+
+app.change.log-4.0.106=[[trimmed]]293 LPS-171976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.106=b40a0ddb3b4acd09b9b394cf69ea25b669de7836
+
+#
+# Liferay App Version 4.0.107
+#
+
+app.artifacts-4.0.107=\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-base-2.16.1.jar,\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-json-provider-2.16.1.jar,\
+	com.fasterxml.jackson.module.jackson-module-jaxb-annotations-2.16.1.jar,\
+	com.sun.xml.bind.jaxb-osgi-2.3.4.jar,\
+	geronimo-jaxrs_2.1_spec-1.1.jar,\
+	geronimo-jsonb_1.0_spec-1.4.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.commons.collections-3.2.2.jar,\
+	org.apache.commons.lang3-3.11.0.jar,\
+	org.apache.cxf.cxf-core-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-soap-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-xml-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-databinding-jaxb-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxrs-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxws-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-simple-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-rs-client-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-rs-sse-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-security-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-transports-http-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-ws-policy-3.4.10.jar,\
+	org.apache.cxf.cxf-rt-wsdl-3.4.10.jar,\
+	org.apache.cxf.cxf-tools-common-3.4.10.jar,\
+	org.apache.cxf.cxf-tools-validator-3.4.10.jar,\
+	org.apache.johnzon.jsonb-1.2.21.jar,\
+	org.apache.johnzon.mapper-1.2.21.jar,\
+	org.apache.neethi-3.1.1.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.2.5.jar,\
+	org.osgi.service.jaxrs-1.0.0.jar
+
+app.change.log-4.0.107=[[trimmed]]293 LPS-171976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.107=89332be48c6a8dee9eb8320cbc43e492dd2712a9
+
+#
+# Liferay App Version 4.0.108
+#
+
+app.artifacts-4.0.108=\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-base-2.16.1.jar,\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-json-provider-2.16.1.jar,\
+	com.fasterxml.jackson.module.jackson-module-jaxb-annotations-2.16.1.jar,\
+	com.sun.xml.bind.jaxb-osgi-2.3.4.jar,\
+	geronimo-jaxrs_2.1_spec-1.1.jar,\
+	geronimo-jsonb_1.0_spec-1.4.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.commons.lang3-3.11.0.jar,\
+	org.apache.cxf.cxf-core-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-bindings-soap-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-bindings-xml-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-databinding-jaxb-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxrs-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxws-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-frontend-simple-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-rs-client-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-rs-sse-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-security-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-transports-http-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-ws-policy-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-wsdl-3.5.9.jar,\
+	org.apache.cxf.cxf-tools-common-3.5.9.jar,\
+	org.apache.cxf.cxf-tools-validator-3.5.9.jar,\
+	org.apache.johnzon.jsonb-1.2.21.jar,\
+	org.apache.johnzon.mapper-1.2.21.jar,\
+	org.apache.neethi-3.2.0.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.3.1.jar,\
+	org.osgi.service.jaxrs-1.0.0.jar
+
+app.change.log-4.0.108=[[trimmed]]293 LPS-171976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.108=2314decf5fa4f68de9e9e099a17f2dc0e64ce91c
+
+#
+# Liferay App Version 4.0.109
+#
+
+app.artifacts-4.0.109=\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-base-2.16.1.jar,\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-json-provider-2.16.1.jar,\
+	com.fasterxml.jackson.module.jackson-module-jaxb-annotations-2.16.1.jar,\
+	com.sun.xml.bind.jaxb-osgi-2.3.4.jar,\
+	geronimo-jaxrs_2.1_spec-1.1.jar,\
+	geronimo-jsonb_1.0_spec-1.4.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.commons.lang3-3.11.0.jar,\
+	org.apache.cxf.cxf-core-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-bindings-soap-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-bindings-xml-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-databinding-jaxb-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxrs-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxws-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-frontend-simple-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-rs-client-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-rs-sse-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-security-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-transports-http-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-ws-policy-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-wsdl-3.5.9.jar,\
+	org.apache.cxf.cxf-tools-common-3.5.9.jar,\
+	org.apache.cxf.cxf-tools-validator-3.5.9.jar,\
+	org.apache.johnzon.jsonb-1.2.21.jar,\
+	org.apache.johnzon.mapper-1.2.21.jar,\
+	org.apache.neethi-3.2.0.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.3.1.jar,\
+	org.osgi.service.jaxrs-1.0.0.jar
+
+app.change.log-4.0.109=[[trimmed]]293 LPS-171976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.109=a525690e3d8cb41b20fca3efb2f26078517fc832
+
+#
+# Liferay App Version 4.0.110
+#
+
+app.artifacts-4.0.110=\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-base-2.16.1.jar,\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-json-provider-2.16.1.jar,\
+	com.fasterxml.jackson.module.jackson-module-jaxb-annotations-2.16.1.jar,\
+	com.sun.xml.bind.jaxb-osgi-2.3.4.jar,\
+	geronimo-jaxrs_2.1_spec-1.1.jar,\
+	geronimo-jsonb_1.0_spec-1.4.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.commons.lang3-3.11.0.jar,\
+	org.apache.cxf.cxf-core-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-bindings-soap-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-bindings-xml-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-databinding-jaxb-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxrs-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxws-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-frontend-simple-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-rs-client-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-rs-sse-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-security-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-transports-http-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-ws-policy-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-wsdl-3.5.9.jar,\
+	org.apache.cxf.cxf-tools-common-3.5.9.jar,\
+	org.apache.cxf.cxf-tools-validator-3.5.9.jar,\
+	org.apache.johnzon.jsonb-1.2.21.jar,\
+	org.apache.johnzon.mapper-1.2.21.jar,\
+	org.apache.neethi-3.2.0.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.3.1.jar,\
+	org.osgi.service.jaxrs-1.0.0.jar
+
+app.change.log-4.0.110=[[trimmed]]293 LPS-171976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.110=1845736dc4b005a428b34f5f7c96e8a332094ea3
+
+#
+# Liferay App Version 4.0.111
+#
+
+app.artifacts-4.0.111=\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-base-2.16.1.jar,\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-json-provider-2.16.1.jar,\
+	com.fasterxml.jackson.module.jackson-module-jaxb-annotations-2.16.1.jar,\
+	com.sun.xml.bind.jaxb-osgi-2.3.4.jar,\
+	geronimo-jaxrs_2.1_spec-1.1.jar,\
+	geronimo-jsonb_1.0_spec-1.4.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.commons.lang3-3.11.0.jar,\
+	org.apache.cxf.cxf-core-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-bindings-soap-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-bindings-xml-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-databinding-jaxb-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxrs-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxws-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-frontend-simple-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-rs-client-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-rs-sse-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-security-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-transports-http-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-ws-policy-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-wsdl-3.5.9.jar,\
+	org.apache.cxf.cxf-tools-common-3.5.9.jar,\
+	org.apache.cxf.cxf-tools-validator-3.5.9.jar,\
+	org.apache.johnzon.jsonb-1.2.21.jar,\
+	org.apache.johnzon.mapper-1.2.21.jar,\
+	org.apache.neethi-3.2.0.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.3.1.jar,\
+	org.osgi.service.jaxrs-1.0.0.jar
+
+app.change.log-4.0.111=[[trimmed]]293 LPS-171976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.111=145652db58780bda3cfb1e0d288e649e8f7e85e5
+
+#
+# Liferay App Version 4.0.112
+#
+
+app.artifacts-4.0.112=\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-base-2.16.1.jar,\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-json-provider-2.16.1.jar,\
+	com.fasterxml.jackson.module.jackson-module-jaxb-annotations-2.16.1.jar,\
+	com.sun.xml.bind.jaxb-osgi-2.3.4.jar,\
+	geronimo-jaxrs_2.1_spec-1.1.jar,\
+	geronimo-jsonb_1.0_spec-1.4.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.commons.lang3-3.11.0.jar,\
+	org.apache.cxf.cxf-core-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-bindings-soap-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-bindings-xml-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-databinding-jaxb-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxrs-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxws-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-frontend-simple-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-rs-client-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-rs-sse-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-security-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-transports-http-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-ws-policy-3.5.9.jar,\
+	org.apache.cxf.cxf-rt-wsdl-3.5.9.jar,\
+	org.apache.cxf.cxf-tools-common-3.5.9.jar,\
+	org.apache.cxf.cxf-tools-validator-3.5.9.jar,\
+	org.apache.johnzon.jsonb-1.2.21.jar,\
+	org.apache.johnzon.mapper-1.2.21.jar,\
+	org.apache.neethi-3.2.0.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.3.1.jar,\
+	org.osgi.service.jaxrs-1.0.0.jar
+
+app.change.log-4.0.112=[[trimmed]]293 LPS-171976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.112=88019019104b604181483d976bddc3fc1ba7ba96
+
+#
+# Liferay App Version 4.0.113
+#
+
+app.artifacts-4.0.113=\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-base-2.18.2.jar,\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-json-provider-2.18.2.jar,\
+	com.fasterxml.jackson.module.jackson-module-jaxb-annotations-2.18.2.jar,\
+	com.sun.xml.bind.jaxb-osgi-2.3.4.jar,\
+	jakarta.json.bind-1.0.2.LIFERAY-PATCHED-1.jar,\
+	jakarta.ws.rs-2.1.6.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.commons.lang3-3.11.0.jar,\
+	org.apache.cxf.cxf-core-3.5.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-soap-3.5.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-xml-3.5.10.jar,\
+	org.apache.cxf.cxf-rt-databinding-jaxb-3.5.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxrs-3.5.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxws-3.5.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-simple-3.5.10.jar,\
+	org.apache.cxf.cxf-rt-rs-client-3.5.10.jar,\
+	org.apache.cxf.cxf-rt-rs-sse-3.5.10.jar,\
+	org.apache.cxf.cxf-rt-security-3.5.10.jar,\
+	org.apache.cxf.cxf-rt-transports-http-3.5.10.jar,\
+	org.apache.cxf.cxf-rt-ws-policy-3.5.10.jar,\
+	org.apache.cxf.cxf-rt-wsdl-3.5.10.jar,\
+	org.apache.cxf.cxf-tools-common-3.5.10.jar,\
+	org.apache.cxf.cxf-tools-validator-3.5.10.jar,\
+	org.apache.johnzon.jsonb-1.2.21.jar,\
+	org.apache.johnzon.mapper-1.2.21.jar,\
+	org.apache.neethi-3.2.1.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.3.1.jar,\
+	org.osgi.service.jaxrs-1.0.0.jar
+
+app.change.log-4.0.113=[[trimmed]]293 LPS-171976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.113=33bb46c78ee1dab5cb46fdddfde5f325c64fa9f1
+
+#
+# Liferay App Version 4.0.114
+#
+
+app.artifacts-4.0.114=\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-base-2.18.2.jar,\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-json-provider-2.18.2.jar,\
+	com.fasterxml.jackson.module.jackson-module-jaxb-annotations-2.18.2.jar,\
+	com.sun.xml.bind.jaxb-osgi-2.3.4.jar,\
+	jakarta.json.bind-1.0.2.LIFERAY-PATCHED-1.jar,\
+	jakarta.ws.rs-2.1.6.LIFERAY-PATCHED-2.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.commons.lang3-3.11.0.jar,\
+	org.apache.cxf.cxf-core-3.5.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-soap-3.5.10.jar,\
+	org.apache.cxf.cxf-rt-bindings-xml-3.5.10.jar,\
+	org.apache.cxf.cxf-rt-databinding-jaxb-3.5.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxrs-3.5.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxws-3.5.10.jar,\
+	org.apache.cxf.cxf-rt-frontend-simple-3.5.10.jar,\
+	org.apache.cxf.cxf-rt-rs-client-3.5.10.jar,\
+	org.apache.cxf.cxf-rt-rs-sse-3.5.10.jar,\
+	org.apache.cxf.cxf-rt-security-3.5.10.jar,\
+	org.apache.cxf.cxf-rt-transports-http-3.5.10.jar,\
+	org.apache.cxf.cxf-rt-ws-policy-3.5.10.jar,\
+	org.apache.cxf.cxf-rt-wsdl-3.5.10.jar,\
+	org.apache.cxf.cxf-tools-common-3.5.10.jar,\
+	org.apache.cxf.cxf-tools-validator-3.5.10.jar,\
+	org.apache.johnzon.jsonb-1.2.21.jar,\
+	org.apache.johnzon.mapper-1.2.21.jar,\
+	org.apache.neethi-3.2.1.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.3.1.jar,\
+	org.osgi.service.jaxrs-1.0.0.jar
+
+app.change.log-4.0.114=[[trimmed]]293 LPS-171976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.114=c94ef642d05af191778507678bb0eff14f0b268a
+
+#
+# Liferay App Version 4.0.115
+#
+
+app.artifacts-4.0.115=\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-base-2.18.2.jar,\
+	com.fasterxml.jackson.jaxrs.jackson-jaxrs-json-provider-2.18.2.jar,\
+	com.fasterxml.jackson.module.jackson-module-jaxb-annotations-2.18.2.jar,\
+	com.sun.xml.bind.jaxb-osgi-2.3.4.jar,\
+	jakarta.json.bind-1.0.2.LIFERAY-PATCHED-1.jar,\
+	jakarta.ws.rs-2.1.6.LIFERAY-PATCHED-2.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.commons.lang3-3.11.0.jar,\
+	org.apache.cxf.cxf-core-3.5.11.jar,\
+	org.apache.cxf.cxf-rt-bindings-soap-3.5.11.jar,\
+	org.apache.cxf.cxf-rt-bindings-xml-3.5.11.jar,\
+	org.apache.cxf.cxf-rt-databinding-jaxb-3.5.11.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxrs-3.5.11.jar,\
+	org.apache.cxf.cxf-rt-frontend-jaxws-3.5.11.jar,\
+	org.apache.cxf.cxf-rt-frontend-simple-3.5.11.jar,\
+	org.apache.cxf.cxf-rt-rs-client-3.5.11.jar,\
+	org.apache.cxf.cxf-rt-rs-sse-3.5.11.jar,\
+	org.apache.cxf.cxf-rt-security-3.5.11.jar,\
+	org.apache.cxf.cxf-rt-transports-http-3.5.11.jar,\
+	org.apache.cxf.cxf-rt-ws-policy-3.5.11.jar,\
+	org.apache.cxf.cxf-rt-wsdl-3.5.11.jar,\
+	org.apache.cxf.cxf-tools-common-3.5.11.jar,\
+	org.apache.cxf.cxf-tools-validator-3.5.11.jar,\
+	org.apache.johnzon.jsonb-1.2.21.jar,\
+	org.apache.johnzon.mapper-1.2.21.jar,\
+	org.apache.neethi-3.2.1.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.3.1.jar,\
+	org.osgi.service.jaxrs-1.0.0.jar
+
+app.change.log-4.0.115=[[trimmed]]293 LPS-171976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.115=b0db58edb313a0a4d6d8f57ff4ab72c17eb816f5
+
+#
+# Liferay App Version 4.0.116
+#
+
+app.artifacts-4.0.116=\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-base-2.18.2.jar,\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-json-provider-2.18.2.jar,\
+	com.fasterxml.jackson.module.jackson-module-jakarta-xmlbind-annotations-2.18.2.jar,\
+	com.sun.xml.bind.jaxb.osgi-2.3.4.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	jakarta.json.bind-api-3.0.0.jar,\
+	jakarta.ws.rs-3.1.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.commons.lang3-3.11.0.jar,\
+	org.apache.cxf.core-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.soap-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.xml-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.databinding.jaxb-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxrs-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxws-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.simple-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.client-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.sse-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.security-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.transports.http-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.ws.policy-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.wsdl-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.common-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.validator-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.johnzon.jsonb-2.0.1.jar,\
+	org.apache.johnzon.mapper-2.0.1.jar,\
+	org.apache.neethi-3.2.0.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.3.1.jar,\
+	org.osgi.service.jaxrs-1.0.0.JAKARTA-LIFERAY-PATCHED-1.jar
+
+app.change.log-4.0.116=[[trimmed]]293 LPS-171976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.116=bc208f3bc74d521d805e3931c1f3b00e1d4aac77
+
+#
+# Liferay App Version 4.0.117
+#
+
+app.artifacts-4.0.117=\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-base-2.18.2.jar,\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-json-provider-2.18.2.jar,\
+	com.fasterxml.jackson.module.jackson-module-jakarta-xmlbind-annotations-2.18.2.jar,\
+	com.sun.xml.bind.jaxb.osgi-2.3.4.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	jakarta.json.bind-api-3.0.0.jar,\
+	jakarta.ws.rs-3.1.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.commons.lang3-3.11.0.jar,\
+	org.apache.cxf.core-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.soap-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.xml-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.databinding.jaxb-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxrs-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxws-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.simple-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.client-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.sse-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.security-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.transports.http-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.ws.policy-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.wsdl-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.common-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.validator-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.johnzon.jsonb-2.0.1.jar,\
+	org.apache.johnzon.mapper-2.0.1.jar,\
+	org.apache.neethi-3.2.0.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.3.1.jar,\
+	org.osgi.service.jaxrs-1.0.0.JAKARTA-LIFERAY-PATCHED-1.jar
+
+app.change.log-4.0.117=[[trimmed]]293 LPS-171976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.117=4aa14cc679d9949ec1d50689f6fee87c43949a4c
+
+#
+# Liferay App Version 4.0.118
+#
+
+app.artifacts-4.0.118=\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-base-2.18.2.jar,\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-json-provider-2.18.2.jar,\
+	com.fasterxml.jackson.module.jackson-module-jakarta-xmlbind-annotations-2.18.2.jar,\
+	com.sun.xml.bind.jaxb.osgi-2.3.4.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	jakarta.json.bind-api-3.0.0.jar,\
+	jakarta.ws.rs-3.1.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.commons.lang3-3.11.0.jar,\
+	org.apache.cxf.core-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.soap-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.xml-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.databinding.jaxb-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxrs-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxws-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.simple-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.client-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.sse-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.security-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.transports.http-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.ws.policy-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.wsdl-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.common-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.validator-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.johnzon.jsonb-2.0.1.jar,\
+	org.apache.johnzon.mapper-2.0.1.jar,\
+	org.apache.neethi-3.2.0.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.3.1.jar,\
+	org.osgi.service.jaxrs-1.0.0.JAKARTA-LIFERAY-PATCHED-1.jar
+
+app.change.log-4.0.118=[[trimmed]]293 LPS-171976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.118=7945ec9b1584a2b466ee9c0f15503414c1887447
+
+#
+# Liferay App Version 4.0.119
+#
+
+app.artifacts-4.0.119=\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-base-2.18.2.jar,\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-json-provider-2.18.2.jar,\
+	com.fasterxml.jackson.module.jackson-module-jakarta-xmlbind-annotations-2.18.2.jar,\
+	com.sun.xml.bind.jaxb.osgi-2.3.4.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	jakarta.json.bind-api-3.0.0.jar,\
+	jakarta.ws.rs-3.1.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.commons.lang3-3.11.0.jar,\
+	org.apache.cxf.core-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.soap-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.xml-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.databinding.jaxb-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxrs-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxws-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.simple-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.client-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.sse-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.security-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.transports.http-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.ws.policy-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.wsdl-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.common-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.validator-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.johnzon.jsonb-2.0.1.jar,\
+	org.apache.johnzon.mapper-2.0.1.jar,\
+	org.apache.neethi-3.2.0.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.3.1.jar,\
+	org.osgi.service.jaxrs-1.0.0.JAKARTA-LIFERAY-PATCHED-1.jar
+
+app.change.log-4.0.119=[[trimmed]]293 LPS-171976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.119=8e18d4abd7609c775bdfe25ca1db0027e2d0a498
+
+#
+# Liferay App Version 4.0.120
+#
+
+app.artifacts-4.0.120=\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-base-2.18.2.jar,\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-json-provider-2.18.2.jar,\
+	com.fasterxml.jackson.module.jackson-module-jakarta-xmlbind-annotations-2.18.2.jar,\
+	com.sun.xml.bind.jaxb.osgi-2.3.4.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	jakarta.json.bind-api-3.0.0.jar,\
+	jakarta.ws.rs-3.1.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.commons.lang3-3.11.0.jar,\
+	org.apache.cxf.core-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.soap-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.xml-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.databinding.jaxb-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxrs-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxws-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.simple-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.client-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.sse-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.security-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.transports.http-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.ws.policy-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.wsdl-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.common-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.validator-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.johnzon.jsonb-2.0.1.jar,\
+	org.apache.johnzon.mapper-2.0.1.jar,\
+	org.apache.neethi-3.2.0.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.3.1.jar,\
+	org.osgi.service.jaxrs-1.0.0.JAKARTA-LIFERAY-PATCHED-1.jar
+
+app.change.log-4.0.120=[[trimmed]]293 LPS-171976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.120=bf30829c30eb3cc91191baac51cbf89f87ba3add
+
+#
+# Liferay App Version 4.0.121
+#
+
+app.artifacts-4.0.121=\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-base-2.18.2.jar,\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-json-provider-2.18.2.jar,\
+	com.fasterxml.jackson.module.jackson-module-jakarta-xmlbind-annotations-2.18.2.jar,\
+	com.sun.xml.bind.jaxb.osgi-2.3.4.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	jakarta.json.bind-api-3.0.0.jar,\
+	jakarta.ws.rs-3.1.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.core-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.soap-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.xml-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.databinding.jaxb-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxrs-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxws-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.simple-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.client-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.sse-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.security-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.transports.http-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.ws.policy-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.wsdl-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.common-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.validator-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.johnzon.jsonb-2.0.1.jar,\
+	org.apache.johnzon.mapper-2.0.1.jar,\
+	org.apache.neethi-3.2.0.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.3.1.jar,\
+	org.osgi.service.jaxrs-1.0.0.JAKARTA-LIFERAY-PATCHED-1.jar
+
+app.change.log-4.0.121=[[trimmed]]1976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-61108 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.121=f2ca25e25585809d37f2fdbf0c9c8350ed895602
+
+#
+# Liferay App Version 4.0.122
+#
+
+app.artifacts-4.0.122=\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-base-2.18.2.jar,\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-json-provider-2.18.2.jar,\
+	com.fasterxml.jackson.module.jackson-module-jakarta-xmlbind-annotations-2.18.2.jar,\
+	com.sun.xml.bind.jaxb.osgi-2.3.4.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	jakarta.json.bind-api-3.0.0.jar,\
+	jakarta.ws.rs-3.1.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.core-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.soap-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.xml-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.databinding.jaxb-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxrs-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxws-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.simple-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.client-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.sse-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.security-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.transports.http-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.ws.policy-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.wsdl-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.common-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.validator-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.johnzon.jsonb-2.0.1.jar,\
+	org.apache.johnzon.mapper-2.0.1.jar,\
+	org.apache.neethi-3.2.0.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.3.1.jar,\
+	org.osgi.service.jaxrs-1.0.0.JAKARTA-LIFERAY-PATCHED-1.jar
+
+app.change.log-4.0.122=[[trimmed]]1976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-61108 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.122=fcab4076f6999ddb6cd7d4bfae06f2c479375521
+
+#
+# Liferay App Version 4.0.123
+#
+
+app.artifacts-4.0.123=\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-base-2.18.2.jar,\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-json-provider-2.18.2.jar,\
+	com.fasterxml.jackson.module.jackson-module-jakarta-xmlbind-annotations-2.18.2.jar,\
+	com.sun.xml.bind.jaxb.osgi-2.3.4.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	jakarta.json.bind-api-3.0.0.jar,\
+	jakarta.ws.rs-3.1.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.core-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.soap-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.xml-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.databinding.jaxb-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxrs-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxws-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.simple-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.client-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.sse-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.security-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.transports.http-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.ws.policy-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.wsdl-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.common-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.validator-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.johnzon.jsonb-2.0.1.jar,\
+	org.apache.johnzon.mapper-2.0.1.jar,\
+	org.apache.neethi-3.2.0.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.3.1.jar,\
+	org.osgi.service.jaxrs-1.0.0.JAKARTA-LIFERAY-PATCHED-1.jar
+
+app.change.log-4.0.123=[[trimmed]]1976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-61108 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.123=cc59ad4f1cfe2ce6eea204cbc7c5f94b06f2c394
+
+#
+# Liferay App Version 4.0.124
+#
+
+app.artifacts-4.0.124=\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-base-2.18.2.jar,\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-json-provider-2.18.2.jar,\
+	com.fasterxml.jackson.module.jackson-module-jakarta-xmlbind-annotations-2.18.2.jar,\
+	com.sun.xml.bind.jaxb.osgi-2.3.4.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	jakarta.json.bind-api-3.0.0.jar,\
+	jakarta.ws.rs-3.1.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.core-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.soap-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.xml-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.databinding.jaxb-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxrs-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxws-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.simple-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.client-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.sse-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.security-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.transports.http-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.ws.policy-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.wsdl-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.common-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.validator-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.johnzon.jsonb-2.0.1.jar,\
+	org.apache.johnzon.mapper-2.0.1.jar,\
+	org.apache.neethi-3.2.0.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.3.1.jar,\
+	org.osgi.service.jaxrs-1.0.0.JAKARTA-LIFERAY-PATCHED-1.jar
+
+app.change.log-4.0.124=[[trimmed]]1976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-61108 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.124=53a32a42dc40ab43b639ca86dd7551cd6fe789dc
+
+#
+# Liferay App Version 4.0.125
+#
+
+app.artifacts-4.0.125=\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-base-2.18.2.jar,\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-json-provider-2.18.2.jar,\
+	com.fasterxml.jackson.module.jackson-module-jakarta-xmlbind-annotations-2.18.2.jar,\
+	com.sun.xml.bind.jaxb.osgi-2.3.4.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	jakarta.json.bind-api-3.0.0.jar,\
+	jakarta.ws.rs-3.1.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.core-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.soap-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.xml-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.databinding.jaxb-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxrs-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxws-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.simple-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.client-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.sse-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.security-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.transports.http-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.ws.policy-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.wsdl-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.common-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.validator-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.johnzon.jsonb-2.0.1.jar,\
+	org.apache.johnzon.mapper-2.0.1.jar,\
+	org.apache.neethi-3.2.0.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.3.1.jar,\
+	org.osgi.service.jaxrs-1.0.0.JAKARTA-LIFERAY-PATCHED-1.jar
+
+app.change.log-4.0.125=[[trimmed]]1976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-61108 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.125=6fb8527ecc7f794a07e87a4dd9b93e60451fb0e9
+
+#
+# Liferay App Version 4.0.126
+#
+
+app.artifacts-4.0.126=\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-base-2.18.2.jar,\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-json-provider-2.18.2.jar,\
+	com.fasterxml.jackson.module.jackson-module-jakarta-xmlbind-annotations-2.18.2.jar,\
+	com.sun.xml.bind.jaxb.osgi-2.3.4.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	jakarta.json.bind-api-3.0.0.jar,\
+	jakarta.ws.rs-3.1.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.core-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.soap-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.xml-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.databinding.jaxb-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxrs-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxws-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.simple-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.client-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.sse-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.security-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.transports.http-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.ws.policy-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.wsdl-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.common-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.validator-3.5.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.johnzon.jsonb-2.0.1.jar,\
+	org.apache.johnzon.mapper-2.0.1.jar,\
+	org.apache.neethi-3.2.0.jar,\
+	org.apache.velocity.engine-core-2.3.0.jar,\
+	org.apache.ws.xmlschema.core-2.3.1.jar,\
+	org.osgi.service.jaxrs-1.0.0.JAKARTA-LIFERAY-PATCHED-1.jar
+
+app.change.log-4.0.126=[[trimmed]]1976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-61108 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.126=6b6e74e81ca16e8cfd66e1a7af6ce72c2c904a87
+
+#
+# Liferay App Version 4.0.127
+#
+
+app.artifacts-4.0.127=\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-base-2.18.2.jar,\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-json-provider-2.18.2.jar,\
+	com.fasterxml.jackson.module.jackson-module-jakarta-xmlbind-annotations-2.18.2.jar,\
+	com.sun.xml.bind.jaxb.osgi-2.3.4.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	jakarta.json.bind-api-3.0.0.jar,\
+	jakarta.ws.rs-3.1.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.core-3.6.8.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.soap-3.6.8.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.xml-3.6.8.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.databinding.jaxb-3.6.8.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxrs-3.6.8.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxws-3.6.8.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.simple-3.6.8.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.client-3.6.8.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.sse-3.6.8.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.security-3.6.8.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.transports.http-3.6.8.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.ws.policy-3.6.8.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.wsdl-3.6.8.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.common-3.6.8.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.validator-3.6.8.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.johnzon.jsonb-2.0.1.jar,\
+	org.apache.johnzon.mapper-2.0.1.jar,\
+	org.apache.neethi-3.2.0.jar,\
+	org.apache.velocity.engine-core-2.4.0.jar,\
+	org.apache.ws.xmlschema.core-2.3.1.jar,\
+	org.osgi.service.jaxrs-1.0.0.JAKARTA-LIFERAY-PATCHED-1.jar
+
+app.change.log-4.0.127=[[trimmed]]1976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-61108 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.127=3392f914f26c4ea23da110c80366420e030add9a
+
+#
+# Liferay App Version 4.0.128
+#
+
+app.artifacts-4.0.128=\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-base-2.18.2.jar,\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-json-provider-2.18.2.jar,\
+	com.fasterxml.jackson.module.jackson-module-jakarta-xmlbind-annotations-2.18.2.jar,\
+	com.sun.xml.bind.jaxb.osgi-2.3.4.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	jakarta.json.bind-api-3.0.0.jar,\
+	jakarta.ws.rs-3.1.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.core-3.6.8.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.soap-3.6.8.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.xml-3.6.8.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.databinding.jaxb-3.6.8.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxrs-3.6.8.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxws-3.6.8.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.simple-3.6.8.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.client-3.6.8.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.sse-3.6.8.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.security-3.6.8.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.transports.http-3.6.8.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.ws.policy-3.6.8.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.wsdl-3.6.8.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.common-3.6.8.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.validator-3.6.8.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.johnzon.jsonb-2.0.1.jar,\
+	org.apache.johnzon.mapper-2.0.1.jar,\
+	org.apache.neethi-3.2.0.jar,\
+	org.apache.velocity.engine-core-2.4.0.jar,\
+	org.apache.ws.xmlschema.core-2.3.1.jar,\
+	org.osgi.service.jaxrs-1.0.0.JAKARTA-LIFERAY-PATCHED-1.jar
+
+app.change.log-4.0.128=[[trimmed]]1976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-61108 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.128=d59d1d849987da9852d76100c4d7f45996dcfe55
+
+#
+# Liferay App Version 4.0.129
+#
+
+app.artifacts-4.0.129=\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-base-2.18.2.jar,\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-json-provider-2.18.2.jar,\
+	com.fasterxml.jackson.module.jackson-module-jakarta-xmlbind-annotations-2.18.2.jar,\
+	com.sun.xml.bind.jaxb.osgi-2.3.4.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	jakarta.json.bind-api-3.0.0.jar,\
+	jakarta.ws.rs-3.1.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.core-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.soap-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.xml-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.databinding.jaxb-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxrs-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxws-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.simple-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.client-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.sse-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.security-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.transports.http-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.ws.policy-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.wsdl-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.common-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.validator-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.johnzon.jsonb-2.0.1.jar,\
+	org.apache.johnzon.mapper-2.0.1.jar,\
+	org.apache.neethi-3.2.0.jar,\
+	org.apache.velocity.engine-core-2.4.0.jar,\
+	org.apache.ws.xmlschema.core-2.3.1.jar,\
+	org.osgi.service.jaxrs-1.0.0.JAKARTA-LIFERAY-PATCHED-1.jar
+
+app.change.log-4.0.129=[[trimmed]]1976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-61108 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.129=4647c8b60e6085003428e0ce568e0a03477868ef
+
+#
+# Liferay App Version 4.0.130
+#
+
+app.artifacts-4.0.130=\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-base-2.18.2.jar,\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-json-provider-2.18.2.jar,\
+	com.fasterxml.jackson.module.jackson-module-jakarta-xmlbind-annotations-2.18.2.jar,\
+	com.sun.xml.bind.jaxb.osgi-2.3.4.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	jakarta.json.bind-api-3.0.0.jar,\
+	jakarta.ws.rs-3.1.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.core-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.soap-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.xml-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.databinding.jaxb-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxrs-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxws-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.simple-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.client-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.sse-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.security-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.transports.http-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.ws.policy-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.wsdl-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.common-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.validator-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.johnzon.jsonb-2.0.1.jar,\
+	org.apache.johnzon.mapper-2.0.1.jar,\
+	org.apache.neethi-3.2.0.jar,\
+	org.apache.velocity.engine-core-2.4.0.jar,\
+	org.apache.ws.xmlschema.core-2.3.1.jar,\
+	org.osgi.service.jaxrs-1.0.0.JAKARTA-LIFERAY-PATCHED-1.jar
+
+app.change.log-4.0.130=[[trimmed]]1976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-61108 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.130=164ec9353a2594292931a4399d9a06a848707d89
+
+#
+# Liferay App Version 4.0.131
+#
+
+app.artifacts-4.0.131=\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-base-2.18.2.jar,\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-json-provider-2.18.2.jar,\
+	com.fasterxml.jackson.module.jackson-module-jakarta-xmlbind-annotations-2.18.2.jar,\
+	com.sun.xml.bind.jaxb.osgi-2.3.4.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	jakarta.json.bind-api-3.0.0.jar,\
+	jakarta.ws.rs-3.1.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.core-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.soap-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.xml-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.databinding.jaxb-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxrs-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxws-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.simple-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.client-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.sse-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.security-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.transports.http-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.ws.policy-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.wsdl-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.common-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.validator-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.johnzon.jsonb-2.0.1.jar,\
+	org.apache.johnzon.mapper-2.0.1.jar,\
+	org.apache.neethi-3.2.0.jar,\
+	org.apache.velocity.engine-core-2.4.0.jar,\
+	org.apache.ws.xmlschema.core-2.3.1.jar,\
+	org.osgi.service.jaxrs-1.0.0.JAKARTA-LIFERAY-PATCHED-1.jar
+
+app.change.log-4.0.131=[[trimmed]]1976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-61108 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.131=ba175e181f922bcb068faaedd8399592a72e49e0
+
+#
+# Liferay App Version 4.0.132
+#
+
+app.artifacts-4.0.132=\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-base-2.18.6.jar,\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-json-provider-2.18.6.jar,\
+	com.fasterxml.jackson.module.jackson-module-jakarta-xmlbind-annotations-2.18.6.jar,\
+	com.sun.xml.bind.jaxb.osgi-2.3.4.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	jakarta.json.bind-api-3.0.0.jar,\
+	jakarta.ws.rs-3.1.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.core-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.soap-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.xml-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.databinding.jaxb-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxrs-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxws-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.simple-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.client-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.sse-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.security-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.transports.http-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.ws.policy-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.wsdl-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.common-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.validator-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.johnzon.jsonb-2.0.1.jar,\
+	org.apache.johnzon.mapper-2.0.1.jar,\
+	org.apache.neethi-3.2.0.jar,\
+	org.apache.velocity.engine-core-2.4.0.jar,\
+	org.apache.ws.xmlschema.core-2.3.1.jar,\
+	org.osgi.service.jaxrs-1.0.0.JAKARTA-LIFERAY-PATCHED-1.jar
+
+app.change.log-4.0.132=[[trimmed]]1976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-61108 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.132=62fe09030c07ed0a461e95d54d1a1cfd193b1706
+
+#
+# Liferay App Version 4.0.133
+#
+
+app.artifacts-4.0.133=\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-base-2.18.6.jar,\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-json-provider-2.18.6.jar,\
+	com.fasterxml.jackson.module.jackson-module-jakarta-xmlbind-annotations-2.18.6.jar,\
+	com.sun.xml.bind.jaxb.osgi-2.3.4.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	jakarta.json.bind-api-3.0.0.jar,\
+	jakarta.ws.rs-3.1.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.core-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.soap-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.xml-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.databinding.jaxb-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxrs-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxws-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.simple-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.client-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.sse-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.security-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.transports.http-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.ws.policy-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.wsdl-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.common-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.validator-3.6.9.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.johnzon.jsonb-2.0.1.jar,\
+	org.apache.johnzon.mapper-2.0.1.jar,\
+	org.apache.neethi-3.2.0.jar,\
+	org.apache.velocity.engine-core-2.4.0.jar,\
+	org.apache.ws.xmlschema.core-2.3.1.jar,\
+	org.osgi.service.jaxrs-1.0.0.JAKARTA-LIFERAY-PATCHED-1.jar
+
+app.change.log-4.0.133=[[trimmed]]1976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-61108 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.133=e92152c30ff1957933864e3edeb2cef988eba803
+
+#
+# Liferay App Version 4.0.134
+#
+
+app.artifacts-4.0.134=\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-base-2.18.6.jar,\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-json-provider-2.18.6.jar,\
+	com.fasterxml.jackson.module.jackson-module-jakarta-xmlbind-annotations-2.18.6.jar,\
+	com.sun.xml.bind.jaxb.osgi-2.3.4.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	jakarta.json.bind-api-3.0.0.jar,\
+	jakarta.ws.rs-3.1.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.core-3.6.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.soap-3.6.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.xml-3.6.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.databinding.jaxb-3.6.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxrs-3.6.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxws-3.6.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.simple-3.6.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.client-3.6.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.sse-3.6.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.security-3.6.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.transports.http-3.6.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.ws.policy-3.6.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.wsdl-3.6.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.common-3.6.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.validator-3.6.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.johnzon.jsonb-2.0.1.jar,\
+	org.apache.johnzon.mapper-2.0.1.jar,\
+	org.apache.neethi-3.2.2.jar,\
+	org.apache.velocity.engine-core-2.4.0.jar,\
+	org.apache.ws.xmlschema.core-2.3.1.jar,\
+	org.osgi.service.jaxrs-1.0.0.JAKARTA-LIFERAY-PATCHED-1.jar
+
+app.change.log-4.0.134=[[trimmed]]1976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-61108 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.134=509715488b4870ceda958852739c6bc74ae960a8
+
+#
+# Liferay App Version 4.0.135
+#
+
+app.artifacts-4.0.135=\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-base-2.18.6.jar,\
+	com.fasterxml.jackson.jakarta.rs.jackson-jakarta-rs-json-provider-2.18.6.jar,\
+	com.fasterxml.jackson.module.jackson-module-jakarta-xmlbind-annotations-2.18.6.jar,\
+	com.sun.xml.bind.jaxb.osgi-2.3.4.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	jakarta.json.bind-api-3.0.0.jar,\
+	jakarta.ws.rs-3.1.0.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.component.dsl-1.2.2.LIFERAY-PATCHED-1.jar,\
+	org.apache.aries.jax.rs.whiteboard-2.0.0.LIFERAY-PATCHED-1.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.core-3.6.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.soap-3.6.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.bindings.xml-3.6.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.databinding.jaxb-3.6.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxrs-3.6.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.jaxws-3.6.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.frontend.simple-3.6.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.client-3.6.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.rs.sse-3.6.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.security-3.6.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.transports.http-3.6.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.ws.policy-3.6.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.rt.wsdl-3.6.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.common-3.6.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.cxf.tools.validator-3.6.11.JAKARTA-LIFERAY-PATCHED-1.jar,\
+	org.apache.johnzon.jsonb-2.0.1.jar,\
+	org.apache.johnzon.mapper-2.0.1.jar,\
+	org.apache.neethi-3.2.2.jar,\
+	org.apache.velocity.engine-core-2.4.0.jar,\
+	org.apache.ws.xmlschema.core-2.3.1.jar,\
+	org.osgi.service.jaxrs-1.0.0.JAKARTA-LIFERAY-PATCHED-1.jar
+
+app.change.log-4.0.135=[[trimmed]]1976 LPS-172078 LPS-172439 LPS-173756 LPS-174059 LPS-174314 LPS-175057 LPS-175351 LPS-176787 LPS-178826 LPS-180151 LPS-180156 LPS-182384 LPS-182397 LPS-183439 LPS-186650 LPS-186666 LPS-187109 LPS-188912 LPS-190079 LPS-190491 LPS-192126 LPS-192880 LPS-196362 LPS-196986 LPS-197822 LPS-199059 LPS-200606 LPS-202036 LPS-202873 LPS-203854 LPS-203980 LPS-206195 LPS-61108 LPS-72545 LPS-74544 LPS-75924 LPS-77425 LPS-77699 LPS-79679 LPS-80332 LPS-80517 LPS-80681 LPS-81952 LPS-82343 LPS-82420 LPS-82460 LPS-82828 LPS-82850 LPS-83308 LPS-84048 LPS-84093 LPS-84119 LPS-84181 LPS-85260 LPS-85296 LPS-85678 LPS-86079 LPS-86237 LPS-86332 LPS-86408 LPS-86806 LPS-87590 LPS-88171 LPS-88464 LPS-89123 LPS-90379 LPS-90412 LPS-91226 LPS-91463 LPS-91514 LPS-91539 LPS-92253 LPS-92465 LPS-93457 LPS-94523 LPS-94555 LPS-94973 LPS-95083 LPS-95413 LPS-95442 LPS-95555 LPS-96061 LPS-96127 LPS-96318 LPS-96318/LPS-96656 LPS-96984 LPS-97701 LPS-98731 LPS-98879 LPS-99917 LRQA-50606 LRQA-51488 OAUTH2-128 OAUTH2-137 OAUTH2-44
+
+app.git.id-4.0.135=788035b80d546954b05807751389174455e5b073

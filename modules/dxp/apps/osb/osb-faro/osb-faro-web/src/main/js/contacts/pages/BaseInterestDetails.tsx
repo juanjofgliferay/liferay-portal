@@ -18,9 +18,10 @@ import {
 } from 'shared/util/router';
 import {createOrderIOMap, NAME} from 'shared/util/pagination';
 import {formatUTCDateFromUnix} from 'shared/util/date';
+import {getSafeDecodedURIComponent} from 'shared/util/util';
 import {individualsListColumns} from 'shared/util/table-columns';
 import {sub} from 'shared/util/lang';
-import {useQueryPagination} from 'shared/hooks';
+import {useQueryPagination} from 'shared/hooks/useQueryPagination';
 
 const tabIds = {
 	INDIVIDUALS,
@@ -47,7 +48,7 @@ const IndividualsList: React.FC<IIndividualListProps> = ({
 			columns={[
 				individualsListColumns.getName({channelId, groupId}),
 				individualsListColumns.email,
-				individualsListColumns.accountNames
+				individualsListColumns.accountName
 			]}
 			dataSourceFn={API.individuals.search}
 			delta={delta}
@@ -71,7 +72,7 @@ interface IInterestDetailsListProp {
 	className?: string;
 	dataSourceParams: {[key: string]: any};
 	groupId: string;
-	tabId: typeof tabIds[keyof typeof tabIds];
+	tabId: (typeof tabIds)[keyof typeof tabIds];
 }
 
 const InterestDetailsList: React.FC<IInterestDetailsListProp> = ({
@@ -151,7 +152,7 @@ const BaseInterestDetails: React.FC<IBaseInterestDetailsProps> = ({
 		}
 	];
 
-	const interestName = decodeURIComponent(interestId);
+	const interestName = getSafeDecodedURIComponent(interestId);
 
 	const individualsEntityKey =
 		type === ACCOUNTS ? 'accountId' : 'individualSegmentId';
@@ -223,13 +224,13 @@ const BaseInterestDetails: React.FC<IBaseInterestDetailsProps> = ({
 						{navigationItems.map(({active, href, label}) => (
 							<ClayNavigationBar.Item active={active} key={label}>
 								<ClayLink href={href}>
-									<h4>{label}</h4>
+									<div className='h4'>{label}</div>
 								</ClayLink>
 							</ClayNavigationBar.Item>
 						))}
 					</ClayNavigationBar>
 
-					<h4 className='list-title'>
+					<div className='h4 list-title'>
 						{tabId === tabIds.INDIVIDUALS
 							? sub(
 									Liferay.Language.get(
@@ -248,7 +249,7 @@ const BaseInterestDetails: React.FC<IBaseInterestDetailsProps> = ({
 									),
 									[interestName]
 							  )}
-					</h4>
+					</div>
 				</Card.Header>
 
 				<InterestDetailsList

@@ -24,35 +24,36 @@ import {createResourceURL, fetch} from 'frontend-js-web';
 interface ModalAddObjectField {
 	baseResourceURL: string;
 	creationLanguageId: Liferay.Language.Locale;
+	hasDepotEntry?: boolean;
 	objectDefinitionExternalReferenceCode: string;
 	objectDefinitionName?: string;
 	onAfterSubmit: (value: ObjectField) => void;
-	setVisibility: (value: boolean) => void;
+	setVisible: (value: boolean) => void;
 }
 
 export function ModalAddObjectField({
 	baseResourceURL,
 	creationLanguageId,
+	hasDepotEntry,
 	objectDefinitionExternalReferenceCode,
-	objectDefinitionName,
 	onAfterSubmit,
-	setVisibility,
+	setVisible,
 }: ModalAddObjectField) {
 	const [error, setError] = useState<string>('');
-	const [objectDefinition, setObjectDefinition] = useState<
-		ObjectDefinition
-	>();
-	const [objectFieldTypes, setObjectFieldTypes] = useState<ObjectFieldType[]>(
-		[]
-	);
-	const {observer, onClose} = useModal({onClose: () => setVisibility(false)});
-
+	const [objectDefinition, setObjectDefinition] =
+		useState<ObjectDefinition>();
+	const [objectFieldBusinessTypes, setObjectFieldBusinessTypes] = useState<
+		ObjectFieldBusinessType[]
+	>([]);
+	const {observer, onClose} = useModal({onClose: () => setVisible(false)});
+	const formId = 'modalAddObjectField';
 	const initialValues: Partial<ObjectField> = {
 		indexed: true,
 		indexedAsKeyword: false,
 		indexedLanguageId: '',
 		listTypeDefinitionExternalReferenceCode: '',
 		listTypeDefinitionId: 0,
+		localized: false,
 		readOnly: 'false',
 		readOnlyConditionExpression: '',
 		required: false,
@@ -93,55 +94,67 @@ export function ModalAddObjectField({
 		}
 	};
 
-	const {
-		errors,
-		handleChange,
-		handleSubmit,
-		setValues,
-		values,
-	} = useObjectFieldForm({
-		initialValues,
-		onSubmit,
-	});
+	const {errors, handleChange, handleSubmit, setValues, values} =
+		useObjectFieldForm({
+			initialValues,
+			objectFields: objectDefinition?.objectFields,
+			onSubmit,
+		});
 
 	const showEnableTranslationToggle =
+		values.businessType === 'Attachment' ||
+		values.businessType === 'Boolean' ||
+		values.businessType === 'Date' ||
+		values.businessType === 'DateTime' ||
+		values.businessType === 'Decimal' ||
+		values.businessType === 'EmailAddress' ||
+		values.businessType === 'Integer' ||
+		values.businessType === 'LongInteger' ||
 		values.businessType === 'LongText' ||
+		values.businessType === 'MultiselectPicklist' ||
+		values.businessType === 'PhoneNumber' ||
+		values.businessType === 'Picklist' ||
+		values.businessType === 'PrecisionDecimal' ||
 		values.businessType === 'RichText' ||
 		values.businessType === 'Text';
 
 	useEffect(() => {
 		const makeFetch = async () => {
-			const objectDefinitionResponse = await API.getObjectDefinitionByExternalReferenceCode(
-				objectDefinitionExternalReferenceCode
-			);
+			const objectDefinitionResponse =
+				await API.getObjectDefinitionByExternalReferenceCode(
+					objectDefinitionExternalReferenceCode
+				);
 
 			setObjectDefinition(objectDefinitionResponse);
 
 			const url = createResourceURL(baseResourceURL, {
 				objectDefinitionId: objectDefinitionResponse.id,
-				p_p_resource_id: '/object_definitions/get_object_field_types',
+				p_p_resource_id:
+					'/object_definitions/get_object_field_business_types',
 			}).href;
 
-			const objectFieldTypesResponse = await fetch(url, {
+			const objectFieldBusinessTypesResponse = await fetch(url, {
 				method: 'GET',
 			});
 
-			const {
-				objectFieldTypes,
-			} = (await objectFieldTypesResponse.json()) as {
-				objectFieldTypes: ObjectFieldType[];
-			};
+			const {objectFieldBusinessTypes} =
+				(await objectFieldBusinessTypesResponse.json()) as {
+					objectFieldBusinessTypes: ObjectFieldBusinessType[];
+				};
 
-			setObjectFieldTypes(objectFieldTypes);
+			setObjectFieldBusinessTypes(
+				objectFieldBusinessTypes.filter((objectFieldBusinessType) => {
+					if (
+						objectFieldBusinessType.businessType !== 'Relationship'
+					) {
+						return objectFieldBusinessType;
+					}
+				})
+			);
 		};
 
 		makeFetch();
 
-		setValues({
-			localized:
-				objectDefinition?.enableLocalization &&
-				showEnableTranslationToggle,
-		});
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [objectDefinitionExternalReferenceCode, values.businessType]);
 
@@ -149,12 +162,14 @@ export function ModalAddObjectField({
 		<ClayModalProvider>
 			<ClayTooltipProvider>
 				<ClayModal center observer={observer}>
-					<ClayForm onSubmit={handleSubmit}>
-						<ClayModal.Header>
-							{Liferay.Language.get('new-field')}
-						</ClayModal.Header>
+					<ClayModal.Header
+						closeButtonAriaLabel={Liferay.Language.get('close')}
+					>
+						{Liferay.Language.get('new-field')}
+					</ClayModal.Header>
 
-						<ClayModal.Body>
+					<ClayModal.Body>
+						<ClayForm id={formId} onSubmit={handleSubmit}>
 							{error && (
 								<ClayAlert displayType="danger">
 									{error}
@@ -163,6 +178,7 @@ export function ModalAddObjectField({
 
 							<Input
 								error={errors.label}
+								id="modal-add-object-field__label-input"
 								label={Liferay.Language.get('label')}
 								name="label"
 								onChange={({target: {value}}) => {
@@ -179,17 +195,14 @@ export function ModalAddObjectField({
 								className="lfr-objects__modal-add-object-field-form-base"
 								errors={errors}
 								handleChange={handleChange}
-								objectDefinition={objectDefinition}
-								objectDefinitionExternalReferenceCode={
-									objectDefinitionExternalReferenceCode
-								}
-								objectDefinitionName={
-									objectDefinitionName ?? objectDefinition
-										? objectDefinition?.name ?? ''
-										: ''
+								hasDepotEntry={hasDepotEntry}
+								objectDefinition={
+									objectDefinition as ObjectDefinition
 								}
 								objectField={values}
-								objectFieldTypes={objectFieldTypes}
+								objectFieldBusinessTypesInfo={
+									objectFieldBusinessTypes
+								}
 								setValues={setValues}
 							>
 								{showEnableTranslationToggle && (
@@ -201,12 +214,10 @@ export function ModalAddObjectField({
 											label={Liferay.Language.get(
 												'enable-entry-translations'
 											)}
+											name="enableEntryTranslations"
 											onToggle={(localized) =>
 												setValues({
 													localized,
-													required:
-														!localized &&
-														values.required,
 												})
 											}
 											toggled={values.localized}
@@ -236,25 +247,25 @@ export function ModalAddObjectField({
 									values={values}
 								/>
 							)}
-						</ClayModal.Body>
+						</ClayForm>
+					</ClayModal.Body>
 
-						<ClayModal.Footer
-							last={
-								<ClayButton.Group spaced>
-									<ClayButton
-										displayType="secondary"
-										onClick={() => onClose()}
-									>
-										{Liferay.Language.get('cancel')}
-									</ClayButton>
+					<ClayModal.Footer
+						last={
+							<ClayButton.Group spaced>
+								<ClayButton
+									displayType="secondary"
+									onClick={() => onClose()}
+								>
+									{Liferay.Language.get('cancel')}
+								</ClayButton>
 
-									<ClayButton type="submit">
-										{Liferay.Language.get('save')}
-									</ClayButton>
-								</ClayButton.Group>
-							}
-						/>
-					</ClayForm>
+								<ClayButton form={formId} type="submit">
+									{Liferay.Language.get('save')}
+								</ClayButton>
+							</ClayButton.Group>
+						}
+					/>
 				</ClayModal>
 			</ClayTooltipProvider>
 		</ClayModalProvider>

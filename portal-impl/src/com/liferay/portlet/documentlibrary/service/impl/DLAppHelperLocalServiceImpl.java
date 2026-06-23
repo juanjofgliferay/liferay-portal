@@ -142,10 +142,10 @@ public class DLAppHelperLocalServiceImpl
 				fileEntry.getModifiedDate(),
 				DLFileEntryConstants.getClassName(), fileEntry.getFileEntryId(),
 				fileEntry.getUuid(), fileEntryTypeId, assetCategoryIds,
-				assetTagNames, true, false, null, null, null,
-				fileEntry.getExpirationDate(), fileEntry.getMimeType(),
-				fileEntry.getTitle(), fileEntry.getDescription(), null, null,
-				null, 0, 0, null);
+				assetTagNames, true, false, null, null,
+				_getPublishDate(fileEntry), fileEntry.getExpirationDate(),
+				fileEntry.getMimeType(), fileEntry.getTitle(),
+				fileEntry.getDescription(), null, null, null, 0, 0, null);
 		}
 
 		AssetEntry fileVersionAssetEntry = _assetEntryLocalService.fetchEntry(
@@ -172,9 +172,9 @@ public class DLAppHelperLocalServiceImpl
 			fileEntry.getModifiedDate(), DLFileEntryConstants.getClassName(),
 			fileVersion.getFileVersionId(), fileEntry.getUuid(),
 			fileEntryTypeId, assetCategoryIds, assetTagNames, true, false, null,
-			null, null, fileEntry.getExpirationDate(), fileEntry.getMimeType(),
-			fileEntry.getTitle(), fileEntry.getDescription(), null, null, null,
-			0, 0, null);
+			null, _getPublishDate(fileEntry), fileEntry.getExpirationDate(),
+			fileEntry.getMimeType(), fileEntry.getTitle(),
+			fileEntry.getDescription(), null, null, null, 0, 0, null);
 
 		AssetLinkManagerUtil.updateLinks(
 			AssetLinkManagerUtil.getDirectLinksIds(
@@ -268,6 +268,11 @@ public class DLAppHelperLocalServiceImpl
 
 		return _dlFileShortcutPersistence.countByG_F_A_S(
 			groupId, folderId, active, status);
+	}
+
+	@Override
+	public List<DLFileShortcut> getGroupFileShortcuts(long groupId) {
+		return _dlFileShortcutPersistence.findByGroupId(groupId);
 	}
 
 	@Override
@@ -379,9 +384,7 @@ public class DLAppHelperLocalServiceImpl
 					});
 				indexableActionableDynamicQuery.setCompanyId(companyId);
 				indexableActionableDynamicQuery.setPerformActionMethod(
-					(DLFileEntry dlFileEntry) ->
-						indexableActionableDynamicQuery.addDocuments(
-							indexer.getDocument(dlFileEntry)));
+					indexer::getDocument);
 
 				indexableActionableDynamicQuery.performActions();
 
@@ -468,7 +471,8 @@ public class DLAppHelperLocalServiceImpl
 			if (dlFileVersion.isApproved()) {
 				visible = true;
 			}
-			else {
+
+			if (!dlFileVersion.isApproved() && !dlFileVersion.isScheduled()) {
 				String version = dlFileVersion.getVersion();
 
 				if (!version.equals(DLFileEntryConstants.VERSION_DEFAULT)) {
@@ -523,7 +527,7 @@ public class DLAppHelperLocalServiceImpl
 			Date publishDate = null;
 
 			if (visible) {
-				publishDate = fileEntry.getCreateDate();
+				publishDate = _getPublishDate(fileEntry);
 			}
 
 			assetEntry = _assetEntryLocalService.updateEntry(
@@ -681,7 +685,8 @@ public class DLAppHelperLocalServiceImpl
 			return;
 		}
 
-		if (newStatus == WorkflowConstants.STATUS_APPROVED) {
+		if ((newStatus == WorkflowConstants.STATUS_APPROVED) ||
+			(newStatus == WorkflowConstants.STATUS_SCHEDULED)) {
 
 			// Asset
 
@@ -712,7 +717,7 @@ public class DLAppHelperLocalServiceImpl
 								fileEntry.getFileEntryId(), fileEntry.getUuid(),
 								fileEntryTypeId, assetCategoryIds,
 								assetTagNames, true, true, null, null,
-								fileEntry.getCreateDate(),
+								_getPublishDate(fileEntry),
 								fileEntry.getExpirationDate(),
 								draftAssetEntry.getMimeType(),
 								fileEntry.getTitle(),
@@ -735,7 +740,7 @@ public class DLAppHelperLocalServiceImpl
 				if (assetEntry != null) {
 					_assetEntryLocalService.updateEntry(
 						assetEntry.getClassName(), assetEntry.getClassPK(),
-						assetEntry.getCreateDate(),
+						_getPublishDate(fileEntry),
 						assetEntry.getExpirationDate(), assetEntry.isListable(),
 						true);
 				}
@@ -898,6 +903,16 @@ public class DLAppHelperLocalServiceImpl
 
 		_ratingsStatsLocalService.deleteStats(
 			DLFileEntryConstants.getClassName(), fileEntryId);
+	}
+
+	private Date _getPublishDate(FileEntry fileEntry) {
+		Date displayDate = fileEntry.getDisplayDate();
+
+		if (displayDate == null) {
+			return fileEntry.getCreateDate();
+		}
+
+		return displayDate;
 	}
 
 	@BeanReference(type = AssetCategoryLocalService.class)

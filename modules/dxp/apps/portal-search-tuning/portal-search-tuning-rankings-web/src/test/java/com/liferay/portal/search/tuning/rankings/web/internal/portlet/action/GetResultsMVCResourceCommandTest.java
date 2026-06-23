@@ -46,7 +46,7 @@ public class GetResultsMVCResourceCommandTest
 		ReflectionTestUtil.setFieldValue(
 			_getResultsMVCResourceCommand, "portal", portal);
 		ReflectionTestUtil.setFieldValue(
-			_getResultsMVCResourceCommand, "queries", queries);
+			_getResultsMVCResourceCommand, "rankingHelper", rankingHelper);
 		ReflectionTestUtil.setFieldValue(
 			_getResultsMVCResourceCommand, "rankingIndexNameBuilder",
 			rankingIndexNameBuilder);
@@ -126,7 +126,6 @@ public class GetResultsMVCResourceCommandTest
 		setUpDLAppLocalService();
 		setUpComplexQueryPartBuilderFactory(setUpComplexQueryPartBuilder());
 		setUpFastDateFormatFactory();
-		setUpQuery();
 		setUpRankingIndexReader();
 		setUpResourceRequest();
 		setUpResourceResponse();

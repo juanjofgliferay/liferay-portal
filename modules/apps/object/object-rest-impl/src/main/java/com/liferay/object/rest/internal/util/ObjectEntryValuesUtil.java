@@ -5,6 +5,7 @@
 
 package com.liferay.object.rest.internal.util;
 
+import com.liferay.object.constants.ObjectEntryFolderConstants;
 import com.liferay.object.exception.NoSuchObjectEntryException;
 import com.liferay.object.field.business.type.ObjectFieldBusinessType;
 import com.liferay.object.field.business.type.ObjectFieldBusinessTypeRegistry;
@@ -15,6 +16,7 @@ import com.liferay.object.service.ObjectEntryLocalService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.util.Validator;
 
 import java.util.Map;
 
@@ -24,6 +26,7 @@ import java.util.Map;
 public class ObjectEntryValuesUtil {
 
 	public static Object getValue(
+			Long groupId,
 			ObjectDefinitionLocalService objectDefinitionLocalService,
 			ObjectEntryLocalService objectEntryLocalService,
 			ObjectField objectField,
@@ -37,17 +40,26 @@ public class ObjectEntryValuesUtil {
 					objectField.getBusinessType());
 
 			return objectFieldBusinessType.getValue(
-				objectField, userId, values);
+				groupId, objectField, userId, values);
 		}
 		catch (NoSuchObjectEntryException noSuchObjectEntryException) {
 			if (_log.isDebugEnabled()) {
 				_log.debug(noSuchObjectEntryException);
 			}
 
+			String externalReferenceCode =
+				noSuchObjectEntryException.getExternalReferenceCode();
+
+			if (Validator.isNull(externalReferenceCode)) {
+				throw noSuchObjectEntryException;
+			}
+
 			ObjectEntry objectEntry = objectEntryLocalService.addObjectEntry(
-				noSuchObjectEntryException.getExternalReferenceCode(), userId,
+				externalReferenceCode, groupId, userId,
 				objectDefinitionLocalService.getObjectDefinition(
-					noSuchObjectEntryException.getObjectDefinitionId()));
+					noSuchObjectEntryException.getObjectDefinitionId()),
+				ObjectEntryFolderConstants.
+					PARENT_OBJECT_ENTRY_FOLDER_ID_DEFAULT);
 
 			return objectEntry.getObjectEntryId();
 		}

@@ -12,11 +12,13 @@ import com.liferay.portal.kernel.dao.orm.DynamicQueryFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
+import com.liferay.portal.kernel.dao.orm.Session;
 import com.liferay.portal.kernel.exception.NoSuchWorkflowInstanceLinkException;
 import com.liferay.portal.kernel.model.WorkflowInstanceLink;
 import com.liferay.portal.kernel.service.WorkflowInstanceLinkLocalServiceUtil;
 import com.liferay.portal.kernel.service.persistence.WorkflowInstanceLinkPersistence;
 import com.liferay.portal.kernel.service.persistence.WorkflowInstanceLinkUtil;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.transaction.Propagation;
@@ -111,11 +113,8 @@ public class WorkflowInstanceLinkPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		WorkflowInstanceLink newWorkflowInstanceLink = _persistence.create(pk);
-
-		newWorkflowInstanceLink.setMvccVersion(RandomTestUtil.nextLong());
+		WorkflowInstanceLink newWorkflowInstanceLink =
+			addWorkflowInstanceLink();
 
 		newWorkflowInstanceLink.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -183,6 +182,21 @@ public class WorkflowInstanceLinkPersistenceTest {
 		Assert.assertEquals(
 			existingWorkflowInstanceLink.getWorkflowInstanceId(),
 			newWorkflowInstanceLink.getWorkflowInstanceId());
+	}
+
+	@Test
+	public void testCountByWorkflowInstanceId() throws Exception {
+		_persistence.countByWorkflowInstanceId(RandomTestUtil.nextLong());
+
+		_persistence.countByWorkflowInstanceId(0L);
+	}
+
+	@Test
+	public void testCountByC_C() throws Exception {
+		_persistence.countByC_C(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
+
+		_persistence.countByC_C(0L, 0L);
 	}
 
 	@Test
@@ -472,12 +486,74 @@ public class WorkflowInstanceLinkPersistenceTest {
 		Assert.assertEquals(0, result.size());
 	}
 
+	@Test
+	public void testResetOriginalValues() throws Exception {
+		WorkflowInstanceLink newWorkflowInstanceLink =
+			addWorkflowInstanceLink();
+
+		_persistence.clearCache();
+
+		_assertOriginalValues(
+			_persistence.findByPrimaryKey(
+				newWorkflowInstanceLink.getPrimaryKey()));
+	}
+
+	@Test
+	public void testResetOriginalValuesWithDynamicQueryLoadFromDatabase()
+		throws Exception {
+
+		_testResetOriginalValuesWithDynamicQuery(true);
+	}
+
+	@Test
+	public void testResetOriginalValuesWithDynamicQueryLoadFromSession()
+		throws Exception {
+
+		_testResetOriginalValuesWithDynamicQuery(false);
+	}
+
+	private void _testResetOriginalValuesWithDynamicQuery(boolean clearSession)
+		throws Exception {
+
+		WorkflowInstanceLink newWorkflowInstanceLink =
+			addWorkflowInstanceLink();
+
+		if (clearSession) {
+			Session session = _persistence.openSession();
+
+			session.flush();
+
+			session.clear();
+		}
+
+		DynamicQuery dynamicQuery = DynamicQueryFactoryUtil.forClass(
+			WorkflowInstanceLink.class, _dynamicQueryClassLoader);
+
+		dynamicQuery.add(
+			RestrictionsFactoryUtil.eq(
+				"workflowInstanceLinkId",
+				newWorkflowInstanceLink.getWorkflowInstanceLinkId()));
+
+		List<WorkflowInstanceLink> result = _persistence.findWithDynamicQuery(
+			dynamicQuery);
+
+		_assertOriginalValues(result.get(0));
+	}
+
+	private void _assertOriginalValues(
+		WorkflowInstanceLink workflowInstanceLink) {
+
+		Assert.assertEquals(
+			Long.valueOf(workflowInstanceLink.getWorkflowInstanceId()),
+			ReflectionTestUtil.<Long>invoke(
+				workflowInstanceLink, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "workflowInstanceId"));
+	}
+
 	protected WorkflowInstanceLink addWorkflowInstanceLink() throws Exception {
 		long pk = RandomTestUtil.nextLong();
 
 		WorkflowInstanceLink workflowInstanceLink = _persistence.create(pk);
-
-		workflowInstanceLink.setMvccVersion(RandomTestUtil.nextLong());
 
 		workflowInstanceLink.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -510,3 +586,4 @@ public class WorkflowInstanceLinkPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1152101887

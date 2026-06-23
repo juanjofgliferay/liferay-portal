@@ -24,6 +24,7 @@ import com.liferay.portal.kernel.servlet.PortletServlet;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.portlet.MockLiferayResourceRequest;
 import com.liferay.portal.kernel.test.portlet.MockLiferayResourceResponse;
+import com.liferay.portal.kernel.test.portlet.MockPortletRequest;
 import com.liferay.portal.kernel.test.randomizerbumpers.NumericStringRandomizerBumper;
 import com.liferay.portal.kernel.test.randomizerbumpers.UniqueStringRandomizerBumper;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
@@ -43,18 +44,15 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
-import com.liferay.portletmvc4spring.test.mock.web.portlet.MockPortletRequest;
-import com.liferay.product.navigation.applications.menu.web.internal.portlet.action.test.constants.ApplicationsMenuTestPortletKeys;
-import com.liferay.site.util.RecentGroupManager;
+import com.liferay.site.manager.RecentGroupManager;
+
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -95,7 +93,7 @@ public class ApplicationsMenuPanelAppsMVCResourceCommandTest {
 		_mockPortletRequest.setAttribute(WebKeys.THEME_DISPLAY, _themeDisplay);
 
 		_mockHttpServletRequest.setAttribute(
-			JavaConstants.JAVAX_PORTLET_REQUEST, _mockPortletRequest);
+			JavaConstants.JAKARTA_PORTLET_REQUEST, _mockPortletRequest);
 
 		_mockHttpServletRequest.setAttribute(
 			WebKeys.THEME_DISPLAY, _themeDisplay);
@@ -109,6 +107,30 @@ public class ApplicationsMenuPanelAppsMVCResourceCommandTest {
 	public void tearDown() throws Exception {
 		PrincipalThreadLocal.setName(_originalName);
 		PermissionThreadLocal.setPermissionChecker(_originalPermissionChecker);
+	}
+
+	@Test
+	public void testGetPanelCategoriesJSONArray() {
+		JSONArray panelCategoriesJSONArray = ReflectionTestUtil.invoke(
+			_mvcResourceCommand, "_getPanelCategoriesJSONArray",
+			new Class<?>[] {
+				HttpServletRequest.class, ResourceRequest.class,
+				ThemeDisplay.class
+			},
+			_mockHttpServletRequest, _mockPortletRequest, _themeDisplay);
+
+		Assert.assertNotNull(panelCategoriesJSONArray);
+		Assert.assertTrue(panelCategoriesJSONArray.length() > 0);
+
+		for (int i = 0; i < panelCategoriesJSONArray.length(); i++) {
+			JSONObject panelCategoryJSONObject =
+				panelCategoriesJSONArray.getJSONObject(i);
+
+			Assert.assertTrue(panelCategoryJSONObject.has("active"));
+			Assert.assertTrue(panelCategoryJSONObject.has("homeURL"));
+			Assert.assertTrue(panelCategoryJSONObject.has("key"));
+			Assert.assertTrue(panelCategoryJSONObject.has("label"));
+		}
 	}
 
 	@Test
@@ -236,20 +258,6 @@ public class ApplicationsMenuPanelAppsMVCResourceCommandTest {
 	}
 
 	@Test
-	public void testPanelCategories() {
-		JSONArray panelCategoriesJSONArray = ReflectionTestUtil.invoke(
-			_mvcResourceCommand, "_getPanelCategoriesJSONArray",
-			new Class<?>[] {HttpServletRequest.class, ThemeDisplay.class},
-			_mockHttpServletRequest, _themeDisplay);
-
-		Assert.assertTrue(
-			_containsPortletId(
-				panelCategoriesJSONArray,
-				ApplicationsMenuTestPortletKeys.
-					APPLICATIONS_MENU_TEST_PORTLET));
-	}
-
-	@Test
 	public void testRecentSitesAndMySitesLessThan7() throws Exception {
 		_addMySiteGroups(3);
 		_addRecentGroups(3);
@@ -360,39 +368,6 @@ public class ApplicationsMenuPanelAppsMVCResourceCommandTest {
 			ServiceContextTestUtil.getServiceContext());
 	}
 
-	private boolean _containsPortletId(
-		JSONArray panelCategoriesJSONArray, String portletId) {
-
-		for (int i = 0; i < panelCategoriesJSONArray.length(); i++) {
-			JSONObject childCategoryJSONObject =
-				panelCategoriesJSONArray.getJSONObject(i);
-
-			JSONArray childCategoriesJSONArray =
-				childCategoryJSONObject.getJSONArray("childCategories");
-
-			for (int j = 0; j < childCategoriesJSONArray.length(); j++) {
-				JSONObject panelAppsJSONObject =
-					childCategoriesJSONArray.getJSONObject(j);
-
-				JSONArray panelAppsJSONArray = panelAppsJSONObject.getJSONArray(
-					"panelApps");
-
-				for (int k = 0; k < panelAppsJSONArray.length(); k++) {
-					JSONObject panelAppJSONObject =
-						panelAppsJSONArray.getJSONObject(k);
-
-					if (Objects.equals(
-							panelAppJSONObject.get("portletId"), portletId)) {
-
-						return true;
-					}
-				}
-			}
-		}
-
-		return false;
-	}
-
 	private ThemeDisplay _getThemeDisplay() throws Exception {
 		ThemeDisplay themeDisplay = new ThemeDisplay();
 
@@ -406,6 +381,7 @@ public class ApplicationsMenuPanelAppsMVCResourceCommandTest {
 		themeDisplay.setPermissionChecker(
 			PermissionCheckerFactoryUtil.create(TestPropsValues.getUser()));
 		themeDisplay.setScopeGroupId(_group.getGroupId());
+		themeDisplay.setSignedIn(true);
 		themeDisplay.setSiteGroupId(_group.getGroupId());
 		themeDisplay.setUser(TestPropsValues.getUser());
 

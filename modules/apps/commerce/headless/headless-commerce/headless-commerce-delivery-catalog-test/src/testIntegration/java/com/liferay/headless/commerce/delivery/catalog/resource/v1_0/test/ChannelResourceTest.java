@@ -24,8 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
@@ -44,13 +42,6 @@ public class ChannelResourceTest extends BaseChannelResourceTestCase {
 		_serviceContext = ServiceContextTestUtil.getServiceContext(
 			testCompany.getCompanyId(), testGroup.getGroupId(),
 			_user.getUserId());
-	}
-
-	@Ignore
-	@Override
-	@Test
-	public void testGraphQLGetChannelsPage() throws Exception {
-		super.testGraphQLGetChannelsPage();
 	}
 
 	@Override
@@ -74,14 +65,11 @@ public class ChannelResourceTest extends BaseChannelResourceTestCase {
 		};
 	}
 
+	@Override
 	protected Channel testGetChannelsPage_addChannel(Channel channel)
 		throws Exception {
 
 		return _addCommerceChannel(channel);
-	}
-
-	protected Channel testGraphQLChannel_addChannel() throws Exception {
-		return _addCommerceChannel(randomChannel());
 	}
 
 	private Channel _addCommerceChannel(Channel channel) throws Exception {

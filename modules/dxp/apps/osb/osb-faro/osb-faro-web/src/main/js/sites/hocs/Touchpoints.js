@@ -13,24 +13,25 @@ import {
 } from 'shared/hoc';
 import {createOrderIOMap, VISITORS_METRIC} from 'shared/util/pagination';
 import {getRangeSelectorsFromQuery} from 'shared/util/util';
-import {graphql} from '@apollo/react-hoc';
+import {graphql} from '@apollo/client/react/hoc';
 import {
 	metricsListColumns,
 	sitePagesListColumns
 } from 'shared/util/table-columns';
-import {RangeKeyTimeRanges} from 'shared/util/constants';
 import {Routes} from 'shared/util/router';
 import {Sizes} from 'shared/util/constants';
 
 // LRAC-6976 POC TEMP
-const withData = (useDB = false) => () =>
-	graphql(
-		useDB ? TOUCHPOINTS_QUERY_TEST : TouchpointsQuery,
-		getMetricsMapper(result => ({
-			items: result.pages.assetMetrics,
-			total: result.pages.total
-		}))
-	);
+const withData =
+	(useDB = false) =>
+	() =>
+		graphql(
+			useDB ? TOUCHPOINTS_QUERY_TEST : TouchpointsQuery,
+			getMetricsMapper(result => ({
+				items: result.pages.assetMetrics,
+				total: result.pages.total
+			}))
+		);
 
 // LRAC-6976 POC TEMP
 const getTableWithData = useDB => {
@@ -55,7 +56,7 @@ const getTableWithData = useDB => {
 		emptyIcon: {
 			border: false,
 			size: Sizes.XXXLarge,
-			symbol: 'ac-satellite'
+			symbol: 'ac_satellite'
 		},
 		emptyTitle: Liferay.Language.get('there-are-no-pages-found'),
 		getColumns: ({
@@ -109,5 +110,5 @@ const Touchpoints = ({router, ...otherProps}) => {
 
 export default compose(
 	withQueryPagination({initialOrderIOMap: createOrderIOMap(VISITORS_METRIC)}),
-	withQueryRangeSelectors({rangeKey: RangeKeyTimeRanges.Last30Days})
+	withQueryRangeSelectors()
 )(Touchpoints);

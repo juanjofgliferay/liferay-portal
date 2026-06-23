@@ -14,8 +14,13 @@ import com.liferay.document.library.kernel.store.Store;
 import com.liferay.document.library.kernel.util.DLUtil;
 import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
+import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.instance.PortalInstancePool;
+import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 
 import java.io.InputStream;
 
@@ -33,12 +38,11 @@ import java.util.Set;
 public class CTStore implements Store {
 
 	public CTStore(
-		CTEntryLocalService ctEntryLocalService, long ctsContentClassNameId,
+		CTEntryLocalService ctEntryLocalService,
 		CTSContentLocalService ctsContentLocalService, Store store,
 		String storeType) {
 
 		_ctEntryLocalService = ctEntryLocalService;
-		_ctsContentClassNameId = ctsContentClassNameId;
 		_ctsContentLocalService = ctsContentLocalService;
 		_store = store;
 		_storeType = storeType;
@@ -62,6 +66,28 @@ public class CTStore implements Store {
 				companyId, repositoryId, fileName, versionLabel, _storeType,
 				inputStream);
 		}
+	}
+
+	@Override
+	public void deleteDirectory(long companyId) throws PortalException {
+		_store.deleteDirectory(companyId);
+
+		if (PropsValues.DATABASE_PARTITION_ENABLED &&
+			!ArrayUtil.contains(
+				PortalInstancePool.getCompanyIds(), companyId)) {
+
+			return;
+		}
+
+		ActionableDynamicQuery actionableDynamicQuery =
+			_ctsContentLocalService.getActionableDynamicQuery();
+
+		actionableDynamicQuery.setCompanyId(companyId);
+		actionableDynamicQuery.setPerformActionMethod(
+			(CTSContent ctsContent) -> _ctsContentLocalService.deleteCTSContent(
+				ctsContent));
+
+		actionableDynamicQuery.performActions();
 	}
 
 	@Override
@@ -104,10 +130,10 @@ public class CTStore implements Store {
 		else {
 			_ensureCTSContentIsLoaded(
 				companyId, repositoryId, fileName, versionLabel);
-		}
 
-		_ctsContentLocalService.deleteCTSContent(
-			companyId, repositoryId, fileName, versionLabel, _storeType);
+			_ctsContentLocalService.deleteCTSContent(
+				companyId, repositoryId, fileName, versionLabel, _storeType);
+		}
 	}
 
 	@Override
@@ -308,6 +334,11 @@ public class CTStore implements Store {
 		return _store.hasFile(companyId, repositoryId, fileName, versionLabel);
 	}
 
+	@Override
+	public void verifyCompanyStores() throws PortalException {
+		_store.verifyCompanyStores();
+	}
+
 	private void _ensureCTSContentIsLoaded(
 		long companyId, long repositoryId, String fileName,
 		String versionLabel) {
@@ -327,7 +358,8 @@ public class CTStore implements Store {
 
 		for (CTEntry ctEntry :
 				_ctEntryLocalService.getCTEntries(
-					ctCollectionId, _ctsContentClassNameId)) {
+					ctCollectionId,
+					PortalUtil.getClassNameId(CTSContent.class.getName()))) {
 
 			if (ctEntry.getChangeType() ==
 					CTConstants.CT_CHANGE_TYPE_DELETION) {
@@ -392,7 +424,6 @@ public class CTStore implements Store {
 	}
 
 	private final CTEntryLocalService _ctEntryLocalService;
-	private final long _ctsContentClassNameId;
 	private final CTSContentLocalService _ctsContentLocalService;
 	private final Store _store;
 	private final String _storeType;

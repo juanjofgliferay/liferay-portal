@@ -6,16 +6,21 @@
 package com.liferay.change.tracking.web.internal.portlet.action;
 
 import com.liferay.change.tracking.configuration.CTSettingsConfiguration;
+import com.liferay.change.tracking.configuration.helper.CTSettingsConfigurationHelper;
 import com.liferay.change.tracking.constants.CTPortletKeys;
 import com.liferay.change.tracking.model.CTCollectionTemplate;
 import com.liferay.change.tracking.service.CTCollectionTemplateLocalService;
-import com.liferay.change.tracking.web.internal.configuration.helper.CTSettingsConfigurationHelper;
 import com.liferay.change.tracking.web.internal.constants.CTWebKeys;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCRenderCommand;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
+import com.liferay.portal.kernel.servlet.SessionErrors;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -25,7 +30,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + CTPortletKeys.PUBLICATIONS,
+		"jakarta.portlet.name=" + CTPortletKeys.PUBLICATIONS,
 		"mvc.command.name=/change_tracking/edit_ct_collection_template"
 	},
 	service = MVCRenderCommand.class
@@ -40,10 +45,21 @@ public class EditCTCollectionTemplateMVCRenderCommand
 		long ctCollectionTemplateId = ParamUtil.getLong(
 			renderRequest, "ctCollectionTemplateId");
 
-		if (ctCollectionTemplateId > 0) {
+		if (ctCollectionTemplateId == 0) {
+			return "/publications/edit_ct_collection_template.jsp";
+		}
+
+		try {
+			ThemeDisplay themeDisplay =
+				(ThemeDisplay)renderRequest.getAttribute(WebKeys.THEME_DISPLAY);
+
 			CTCollectionTemplate ctCollectionTemplate =
-				_ctCollectionTemplateLocalService.fetchCTCollectionTemplate(
+				_ctCollectionTemplateLocalService.getCTCollectionTemplate(
 					ctCollectionTemplateId);
+
+			_ctCollectionTemplateModelResourcePermission.check(
+				themeDisplay.getPermissionChecker(), ctCollectionTemplate,
+				ActionKeys.VIEW);
 
 			renderRequest.setAttribute(
 				CTWebKeys.CT_COLLECTION_TEMPLATE, ctCollectionTemplate);
@@ -68,12 +84,23 @@ public class EditCTCollectionTemplateMVCRenderCommand
 					Boolean.TRUE);
 			}
 		}
+		catch (Exception exception) {
+			SessionErrors.add(renderRequest, exception.getClass());
+
+			return "/publications/error.jsp";
+		}
 
 		return "/publications/edit_ct_collection_template.jsp";
 	}
 
 	@Reference
 	private CTCollectionTemplateLocalService _ctCollectionTemplateLocalService;
+
+	@Reference(
+		target = "(model.class.name=com.liferay.change.tracking.model.CTCollectionTemplate)"
+	)
+	private ModelResourcePermission<CTCollectionTemplate>
+		_ctCollectionTemplateModelResourcePermission;
 
 	@Reference
 	private CTSettingsConfigurationHelper _ctSettingsConfigurationHelper;

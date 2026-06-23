@@ -94,6 +94,8 @@ public class SocialActivityLimitModelImpl
 	public static final String TABLE_SQL_DROP =
 		"drop table SocialActivityLimit";
 
+	public static final String ENTITY_ALIAS = "socialActivityLimit";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY socialActivityLimit.activityLimitId ASC";
 
@@ -168,7 +170,7 @@ public class SocialActivityLimitModelImpl
 	public static final long ACTIVITYLIMITID_COLUMN_BITMASK = 64L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.social.kernel.model.SocialActivityLimit"));
 
 	public SocialActivityLimitModelImpl() {
@@ -988,3 +990,4 @@ public class SocialActivityLimitModelImpl
 	private SocialActivityLimit _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1079605170

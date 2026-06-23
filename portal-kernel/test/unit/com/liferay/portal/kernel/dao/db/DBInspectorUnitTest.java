@@ -5,6 +5,7 @@
 
 package com.liferay.portal.kernel.dao.db;
 
+import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.util.StringUtil;
 
 import java.sql.Connection;
@@ -12,9 +13,12 @@ import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
+import java.util.List;
+
 import org.junit.Assert;
 import org.junit.Test;
 
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
 /**
@@ -88,6 +92,97 @@ public class DBInspectorUnitTest {
 		Mockito.verify(
 			_preparedStatement, Mockito.never()
 		).executeQuery();
+	}
+
+	@Test
+	public void testHasIndexIsCaseInsensitive() throws Exception {
+		String indexName = "IX_40A51197";
+
+		try (MockedStatic<DBManagerUtil> dbManagerUtilMockedStatic =
+				Mockito.mockStatic(DBManagerUtil.class)) {
+
+			Mockito.when(
+				_connection.getMetaData()
+			).thenReturn(
+				_databaseMetaData
+			);
+
+			Mockito.when(
+				_databaseMetaData.storesLowerCaseIdentifiers()
+			).thenReturn(
+				true
+			);
+
+			DB db = Mockito.mock(DB.class);
+
+			dbManagerUtilMockedStatic.when(
+				DBManagerUtil::getDB
+			).thenReturn(
+				db
+			);
+
+			Mockito.when(
+				db.getIndexResultSet(
+					Mockito.eq(_connection), Mockito.anyString(),
+					Mockito.anyBoolean())
+			).thenReturn(
+				_resultSet
+			);
+
+			Mockito.when(
+				_resultSet.next()
+			).thenReturn(
+				true, false
+			);
+
+			Mockito.when(
+				_resultSet.getString("index_name")
+			).thenReturn(
+				indexName
+			);
+
+			DBInspector dbInspector = new DBInspector(_connection);
+
+			Assert.assertTrue(
+				dbInspector.hasIndex(
+					"friendlyurlentrylocalization", indexName));
+		}
+	}
+
+	@Test
+	public void testIsObjectTable() {
+		DBInspector dbInspector = new DBInspector(_connection);
+
+		try (MockedStatic<PortalInstancePool> portalInstancePoolMockedStatic =
+				Mockito.mockStatic(PortalInstancePool.class)) {
+
+			portalInstancePoolMockedStatic.when(
+				PortalInstancePool::getCompanyIds
+			).thenReturn(
+				new long[] {1L}
+			);
+
+			Assert.assertTrue(dbInspector.isObjectTable("L_1_tableName"));
+			Assert.assertTrue(dbInspector.isObjectTable("l_1_tableName"));
+			Assert.assertTrue(dbInspector.isObjectTable("r_tableName"));
+		}
+	}
+
+	@Test
+	public void testIsObjectTableFilterByCompanyIds() {
+		DBInspector dbInspector = new DBInspector(_connection);
+
+		List<Long> companyIds = List.of(1L);
+
+		Assert.assertFalse(
+			dbInspector.isObjectTable(companyIds, "L_2_tableName"));
+		Assert.assertFalse(
+			dbInspector.isObjectTable(companyIds, "l_2_tableName"));
+		Assert.assertTrue(
+			dbInspector.isObjectTable(companyIds, "L_1_tableName"));
+		Assert.assertTrue(
+			dbInspector.isObjectTable(companyIds, "l_1_tableName"));
+		Assert.assertTrue(dbInspector.isObjectTable(companyIds, "r_tableName"));
 	}
 
 	private void _mockTableWithColumn(String tableName, String columnName)

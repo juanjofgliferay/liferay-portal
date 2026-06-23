@@ -12,7 +12,6 @@ import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.model.JournalFolder;
 import com.liferay.journal.test.util.JournalTestUtil;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil;
-import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
@@ -53,8 +52,6 @@ public class JournalArticlePermissionCheckerTest
 			ConfigurationProviderUtil.getCompanyConfiguration(
 				JournalServiceConfiguration.class,
 				TestPropsValues.getCompanyId());
-
-		CompanyThreadLocal.setCompanyId(TestPropsValues.getCompanyId());
 	}
 
 	@Test
@@ -100,13 +97,14 @@ public class JournalArticlePermissionCheckerTest
 		return JournalConstants.RESOURCE_NAME;
 	}
 
+	private JournalArticle _article;
+
 	@Inject(
 		filter = "model.class.name=com.liferay.journal.model.JournalArticle"
 	)
-	private static ModelResourcePermission<JournalArticle>
+	private ModelResourcePermission<JournalArticle>
 		_journalArticleModelResourcePermission;
 
-	private JournalArticle _article;
 	private JournalServiceConfiguration _journalServiceConfiguration;
 	private JournalArticle _subarticle;
 

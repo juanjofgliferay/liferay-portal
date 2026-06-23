@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import {fireEvent, render, waitFor} from '@testing-library/react';
 import {navigate} from 'frontend-js-web';
 import React from 'react';
@@ -180,13 +180,13 @@ describe('SegmentEdit', () => {
 
 		const hasUpdatePermission = true;
 
-		const {getByTestId, getByText} = _renderSegmentEditComponent({
+		const {getByPlaceholderText, getByText} = _renderSegmentEditComponent({
 			contributors: CONTRIBUTORS,
 			hasUpdatePermission,
 			propertyGroups: PROPERTY_GROUPS_BASIC,
 		});
 
-		const localizedInput = getByTestId('localized-main-input');
+		const localizedInput = getByPlaceholderText('untitled-segment');
 		const cancelButton = getByText('cancel');
 
 		fireEvent.change(localizedInput, {target: {value: 'A'}});
@@ -230,14 +230,10 @@ describe('SegmentEdit', () => {
 	it('renders a dismissible alert which is effectively dismissible', async () => {
 		const isSegmentationEnabled = false;
 
-		const {
-			container,
-			getByLabelText,
-			getByText,
-			queryByText,
-		} = _renderSegmentEditComponent({
-			isSegmentationEnabled,
-		});
+		const {container, getByLabelText, getByText, queryByText} =
+			_renderSegmentEditComponent({
+				isSegmentationEnabled,
+			});
 
 		expect(getByText('segmentation-is-disabled')).toBeInTheDocument();
 

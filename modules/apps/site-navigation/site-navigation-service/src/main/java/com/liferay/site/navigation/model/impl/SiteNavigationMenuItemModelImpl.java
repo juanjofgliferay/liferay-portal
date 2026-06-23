@@ -108,6 +108,8 @@ public class SiteNavigationMenuItemModelImpl
 	public static final String TABLE_SQL_DROP =
 		"drop table SiteNavigationMenuItem";
 
+	public static final String ENTITY_ALIAS = "siteNavigationMenuItem";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY siteNavigationMenuItem.siteNavigationMenuItemId ASC";
 
@@ -161,14 +163,20 @@ public class SiteNavigationMenuItemModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long UUID_COLUMN_BITMASK = 64L;
+	public static final long TYPE_COLUMN_BITMASK = 64L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long UUID_COLUMN_BITMASK = 128L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long SITENAVIGATIONMENUITEMID_COLUMN_BITMASK = 128L;
+	public static final long SITENAVIGATIONMENUITEMID_COLUMN_BITMASK = 256L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -761,6 +769,15 @@ public class SiteNavigationMenuItemModelImpl
 		_type = type;
 	}
 
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public String getOriginalType() {
+		return getColumnOriginalValue("type_");
+	}
+
 	@JSON
 	@Override
 	public String getTypeSettings() {
@@ -1328,3 +1345,4 @@ public class SiteNavigationMenuItemModelImpl
 	private SiteNavigationMenuItem _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:13477702

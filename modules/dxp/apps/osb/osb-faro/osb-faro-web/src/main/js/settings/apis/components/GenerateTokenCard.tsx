@@ -45,15 +45,19 @@ const GenerateTokenCard: React.FC<IGenerateTokenCardProps> = ({
 	return (
 		<Card>
 			<Card.Body>
-				<h4>{Liferay.Language.get('create-new-access-token')}</h4>
+				<div className='h4'>
+					{Liferay.Language.get('create-new-access-token')}
+				</div>
 				<div className='col-md-5 mt-2 pl-0'>
 					<Form.Group>
 						<label htmlFor='picker' id='picker-label'>
 							{Liferay.Language.get('expiration-date')}
 						</label>
 						<Select
-							onChange={({target: {value}}) => {
-								setExpiresIn(value);
+							onChange={({
+								target: {value}
+							}: React.ChangeEvent<HTMLSelectElement>) => {
+								setExpiresIn(value as ExpirationPeriod);
 							}}
 							value={expiresIn}
 						>
@@ -83,9 +87,8 @@ const GenerateTokenCard: React.FC<IGenerateTokenCardProps> = ({
 						API.apiTokens
 							.generate({expiresIn, groupId})
 							.then(() => {
-								analytics.track('Created API Token');
-
 								setLoading(false);
+
 								onSuccess(
 									Liferay.Language.get(
 										'new-token-was-generated'

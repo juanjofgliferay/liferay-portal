@@ -12,6 +12,7 @@ import com.liferay.notification.model.NotificationTemplate;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -33,6 +34,10 @@ public class NotificationContext {
 
 	public long getClassPK() {
 		return _classPK;
+	}
+
+	public long getCompanyId() {
+		return _companyId;
 	}
 
 	public String getExternalReferenceCode() {
@@ -69,8 +74,20 @@ public class NotificationContext {
 		return _notificationTemplate;
 	}
 
+	public long getParentClassPK() {
+		return _parentClassPK;
+	}
+
 	public String getPortletId() {
 		return _portletId;
+	}
+
+	public String getPreferredLanguageId() {
+		return _preferredLanguageId;
+	}
+
+	public Locale getSiteDefaultLocale() {
+		return _siteDefaultLocale;
 	}
 
 	public Map<String, Object> getTermValues() {
@@ -85,6 +102,14 @@ public class NotificationContext {
 		return _userId;
 	}
 
+	public Locale getUserLocale() {
+		return _userLocale;
+	}
+
+	public boolean isUsePreferredLanguageForGuests() {
+		return _usePreferredLanguageForGuests;
+	}
+
 	public void setAttachmentObjectFieldIds(
 		List<Long> attachmentObjectFieldIds) {
 
@@ -97,6 +122,10 @@ public class NotificationContext {
 
 	public void setClassPK(long classPK) {
 		_classPK = classPK;
+	}
+
+	public void setCompanyId(long companyId) {
+		_companyId = companyId;
 	}
 
 	public void setExternalReferenceCode(String externalReferenceCode) {
@@ -135,8 +164,20 @@ public class NotificationContext {
 		_notificationTemplate = notificationTemplate;
 	}
 
+	public void setParentClassPK(long parentClassPK) {
+		_parentClassPK = parentClassPK;
+	}
+
 	public void setPortletId(String portletId) {
 		_portletId = portletId;
+	}
+
+	public void setPreferredLanguageId(String preferredLanguageId) {
+		_preferredLanguageId = preferredLanguageId;
+	}
+
+	public void setSiteDefaultLocale(Locale siteDefaultLocale) {
+		_siteDefaultLocale = siteDefaultLocale;
 	}
 
 	public void setTermValues(Map<String, Object> termValues) {
@@ -147,13 +188,24 @@ public class NotificationContext {
 		_type = type;
 	}
 
+	public void setUsePreferredLanguageForGuests(
+		boolean usePreferredLanguageForGuests) {
+
+		_usePreferredLanguageForGuests = usePreferredLanguageForGuests;
+	}
+
 	public void setUserId(long userId) {
 		_userId = userId;
+	}
+
+	public void setUserLocale(Locale userLocale) {
+		_userLocale = userLocale;
 	}
 
 	private List<Long> _attachmentObjectFieldIds;
 	private String _className;
 	private long _classPK;
+	private long _companyId;
 	private String _externalReferenceCode;
 	private List<Long> _fileEntryIds;
 	private long _groupId;
@@ -161,9 +213,14 @@ public class NotificationContext {
 	private NotificationRecipient _notificationRecipient;
 	private List<NotificationRecipientSetting> _notificationRecipientSettings;
 	private NotificationTemplate _notificationTemplate;
+	private long _parentClassPK;
 	private String _portletId;
+	private String _preferredLanguageId;
+	private Locale _siteDefaultLocale;
 	private Map<String, Object> _termValues;
 	private String _type;
+	private boolean _usePreferredLanguageForGuests;
 	private long _userId;
+	private Locale _userLocale;
 
 }

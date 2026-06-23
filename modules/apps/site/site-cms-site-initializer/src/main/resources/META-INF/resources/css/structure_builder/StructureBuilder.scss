@@ -1,0 +1,87 @@
+@import 'atlas-variables';
+
+$structureFieldsWidth: 448px;
+$structureFieldsWidthMobile: 320px;
+
+.structure-builder {
+	&__sidebar {
+		background-color: $light-l1;
+		width: $structureFieldsWidth;
+
+		@include media-breakpoint-down(sm) {
+			bottom: 0;
+			left: 0;
+			position: fixed;
+			top: 0;
+			width: $structureFieldsWidthMobile;
+			z-index: 989;
+
+			&.hide-xs {
+				visibility: hidden;
+			}
+		}
+	}
+
+	&__title-input {
+		font-size: 1.75rem;
+	}
+
+	&__tree {
+		&-node {
+			&--field-icon {
+				color: $blue-l1;
+			}
+
+			&--group-icon {
+				color: $teal-l1;
+			}
+
+			&--input {
+				background: transparent;
+
+				&:active,
+				&:focus {
+					outline-color: $primary-l1;
+				}
+			}
+
+			&--structure-icon,
+			&--related-content-icon {
+				color: $orange-l1;
+			}
+		}
+	}
+
+	&__wrapper {
+		min-height: calc(100vh - (var(--control-menu-container-height)));
+
+		.sidebar-toggler {
+			left: -5px;
+			position: fixed;
+			z-index: 99;
+		}
+	}
+
+	&__help-button {
+		background-color: $dark;
+		border-color: $dark;
+		bottom: 2.5rem;
+		right: 2.5rem;
+		z-index: 100;
+
+		&:hover,
+		&:focus,
+		&:active {
+			background-color: $dark-l1;
+			border-color: $dark-l1;
+		}
+	}
+
+	&__help-modal-nav {
+		flex-basis: 200px;
+	}
+
+	&__help-modal-shortcut {
+		flex-basis: 140px;
+	}
+}

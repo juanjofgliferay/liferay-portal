@@ -3,13 +3,8 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {
-	addParams,
-	getPortletId,
-	openConfirmModal,
-	openSelectionModal,
-	sub,
-} from 'frontend-js-web';
+import {openConfirmModal, openSelectionModal} from 'frontend-js-components-web';
+import {addParams, sub} from 'frontend-js-web';
 
 export default function propsTransformer({portletNamespace, ...otherProps}) {
 	const deleteSelectedUsers = () => {
@@ -25,6 +20,23 @@ export default function propsTransformer({portletNamespace, ...otherProps}) {
 
 					if (form) {
 						submitForm(form);
+					}
+				}
+			},
+		});
+	};
+
+	const removeUserRole = (itemData) => {
+		openConfirmModal({
+			message: Liferay.Language.get(itemData?.message),
+			onConfirm: (isConfirmed) => {
+				if (isConfirmed) {
+					const form = document.getElementById(
+						`${portletNamespace}fm`
+					);
+
+					if (form) {
+						submitForm(form, itemData?.removeUserRoleURL);
 					}
 				}
 			},
@@ -77,12 +89,14 @@ export default function propsTransformer({portletNamespace, ...otherProps}) {
 	const selectTeams = (itemData) => {
 		openSelectionModal({
 			onSelect: (selectedItem) => {
+				const itemValue = JSON.parse(selectedItem.value);
+
 				location.href = addParams(
-					`${`${portletNamespace}teamId`}=${selectedItem.id}`,
+					`${`${portletNamespace}teamId`}=${itemValue.teamId}`,
 					itemData.viewTeamURL
 				);
 			},
-			selectEventName: `${portletNamespace}selectTeam`,
+			selectEventName: `${portletNamespace}selectTeams`,
 			title: Liferay.Language.get('select-team'),
 			url: itemData?.selectTeamsURL,
 		});
@@ -120,10 +134,7 @@ export default function propsTransformer({portletNamespace, ...otherProps}) {
 				Liferay.Language.get('assign-users-to-this-x'),
 				itemData?.groupTypeLabel
 			),
-			url: addParams(
-				`p_p_id=${getPortletId(portletNamespace)}`,
-				itemData?.selectUsersURL
-			),
+			url: itemData?.selectUsersURL,
 		});
 	};
 
@@ -136,6 +147,9 @@ export default function propsTransformer({portletNamespace, ...otherProps}) {
 
 			if (action === 'deleteSelectedUsers') {
 				deleteSelectedUsers();
+			}
+			else if (action === 'removeUserRole') {
+				removeUserRole(data);
 			}
 			else if (action === 'selectRole') {
 				selectRole(data);

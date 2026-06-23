@@ -109,12 +109,12 @@ public interface CPInstanceService extends BaseService {
 	public void deleteCPInstance(long cpInstanceId) throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CPInstance fetchByExternalReferenceCode(
-			String externalReferenceCode, long companyId)
-		throws PortalException;
+	public CPInstance fetchCPInstance(long cpInstanceId) throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CPInstance fetchCPInstance(long cpInstanceId) throws PortalException;
+	public CPInstance fetchCPInstanceByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CPInstance fetchCProductInstance(
@@ -229,3 +229,4 @@ public interface CPInstanceService extends BaseService {
 		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1767716551

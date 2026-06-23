@@ -868,6 +868,26 @@ public class ArrayUtil {
 		return set.toArray(new String[0]);
 	}
 
+	public static boolean equalsIgnoreCase(String[] array1, String[] array2) {
+		if (array1 == array2) {
+			return true;
+		}
+
+		if (isEmpty(array1) || isEmpty(array2) ||
+			(array1.length != array2.length)) {
+
+			return false;
+		}
+
+		for (int i = 0; i < array1.length; i++) {
+			if (!StringUtil.equalsIgnoreCase(array1[i], array2[i])) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 	public static <T> boolean exists(T[] array, Predicate<T> predicate) {
 		if (isEmpty(array)) {
 			return false;
@@ -1431,6 +1451,14 @@ public class ArrayUtil {
 	}
 
 	public static byte[] sortedUnique(byte[] array) {
+		if (array == null) {
+			return new byte[0];
+		}
+
+		if (array.length < 2) {
+			return array;
+		}
+
 		Arrays.sort(array);
 
 		int index = 0;
@@ -1449,6 +1477,14 @@ public class ArrayUtil {
 	}
 
 	public static double[] sortedUnique(double[] array) {
+		if (array == null) {
+			return new double[0];
+		}
+
+		if (array.length < 2) {
+			return array;
+		}
+
 		Arrays.sort(array);
 
 		int index = 0;
@@ -1467,6 +1503,14 @@ public class ArrayUtil {
 	}
 
 	public static float[] sortedUnique(float[] array) {
+		if (array == null) {
+			return new float[0];
+		}
+
+		if (array.length < 2) {
+			return array;
+		}
+
 		Arrays.sort(array);
 
 		int index = 0;
@@ -1485,6 +1529,14 @@ public class ArrayUtil {
 	}
 
 	public static int[] sortedUnique(int[] array) {
+		if (array == null) {
+			return new int[0];
+		}
+
+		if (array.length < 2) {
+			return array;
+		}
+
 		Arrays.sort(array);
 
 		int index = 0;
@@ -1503,6 +1555,14 @@ public class ArrayUtil {
 	}
 
 	public static long[] sortedUnique(long[] array) {
+		if (array == null) {
+			return new long[0];
+		}
+
+		if (array.length < 2) {
+			return array;
+		}
+
 		Arrays.sort(array);
 
 		int index = 0;
@@ -1521,6 +1581,14 @@ public class ArrayUtil {
 	}
 
 	public static short[] sortedUnique(short[] array) {
+		if (array == null) {
+			return new short[0];
+		}
+
+		if (array.length < 2) {
+			return array;
+		}
+
 		Arrays.sort(array);
 
 		int index = 0;
@@ -1539,6 +1607,14 @@ public class ArrayUtil {
 	}
 
 	public static String[] sortedUnique(String[] array) {
+		if (array == null) {
+			return new String[0];
+		}
+
+		if (array.length < 2) {
+			return array;
+		}
+
 		Arrays.sort(array, Comparator.nullsLast(Comparator.naturalOrder()));
 
 		int index = 0;
@@ -1876,6 +1952,33 @@ public class ArrayUtil {
 		return aArray;
 	}
 
+	public static boolean[] toBooleanArray(Collection<Boolean> collection) {
+		boolean[] newArray = new boolean[collection.size()];
+
+		if (collection instanceof List) {
+			List<Boolean> list = (List<Boolean>)collection;
+
+			for (int i = 0; i < list.size(); i++) {
+				Boolean value = list.get(i);
+
+				newArray[i] = value.booleanValue();
+			}
+		}
+		else {
+			int i = 0;
+
+			Iterator<Boolean> iterator = collection.iterator();
+
+			while (iterator.hasNext()) {
+				Boolean value = iterator.next();
+
+				newArray[i++] = value.booleanValue();
+			}
+		}
+
+		return newArray;
+	}
+
 	public static double[] toDoubleArray(
 		Collection<? extends Number> collection) {
 
@@ -2018,14 +2121,16 @@ public class ArrayUtil {
 		return newArray;
 	}
 
-	public static short[] toShortArray(Collection<Short> collection) {
+	public static short[] toShortArray(
+		Collection<? extends Number> collection) {
+
 		short[] newArray = new short[collection.size()];
 
 		if (collection instanceof List) {
-			List<Short> list = (List<Short>)collection;
+			List<Number> list = (List<Number>)collection;
 
 			for (int i = 0; i < list.size(); i++) {
-				Short value = list.get(i);
+				Number value = list.get(i);
 
 				newArray[i] = value.shortValue();
 			}
@@ -2033,10 +2138,10 @@ public class ArrayUtil {
 		else {
 			int i = 0;
 
-			Iterator<Short> iterator = collection.iterator();
+			Iterator<? extends Number> iterator = collection.iterator();
 
 			while (iterator.hasNext()) {
-				Short value = iterator.next();
+				Number value = iterator.next();
 
 				newArray[i++] = value.shortValue();
 			}

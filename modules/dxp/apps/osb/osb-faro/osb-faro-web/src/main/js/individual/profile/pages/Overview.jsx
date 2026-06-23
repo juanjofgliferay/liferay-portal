@@ -1,5 +1,6 @@
 import * as API from 'shared/api';
 import AssociatedSegmentsCard from 'contacts/components/AssociatedSegmentsCard';
+import ClayLink from '@clayui/link';
 import DetailsCard from '../components/DetailsCard';
 import IndividualProfileCard from '../hoc/ProfileCard';
 import InterestsCard from '../components/InterestsCard';
@@ -42,85 +43,84 @@ export class Overview extends React.Component {
 	};
 
 	render() {
-		const {
-			channelId,
-			groupId,
-			id,
-			individual,
-			tabId,
-			timeZoneId
-		} = this.props;
+		const {channelId, groupId, id, individual, tabId, timeZoneId} =
+			this.props;
 
 		return (
-			<div className='overview-layout'>
-				<div className='overview-column-main'>
-					<IndividualProfileCard
-						channelId={channelId}
-						entity={individual}
-						groupId={groupId}
-						tabId={tabId}
-						timeZoneId={timeZoneId}
-					/>
-				</div>
+			<>
+				<div className='overview-layout'>
+					<div className='overview-column-main'>
+						<IndividualProfileCard
+							channelId={channelId}
+							entity={individual}
+							groupId={groupId}
+							tabId={tabId}
+							timeZoneId={timeZoneId}
+						/>
+					</div>
 
-				<div className='overview-column-side'>
-					<DetailsCard
-						channelId={channelId}
-						entity={individual}
-						groupId={groupId}
-						timeZoneId={timeZoneId}
-					/>
+					<div className='overview-column-side'>
+						<DetailsCard
+							channelId={channelId}
+							entity={individual}
+							groupId={groupId}
+							timeZoneId={timeZoneId}
+						/>
 
-					<InterestsCard
-						channelId={channelId}
-						compact
-						entity={individual}
-						groupId={groupId}
-						showFilter
-						type={INDIVIDUALS}
-					/>
+						<InterestsCard
+							channelId={channelId}
+							compact
+							entity={individual}
+							groupId={groupId}
+							showFilter
+							type={INDIVIDUALS}
+						/>
 
-					<AssociatedSegmentsCard
-						channelId={channelId}
-						dataSourceFn={fetchAssociatedSegments}
-						groupId={groupId}
-						id={id}
-						noResultsRenderer={() => (
-							<NoResultsDisplay
-								description={
-									<>
-										{Liferay.Language.get(
-											'create-a-segment-to-get-started'
-										)}
-
-										<a
-											className='d-block'
-											href={
-												URLConstants.IndividualProfilesDocumentSegments
-											}
-											key='DOCUMENTATION'
-											target='_blank'
-										>
+						<AssociatedSegmentsCard
+							channelId={channelId}
+							dataSourceFn={fetchAssociatedSegments}
+							groupId={groupId}
+							id={id}
+							noResultsRenderer={() => (
+								<NoResultsDisplay
+									description={
+										<>
 											{Liferay.Language.get(
-												'learn-more-about-segments'
+												'create-a-segment-to-get-started'
 											)}
-										</a>
-									</>
+
+											<ClayLink
+												className='d-block'
+												href={
+													URLConstants.IndividualProfilesDocumentSegments
+												}
+												key='DOCUMENTATION'
+												target='_blank'
+											>
+												{Liferay.Language.get(
+													'learn-more-about-segments'
+												)}
+											</ClayLink>
+										</>
+									}
+									spacer
+									title={Liferay.Language.get(
+										'there-are-no-segments-found'
+									)}
+								/>
+							)}
+							pageUrl={toRoute(
+								Routes.CONTACTS_INDIVIDUAL_SEGMENTS,
+								{
+									channelId,
+									groupId,
+									id
 								}
-								spacer
-								title={Liferay.Language.get(
-									'there-are-no-segments-found'
-								)}
-							/>
-						)}
-						pageUrl={toRoute(Routes.CONTACTS_INDIVIDUAL_SEGMENTS, {
-							channelId,
-							groupId,
-							id
-						})}
-					/>
+							)}
+						/>
+					</div>
 				</div>
-			</div>
+			</>
 		);
 	}
 }

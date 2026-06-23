@@ -87,14 +87,22 @@ public class ObjectFieldLocalServiceWrapper
 	}
 
 	@Override
+	public void addOrUpdateObjectFieldPLOEntries(
+			com.liferay.object.model.ObjectField objectField)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_objectFieldLocalService.addOrUpdateObjectFieldPLOEntries(objectField);
+	}
+
+	@Override
 	public com.liferay.object.model.ObjectField addOrUpdateSystemObjectField(
 			String externalReferenceCode, long userId,
 			long listTypeDefinitionId, long objectDefinitionId,
 			String businessType, String dbColumnName, String dbTableName,
 			String dbType, boolean indexed, boolean indexedAsKeyword,
 			String indexedLanguageId,
-			java.util.Map<java.util.Locale, String> labelMap, String name,
-			String readOnly, String readOnlyConditionExpression,
+			java.util.Map<java.util.Locale, String> labelMap, boolean localized,
+			String name, String readOnly, String readOnlyConditionExpression,
 			boolean required, boolean state,
 			java.util.List<com.liferay.object.model.ObjectFieldSetting>
 				objectFieldSettings)
@@ -103,8 +111,8 @@ public class ObjectFieldLocalServiceWrapper
 		return _objectFieldLocalService.addOrUpdateSystemObjectField(
 			externalReferenceCode, userId, listTypeDefinitionId,
 			objectDefinitionId, businessType, dbColumnName, dbTableName, dbType,
-			indexed, indexedAsKeyword, indexedLanguageId, labelMap, name,
-			readOnly, readOnlyConditionExpression, required, state,
+			indexed, indexedAsKeyword, indexedLanguageId, labelMap, localized,
+			name, readOnly, readOnlyConditionExpression, required, state,
 			objectFieldSettings);
 	}
 
@@ -115,8 +123,8 @@ public class ObjectFieldLocalServiceWrapper
 			String businessType, String dbColumnName, String dbTableName,
 			String dbType, boolean indexed, boolean indexedAsKeyword,
 			String indexedLanguageId,
-			java.util.Map<java.util.Locale, String> labelMap, String name,
-			String readOnly, String readOnlyConditionExpression,
+			java.util.Map<java.util.Locale, String> labelMap, boolean localized,
+			String name, String readOnly, String readOnlyConditionExpression,
 			boolean required, boolean state,
 			java.util.List<com.liferay.object.model.ObjectFieldSetting>
 				objectFieldSettings)
@@ -125,8 +133,8 @@ public class ObjectFieldLocalServiceWrapper
 		return _objectFieldLocalService.addSystemObjectField(
 			externalReferenceCode, userId, listTypeDefinitionId,
 			objectDefinitionId, businessType, dbColumnName, dbTableName, dbType,
-			indexed, indexedAsKeyword, indexedLanguageId, labelMap, name,
-			readOnly, readOnlyConditionExpression, required, state,
+			indexed, indexedAsKeyword, indexedLanguageId, labelMap, localized,
+			name, readOnly, readOnlyConditionExpression, required, state,
 			objectFieldSettings);
 	}
 
@@ -345,6 +353,16 @@ public class ObjectFieldLocalServiceWrapper
 			externalReferenceCode, objectDefinitionId);
 	}
 
+	@Override
+	public com.liferay.object.model.ObjectField fetchObjectFieldByBusinessType(
+		long objectDefinitionId, String businessType,
+		com.liferay.portal.kernel.util.OrderByComparator
+			<com.liferay.object.model.ObjectField> orderByComparator) {
+
+		return _objectFieldLocalService.fetchObjectFieldByBusinessType(
+			objectDefinitionId, businessType, orderByComparator);
+	}
+
 	/**
 	 * Returns the object field with the matching UUID and company.
 	 *
@@ -424,6 +442,14 @@ public class ObjectFieldLocalServiceWrapper
 
 		return _objectFieldLocalService.getLocalizedObjectFields(
 			objectDefinitionId);
+	}
+
+	@Override
+	public java.util.List<com.liferay.object.model.ObjectField>
+		getLocalizedObjectFields(long objectDefinitionId, boolean system) {
+
+		return _objectFieldLocalService.getLocalizedObjectFields(
+			objectDefinitionId, system);
 	}
 
 	/**
@@ -527,6 +553,15 @@ public class ObjectFieldLocalServiceWrapper
 			objectDefinitionId, dbTableName);
 	}
 
+	@Override
+	public java.util.List<com.liferay.object.model.ObjectField>
+		getObjectFieldsByBusinessType(
+			long objectDefinitionId, String businessType) {
+
+		return _objectFieldLocalService.getObjectFieldsByBusinessType(
+			objectDefinitionId, businessType);
+	}
+
 	/**
 	 * Returns the number of object fields.
 	 *
@@ -555,6 +590,23 @@ public class ObjectFieldLocalServiceWrapper
 
 		return _objectFieldLocalService.
 			getObjectFieldsCountByListTypeDefinitionId(listTypeDefinitionId);
+	}
+
+	@Override
+	public java.util.Map
+		<Long, java.util.List<com.liferay.object.model.ObjectField>>
+			getObjectFieldsMap(long companyId) {
+
+		return _objectFieldLocalService.getObjectFieldsMap(companyId);
+	}
+
+	@Override
+	public java.util.Map
+		<Long, java.util.List<com.liferay.object.model.ObjectField>>
+			getObjectFieldsMap(long companyId, String businessType) {
+
+		return _objectFieldLocalService.getObjectFieldsMap(
+			companyId, businessType);
 	}
 
 	/**
@@ -634,6 +686,13 @@ public class ObjectFieldLocalServiceWrapper
 	}
 
 	@Override
+	public void updateUserId(long companyId, long oldUserId, long newUserId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_objectFieldLocalService.updateUserId(companyId, oldUserId, newUserId);
+	}
+
+	@Override
 	public void validateExternalReferenceCode(
 			String externalReferenceCode, long objectFieldId, long companyId,
 			long objectDefinitionId)
@@ -647,20 +706,22 @@ public class ObjectFieldLocalServiceWrapper
 	@Override
 	public void validateReadOnlyAndReadOnlyConditionExpression(
 			String businessType, String readOnly,
-			String readOnlyConditionExpression)
+			String readOnlyConditionExpression, boolean required)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		_objectFieldLocalService.validateReadOnlyAndReadOnlyConditionExpression(
-			businessType, readOnly, readOnlyConditionExpression);
+			businessType, readOnly, readOnlyConditionExpression, required);
 	}
 
 	@Override
 	public void validateRequired(
-			long objectFieldId, String businessType, boolean required)
+			String businessType, boolean objectDefinitionApproved,
+			com.liferay.object.model.ObjectField oldObjectField,
+			boolean required)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		_objectFieldLocalService.validateRequired(
-			objectFieldId, businessType, required);
+			businessType, objectDefinitionApproved, oldObjectField, required);
 	}
 
 	@Override
@@ -683,3 +744,4 @@ public class ObjectFieldLocalServiceWrapper
 	private ObjectFieldLocalService _objectFieldLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-411128897

@@ -9,7 +9,10 @@ import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.dao.orm.common.SQLTransformer;
+import com.liferay.portal.kernel.dao.db.DB;
+import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
+import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
@@ -22,13 +25,12 @@ import com.liferay.portal.kernel.util.LocalizationUtil;
 import com.liferay.portal.kernel.util.PortletKeys;
 import com.liferay.portal.kernel.util.PrefsPropsUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.language.LanguageResources;
-import com.liferay.portal.util.PortalInstances;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.portlet.PortalPreferencesImpl;
 import com.liferay.portlet.PortalPreferencesWrapper;
 
@@ -50,8 +52,10 @@ public class UpgradeGroup extends UpgradeProcess {
 
 		alterColumnType("Group_", "name", "STRING null");
 
-		try (SafeCloseable safeCloseable = addTemporaryIndex(
-				"Group_", false, "classNameId", "classPK")) {
+		DB db = DBManagerUtil.getDB();
+
+		try (SafeCloseable safeCloseable = db.addTemporaryIndex(
+				connection, "Group_", false, "classNameId", "classPK")) {
 
 			updateGlobalGroupName();
 			updateGroupsNames();
@@ -59,7 +63,7 @@ public class UpgradeGroup extends UpgradeProcess {
 	}
 
 	protected void updateGlobalGroupName() throws Exception {
-		for (Long companyId : PortalInstances.getCompanyIdsBySQL()) {
+		for (Long companyId : PortalInstancePool.getCompanyIds()) {
 			LocalizedValuesMap localizedValuesMap = new LocalizedValuesMap();
 
 			for (String languageId : PropsValues.LOCALES_ENABLED) {
@@ -99,7 +103,9 @@ public class UpgradeGroup extends UpgradeProcess {
 						"User_ on Group_.companyId = User_.companyId where ",
 						"User_.defaultuser = [$TRUE$] and site = [$TRUE$] and ",
 						"friendlyURL != '/global'")));
+
 			ResultSet resultSet = preparedStatement1.executeQuery();
+
 			PreparedStatement preparedStatement2 =
 				AutoBatchPreparedStatementUtil.autoBatch(
 					connection,
@@ -180,13 +186,15 @@ public class UpgradeGroup extends UpgradeProcess {
 	}
 
 	private Map<Long, String[]> _getCompanyLanguageIds() throws Exception {
+		Map<Long, String[]> companyLanguageIds = new HashMap<>();
+
 		PreparedStatement preparedStatement = connection.prepareStatement(
 			"select ownerId, preferences from PortalPreferences where " +
-				"ownerType = " + PortletKeys.PREFS_OWNER_TYPE_COMPANY);
+				"ownerType = ?");
+
+		preparedStatement.setInt(1, PortletKeys.PREFS_OWNER_TYPE_COMPANY);
 
 		ResultSet resultSet = preparedStatement.executeQuery();
-
-		Map<Long, String[]> companyLanguageIds = new HashMap<>();
 
 		while (resultSet.next()) {
 			long ownerId = resultSet.getLong("ownerId");

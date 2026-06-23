@@ -20,9 +20,9 @@ import com.liferay.portal.kernel.util.SessionClicks;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.List;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 /**
  * @author Evan Thibodeau
@@ -76,7 +76,17 @@ public class AccessibilitySettingsUtil {
 				_getSessionClicksValue(
 					httpServletRequest,
 					AccessibilitySettingConstants.
-						ACCESSIBILITY_SETTING_REDUCED_MOTION)));
+						ACCESSIBILITY_SETTING_REDUCED_MOTION)),
+			new AccessibilitySetting(
+				"c-prefers-focus-ring", false,
+				LanguageUtil.get(
+					httpServletRequest, "focus-ring-animation-description"),
+				AccessibilitySettingConstants.ACCESSIBILITY_SETTING_FOCUS_RING,
+				LanguageUtil.get(httpServletRequest, "focus-ring-animation"),
+				_getSessionClicksValue(
+					httpServletRequest,
+					AccessibilitySettingConstants.
+						ACCESSIBILITY_SETTING_FOCUS_RING)));
 	}
 
 	public static boolean isAccessibilityMenuEnabled(
@@ -91,6 +101,7 @@ public class AccessibilitySettingsUtil {
 			AccessibilityMenuConfiguration accessibilityMenuConfiguration =
 				configurationProvider.getGroupConfiguration(
 					AccessibilityMenuConfiguration.class,
+					themeDisplay.getCompanyId(),
 					themeDisplay.getScopeGroupId());
 
 			return accessibilityMenuConfiguration.enableAccessibilityMenu();

@@ -5,11 +5,13 @@
 
 package com.liferay.segments.model.impl;
 
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.ScopeUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.segments.constants.SegmentsEntryConstants;
 import com.liferay.segments.model.SegmentsEntry;
@@ -73,15 +75,44 @@ public class SegmentsExperimentImpl extends SegmentsExperimentBaseImpl {
 			SegmentsExperienceLocalServiceUtil.getSegmentsExperience(
 				getSegmentsExperienceId());
 
-		if (segmentsExperience.getSegmentsEntryId() ==
-				SegmentsEntryConstants.ID_DEFAULT) {
-
+		if (segmentsExperience.hasDefaultSegmentsEntry()) {
 			return SegmentsEntryConstants.getDefaultSegmentsEntryName(locale);
 		}
 
+		Long groupId = ScopeUtil.getItemGroupId(
+			segmentsExperience.getCompanyId(),
+			segmentsExperience.getSegmentsEntryScopeERC(),
+			segmentsExperience.getGroupId());
+
+		if (groupId == null) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(
+					StringBundler.concat(
+						"Unable to resolve group ID for segments experience ",
+						segmentsExperience.getSegmentsExperienceId(),
+						" with segments entry scope external reference code ",
+						segmentsExperience.getSegmentsEntryScopeERC()));
+			}
+
+			return StringPool.BLANK;
+		}
+
 		SegmentsEntry segmentsEntry =
-			SegmentsEntryLocalServiceUtil.getSegmentsEntry(
-				segmentsExperience.getSegmentsEntryId());
+			SegmentsEntryLocalServiceUtil.
+				fetchSegmentsEntryByExternalReferenceCode(
+					segmentsExperience.getSegmentsEntryERC(), groupId);
+
+		if (segmentsEntry == null) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(
+					StringBundler.concat(
+						"Unable to get segments entry with external reference ",
+						"code ", segmentsExperience.getSegmentsEntryERC(),
+						" and group ID ", groupId));
+			}
+
+			return StringPool.BLANK;
+		}
 
 		return segmentsEntry.getName(locale);
 	}
@@ -103,6 +134,15 @@ public class SegmentsExperimentImpl extends SegmentsExperimentBaseImpl {
 	public List<SegmentsExperimentRel> getSegmentsExperimentRels() {
 		return SegmentsExperimentRelLocalServiceUtil.getSegmentsExperimentRels(
 			getSegmentsExperimentId());
+	}
+
+	@Override
+	public String getType() {
+		UnicodeProperties typeSettingsUnicodeProperties =
+			getTypeSettingsProperties();
+
+		return GetterUtil.getString(
+			typeSettingsUnicodeProperties.getProperty("type"));
 	}
 
 	@Override

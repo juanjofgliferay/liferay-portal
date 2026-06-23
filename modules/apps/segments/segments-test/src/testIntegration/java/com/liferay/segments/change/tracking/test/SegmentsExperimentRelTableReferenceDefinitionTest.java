@@ -52,8 +52,8 @@ public class SegmentsExperimentRelTableReferenceDefinitionTest
 
 		SegmentsExperience segmentsExperience =
 			SegmentsTestUtil.addSegmentsExperience(
-				layout.getGroupId(), segmentsEntry.getSegmentsEntryId(),
-				layout.getPlid());
+				layout.getGroupId(), segmentsEntry.getExternalReferenceCode(),
+				null, layout.getPlid());
 
 		_segmentsExperiment = SegmentsTestUtil.addSegmentsExperiment(
 			layout.getGroupId(), segmentsExperience.getSegmentsExperienceId(),

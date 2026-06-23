@@ -19,10 +19,10 @@ import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Date;
 import java.util.Locale;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -63,7 +63,27 @@ public class AssetVocabularyItemDescriptor
 			"assetVocabularyId",
 			String.valueOf(_assetVocabulary.getVocabularyId())
 		).put(
+			"externalReferenceCode", _assetVocabulary.getExternalReferenceCode()
+		).put(
 			"groupId", String.valueOf(_assetVocabulary.getGroupId())
+		).put(
+			"scopeExternalReferenceCode",
+			() -> {
+				long scopeGroupId = themeDisplay.getRefererGroupId();
+
+				if (scopeGroupId <= 0) {
+					scopeGroupId = themeDisplay.getScopeGroupId();
+				}
+
+				if (_assetVocabulary.getGroupId() == scopeGroupId) {
+					return null;
+				}
+
+				Group group = GroupLocalServiceUtil.getGroup(
+					_assetVocabulary.getGroupId());
+
+				return group.getExternalReferenceCode();
+			}
 		).put(
 			"title", _assetVocabulary.getTitle(themeDisplay.getLocale())
 		).put(
