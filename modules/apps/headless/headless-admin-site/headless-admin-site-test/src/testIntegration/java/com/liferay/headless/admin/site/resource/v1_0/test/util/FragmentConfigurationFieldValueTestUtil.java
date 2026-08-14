@@ -617,8 +617,8 @@ public class FragmentConfigurationFieldValueTestUtil {
 		if (href != null) {
 			HrefURLValue hrefURLValue = new HrefURLValue();
 
-			hrefURLValue.setHref(href);
-			hrefURLValue.setUrlType(URLValue.UrlType.HREF);
+			hrefURLValue.setHref(() -> href);
+			hrefURLValue.setUrlType(() -> URLValue.UrlType.HREF);
 
 			return hrefURLValue;
 		}
