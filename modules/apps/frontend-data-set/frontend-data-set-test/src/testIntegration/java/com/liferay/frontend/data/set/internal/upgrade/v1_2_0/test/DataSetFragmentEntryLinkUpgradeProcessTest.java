@@ -33,6 +33,7 @@ import com.liferay.portal.upgrade.registry.UpgradeStepRegistrator;
 import com.liferay.portal.upgrade.test.util.UpgradeTestUtil;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -50,17 +51,20 @@ public class DataSetFragmentEntryLinkUpgradeProcessTest {
 	public static final LiferayIntegrationTestRule liferayIntegrationTestRule =
 		new LiferayIntegrationTestRule();
 
-	@Test
-	public void testUpgrade() throws Exception {
+	@Before
+	public void setUp() throws Exception {
 		_group = GroupTestUtil.addGroup();
 
-		String externalReferenceCode = RandomTestUtil.randomString();
+		_layout = LayoutTestUtil.addTypeContentLayout(_group);
+	}
 
+	@Test
+	public void testUpgrade() throws Exception {
 		FragmentEntryLink fragmentEntryLink = _addFragmentEntryLink(
 			JSONUtil.put(
-				"className", "com.liferay.object.model.ObjectDefinition"
+				"className", RandomTestUtil.randomString()
 			).put(
-				"externalReferenceCode", externalReferenceCode
+				"externalReferenceCode", _EXTERNAL_REFERENCE_CODE
 			).put(
 				"title", RandomTestUtil.randomString()
 			),
@@ -68,9 +72,9 @@ public class DataSetFragmentEntryLinkUpgradeProcessTest {
 
 		FragmentEntryLink legacyFragmentEntryLink = _addFragmentEntryLink(
 			JSONUtil.put(
-				"className", "com.liferay.object.model.ObjectDefinition"
+				"className", RandomTestUtil.randomString()
 			).put(
-				"externalReferenceCode", externalReferenceCode
+				"externalReferenceCode", _EXTERNAL_REFERENCE_CODE
 			),
 			_RENDERER_KEY_LEGACY);
 
@@ -82,15 +86,14 @@ public class DataSetFragmentEntryLinkUpgradeProcessTest {
 
 		_runUpgrade();
 
-		_assertMigrated(fragmentEntryLink, externalReferenceCode);
-		_assertMigrated(legacyFragmentEntryLink, externalReferenceCode);
+		_assertMigrated(fragmentEntryLink);
+		_assertMigrated(legacyFragmentEntryLink);
 
 		JSONObject configurationJSONObject = _getConfigurationJSONObject(
 			unconfiguredFragmentEntryLink);
 
-		Assert.assertNull(configurationJSONObject.getJSONObject("dataSet"));
-		Assert.assertNull(
-			configurationJSONObject.getJSONObject("itemSelector"));
+		Assert.assertFalse(configurationJSONObject.has("dataSet"));
+		Assert.assertFalse(configurationJSONObject.has("itemSelector"));
 
 		_assertRendererKey(unconfiguredFragmentEntryLink);
 		_assertRendererKey(legacyUnconfiguredFragmentEntryLink);
@@ -100,11 +103,9 @@ public class DataSetFragmentEntryLinkUpgradeProcessTest {
 			JSONObject itemSelectorJSONObject, String rendererKey)
 		throws Exception {
 
-		Layout layout = LayoutTestUtil.addTypeContentLayout(_group);
-
 		return _fragmentEntryLinkLocalService.addFragmentEntryLink(
 			null, TestPropsValues.getUserId(), _group.getGroupId(), null, null,
-			null, 0, layout.getPlid(), StringPool.BLANK, StringPool.BLANK,
+			null, 0, _layout.getPlid(), StringPool.BLANK, StringPool.BLANK,
 			StringPool.BLANK, _LEGACY_CONFIGURATION,
 			JSONUtil.put(
 				FragmentEntryProcessorConstants.
@@ -140,24 +141,22 @@ public class DataSetFragmentEntryLinkUpgradeProcessTest {
 		Assert.assertEquals("dataSet", fieldJSONObject.getString("name"));
 		Assert.assertEquals(
 			"dataSetSelector", fieldJSONObject.getString("type"));
-		Assert.assertNull(fieldJSONObject.getJSONObject("typeOptions"));
+		Assert.assertFalse(fieldJSONObject.has("typeOptions"));
 	}
 
-	private void _assertMigrated(
-			FragmentEntryLink fragmentEntryLink, String externalReferenceCode)
+	private void _assertMigrated(FragmentEntryLink fragmentEntryLink)
 		throws Exception {
 
 		JSONObject configurationJSONObject = _getConfigurationJSONObject(
 			fragmentEntryLink);
 
-		Assert.assertNull(
-			configurationJSONObject.getJSONObject("itemSelector"));
+		Assert.assertFalse(configurationJSONObject.has("itemSelector"));
 
 		JSONObject dataSetJSONObject = configurationJSONObject.getJSONObject(
 			"dataSet");
 
 		Assert.assertEquals(
-			externalReferenceCode,
+			_EXTERNAL_REFERENCE_CODE,
 			dataSetJSONObject.getString("externalReferenceCode"));
 		Assert.assertEquals(1, dataSetJSONObject.length());
 
@@ -201,6 +200,9 @@ public class DataSetFragmentEntryLinkUpgradeProcessTest {
 		_multiVMPool.clear();
 	}
 
+	private static final String _EXTERNAL_REFERENCE_CODE =
+		RandomTestUtil.randomString();
+
 	private static final String _LEGACY_CONFIGURATION = StringBundler.concat(
 		"{\"fieldSets\": [{\"customComponentModule\": ",
 		"\"{DataSetConfigurationFields} from ",
@@ -225,6 +227,8 @@ public class DataSetFragmentEntryLinkUpgradeProcessTest {
 
 	@DeleteAfterTestRun
 	private Group _group;
+
+	private Layout _layout;
 
 	@Inject
 	private MultiVMPool _multiVMPool;

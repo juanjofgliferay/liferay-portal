@@ -27,8 +27,8 @@ public class DataSetFragmentEntryLinkUpgradeProcess extends UpgradeProcess {
 	@Override
 	protected void doUpgrade() throws Exception {
 		try (PreparedStatement preparedStatement1 = connection.prepareStatement(
-				"select ctCollectionId, fragmentEntryLinkId, configuration, " +
-					"editableValues, rendererKey from FragmentEntryLink " +
+				"select configuration, ctCollectionId, editableValues, " +
+					"fragmentEntryLinkId, rendererKey from FragmentEntryLink " +
 						"where rendererKey in (?, ?)");
 			PreparedStatement preparedStatement2 =
 				AutoBatchPreparedStatementUtil.autoBatch(

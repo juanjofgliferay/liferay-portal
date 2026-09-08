@@ -189,7 +189,7 @@ public class FragmentEntryConfigurationParserTest {
 
 		jsonObject = _getDataSetSelectorFieldValueJSONObject(StringPool.BLANK);
 
-		Assert.assertEquals(0, jsonObject.length());
+		Assert.assertTrue(JSONUtil.isEmpty(jsonObject));
 	}
 
 	@Test
