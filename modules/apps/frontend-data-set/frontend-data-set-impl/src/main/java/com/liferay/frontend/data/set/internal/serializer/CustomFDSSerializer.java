@@ -74,6 +74,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -522,7 +523,7 @@ public class CustomFDSSerializer
 		boolean interpolate,
 		Map<String, JSONObject> tokenResolutionsJSONObjects) {
 
-		Map<String, String> selectionFilterAPIURLs = new HashMap<>();
+		Map<String, String> selectionFilterAPIURLs = new LinkedHashMap<>();
 
 		for (ObjectEntry objectEntry :
 				getRelatedObjectEntries(
