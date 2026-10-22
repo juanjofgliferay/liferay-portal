@@ -37,6 +37,13 @@ export type IMappedTokenValue =
 
 export type TokenMapping = string | IMappedTokenValue;
 
+export interface IAPIURLTokenDescriptor {
+	autoResolvedTokenNames: string[];
+	externalReferenceCode?: string;
+	tokenNames: string[];
+	unresolvedTokenNames: string[];
+}
+
 export function isMappedTokenValue(
 	value: TokenMapping
 ): value is IMappedTokenValue {
@@ -74,4 +81,45 @@ export function getMappingMode(value: TokenMapping): EMappingMode {
 	}
 
 	return value.mappingMode;
+}
+
+export function isTokenMapped(
+	apiURLTokenDescriptor: IAPIURLTokenDescriptor,
+	tokenMappings: Record<string, TokenMapping>,
+	tokenName: string
+): boolean {
+	const tokenMapping = tokenMappings[tokenName];
+
+	if (tokenMapping === undefined) {
+		return apiURLTokenDescriptor.autoResolvedTokenNames.includes(tokenName);
+	}
+
+	if (typeof tokenMapping === 'string') {
+		return !!tokenMapping.trim().length;
+	}
+
+	if (isAutoResolved(tokenMapping)) {
+		return true;
+	}
+
+	if (!tokenMapping.fieldId) {
+		return false;
+	}
+
+	if (isContextMapped(tokenMapping)) {
+		return true;
+	}
+
+	return tokenMapping.fieldId === 'externalReferenceCode'
+		? !!tokenMapping.externalReferenceCode
+		: !!tokenMapping.classPK;
+}
+
+export function isTokenMappingCompleted(
+	apiURLTokenDescriptor: IAPIURLTokenDescriptor,
+	tokenMappings: Record<string, TokenMapping>
+): boolean {
+	return apiURLTokenDescriptor.tokenNames.every((tokenName) =>
+		isTokenMapped(apiURLTokenDescriptor, tokenMappings, tokenName)
+	);
 }

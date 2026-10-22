@@ -38,7 +38,12 @@ export default function UnresolvedDataSetPreview({
 	}
 
 	if (hasUnmappedTokens || !messages.length) {
-		messages.push(Liferay.Language.get('unmapped-url-help'));
+		messages.push(
+			sub(
+				Liferay.Language.get('unmapped-url-help-x'),
+				Liferay.Language.get('url-token-mapping')
+			)
+		);
 	}
 
 	return (
