@@ -40,7 +40,7 @@ const MAPPING_MODE = {
 };
 
 const UNMAPPED_URL_HELP =
-	'The URL is incomplete. Please map all unmapped tokens in the fragment panel to display the data set.';
+	'The URL is incomplete. Please map all unmapped tokens in the "URL Token Mapping" section of the fragment panel to display the data set.';
 
 const UNRESOLVED_CONTEXT_URL_HELP =
 	'The URL is incomplete. Tokens mapped to the page context entity are resolved when the page displays an entity. Use the "Preview With" selector to pick one and display the data set.';
@@ -741,5 +741,163 @@ test(
 				dataSetFragmentPage.unresolvedPreview.alerts
 			).toContainText([UNMAPPED_URL_HELP]);
 		});
+	}
+);
+
+test(
+	'Mapping the token of a selection filter endpoint completes the filter and lists the values of the mapped URL',
+	{tag: '@LPD-105347'},
+	async ({
+		apiHelpers,
+		dataSetFragmentPage,
+		dataSetManagerApiHelpers,
+		layout,
+		page,
+	}) => {
+		const dataSet = {
+			erc: getRandomString(),
+			label: getRandomString(),
+		};
+		const resolvedFilterLabel = getRandomString();
+		const taxonomyCategoryName = getRandomString();
+		const unresolvedFilterLabel = getRandomString();
+
+		dataSetERCs.push(dataSet.erc);
+
+		const taxonomyVocabulary =
+			await apiHelpers.headlessAdminTaxonomy.postSiteTaxonomyVocabulary({
+				name: getRandomString(),
+				siteId: layout.groupId,
+			});
+
+		try {
+			await test.step('Create a data set with a filter whose token is resolved and a filter whose token is not', async () => {
+				await dataSetManagerApiHelpers.createDataSet({
+					erc: dataSet.erc,
+					label: dataSet.label,
+				});
+
+				await dataSetManagerApiHelpers.createDataSetTableSection({
+					dataSetERC: dataSet.erc,
+					fieldName: 'label',
+					label_i18n: {en_US: 'Label'},
+					type: 'string',
+				});
+
+				await dataSetManagerApiHelpers.createDataSetSelectionFilter({
+					dataSetERC: dataSet.erc,
+					fieldName: 'id',
+					itemKey: 'id',
+					itemLabel: 'name',
+					label_i18n: {en_US: resolvedFilterLabel},
+					multiple: true,
+					restApplication: '/headless-admin-taxonomy/v1.0',
+					restEndpoint: '/v1.0/sites/{siteId}/taxonomy-vocabularies',
+					restSchema: 'TaxonomyVocabulary',
+					source: '/o/headless-admin-taxonomy/v1.0/sites/{siteId}/taxonomy-vocabularies',
+					sourceType: 'API_REST_APPLICATION',
+				});
+
+				await dataSetManagerApiHelpers.createDataSetSelectionFilter({
+					dataSetERC: dataSet.erc,
+					fieldName: 'label',
+					itemKey: 'id',
+					itemLabel: 'name',
+					label_i18n: {en_US: unresolvedFilterLabel},
+					multiple: true,
+					restApplication: '/headless-admin-taxonomy/v1.0',
+					restEndpoint:
+						'/v1.0/taxonomy-vocabularies/{taxonomyVocabularyId}/taxonomy-categories',
+					restSchema: 'TaxonomyCategory',
+					source: '/o/headless-admin-taxonomy/v1.0/taxonomy-vocabularies/{taxonomyVocabularyId}/taxonomy-categories',
+					sourceType: 'API_REST_APPLICATION',
+				});
+
+				await apiHelpers.headlessAdminTaxonomy.postTaxonomyVocabularyTaxonomyCategory(
+					{
+						name: taxonomyCategoryName,
+						vocabularyId: taxonomyVocabulary.id,
+					}
+				);
+			});
+
+			await test.step('Assign the data set', async () => {
+				await dataSetFragmentPage.addDataSetFragment(layout);
+
+				await dataSetFragmentPage.selectDataSetButton.click();
+
+				await dataSetFragmentPage.selectDataSet(dataSet.label);
+			});
+
+			await test.step('Assert that the canvas renders the data set while a filter is unresolved', async () => {
+				await expect(
+					dataSetFragmentPage.unresolvedPreview.container
+				).toBeHidden();
+
+				await waitForFDS({page});
+			});
+
+			await test.step('Assert that each filter shows its own status', async () => {
+				await expect(
+					dataSetFragmentPage.selectionFilterTokenMappingStatusLabel
+				).toHaveText('Incomplete');
+
+				await dataSetFragmentPage.selectionFilterTokenMappingFilterSelectorTrigger.click();
+
+				await expect(
+					page.getByRole('menuitem', {name: resolvedFilterLabel})
+				).toContainText('Completed');
+				await expect(
+					page.getByRole('menuitem', {name: unresolvedFilterLabel})
+				).toContainText('Incomplete');
+			});
+
+			await test.step('Map the only token of the unresolved filter with a literal value', async () => {
+				await page
+					.getByRole('menuitem', {name: unresolvedFilterLabel})
+					.click();
+
+				await expect(
+					dataSetFragmentPage.selectionFilterTokenMappingMappingSelect
+				).toHaveValue('literal');
+
+				await dataSetFragmentPage.selectionFilterTokenMappingValueInput.fill(
+					String(taxonomyVocabulary.id)
+				);
+
+				const responsePromise = page.waitForResponse((response) =>
+					decodeURIComponent(response.url()).includes(
+						'update_configuration_values'
+					)
+				);
+
+				await dataSetFragmentPage.selectionFilterTokenMappingValueInput.blur();
+
+				await responsePromise;
+
+				await expect(
+					dataSetFragmentPage.selectionFilterTokenMappingStatusLabel
+				).toHaveText('Completed');
+			});
+
+			await test.step('Assert that the published page lists the values of the mapped URL', async () => {
+				await dataSetFragmentPage.publishPage();
+
+				await dataSetFragmentPage.goToPage({layout});
+
+				await dataSetFragmentPage.selectFilter(unresolvedFilterLabel);
+
+				await expect(
+					dataSetFragmentPage.dropdownMenu.getByRole('checkbox', {
+						name: taxonomyCategoryName,
+					})
+				).toBeVisible();
+			});
+		}
+		finally {
+			await apiHelpers.headlessAdminTaxonomy.deleteTaxonomyVocabulary(
+				taxonomyVocabulary.id
+			);
+		}
 	}
 );

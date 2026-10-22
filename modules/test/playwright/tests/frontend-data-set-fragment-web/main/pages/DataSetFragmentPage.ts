@@ -40,6 +40,11 @@ export class DataSetFragmentPage {
 	};
 	readonly selectDataSetButton: Locator;
 	readonly selectedDataSetInput: Locator;
+	readonly selectionFilterTokenMappingFilterSelectorTrigger: Locator;
+	readonly selectionFilterTokenMappingMappingSelect: Locator;
+	readonly selectionFilterTokenMappingPanel: Locator;
+	readonly selectionFilterTokenMappingStatusLabel: Locator;
+	readonly selectionFilterTokenMappingValueInput: Locator;
 	readonly showResultsButton: Locator;
 	readonly sidePanel: Locator;
 	readonly sidePanelFrame: FrameLocator;
@@ -148,6 +153,29 @@ export class DataSetFragmentPage {
 		});
 		this.sidePanel = page.locator('.fds-side-panel');
 		this.sidePanelFrame = this.sidePanel.frameLocator('iframe');
+
+		this.selectionFilterTokenMappingPanel = page
+			.locator('.panel.w-100')
+			.filter({hasText: 'Filters Token Mapping'});
+
+		this.selectionFilterTokenMappingFilterSelectorTrigger =
+			this.selectionFilterTokenMappingPanel.getByRole('button', {
+				exact: true,
+				name: 'Filter',
+			});
+		this.selectionFilterTokenMappingMappingSelect =
+			this.selectionFilterTokenMappingPanel.getByLabel('Mapping', {
+				exact: true,
+			});
+		this.selectionFilterTokenMappingStatusLabel =
+			this.selectionFilterTokenMappingPanel
+				.locator('.form-group')
+				.filter({hasText: 'Status'})
+				.locator('.label');
+		this.selectionFilterTokenMappingValueInput =
+			this.selectionFilterTokenMappingPanel.getByLabel('Token Value', {
+				exact: true,
+			});
 
 		this.tokenMappingPanel = page
 			.locator('.panel.w-100')
