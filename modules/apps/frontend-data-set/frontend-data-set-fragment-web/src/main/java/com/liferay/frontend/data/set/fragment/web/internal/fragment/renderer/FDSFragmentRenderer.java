@@ -59,6 +59,7 @@ import java.io.PrintWriter;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -242,29 +243,70 @@ public class FDSFragmentRenderer implements FragmentRenderer {
 					fdsAPIURL, apiURLTokenMappingsJSONObject,
 					autoResolvedFDSAPIURL, httpServletRequest);
 
+			Map<String, String> selectionFilterAPIURLs =
+				_fdsRenderer.getSelectionFilterAPIURLs(
+					externalReferenceCode, httpServletRequest, false, null);
+
+			Map<String, String> autoResolvedSelectionFilterAPIURLs =
+				_fdsRenderer.getSelectionFilterAPIURLs(
+					externalReferenceCode, httpServletRequest, true, null);
+
 			Map<String, JSONObject> selectionFilterTokenResolutionsJSONObjects =
 				_getSelectionFilterTokenResolutionsJSONObjects(
-					externalReferenceCode, httpServletRequest,
+					autoResolvedSelectionFilterAPIURLs, httpServletRequest,
+					selectionFilterAPIURLs,
 					_getJSONObject(
 						(String)_fragmentEntryConfigurationParser.getFieldValue(
 							configurationJSONObject, editableValuesJSONObject,
 							fragmentRendererContext.getLocale(),
 							"selectionFilterAPIURLTokenMappings")));
 
+			String resolvedFDSAPIURL = _fdsRenderer.getFDSAPIURL(
+				externalReferenceCode, httpServletRequest, true,
+				tokenResolutionsJSONObject);
+
 			Set<String> unresolvedTokenNames = _getTokenNames(
-				_fdsRenderer.getFDSAPIURL(
-					externalReferenceCode, httpServletRequest, true,
-					tokenResolutionsJSONObject));
+				resolvedFDSAPIURL);
 
 			boolean resolved = unresolvedTokenNames.isEmpty();
 
 			if (fragmentRendererContext.isEditMode()) {
-				if (hasTokens) {
-					_writeAutoResolvedTokenNames(
-						_getAutoResolvedTokenNames(
-							fdsAPIURL, autoResolvedFDSAPIURL),
-						fragmentRendererContext);
-				}
+				Map<String, String> resolvedSelectionFilterAPIURLs =
+					_fdsRenderer.getSelectionFilterAPIURLs(
+						externalReferenceCode, httpServletRequest, true,
+						selectionFilterTokenResolutionsJSONObjects);
+
+				JSONArray apiURLTokenDescriptorsJSONArray = JSONUtil.concat(
+					JSONUtil.put(
+						_getAPIURLTokenDescriptorJSONObject(
+							fdsAPIURL, autoResolvedFDSAPIURL,
+							resolvedFDSAPIURL)),
+					JSONUtil.toJSONArray(
+						selectionFilterAPIURLs.entrySet(),
+						entry -> {
+							if (!_hasTokens(entry.getValue())) {
+								return null;
+							}
+
+							JSONObject apiURLTokenDescriptorJSONObject =
+								_getAPIURLTokenDescriptorJSONObject(
+									entry.getValue(),
+									autoResolvedSelectionFilterAPIURLs.get(
+										entry.getKey()),
+									resolvedSelectionFilterAPIURLs.get(
+										entry.getKey()));
+
+							return apiURLTokenDescriptorJSONObject.put(
+								"externalReferenceCode", entry.getKey());
+						},
+						_log));
+
+				_getConfigurationValuesJSONObject(
+					fragmentRendererContext
+				).put(
+					"apiURLTokenDescriptors",
+					apiURLTokenDescriptorsJSONArray.toString()
+				);
 
 				componentId = StringBundler.concat(
 					componentId, StringPool.DASH,
@@ -286,10 +328,7 @@ public class FDSFragmentRenderer implements FragmentRenderer {
 								"frontend-data-set-fragment-web",
 							componentId, null, true),
 						HashMapBuilder.<String, Object>put(
-							"apiURL",
-							_fdsRenderer.getFDSAPIURL(
-								externalReferenceCode, httpServletRequest, true,
-								tokenResolutionsJSONObject)
+							"apiURL", resolvedFDSAPIURL
 						).put(
 							"hasUnmappedTokens",
 							unresolvedTokenNames.size() >
@@ -346,6 +385,21 @@ public class FDSFragmentRenderer implements FragmentRenderer {
 		finally {
 			ObjectEntryThreadLocal.setSkipObjectEntryResourcePermission(false);
 		}
+	}
+
+	private JSONObject _getAPIURLTokenDescriptorJSONObject(
+		String apiURL, String autoResolvedAPIURL, String resolvedAPIURL) {
+
+		return JSONUtil.put(
+			"autoResolvedTokenNames",
+			_jsonFactory.createJSONArray(
+				_getAutoResolvedTokenNames(apiURL, autoResolvedAPIURL))
+		).put(
+			"tokenNames", _jsonFactory.createJSONArray(_getTokenNames(apiURL))
+		).put(
+			"unresolvedTokenNames",
+			_jsonFactory.createJSONArray(_getTokenNames(resolvedAPIURL))
+		);
 	}
 
 	private Set<String> _getAutoResolvedTokenNames(
@@ -471,19 +525,13 @@ public class FDSFragmentRenderer implements FragmentRenderer {
 
 	private Map<String, JSONObject>
 		_getSelectionFilterTokenResolutionsJSONObjects(
-			String externalReferenceCode, HttpServletRequest httpServletRequest,
+			Map<String, String> autoResolvedSelectionFilterAPIURLs,
+			HttpServletRequest httpServletRequest,
+			Map<String, String> selectionFilterAPIURLs,
 			JSONObject selectionFilterAPIURLTokenMappingsJSONObject) {
 
 		Map<String, JSONObject> selectionFilterTokenResolutionsJSONObjects =
 			new HashMap<>();
-
-		Map<String, String> selectionFilterAPIURLs =
-			_fdsRenderer.getSelectionFilterAPIURLs(
-				externalReferenceCode, httpServletRequest, false, null);
-
-		Map<String, String> autoResolvedSelectionFilterAPIURLs =
-			_fdsRenderer.getSelectionFilterAPIURLs(
-				externalReferenceCode, httpServletRequest, true, null);
 
 		for (Map.Entry<String, String> entry :
 				selectionFilterAPIURLs.entrySet()) {
@@ -514,7 +562,7 @@ public class FDSFragmentRenderer implements FragmentRenderer {
 	}
 
 	private Set<String> _getTokenNames(String apiURL) {
-		Set<String> tokenNames = new HashSet<>();
+		Set<String> tokenNames = new LinkedHashSet<>();
 
 		Matcher matcher = _pattern.matcher(apiURL);
 
@@ -678,29 +726,6 @@ public class FDSFragmentRenderer implements FragmentRenderer {
 		Matcher matcher = _pattern.matcher(apiURL);
 
 		return matcher.find();
-	}
-
-	private void _writeAutoResolvedTokenNames(
-		Set<String> autoResolvedTokenNames,
-		FragmentRendererContext fragmentRendererContext) {
-
-		JSONObject configurationValuesJSONObject =
-			_getConfigurationValuesJSONObject(fragmentRendererContext);
-
-		try {
-			JSONArray jsonArray = JSONUtil.toJSONArray(
-				autoResolvedTokenNames,
-				autoResolvedTokenName -> autoResolvedTokenName);
-
-			configurationValuesJSONObject.put(
-				"autoResolvedTokenNames", jsonArray.toString());
-		}
-		catch (Exception exception) {
-			if (_log.isWarnEnabled()) {
-				_log.warn(
-					"Unable to write auto resolved token names", exception);
-			}
-		}
 	}
 
 	private void _writeClassName(
